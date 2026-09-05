@@ -6,18 +6,18 @@ import { CreateQuestionDto, QuestionFilterDto } from './dto/question.dto';
 export class QuestionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(filter: QuestionFilterDto) {
-    return this.prisma.question.findMany({
-      where: {
-        deletedAt: null,
-        subjectId: filter.subjectId,
-        topicId: filter.topicId,
-        difficulty: filter.difficulty as any,
-      },
-      include: { options: { select: { id: true, text: true, order: true } } }, // isCorrect BERILMAYDI
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+async list(filter: QuestionFilterDto) {
+  return this.prisma.question.findMany({
+    where: {
+      deletedAt: null,
+      subjectId: filter.subjectId,
+      topicId: filter.topicId,
+      difficulty: filter.difficulty as any,
+    },
+    include: { options: { select: { id: true, text: true, order: true } } },
+    orderBy: { id: 'desc' }, // <-- createdAt o'rniga id yoki schemada bor boshqa maydon
+  });
+}
 
   /**
    * Admin/Teacher ko'rinishida — TO'LIQ (isCorrect bilan), chunki tahrirlash uchun kerak.
