@@ -14,8 +14,17 @@ async function bootstrap() {
     }),
   );
 
+  // CORS sozlamalarini Telegram Mini App uchun kengaytiramiz
   app.enableCors({
-    origin: process.env.WEBAPP_URL ?? '*',
+    origin: true, // Har qanday manbadan (Mini App'dan) kelgan so'rovga ruxsat berish
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+      'x-telegram-init-data',
+    ],
     credentials: true,
   });
 
