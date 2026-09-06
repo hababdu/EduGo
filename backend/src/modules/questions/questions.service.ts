@@ -15,7 +15,7 @@ export class QuestionsService {
         difficulty: filter.difficulty as any,
       },
       include: { options: { select: { id: true, text: true, order: true } } }, // isCorrect BERILMAYDI
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'desc' },
     });
   }
 
