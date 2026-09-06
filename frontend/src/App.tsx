@@ -13,7 +13,7 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 
 export function App() {
-  const status = useAuth();
+  const { status, debugInfo } = useAuth();
   const user = useAuthStore((s) => s.user);
 
   if (status === 'checking') {
@@ -29,9 +29,10 @@ export function App() {
       <div className="h-screen flex items-center justify-center px-8 text-center">
         <div>
           <p className="font-display text-xl mb-2">Bu ilova Telegram ichida ochiladi</p>
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm text-ink-muted mb-6">
             Botga o'ting va "📚 Darsni boshlash" tugmasini bosing.
           </p>
+          <p className="text-[10px] text-ink-faint break-all">{debugInfo}</p>
         </div>
       </div>
     );
@@ -42,9 +43,10 @@ export function App() {
       <div className="h-screen flex items-center justify-center px-8 text-center">
         <div>
           <p className="font-display text-xl mb-2">Kirishda xatolik</p>
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm text-ink-muted mb-6">
             Botga qaytib, "📚 Darsni boshlash" tugmasini qayta bosing.
           </p>
+          <p className="text-[10px] text-ink-faint break-all">{debugInfo}</p>
         </div>
       </div>
     );
