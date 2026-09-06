@@ -177,6 +177,27 @@ npm run start:dev
 
 Backend ham parallel ishlab turishi kerak (`cd backend && npm run start:dev`).
 
+## Render'da bepul deploy qilish (webhook rejimi)
+
+Render'ning bepul tarifida "Background Worker" endi mavjud emas, shuning
+uchun bot **oddiy Web Service** sifatida, **webhook** rejimida ishga
+tushiriladi (kod buni avtomatik aniqlaydi — `WEBHOOK_URL` bor-yo'qligiga qarab):
+
+1. Render'da **New → Web Service** yarating (repo yoki shu papkani yuklab)
+2. Build command: `npm install && npm run build`
+3. Start command: `npm run start`
+4. Environment'ga qo'shing: `BOT_TOKEN`, `BOT_INTERNAL_SECRET`, `BACKEND_API_URL`,
+   `WEBAPP_URL`, va **`WEBHOOK_URL`** = shu servisning o'zining Render URL'i
+   (masalan `https://your-bot.onrender.com` — `/webhook` qo'shilmaydi, kod o'zi qo'shadi)
+5. Deploy qiling — loglarda `Bot webhook rejimida ishga tushdi` chiqishi kerak
+
+**Bilinadigan cheklov:** bepul Render Web Service 15 daqiqa harakatsizlikdan
+keyin uxlab qoladi. Foydalanuvchi botga yozganda Telegram shu HTTP so'rov
+orqali servisni "uyg'otadi", lekin birinchi javob 30-50 soniya kechikishi
+mumkin. Buni butunlay bartaraf etish uchun tashqi "ping" xizmati (masalan,
+UptimeRobot) orqali `/` endpointga har 10 daqiqada so'rov yuborib turish
+tavsiya etiladi — yoki pullik ($7/oy) tarifga o'tish.
+
 ## "Darsni boshlash" qanday ishlaydi
 
 `Keyboard.webApp('📚 Darsni boshlash', WEBAPP_URL)` — bu tugma bosilganda
