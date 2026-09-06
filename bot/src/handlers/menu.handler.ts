@@ -126,7 +126,6 @@ export function registerMenuHandlers(bot: Bot) {
   bot.hears(MENU_LABELS.HELP, async (ctx) => {
     await ctx.reply(
       'ℹ️ *Yordam*\n\n' +
-        '📚 Darsni boshlash — platformaga kirish\n' +
         '👤 Profilim — shaxsiy ma\'lumotlar\n' +
         '🏆 Ballarim / Reyting — ball va o\'rningiz\n' +
         '📊 Natijalarim — testlar tarixi\n' +
