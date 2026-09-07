@@ -36,7 +36,6 @@ export class ChallengesService {
       title: challenge.title,
       rewardScore: challenge.rewardScore,
       rewardXp: challenge.rewardXp,
-      test: challenge.test,
       completed: !!alreadyDone,
     };
   }
