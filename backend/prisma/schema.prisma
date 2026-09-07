@@ -291,6 +291,7 @@ model Question {
   createdById   String
   createdBy     User         @relation("QuestionCreatedBy", fields: [createdById], references: [id])
   status        ContentStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
   deletedAt     DateTime?
 
   options       AnswerOption[]
