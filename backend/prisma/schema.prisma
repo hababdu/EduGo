@@ -557,7 +557,6 @@ model Challenge {
   title       String
   date        DateTime // shu kunga tegishli challenge
   testId      String?  // challenge alohida mini-test sifatida modellashtiriladi
-  testId      String?
   test        Test?    @relation(fields: [testId], references: [id], onDelete: SetNull)
   rewardScore Int
   rewardXp    Int
