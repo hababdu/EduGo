@@ -18,7 +18,10 @@ export interface AdminStudentListItem {
   firstName: string;
   lastName: string | null;
   username: string | null;
+  role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   status: 'ACTIVE' | 'BLOCKED' | 'PENDING';
+  groupId: string | null;
+  groupName?: string | null;
   registeredAt: string;
   lastActiveAt: string;
   totalScore: number;
@@ -31,4 +34,30 @@ export interface AdminStudentListResponse {
   pageSize: number;
   total: number;
   totalPages: number;
+}
+
+export interface TeacherItem {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  username: string | null;
+  subjects: { id: string; name: string }[];
+  groupsCount: number;
+}
+
+export interface GroupItem {
+  id: string;
+  name: string;
+  teacherId: string | null;
+  teacherName?: string | null;
+  studentsCount: number;
+  createdAt: string;
+}
+
+export interface SubjectItem {
+  id: string;
+  name: string;
+  code: string;
+  teachersCount: number;
+  topicsCount: number;
 }

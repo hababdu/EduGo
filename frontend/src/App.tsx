@@ -8,6 +8,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
+import { AdminGroups } from './pages/admin/AdminGroups';
+import { AdminSubjects } from './pages/admin/AdminSubjects';
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
@@ -63,6 +65,8 @@ export function App() {
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
+          <Route path="/admin/groups" element={<AdminGroups />} />
+          <Route path="/admin/subjects" element={<AdminSubjects />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </BrowserRouter>
@@ -100,7 +104,6 @@ function StudentRoutes() {
         <Route path="/tests/:testId" element={<TestTaking />} />
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        {/* /lessons, /profile — Phase 13'da to'ldiriladi */}
       </Routes>
       {!hideBottomNav && <BottomNav />}
     </>
