@@ -1,11 +1,17 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { seededShuffle } from './seeded-shuffle.util';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
+import { ChallengesService } from '../../gamification/challenges/challenges.service';
 
 @Injectable()
 export class TestSessionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+    private readonly challengesService: ChallengesService,
+  ) {}
 
   /**
    * 16-band — TESTNI BOSHLASH.
@@ -171,6 +177,10 @@ export class TestSessionService {
       (Date.now() - new Date(session.startedAt).getTime()) / 1000,
     );
 
+    // 40-band — DAILY CHALLENGE: agar bu test bugungi challenge bilan bog'liq bo'lsa,
+    // qo'shimcha bonus ball/XP beriladi (faqat test o'tilgan bo'lsa, isAutoSubmit=false holatida ham hisoblanadi)
+    const challenge = await this.challengesService.findActiveChallengeForTest(test.id);
+
     await this.prisma.$transaction([
       // Har bir javobning isCorrect'ini yozamiz
       ...gradedAnswers.map((a) =>
@@ -220,9 +230,58 @@ export class TestSessionService {
           totalXp: { increment: Math.round(score / 2) }, // 36-band: XP ball bilan bog'liq, lekin alohida
         },
       }),
+      // Challenge bonusi — alohida ScoreTransaction(type=CHALLENGE) sifatida
+      ...(challenge
+        ? [
+            this.prisma.scoreTransaction.create({
+              data: {
+                studentId: session.studentId,
+                amount: challenge.rewardScore,
+                type: 'CHALLENGE',
+                testId: test.id,
+                description: `Kunlik challenge: ${challenge.title}`,
+              },
+            }),
+            this.prisma.xpTransaction.create({
+              data: { studentId: session.studentId, amount: challenge.rewardXp, source: 'CHALLENGE' },
+            }),
+            this.prisma.studentProfile.update({
+              where: { userId: session.studentId },
+              data: {
+                totalScore: { increment: challenge.rewardScore },
+                totalXp: { increment: challenge.rewardXp },
+              },
+            }),
+          ]
+        : []),
     ]);
 
+    await this.emitScoreChanged(session.studentId, score + (challenge?.rewardScore ?? 0), test.subjectId);
+
     return { score, maxScore, percent, passed, timeSpentSeconds, autoSubmitted: isAutoSubmit };
+  }
+
+  /**
+   * 33,66-band — REAL-TIME. ScoreTransaction yaratilgandan keyin event
+   * chiqariladi; RankingGateway buni tinglab, WebSocket orqali tarqatadi.
+   * Bu yerda to'g'ridan-to'g'ri gateway chaqirilmaydi — EventEmitter orqali
+   * bo'sh bog'lanish (loose coupling) saqlanadi.
+   */
+  private async emitScoreChanged(studentId: string, score: number, subjectId: string | null) {
+    const groupIds = (
+      await this.prisma.groupMember.findMany({
+        where: { studentId },
+        select: { groupId: true },
+      })
+    ).map((g) => g.groupId);
+
+    this.eventEmitter.emit('score.changed', {
+      studentId,
+      delta: score,
+      source: 'TEST_REWARD',
+      subjectId,
+      groupIds,
+    });
   }
 
   private async autoSubmitExpired(session: any, test: any) {

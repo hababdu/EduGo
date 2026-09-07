@@ -4,6 +4,7 @@ import { Body, Controller, Get, Injectable, NotFoundException, Param, Patch, Pos
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
+import { StreakService } from '../../gamification/streak/streak.service';
 
 export class CreateLessonDto {
   @IsString() @IsNotEmpty() topicId: string;
@@ -21,7 +22,10 @@ export class UpdateVideoProgressDto {
 
 @Injectable()
 export class LessonsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly streakService: StreakService,
+  ) {}
 
   findAllByTopic(topicId: string) {
     return this.prisma.lesson.findMany({
@@ -37,16 +41,23 @@ export class LessonsService {
     });
   }
 
-  /** 12-band: video progress 0/25/50/75/100 saqlanadi */
+  /** 12-band: video progress 0/25/50/75/100 saqlanadi. 39-band: streak yangilanadi */
   async updateVideoProgress(videoId: string, percent: number, studentId: string) {
     const video = await this.prisma.video.findUnique({ where: { id: videoId } });
     if (!video) throw new NotFoundException('Video topilmadi');
 
-    return this.prisma.videoProgress.upsert({
+    const result = await this.prisma.videoProgress.upsert({
       where: { videoId_studentId: { videoId, studentId } },
       create: { videoId, studentId, percent },
       update: { percent },
     });
+
+    // Faqat mazmunli faollik (kamida 25%) streakka hisoblanadi
+    if (percent >= 25) {
+      await this.streakService.recordActivity(studentId);
+    }
+
+    return result;
   }
 }
 

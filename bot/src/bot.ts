@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { Bot, webhookCallback } from 'grammy';
-import { mainMenuKeyboard } from './keyboards/main-menu.keyboard';
+import { mainMenuKeyboard, WEBAPP_URL } from './keyboards/main-menu.keyboard';
 import { registerMenuHandlers } from './handlers/menu.handler';
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -11,10 +11,27 @@ if (!BOT_TOKEN) {
 
 const bot = new Bot(BOT_TOKEN);
 
+/**
+ * Persistent Menu Button — yozish maydonining chap tomonidagi doimiy tugma.
+ * Bu ENG ISHONCHLI usul: initData to'liq keladi, foydalanuvchi /start
+ * yozishi ham shart emas, tugma har doim ko'rinadi.
+ */
+async function setupMenuButton() {
+  await bot.api.setChatMenuButton({
+    menu_button: {
+      type: 'web_app',
+      text: 'Ochish',
+      web_app: { url: WEBAPP_URL },
+    },
+  });
+}
+
 bot.command('start', async (ctx) => {
   await ctx.reply(
     `Assalomu alaykum, ${ctx.from?.first_name}! 👋\n\n` +
-      'Bu — online o\'quv platformamiz boti. Quyidagi menyudan foydalaning:',
+      'Bu — online o\'quv platformamiz boti. Platformani ochish uchun ' +
+      'yozish maydoni yonidagi "Ochish" tugmasini bosing, yoki quyidagi ' +
+      'menyudan foydalaning:',
     { reply_markup: mainMenuKeyboard },
   );
 });
@@ -59,9 +76,14 @@ if (WEBHOOK_URL) {
 
   app.listen(PORT, async () => {
     await bot.api.setWebhook(`${WEBHOOK_URL.replace(/\/$/, '')}/webhook`);
+    await setupMenuButton();
     console.log(`Bot webhook rejimida ishga tushdi: ${WEBHOOK_URL} (port ${PORT})`);
   });
 } else {
-  bot.start();
-  console.log('Bot polling rejimida ishga tushdi (lokal development)');
+  bot.start({
+    onStart: () => {
+      setupMenuButton().catch((err) => console.error('Menu button xatosi:', err));
+      console.log('Bot polling rejimida ishga tushdi (lokal development)');
+    },
+  });
 }

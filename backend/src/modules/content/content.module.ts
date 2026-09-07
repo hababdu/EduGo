@@ -7,9 +7,10 @@ import { SectionsController, SectionsService } from './sections/sections.all';
 import { TopicsController, TopicsService } from './topics/topics.all';
 import { LessonsController, LessonsService } from './lessons/lessons.all';
 import { AdminModule } from '../admin/admin.module';
+import { GamificationModule } from '../gamification/gamification.module';
 
 @Module({
-  imports: [AdminModule], // AuditService uchun
+  imports: [AdminModule, GamificationModule], // AuditService, StreakService uchun
   controllers: [
     CoursesController,
     SubjectsController,

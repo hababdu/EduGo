@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth';
 import { useAuthStore } from './store/auth.store';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { TestTaking } from './pages/tests/TestTaking';
+import { RankingPage } from './pages/ranking/RankingPage';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
@@ -13,7 +14,7 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 
 export function App() {
-  const { status, debugInfo } = useAuth();
+  const status = useAuth();
   const user = useAuthStore((s) => s.user);
 
   if (status === 'checking') {
@@ -29,10 +30,9 @@ export function App() {
       <div className="h-screen flex items-center justify-center px-8 text-center">
         <div>
           <p className="font-display text-xl mb-2">Bu ilova Telegram ichida ochiladi</p>
-          <p className="text-sm text-ink-muted mb-6">
+          <p className="text-sm text-ink-muted">
             Botga o'ting va "📚 Darsni boshlash" tugmasini bosing.
           </p>
-          <p className="text-[10px] text-ink-faint break-all">{debugInfo}</p>
         </div>
       </div>
     );
@@ -43,10 +43,9 @@ export function App() {
       <div className="h-screen flex items-center justify-center px-8 text-center">
         <div>
           <p className="font-display text-xl mb-2">Kirishda xatolik</p>
-          <p className="text-sm text-ink-muted mb-6">
+          <p className="text-sm text-ink-muted">
             Botga qaytib, "📚 Darsni boshlash" tugmasini qayta bosing.
           </p>
-          <p className="text-[10px] text-ink-faint break-all">{debugInfo}</p>
         </div>
       </div>
     );
@@ -98,7 +97,8 @@ function StudentRoutes() {
       <Routes>
         <Route path="/" element={<StudentDashboard />} />
         <Route path="/tests/:testId" element={<TestTaking />} />
-        {/* /lessons, /ranking, /profile — Phase 11-13'da to'ldiriladi */}
+        <Route path="/ranking" element={<RankingPage />} />
+        {/* /lessons, /profile — Phase 13'da to'ldiriladi */}
       </Routes>
       {!hideBottomNav && <BottomNav />}
     </>

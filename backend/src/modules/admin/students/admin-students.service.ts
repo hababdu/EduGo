@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ListStudentsQueryDto, AdjustScoreDto } from './dto/admin-students.dto';
@@ -8,6 +9,7 @@ export class AdminStudentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async list(query: ListStudentsQueryDto) {
@@ -147,6 +149,14 @@ export class AdminStudentsService {
       targetId: studentId,
       oldValue: { totalScore: profile.totalScore },
       newValue: { totalScore: profile.totalScore + dto.amount, amount: dto.amount, reason: dto.reason },
+    });
+
+    this.eventEmitter.emit('score.changed', {
+      studentId,
+      delta: dto.amount,
+      source: dto.amount > 0 ? 'ADMIN_ADD' : 'ADMIN_REMOVE',
+      subjectId: null,
+      groupIds: [],
     });
 
     return transaction;

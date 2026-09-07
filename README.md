@@ -489,3 +489,141 @@ Bu qism 15–27 va 62-bandlarning **barchasini** amalga oshiradi. Eng muhim fayl
 **Phase 11-12 — Score System + Real-time Ranking**: `ScoreTransaction`
 ledgeridan reyting hisoblash, WebSocket gateway (`SCORE_UPDATED`,
 `RANKING_UPDATED` eventlari), va frontendda real-time reyting sahifasi.
+
+---
+
+# PHASE 11-12 — SCORE SYSTEM + REAL-TIME RANKING
+
+## Nima yaratildi
+
+**Backend** (`backend/src/modules/ranking/`):
+
+| Fayl | Vazifasi |
+|---|---|
+| `ranking.service.ts` | Global/Group/Subject reyting hisoblash, **35-band tie-breaker** (ball → accuracy → vaqt) |
+| `ranking.gateway.ts` | Socket.IO WebSocket gateway — JWT orqali autentifikatsiya, room-based tarqatish |
+| `ranking.controller.ts` | Dastlabki yuklash uchun REST (`GET /api/v1/ranking/global` va h.k.) |
+
+**Muhim arxitektura qarori — EventEmitter orqali bo'sh bog'lanish (loose coupling):**
+
+`TestSessionService` va `AdminStudentsService` `RankingGateway`ni to'g'ridan-to'g'ri
+chaqirmaydi (bu circular dependency yaratardi). Buning o'rniga `@nestjs/event-emitter`
+orqali `score.changed` eventi chiqariladi, `RankingGateway` esa `@OnEvent('score.changed')`
+bilan uni tinglaydi. Bu 84-bandda tasvirlangan oqimga mos:
+
+```
+ScoreTransaction yaratiladi → event chiqariladi → Gateway tinglaydi →
+reyting qayta hisoblanadi → faqat tegishli room'larga WebSocket orqali yuboriladi
+```
+
+**Room strategiyasi (66,84-band):** hech qachon barcha ulangan userlarga
+broadcast qilinmaydi — faqat `ranking:global` room'iga (ya'ni reyting sahifasini
+ochib turgan) clientlarga, va shaxsiy `SCORE_UPDATED` faqat `user:{id}` room'iga.
+
+**35-band tie-breaker** qanday ishlaydi: `rankProfiles()` avval ball bo'yicha
+`limit * 3` nomzodni oladi (zaxira bilan), so'ng xotirada: ball → o'rtacha
+accuracy (`TestAttempt.percent`) → o'rtacha sarflangan vaqt (kamroq = yaxshiroq)
+bo'yicha aniq saralaydi. Bu juda katta userlar sonida keyinchalik
+materialized view bilan optimallashtirilishi mumkin (izohda qayd etilgan).
+
+**Frontend** (`frontend/src/`):
+
+| Fayl | Vazifasi |
+|---|---|
+| `hooks/useLiveRanking.ts` | Dastlab REST orqali yuklaydi, so'ng Socket.IO'ga ulanadi |
+| `pages/ranking/RankingPage.tsx` | "Jonli" indikatori, TOP-ro'yxat, o'z qatorini ajratib ko'rsatish |
+
+## WebSocket autentifikatsiya
+
+Frontend socket ulanishda JWT'ni `auth: { token }` orqali yuboradi (handshake
+paytida, HTTP headerda emas — Socket.IO'ning tavsiya etilgan usuli). Gateway
+buni `handleConnection`da tekshiradi; token noto'g'ri bo'lsa ulanish darhol
+uziladi (`client.disconnect()`) — anonim WebSocket ulanishlarga ruxsat yo'q.
+
+## Tekshirildi
+
+- Backend: `npm install` + `npx tsc --noEmit` — xatosiz
+- Frontend: `npx tsc -b --noEmit` + `npm run build` — xatosiz, 146 modul
+
+## Production'da deploy qilishda yodda tuting
+
+WebSocket (Socket.IO) uchun Render'ning bepul Web Service tarifi ishlaydi,
+lekin **uxlab qolish** muammosi bu yerda ham bor (15 daqiqa harakatsizlikdan
+keyin) — ulanish uzilib qoladi va frontend qayta ulanishga harakat qiladi
+(`socket.io-client` buni avtomatik bajaradi), lekin birinchi ulanishda
+kechikish bo'lishi mumkin.
+
+## Keyingi qadam
+
+**Phase 13 — Gamification (XP/Level/Achievement/Streak/Daily Challenge)**:
+Hozircha XP va Level oddiy formula bilan hisoblanadi (Phase 10da yozilgan);
+bu fazada achievement avtomatik berilishi (masalan "First Test", "Perfect
+Score"), streak kunlik hisoblash cron job'i, va Daily Challenge tizimi
+qo'shiladi.
+
+---
+
+# PHASE 13 — GAMIFICATION
+
+## Nima yaratildi
+
+**Backend** (`backend/src/modules/gamification/`):
+
+| Fayl | Vazifasi |
+|---|---|
+| `achievements/achievement-definitions.ts` | 6 ta achievement ta'rifi (38-band) |
+| `achievements/achievements.service.ts` | Server ishga tushganda seed qiladi (`onModuleInit`), test tugagach shartlarni tekshirib avtomatik beradi |
+| `streak/streak.service.ts` | Kunlik faollik hisoblash (39-band) — bir kunda bir marta oshadi, ketma-ketlik uzilsa 1ga tushadi |
+| `challenges/challenges.service.ts` | Kunlik challenge (40-band) — bugungi challenge, bonus ball/XP |
+| `gamification.module.ts` | `score.changed` eventini tinglab, streak+achievement'ni ishga tushiruvchi listener |
+
+**Frontend:**
+- `hooks/useDailyChallenge.ts` + `components/dashboard/DailyChallengeCard.tsx` — dashboardda "🔥 BUGUNGI CHALLENGE" kartochkasi, bajarilgan bo'lsa bosib bo'lmaydi
+
+## Achievement avtomatik berilishi qanday ishlaydi
+
+```
+Test submit → ScoreTransaction yaratiladi → 'score.changed' event
+  → GamificationEventListener ushlaydi
+    → StreakService.recordActivity() — kunlik faollik yangilanadi
+    → AchievementsService.checkAndAwardAfterTest() — 6 ta shart tekshiriladi:
+        FIRST_TEST, PERFECT_SCORE, TESTS_10, POINTS_1000, STREAK_7, TOP_STUDENT
+      Har biri uchun StudentAchievement bor-yo'qligi tekshiriladi (bitta marta
+      beriladi), yo'q bo'lsa yaratiladi + 20 XP qo'shiladi
+```
+
+**Nega achievement tekshiruvi ham event orqali (to'g'ridan-to'g'ri chaqiruv emas):**
+`TestSessionService` allaqachon `RankingModule`ga bog'liq edi (Phase 11-12);
+agar `AchievementsService`ni ham to'g'ridan-to'g'ri inject qilsak, Test Engine
+tobora ko'proq modulga bog'lanib ketardi. Event orqali bu bog'liqlik butunlay
+yo'qoladi — `TestSessionService` "ball o'zgardi" deb e'lon qiladi, xolos;
+kim buni qanday ishlatishi (ranking, gamification, kelajakda notifications)
+Test Engine'ning ishi emas.
+
+## Daily Challenge bonusi
+
+`TestSessionService.gradeAndFinish()` ichida, agar topshirilayotgan test
+bugungi challenge bilan bog'liq bo'lsa (`ChallengesService.findActiveChallengeForTest`),
+oddiy ball ustiga **qo'shimcha** `ScoreTransaction(type=CHALLENGE)` va
+`XPTransaction(source=CHALLENGE)` yaratiladi — bularning barchasi bitta
+DB-transaction ichida (yoki hammasi, yoki hech biri saqlanadi).
+
+## Bilinadigan cheklov
+
+- **Streak "uzilishi"** hozircha faqat student keyingi safar faollik
+  ko'rsatganda aniqlanadi (masalan, agar 3 kun hech narsa qilmasa, 4-kuni
+  kirganda `currentStreak` avtomatik 1ga tushadi) — lekin bu haqda alohida
+  bildirishnoma yubormaydi. To'liq "kechagi streak uzildi" push xabari uchun
+  kunlik cron job kerak (Phase 15: Notifications bilan birga qo'shiladi)
+
+## Tekshirildi
+
+- Backend: `npx tsc --noEmit` — xatosiz
+- Frontend: `npx tsc -b --noEmit` + `npm run build` — xatosiz, 148 modul
+
+## Keyingi qadam
+
+**Phase 14-15 — Notifications + Analytics**: Telegram orqali push
+xabarnomalar (test biriktirilganda, natija chiqqanda, reyting o'zgarganda),
+va Admin/Teacher uchun test/savol analitikasi (51,52-band: pass rate,
+qiyin savollar aniqlash).

@@ -5,6 +5,7 @@ import { StatChips } from '../components/dashboard/StatChips';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
 import { SubjectScoreList } from '../components/dashboard/SubjectScoreList';
 import { AchievementsRow } from '../components/dashboard/AchievementsRow';
+import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 
 export function StudentDashboard() {
   const { data, isLoading, isError, refetch } = useDashboard();
@@ -47,6 +48,8 @@ export function StudentDashboard() {
           streak={data.student.streak}
           subjectCount={data.subjects.length}
         />
+
+        <DailyChallengeCard />
 
         {data.continueLesson ? (
           <ContinueLearningCard

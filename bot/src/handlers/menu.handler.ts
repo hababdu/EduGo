@@ -1,5 +1,5 @@
-import { Bot } from 'grammy';
-import { MENU_LABELS } from '../keyboards/main-menu.keyboard';
+import { Bot, InlineKeyboard } from 'grammy';
+import { MENU_LABELS, WEBAPP_URL } from '../keyboards/main-menu.keyboard';
 import { api } from '../services/api-client';
 
 const NOT_REGISTERED_MSG =
@@ -21,6 +21,20 @@ function withErrorHandling(fn: (ctx: any) => Promise<void>) {
 }
 
 export function registerMenuHandlers(bot: Bot) {
+  /**
+   * "Darsni boshlash" — ReplyKeyboard tugmasi shunchaki shu handlerni ishga
+   * tushiradi, u esa INLINE tugma yuboradi. Inline keyboard'dagi web_app
+   * tugmasi initData'ni TO'LIQ beradi (ReplyKeyboard'dan farqli o'laroq).
+   */
+  bot.hears(
+    MENU_LABELS.START_LESSON,
+    async (ctx) => {
+      await ctx.reply('Platformani ochish uchun quyidagi tugmani bosing 👇', {
+        reply_markup: new InlineKeyboard().webApp('📚 Ochish', WEBAPP_URL),
+      });
+    },
+  );
+
   bot.hears(
     MENU_LABELS.PROFILE,
     withErrorHandling(async (ctx) => {
@@ -126,6 +140,7 @@ export function registerMenuHandlers(bot: Bot) {
   bot.hears(MENU_LABELS.HELP, async (ctx) => {
     await ctx.reply(
       'ℹ️ *Yordam*\n\n' +
+        '📚 Darsni boshlash — platformaga kirish\n' +
         '👤 Profilim — shaxsiy ma\'lumotlar\n' +
         '🏆 Ballarim / Reyting — ball va o\'rningiz\n' +
         '📊 Natijalarim — testlar tarixi\n' +
