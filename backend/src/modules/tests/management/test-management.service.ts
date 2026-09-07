@@ -3,6 +3,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../admin/audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { CreateTestDto, AssignTestDto, ReopenTestDto } from './dto/test.dto';
+import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class TestManagementService {
@@ -11,6 +12,98 @@ export class TestManagementService {
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  /** Admin — barcha testlar. Teacher — FAQAT o'zi yaratgan testlar (44-band). */
+  async list(requester: CurrentUserPayload, filters: { subjectId?: string; status?: string }) {
+    const where: any = { deletedAt: null };
+    if (requester.role === 'TEACHER') {
+      where.createdById = requester.id;
+    }
+    if (filters.subjectId) where.subjectId = filters.subjectId;
+    if (filters.status) where.status = filters.status;
+
+    return this.prisma.test.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        subject: { select: { title: true } },
+        _count: { select: { questions: true, assignments: true, attempts: true } },
+      },
+    });
+  }
+
+  async getDetail(testId: string, requester: CurrentUserPayload) {
+    const test = await this.prisma.test.findUnique({
+      where: { id: testId },
+      include: {
+        questions: {
+          orderBy: { order: 'asc' },
+          include: { question: { include: { options: true } } },
+        },
+        assignments: {
+          include: { group: { select: { name: true } } },
+          orderBy: { assignedAt: 'desc' },
+        },
+      },
+    });
+    if (!test || test.deletedAt) throw new NotFoundException('Test topilmadi');
+
+    if (requester.role === 'TEACHER' && test.createdById !== requester.id) {
+      throw new BadRequestException('Bu test sizga tegishli emas');
+    }
+
+    return test;
+  }
+
+  /** Student uchun — o'ziga tayinlangan barcha testlar, holati bilan */
+  async listAssignedForStudent(studentId: string) {
+    const groupIds = (
+      await this.prisma.groupMember.findMany({ where: { studentId }, select: { groupId: true } })
+    ).map((g) => g.groupId);
+
+    const assignments = await this.prisma.testAssignment.findMany({
+      where: {
+        status: 'ACTIVE',
+        OR: [
+          { targetType: 'ALL' },
+          { targetType: 'GROUP', groupId: { in: groupIds } },
+          { targetType: 'INDIVIDUAL', studentId },
+        ],
+      },
+      include: { test: true },
+      orderBy: { assignedAt: 'desc' },
+    });
+
+    // Bir xil test bir necha marta tayinlangan bo'lishi mumkin — testId bo'yicha unique qilamiz
+    const uniqueByTest = new Map<string, (typeof assignments)[number]>(
+      assignments.map((a) => [a.testId, a]),
+    );
+
+    const attempts = await this.prisma.testAttempt.findMany({
+      where: { studentId, testId: { in: Array.from(uniqueByTest.keys()) } },
+    });
+    const attemptMap = new Map<string, (typeof attempts)[number]>(
+      attempts.map((a) => [a.testId, a]),
+    );
+
+    return Array.from(uniqueByTest.values()).map((a) => {
+      const attempt = attemptMap.get(a.testId);
+      return {
+        testId: a.testId,
+        title: a.test.title,
+        durationSeconds: a.test.durationSeconds,
+        deadline: a.deadline,
+        status: attempt
+          ? attempt.isRetakeAllowed
+            ? ('RETAKE_AVAILABLE' as const)
+            : ('COMPLETED' as const)
+          : ('PENDING' as const),
+        score: attempt?.score,
+        maxScore: attempt?.maxScore,
+        passed: attempt?.passed,
+      };
+    });
+  }
 
   async create(dto: CreateTestDto, actorId: string) {
     const questions = await this.prisma.question.findMany({

@@ -8,8 +8,11 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
-import { AdminGroups } from './pages/admin/AdminGroups';
-import { AdminSubjects } from './pages/admin/AdminSubjects';
+import { AdminCourses } from './pages/admin/content/AdminCourses';
+import { AdminCourseDetail } from './pages/admin/content/AdminCourseDetail';
+import { AdminSubjectDetail } from './pages/admin/content/AdminSubjectDetail';
+import { AdminSectionDetail } from './pages/admin/content/AdminSectionDetail';
+import { AdminTopicDetail } from './pages/admin/content/AdminTopicDetail';
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
@@ -65,8 +68,11 @@ export function App() {
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
-          <Route path="/admin/groups" element={<AdminGroups />} />
-          <Route path="/admin/subjects" element={<AdminSubjects />} />
+          <Route path="/admin/content/courses" element={<AdminCourses />} />
+          <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
+          <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
+          <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
+          <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </BrowserRouter>
@@ -104,6 +110,7 @@ function StudentRoutes() {
         <Route path="/tests/:testId" element={<TestTaking />} />
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
+        {/* /lessons, /profile — Phase 13'da to'ldiriladi */}
       </Routes>
       {!hideBottomNav && <BottomNav />}
     </>

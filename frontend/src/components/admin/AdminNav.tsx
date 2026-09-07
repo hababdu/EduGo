@@ -1,58 +1,36 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
+
+const items = [
+  { to: '/admin', icon: '📊', label: 'Dashboard', end: true },
+  { to: '/admin/students', icon: '👨‍🎓', label: 'Studentlar' },
+  { to: '/admin/content/courses', icon: '📚', label: 'Kontent', matchPrefix: '/admin/content' },
+];
 
 export function AdminNav() {
+  const location = useLocation();
+
   return (
-    <header className="border-b border-white/5 bg-surface/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <span className="font-display font-semibold text-gold text-sm">
-            Admin Panel
-          </span>
-          <nav className="flex gap-1 text-xs">
-            <NavLink
-              to="/admin"
-              end
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive ? 'bg-gold/10 text-gold font-medium' : 'text-ink-muted hover:text-ink'
-                }`
-              }
-            >
-              Overview
-            </NavLink>
-            <NavLink
-              to="/admin/students"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive ? 'bg-gold/10 text-gold font-medium' : 'text-ink-muted hover:text-ink'
-                }`
-              }
-            >
-              O'quvchilar
-            </NavLink>
-            <NavLink
-              to="/admin/groups"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive ? 'bg-gold/10 text-gold font-medium' : 'text-ink-muted hover:text-ink'
-                }`
-              }
-            >
-              Guruhlar
-            </NavLink>
-            <NavLink
-              to="/admin/subjects"
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg transition-colors ${
-                  isActive ? 'bg-gold/10 text-gold font-medium' : 'text-ink-muted hover:text-ink'
-                }`
-              }
-            >
-              Fanlar & O'qituvchilar
-            </NavLink>
-          </nav>
-        </div>
-      </div>
-    </header>
+    <nav className="border-b border-white/5 px-6 flex gap-1 overflow-x-auto no-scrollbar">
+      {items.map((item) => {
+        const isActive = item.matchPrefix
+          ? location.pathname.startsWith(item.matchPrefix)
+          : item.end
+            ? location.pathname === item.to
+            : location.pathname.startsWith(item.to);
+
+        return (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={`flex items-center gap-2 px-3 py-3.5 text-sm border-b-2 -mb-px shrink-0 ${
+              isActive ? 'border-gold text-ink' : 'border-transparent text-ink-muted'
+            }`}
+          >
+            <span aria-hidden="true">{item.icon}</span>
+            {item.label}
+          </NavLink>
+        );
+      })}
+    </nav>
   );
 }

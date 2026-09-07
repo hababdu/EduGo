@@ -291,7 +291,6 @@ model Question {
   createdById   String
   createdBy     User         @relation("QuestionCreatedBy", fields: [createdById], references: [id])
   status        ContentStatus @default(DRAFT)
-  createdAt   DateTime      @default(now())
   deletedAt     DateTime?
 
   options       AnswerOption[]
@@ -341,7 +340,6 @@ model Test {
   questionCount    Int?       // random bo'lsa nechta savol tanlanadi
   startDate        DateTime?
   endDate          DateTime?
-  challenges       Challenge[]
   status           TestStatus @default(DRAFT)
   createdById      String
   createdBy        User       @relation("TestCreatedBy", fields: [createdById], references: [id])
@@ -557,7 +555,6 @@ model Challenge {
   title       String
   date        DateTime // shu kunga tegishli challenge
   testId      String?  // challenge alohida mini-test sifatida modellashtiriladi
-  test        Test?    @relation(fields: [testId], references: [id], onDelete: SetNull)
   rewardScore Int
   rewardXp    Int
   createdAt   DateTime @default(now())
