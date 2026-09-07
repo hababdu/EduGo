@@ -18,10 +18,10 @@ export class ChallengesService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const challenge = await this.prisma.challenge.findFirst({
-      where: { date: { gte: today, lt: tomorrow } },
-      include: { test: { select: { id: true, title: true, durationSeconds: true } } } as any,
-    });
+    return (this.prisma.challenge as any).findMany({
+  where: { ... },
+  include: { test: { select: { id: true, title: true, durationSeconds: true } } },
+});
 
     if (!challenge) return null;
 
