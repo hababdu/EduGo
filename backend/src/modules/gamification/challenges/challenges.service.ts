@@ -17,11 +17,37 @@ export class ChallengesService {
     const today = startOfDay(new Date());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+async getDailyChallenge(studentId: string) {
+    const challenge = await (this.prisma.challenge as any).findFirst({
+      where: { isActive: true },
+      include: {
+        test: {
+          select: { id: true, title: true, durationSeconds: true },
+        },
+      },
+    });
 
-    return (this.prisma.challenge as any).findMany({
-  where: { ... },
-  include: { test: { select: { id: true, title: true, durationSeconds: true } } },
-});
+    if (!challenge) return null;
+
+    let isCompleted = false;
+    if (challenge.testId) {
+      const existingSession = await this.prisma.testSession.findFirst({
+        where: { testId: challenge.testId, studentId } as any,
+      });
+      if (existingSession && existingSession.status === ('COMPLETED' as any)) {
+        isCompleted = true;
+      }
+    }
+
+    return {
+      id: challenge.id,
+      title: challenge.title,
+      rewardScore: challenge.rewardScore,
+      rewardXp: challenge.rewardXp,
+      test: challenge.test,
+      isCompleted,
+    };
+  }
 
     if (!challenge) return null;
 
