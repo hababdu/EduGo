@@ -20,7 +20,6 @@ export class ChallengesService {
 
     const challenge = await this.prisma.challenge.findFirst({
       where: { date: { gte: today, lt: tomorrow } },
-      include: { test: { select: { id: true, title: true, durationSeconds: true } } },
     });
 
     if (!challenge) return null;
