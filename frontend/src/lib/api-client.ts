@@ -88,3 +88,34 @@ export async function loginWithTelegram(initData: string) {
 
   return res.json();
 }
+// ... siz yozgan mavjud apiFetch va boshqa kodlar ...
+
+/**
+ * Axios uslubidagi metoddan foydalanuvchi komponentlar va hook'lar uchun wrapper.
+ * apiClient.get('/url') va apiClient.post('/url', body) ko'rinishida ishlaydi.
+ */
+export const apiClient = {
+  get: <T>(path: string) => 
+    apiFetch<T>(path, { method: 'GET' }),
+
+  post: <T>(path: string, body?: any) => 
+    apiFetch<T>(path, { 
+      method: 'POST', 
+      body: body ? JSON.stringify(body) : undefined 
+    }),
+
+  put: <T>(path: string, body?: any) => 
+    apiFetch<T>(path, { 
+      method: 'PUT', 
+      body: body ? JSON.stringify(body) : undefined 
+    }),
+
+  patch: <T>(path: string, body?: any) => 
+    apiFetch<T>(path, { 
+      method: 'PATCH', 
+      body: body ? JSON.stringify(body) : undefined 
+    }),
+
+  delete: <T>(path: string) => 
+    apiFetch<T>(path, { method: 'DELETE' }),
+};

@@ -1,3 +1,9 @@
+import { QuestionType } from './test';
+
+// ==========================================
+// 1. MAVJUD STATISTIKA VA TALABALAR TURLARI
+// ==========================================
+
 export interface AdminOverview {
   totals: {
     students: number;
@@ -31,4 +37,45 @@ export interface AdminStudentListResponse {
   pageSize: number;
   total: number;
   totalPages: number;
+}
+
+// ==========================================
+// 2. SAVOLLAR BANKI VA EXCEL IMPORT TURLARI
+// ==========================================
+
+export interface QuestionCategoryDTO {
+  id: string;
+  name: string;
+  description?: string;
+  _count?: {
+    questions: number;
+  };
+}
+
+export interface CreateOptionDTO {
+  text: string;
+  isCorrect: boolean;
+  order: number;
+}
+
+export interface CreateQuestionDTO {
+  categoryId: string;
+  text: string;
+  type: QuestionType;
+  points: number;
+  explanation?: string;
+  options: CreateOptionDTO[];
+}
+
+export interface BulkImportResponseDTO {
+  totalParsed: number;
+  createdCount: number;
+  failedCount: number;
+  errors: string[];
+}
+
+export interface ReOpenSessionDTO {
+  userId: string;
+  testId: string;
+  reason?: string;
 }
