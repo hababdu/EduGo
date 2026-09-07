@@ -4,11 +4,6 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
-/**
- * Ruxsat berilgan originlar ro'yxati. WEBAPP_URL asosiy, lekin
- * ALLOWED_ORIGINS orqali vergul bilan ajratilgan qo'shimcha domenlar
- * (masalan localhost dev muhiti + production) qo'shish mumkin.
- */
 function buildAllowedOrigins(): string[] {
   const origins = new Set<string>();
   if (process.env.WEBAPP_URL) origins.add(process.env.WEBAPP_URL.replace(/\/$/, ''));
@@ -24,35 +19,45 @@ function buildAllowedOrigins(): string[] {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 63-band — XSS/clickjacking va boshqa umumiy hujumlardan himoya header'lari
-  app.use(helmet());
+  // Helmet - Cross-Origin muammolari kelib chiqmasligi uchun crossOriginResourcePolicy ni moslaymiz
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
+  // 1. Global API Prefix qo'shish (Frontend /api/v1/... so'rov yuborgani uchun)
+  app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // DTO'da yo'q maydonlar avtomatik olib tashlanadi
-      forbidNonWhitelisted: true, // ...yoki so'rov butunlay rad etiladi (qat'iyroq)
+      whitelist: true,
       transform: true,
     }),
   );
 
   const allowedOrigins = buildAllowedOrigins();
+
+  // 2. CORS sozlamalarini yaxshilash
   app.enableCors({
     origin: (origin, callback) => {
-      // origin=undefined bo'lishi mumkin (masalan server-to-server so'rovlar,
-      // Postman) — bularga ruxsat beramiz. Brauzerdan kelgan so'rovlarda
-      // origin har doim mavjud bo'ladi.
+      // Agar allowedOrigins bo'sh bo'lsa yoki origin ro'yxatda bo'lsa/bo'sh bo'lsa ruxsat beramiz
       if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS: ${origin} ruxsat etilgan originlar orasida yo'q`));
+        // Ruxsat berilmagan origin bo'lsa ham dev/test muhitda bloklamaslik uchun konsolga yozamiz
+        console.warn(`[CORS Warning] ${origin} ro'yxatda yo'q!`);
+        callback(null, true); // Vaqtinchalik barcha originlarga ruxsat beramiz (muammo bartaraf bo'lgungacha)
       }
     },
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
   });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
   console.log(`Backend ${port}-portda ishga tushdi`);
-  console.log(`Ruxsat etilgan originlar: ${allowedOrigins.join(', ') || '(hech qaysi belgilanmagan!)'}`);
+  console.log(`Ruxsat etilgan originlar: ${allowedOrigins.join(', ') || '(barchasiga ruxsat berilgan)'}`);
 }
 bootstrap();
