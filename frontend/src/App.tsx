@@ -4,6 +4,7 @@ import { useAuthStore } from './store/auth.store';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { TestTaking } from './pages/tests/TestTaking';
 import { RankingPage } from './pages/ranking/RankingPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
@@ -98,6 +99,7 @@ function StudentRoutes() {
         <Route path="/" element={<StudentDashboard />} />
         <Route path="/tests/:testId" element={<TestTaking />} />
         <Route path="/ranking" element={<RankingPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         {/* /lessons, /profile — Phase 13'da to'ldiriladi */}
       </Routes>
       {!hideBottomNav && <BottomNav />}

@@ -79,7 +79,7 @@ export class AchievementsService implements OnModuleInit {
       this.prisma.studentAchievement.create({
         data: { studentId, achievementId: achievement.id },
       }),
-      this.prisma.xPTransaction.create({
+      this.prisma.xpTransaction.create({
         data: { studentId, amount: 20, source: 'ACHIEVEMENT' },
       }),
       this.prisma.studentProfile.update({

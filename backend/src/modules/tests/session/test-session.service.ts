@@ -4,6 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { seededShuffle } from './seeded-shuffle.util';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { ChallengesService } from '../../gamification/challenges/challenges.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 
 @Injectable()
 export class TestSessionService {
@@ -11,6 +12,7 @@ export class TestSessionService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly challengesService: ChallengesService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   /**
@@ -242,7 +244,7 @@ export class TestSessionService {
                 description: `Kunlik challenge: ${challenge.title}`,
               },
             }),
-            this.prisma.xPTransaction.create({
+            this.prisma.xpTransaction.create({
               data: { studentId: session.studentId, amount: challenge.rewardXp, source: 'CHALLENGE' },
             }),
             this.prisma.studentProfile.update({
@@ -257,6 +259,14 @@ export class TestSessionService {
     ]);
 
     await this.emitScoreChanged(session.studentId, score + (challenge?.rewardScore ?? 0), test.subjectId);
+
+    // 50-band — "🎉 Test natijangiz: 90 ball."
+    await this.notifications.notify(
+      session.studentId,
+      'TEST_RESULT',
+      passed ? '🎉 Test tugatildi' : '📚 Test tugatildi',
+      `"${test.title}" natijangiz: ${score}/${maxScore} (${percent}%) — ${passed ? 'o\'tdingiz ✅' : 'o\'ta olmadingiz'}`,
+    );
 
     return { score, maxScore, percent, passed, timeSpentSeconds, autoSubmitted: isAutoSubmit };
   }

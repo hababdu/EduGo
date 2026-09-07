@@ -1,110 +1,128 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { apiClient } from '../lib/api-client';
-import { TestSessionDTO, SubmitTestResponseDTO } from '../types/test';
+import { apiFetch } from '../lib/api-client';
 
+export interface TestQuestionOption {
+  id: string;
+  text: string;
+}
+
+export interface TestQuestion {
+  id: string;
+  type: 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'TEXT_ANSWER';
+  text: string;
+  points: number;
+  options: TestQuestionOption[];
+}
+
+export interface TestSessionData {
+  sessionId: string;
+  testTitle: string;
+  remainingSeconds: number;
+  questions: TestQuestion[];
+  savedAnswers?: { questionId: string; selectedOptionIds: string[]; textAnswer: string | null }[];
+}
+
+export interface SubmitResult {
+  score: number;
+  maxScore: number;
+  percent: number;
+  passed: boolean;
+  autoSubmitted: boolean;
+}
+
+/**
+ * Test topshirish oqimining butun mantig'i shu yerda.
+ * MUHIM: `remainingSeconds` faqat SERVERDAN keladi — frontend hech qachon
+ * o'zi vaqtni "hisoblab chiqarmaydi", faqat serverdan olingan qiymatdan
+ * lokal countdown yuritadi va muntazam serverdan qayta tasdiqlaydi.
+ */
 export function useTestSession(testId: string) {
-  const [session, setSession] = useState<TestSessionDTO | null>(null);
-  const [answers, setAnswers] = useState<Record<string, { selectedOptionIds: string[]; textAnswer?: string }>>({});
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [result, setResult] = useState<SubmitTestResponseDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<TestSessionData | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [remaining, setRemaining] = useState(0);
+  const [status, setStatus] = useState<'loading' | 'active' | 'submitted' | 'error'>('loading');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<SubmitResult | null>(null);
+  const submittingRef = useRef(false);
 
-  // NodeJS.Timeout o'rniga ReturnType<typeof setTimeout/setInterval> ishlatilishi kerak
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    apiFetch<TestSessionData>(`/api/v1/tests/${testId}/start`, { method: 'POST' })
+      .then((data) => {
+        setSession(data);
+        setRemaining(data.remainingSeconds);
+        const initial: Record<string, string[]> = {};
+        data.savedAnswers?.forEach((a) => {
+          initial[a.questionId] = a.selectedOptionIds;
+        });
+        setAnswers(initial);
+        setStatus('active');
+      })
+      .catch((err) => {
+        setErrorMessage(err.message ?? 'Testni boshlab bo\'lmadi');
+        setStatus('error');
+      });
+  }, [testId]);
 
-  // 1. Session'ni yuklash yoki yangi boshlash
-  const fetchOrStartSession = useCallback(async () => {
+  // Lokal countdown — faqat KO'RSATISH uchun, hisob-kitob uchun EMAS
+  useEffect(() => {
+    if (status !== 'active') return;
+    const interval = setInterval(() => {
+      setRemaining((r) => Math.max(0, r - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [status]);
+
+  // Har 20 soniyada serverdan haqiqiy vaqtni qayta tasdiqlaymiz
+  useEffect(() => {
+    if (status !== 'active') return;
+    const interval = setInterval(async () => {
+      try {
+        const fresh = await apiFetch<TestSessionData>(`/api/v1/tests/${testId}/session`);
+        setRemaining(fresh.remainingSeconds);
+      } catch {
+        // Sessiya tugagan bo'lishi mumkin — submit() o'zi keyingi urinishda buni ushlaydi
+      }
+    }, 20_000);
+    return () => clearInterval(interval);
+  }, [status, testId]);
+
+  const selectAnswer = useCallback(
+    (questionId: string, optionIds: string[]) => {
+      setAnswers((prev) => ({ ...prev, [questionId]: optionIds }));
+      // 23-band: auto-save — har javobda darhol serverga yuboriladi
+      apiFetch(`/api/v1/tests/${testId}/answer`, {
+        method: 'POST',
+        body: JSON.stringify({ questionId, selectedOptionIds: optionIds }),
+      }).catch(() => {
+        /* tarmoq xatosi — keyingi urinishda qayta yuboriladi, javob lokal state'da saqlangan */
+      });
+    },
+    [testId],
+  );
+
+  const submit = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
-      setIsLoading(true);
-      const sessionData = await apiClient.post<TestSessionDTO>(`/api/v1/tests/${testId}/start`);
-
-      setSession(sessionData);
-      setAnswers(sessionData.savedAnswers || {});
-
-      // Server-side timerni hisoblash
-      const startTime = new Date(sessionData.startedAt).getTime();
-      const now = new Date().getTime();
-      const elapsedSeconds = Math.floor((now - startTime) / 1000);
-      const remainingSeconds = sessionData.durationSeconds - elapsedSeconds;
-
-      setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+      const res = await apiFetch<SubmitResult>(`/api/v1/tests/${testId}/submit`, {
+        method: 'POST',
+      });
+      setResult(res);
+      setStatus('submitted');
     } catch (err: any) {
-      setError(err.message || 'Test sessiyasini boshlashda xatolik yuz berdi');
+      setErrorMessage(err.message ?? 'Yuborishda xatolik');
+      setStatus('error');
     } finally {
-      setIsLoading(false);
+      submittingRef.current = false;
     }
   }, [testId]);
 
+  // Vaqt tugaganda avtomatik submit
   useEffect(() => {
-    fetchOrStartSession();
-  }, [fetchOrStartSession]);
-
-  // 2. Testni yakunlash (Submit)
-  const submitTest = useCallback(async (isAutoSubmit = false) => {
-    if (!session || isSubmitting) return;
-    try {
-      setIsSubmitting(true);
-      const resultData = await apiClient.post<SubmitTestResponseDTO>(`/api/v1/tests/sessions/${session.id}/submit`, {
-        answers,
-        isAutoSubmit,
-      });
-      setResult(resultData);
-    } catch (err: any) {
-      setError(err.message || 'Testni yakunlashda xatolik yuz berdi');
-    } finally {
-      setIsSubmitting(false);
+    if (status === 'active' && remaining === 0) {
+      submit();
     }
-  }, [session, isSubmitting, answers]);
+  }, [remaining, status, submit]);
 
-  // 3. CountDown Timer
-  useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || result) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timer);
-          submitTest(true); // Vaqt tugaganda majburiy Submit
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, result, submitTest]);
-
-  // 4. Javoblarni auto-save qilish (Debounce bilan)
-  const saveAnswerLocally = (questionId: string, selectedOptionIds: string[], textAnswer?: string) => {
-    const updatedAnswers = {
-      ...answers,
-      [questionId]: { selectedOptionIds, textAnswer },
-    };
-    setAnswers(updatedAnswers);
-
-    // Debounce bilan backendga saqlash
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      if (!session) return;
-      apiClient.post(`/api/v1/tests/sessions/${session.id}/save-answer`, {
-        questionId,
-        selectedOptionIds,
-        textAnswer,
-      }).catch(console.error);
-    }, 800);
-  };
-
-  return {
-    session,
-    answers,
-    timeLeft,
-    isLoading,
-    isSubmitting,
-    result,
-    error,
-    saveAnswerLocally,
-    submitTest,
-  };
+  return { session, answers, remaining, status, errorMessage, result, selectAnswer, submit };
 }

@@ -6,6 +6,8 @@ import { StreakService } from './streak/streak.service';
 import { ChallengesController } from './challenges/challenges.controller';
 import { ChallengesService } from './challenges/challenges.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface ScoreChangedPayload {
   studentId: string;
@@ -24,12 +26,11 @@ class GamificationEventListener {
     private readonly prisma: PrismaService,
     private readonly achievementsService: AchievementsService,
     private readonly streakService: StreakService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   @OnEvent('score.changed')
   async onScoreChanged(payload: ScoreChangedPayload) {
-    // Faqat test orqali kelgan ball streak/achievement'ga sabab bo'ladi
-    // (admin qo'lda bergan ball uchun achievement berilmaydi — bu maqsadga muvofiq)
     if (payload.source !== 'TEST_REWARD') return;
 
     await this.streakService.recordActivity(payload.studentId);
@@ -44,9 +45,21 @@ class GamificationEventListener {
       });
     }
   }
+
+  /** 50-band — achievement qo'lga kiritilganda alohida bildirishnoma */
+  @OnEvent('achievement.earned')
+  async onAchievementEarned(payload: { studentId: string; title: string }) {
+    await this.notifications.notify(
+      payload.studentId,
+      'ANNOUNCEMENT',
+      '🏅 Yangi yutuq!',
+      `Tabriklaymiz! Siz "${payload.title}" yutug'ini qo'lga kiritdingiz.`,
+    );
+  }
 }
 
 @Module({
+  imports: [NotificationsModule],
   controllers: [AchievementsController, ChallengesController],
   providers: [
     AchievementsService,

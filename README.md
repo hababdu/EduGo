@@ -627,3 +627,136 @@ DB-transaction ichida (yoki hammasi, yoki hech biri saqlanadi).
 xabarnomalar (test biriktirilganda, natija chiqqanda, reyting o'zgarganda),
 va Admin/Teacher uchun test/savol analitikasi (51,52-band: pass rate,
 qiyin savollar aniqlash).
+
+---
+
+# PHASE 14-15 — NOTIFICATIONS + ANALYTICS
+
+## Nima yaratildi
+
+**Notifications** (`backend/src/modules/notifications/`):
+
+| Fayl | Vazifasi |
+|---|---|
+| `notifications.service.ts` | `Notification` DB yozuvi + Telegram Bot API orqali to'g'ridan-to'g'ri push |
+
+**Nega bot serviciga bog'liq emas:** Backend allaqachon `BOT_TOKEN`ga ega
+(Phase 3'dagi `initData` tekshiruvi uchun) — shu tufayli Telegram'ga
+`sendMessage` so'rovini **to'g'ridan-to'g'ri** (`api.telegram.org`) yuboradi,
+botning o'zi ishlab turishi shart emas. Xabar yuborish "best-effort" —
+muvaffaqiyatsiz bo'lsa ham bildirishnoma DB'da qoladi (`sentViaTelegram: false`),
+foydalanuvchi uni ilovada ko'ra oladi.
+
+**Ulangan joylar (50-band ro'yxatidan):**
+- 📝 Test biriktirilganda — `TestManagementService.assign()`
+- 🎉/📚 Test natijasi chiqqanda — `TestSessionService.gradeAndFinish()`
+- 🏅 Yangi yutuq — `GamificationModule`ning `achievement.earned` listeneri
+
+**Analytics** (`backend/src/modules/analytics/`):
+
+| Endpoint | Band | Qaytaradi |
+|---|---|---|
+| `GET /api/v1/analytics/tests/:testId` | 51 | participants, average/highest/lowest score, average time, pass/fail rate |
+| `GET /api/v1/analytics/tests/:testId/questions` | 52 | har bir savol uchun to'g'ri/xato soni, accuracy — **eng qiyin savol tepada** |
+
+**Frontend:**
+- `hooks/useNotifications.ts` + `pages/NotificationsPage.tsx` — bildirishnomalar ro'yxati, o'qilmagan hisoblagich (🔔 badge, `ScoreHero`da)
+
+## Ataylab qoldirilgan (keyingi bosqich)
+
+**Analytics uchun frontend UI hali yo'q.** Sabab: Admin/Teacher'da hali
+to'liq "Testlarim" ro'yxat sahifasi qurilmagan (Phase 9-10'da faqat backend
+CRUD yozilgan, ro'yxat UI'si emas). Analytics sahifasini o'sha ro'yxatga
+"bosilganda ochiladigan" qilib qo'shish mantiqan to'g'riroq — shuning uchun
+buni **test-management UI** bilan birga (kelajakdagi bosqichda) qo'shish
+rejalashtirilgan. Backend to'liq tayyor va sinovdan o'tgan — frontend
+ulanishi kam mehnat talab qiladi.
+
+## Tekshirildi
+
+- Backend: `npx tsc --noEmit` — xatosiz
+- Frontend: `npx tsc -b --noEmit` + `npm run build` — xatosiz, 150 modul
+
+## Keyingi qadam
+
+**Phase 16-18 — Security Hardening, Testing, Deployment**: Rate limiting,
+input sanitization qo'shimcha qatlamlari, muhim business logic uchun unit
+testlar (ayniqsa "bir marta ishlash" qoidasi), va production deployment
+checklist'i (bu loyihada allaqachon Render orqali amalda sinovdan o'tdi).
+
+---
+
+# PHASE 16-18 — SECURITY, TESTING, DEPLOYMENT
+
+## Phase 16 — Xavfsizlik mustahkamlash
+
+| Qo'shildi | Fayl | Nima uchun |
+|---|---|---|
+| `helmet()` | `main.ts` | XSS, clickjacking va boshqa umumiy HTTP hujumlaridan himoya header'lari |
+| CORS origin-validator funksiya | `main.ts` | Oldingi statik `origin: true` (juda ochiq) o'rniga — `WEBAPP_URL` + `ALLOWED_ORIGINS` ro'yxatidagi domenlarnigina qabul qiladi |
+| `ThrottlerModule` (global) | `app.module.ts` | Har bir IP daqiqasiga 100 so'rov — DoS'dan asosiy himoya |
+| `@Throttle()` (auth endpointlarda) | `auth.controller.ts` | `/auth/telegram`ga daqiqasiga 10 ta urinish — brute-force'dan qo'shimcha himoya |
+
+**Muhim eslatma CORS haqida:** Ishlab chiqish jarayonida (oldingi bosqichlarda)
+Telegram WebView'ning ba'zi holatlarida CORS bilan bog'liq muammo yuzaga
+kelgan edi — aslida sabab boshqa narsa (backend'da `BOT_TOKEN` yo'qligi va
+eski keshlangan klaviatura tugmasi) bo'lib chiqdi. Origin-validator funksiya
+bir nechta domenni qo'llab-quvvatlaydi (`ALLOWED_ORIGINS` orqali) — bu kelajakda
+shunga o'xshash noaniqlikni kamaytiradi.
+
+## Phase 17 — Testing
+
+18 ta unit test yozildi va barchasi o'tdi:
+
+| Test fayli | Nimani tekshiradi |
+|---|---|
+| `test-session.service.spec.ts` | **88-band talabi**: "bir marta ishlash" qoidasi — attempt mavjud+isRetakeAllowed=false → rad etiladi; admin ruxsat bergan bo'lsa → ishlaydi; test muddati o'tgan/DRAFT bo'lsa → rad etiladi |
+| `telegram-verify.util.spec.ts` | HMAC imzo to'g'ri/soxta/eskirgan holatlar — Phase 3'dagi autentifikatsiya yuragi |
+| `seeded-shuffle.util.spec.ts` | Determinizm (bir xil seed = bir xil tartib), immutability, elementlar yo'qolmasligi |
+| `roles.guard.spec.ts` | RBAC — rol mos kelmasa rad etish, SUPER_ADMIN har doim ruxsatli |
+
+```bash
+cd backend
+npm test        # barcha testlarni ishga tushiradi
+npm run test:watch  # rivojlantirish paytida
+```
+
+**Nega aynan shu testlar tanlandi:** Spetsifikatsiyaning 88-bandi aniq
+ko'rsatgan — "Ayniqsa testning 'bir marta ishlash' qoidasi alohida test
+qilinsin." Qolganlari — loyihadagi eng xavfli (xato qilinsa eng katta
+zarar keladigan) qismlar: autentifikatsiya va ruxsat tizimi.
+
+## Phase 18 — Deployment
+
+`DEPLOYMENT.md` — bu loyihani Render'da deploy qilishda **haqiqatda**
+duch kelingan barcha xatolar va ularning yechimlari asosida yozilgan
+to'liq checklist. Jumladan:
+
+- Uchta servisning to'g'ri ketma-ketlikda deploy qilinishi
+- Eng ko'p uchraydigan 7 ta xato va ularning aniq sababi/yechimi
+- `db push` vs `migrate deploy` farqi va nega hozircha birinchisi ishlatilgani
+- Bepul tarif cheklovlari (uxlab qolish) va ularni yumshatish
+
+## Tekshirildi
+
+- Backend: `npm install` + `npx tsc --noEmit` + `npm test` (18/18 o'tdi) — barchasi muvaffaqiyatli
+- Frontend: `npx tsc -b --noEmit` + `npm run build` — xatosiz
+- Bot: `npx tsc --noEmit` — xatosiz
+
+## LOYIHA HOLATI
+
+Original 97-bandlik spetsifikatsiyaning asosiy "core" qismi (Phase 1-18)
+yakunlandi: to'liq autentifikatsiya, RBAC, Content System, server-authoritative
+Test Engine, Score/Ranking (real-time), Gamification, Notifications,
+Analytics (backend), xavfsizlik va testlar.
+
+**Hali qo'shilmagan (spetsifikatsiyadagi "FUTURE" deb belgilangan bo'limlar
+yoki keyingi iteratsiya uchun qoldirilgan qismlar):**
+- To'liq Admin/Teacher "Test yaratish" UI (backend tayyor, frontend yo'q)
+- Homework tizimi (49-band)
+- Excel/CSV import/export (60,61-band)
+- Parent Dashboard, Certificates, Payments (96-band — spetsifikatsiyada ham "future" deb belgilangan)
+- Cron job'lar (muddati o'tgan test avto-yakunlash hozircha "lazy", streak reminder yo'q)
+- Admin uchun email/parol login (hozircha faqat Telegram)
+
+Bular navbatdagi bosqichlarda, xohishingizga ko'ra, xuddi shu tartibda davom ettirilishi mumkin.

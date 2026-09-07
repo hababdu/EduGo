@@ -1,3 +1,6 @@
+import { useNavigate } from 'react-router-dom';
+import { useNotifications } from '../../hooks/useNotifications';
+
 interface ScoreHeroProps {
   firstName: string;
   totalScore: number;
@@ -20,6 +23,9 @@ export function ScoreHero({
   xpForNextLevel,
 }: ScoreHeroProps) {
   const progressPercent = Math.min(100, Math.round((xpIntoLevel / xpForNextLevel) * 100));
+  const navigate = useNavigate();
+  const { data: notifications } = useNotifications();
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
 
   return (
     <section className="relative px-5 pt-6 pb-8 text-center overflow-hidden">
@@ -30,6 +36,19 @@ export function ScoreHero({
             'radial-gradient(circle at 50% 0%, rgba(255,176,32,0.16), transparent 70%)',
         }}
       />
+
+      <button
+        onClick={() => navigate('/notifications')}
+        className="absolute top-5 right-5 text-lg"
+        aria-label="Bildirishnomalar"
+      >
+        🔔
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-coral text-[10px] flex items-center justify-center text-ink">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
 
       <p className="text-sm text-ink-muted">Salom, {firstName}</p>
 

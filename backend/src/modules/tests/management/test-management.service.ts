@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../admin/audit/audit.service';
+import { NotificationsService } from '../../notifications/notifications.service';
 import { CreateTestDto, AssignTestDto, ReopenTestDto } from './dto/test.dto';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class TestManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async create(dto: CreateTestDto, actorId: string) {
@@ -99,7 +101,40 @@ export class TestManagementService {
       newValue: { targetType: dto.targetType, groupId: dto.groupId, studentId: dto.studentId },
     });
 
+    // 50-band — "📝 Yangi test biriktirildi." bildirishnomasi
+    const test = await this.prisma.test.findUnique({ where: { id: testId } });
+    const studentIds = await this.resolveTargetStudentIds(dto);
+    if (test && studentIds.length > 0) {
+      await this.notifications.notifyMany(
+        studentIds,
+        'TEST_ASSIGNED',
+        '📝 Yangi test biriktirildi',
+        `"${test.title}" testi sizga biriktirildi.${dto.deadline ? ` Muddat: ${new Date(dto.deadline).toLocaleString('uz-UZ')}` : ''}`,
+      );
+    }
+
     return assignment;
+  }
+
+  private async resolveTargetStudentIds(dto: AssignTestDto): Promise<string[]> {
+    if (dto.targetType === 'INDIVIDUAL' && dto.studentId) {
+      return [dto.studentId];
+    }
+    if (dto.targetType === 'GROUP' && dto.groupId) {
+      const members = await this.prisma.groupMember.findMany({
+        where: { groupId: dto.groupId },
+        select: { studentId: true },
+      });
+      return members.map((m) => m.studentId);
+    }
+    if (dto.targetType === 'ALL') {
+      const students = await this.prisma.user.findMany({
+        where: { role: 'STUDENT', deletedAt: null },
+        select: { id: true },
+      });
+      return students.map((s) => s.id);
+    }
+    return [];
   }
 
   /**
