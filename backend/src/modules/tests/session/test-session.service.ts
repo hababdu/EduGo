@@ -244,7 +244,7 @@ export class TestSessionService {
                 description: `Kunlik challenge: ${challenge.title}`,
               },
             }),
-            this.prisma.xpTransaction.create({
+            this.prisma.xPTransaction.create({
               data: { studentId: session.studentId, amount: challenge.rewardXp, source: 'CHALLENGE' },
             }),
             this.prisma.studentProfile.update({

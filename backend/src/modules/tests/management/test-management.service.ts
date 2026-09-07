@@ -24,7 +24,7 @@ export class TestManagementService {
 
     return this.prisma.test.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'desc' },
       include: {
         subject: { select: { title: true } },
         _count: { select: { questions: true, assignments: true, attempts: true } },
