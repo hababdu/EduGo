@@ -11,13 +11,13 @@ export function useTestSession(testId: string) {
   const [result, setResult] = useState<SubmitTestResponseDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // NodeJS.Timeout o'rniga ReturnType<typeof setTimeout/setInterval> ishlatilishi kerak
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 1. Session'ni yuklash yoki yangi boshlash
   const fetchOrStartSession = useCallback(async () => {
     try {
       setIsLoading(true);
-      // apiFetch o'rniga apiClient, va /api/v1 prefiksi bilan
       const sessionData = await apiClient.post<TestSessionDTO>(`/api/v1/tests/${testId}/start`);
 
       setSession(sessionData);
@@ -41,7 +41,24 @@ export function useTestSession(testId: string) {
     fetchOrStartSession();
   }, [fetchOrStartSession]);
 
-  // 2. CountDown Timer (Server vaqtiga asoslangan)
+  // 2. Testni yakunlash (Submit)
+  const submitTest = useCallback(async (isAutoSubmit = false) => {
+    if (!session || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      const resultData = await apiClient.post<SubmitTestResponseDTO>(`/api/v1/tests/sessions/${session.id}/submit`, {
+        answers,
+        isAutoSubmit,
+      });
+      setResult(resultData);
+    } catch (err: any) {
+      setError(err.message || 'Testni yakunlashda xatolik yuz berdi');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [session, isSubmitting, answers]);
+
+  // 3. CountDown Timer
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || result) return;
 
@@ -57,9 +74,9 @@ export function useTestSession(testId: string) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, result]);
+  }, [timeLeft, result, submitTest]);
 
-  // 3. Javoblarni auto-save qilish (Debounce bilan)
+  // 4. Javoblarni auto-save qilish (Debounce bilan)
   const saveAnswerLocally = (questionId: string, selectedOptionIds: string[], textAnswer?: string) => {
     const updatedAnswers = {
       ...answers,
@@ -77,23 +94,6 @@ export function useTestSession(testId: string) {
         textAnswer,
       }).catch(console.error);
     }, 800);
-  };
-
-  // 4. Testni yakunlash (Submit)
-  const submitTest = async (isAutoSubmit = false) => {
-    if (!session || isSubmitting) return;
-    try {
-      setIsSubmitting(true);
-      const resultData = await apiClient.post<SubmitTestResponseDTO>(`/api/v1/tests/sessions/${session.id}/submit`, {
-        answers,
-        isAutoSubmit,
-      });
-      setResult(resultData);
-    } catch (err: any) {
-      setError(err.message || 'Testni yakunlashda xatolik yuz berdi');
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return {
