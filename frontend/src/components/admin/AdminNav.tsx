@@ -4,6 +4,8 @@ const items = [
   { to: '/admin', icon: '📊', label: 'Dashboard', end: true },
   { to: '/admin/students', icon: '👨‍🎓', label: 'Studentlar' },
   { to: '/admin/content/courses', icon: '📚', label: 'Kontent', matchPrefix: '/admin/content' },
+  { to: '/admin/questions', icon: '❓', label: 'Savollar' },
+  { to: '/admin/tests', icon: '📝', label: 'Testlar' },
 ];
 
 export function AdminNav() {

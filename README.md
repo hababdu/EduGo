@@ -798,3 +798,61 @@ Butun ierarxiya (Course→Subject→Section→Topic→Lesson) endi admin panelid
 - **Qism 2**: Question Bank UI + Test yaratish/biriktirish (Admin va Teacher)
 - **Qism 3**: Teacher panelini Content/Test sahifalariga ulash (huquqlar backend orqali avtomatik cheklangan)
 - **Qism 4**: Student — Darslarni ko'rish (video/PDF), Tayinlangan testlar ro'yxati, Profil sahifasi
+
+---
+
+## ✅ Qism 2 — Question Bank + Test yaratish/biriktirish (tayyor)
+
+**Frontend** (`frontend/src/pages/admin/questions/`, `frontend/src/pages/admin/tests/`):
+
+| Sahifa | Vazifasi |
+|---|---|
+| `AdminQuestions.tsx` | Savollar banki ro'yxati + yaratish (dinamik variantlar, to'g'ri javob belgilash) |
+| `AdminTests.tsx` | Testlar ro'yxati (savollar/biriktirish/urinishlar soni bilan) |
+| `AdminTestDetail.tsx` | 4 ta tab: **Ma'lumot**, **Biriktirish**, **Analitika**, **Qayta ochish** |
+
+**Muhim UI qarorlari:**
+
+- **Savol yaratish formasi** (`CreateQuestionForm.tsx`) — SINGLE_CHOICE/TRUE_FALSE uchun radio (faqat 1 ta to'g'ri), MULTIPLE_CHOICE uchun checkbox (bir nechta to'g'ri) — bu backend validatsiyasiga (20-band) frontendda ham mos keladi, xato ehtimolini kamaytiradi.
+- **Test yaratish formasi** (`CreateTestForm.tsx`) — savollar bank'dan checkbox orqali tanlanadi, random rejim yoqilganda "tanlangan savollar soni yetarlimi" frontendda oldindan tekshiriladi (backendga yuborishdan oldin).
+- **Biriktirish formasi** (`AssignTestForm.tsx`) — ALL/GROUP/INDIVIDUAL, guruhlar ro'yxati backenddan (`useGroups`), muvaffaqiyatli bo'lsa "bildirishnoma yuborildi" tasdiqlanadi (50-band bilan bog'liq).
+- **Qayta ochish** (26-band) — ataylab alohida tab'da, ogohlantirish matni bilan ("faqat ko'rsatilgan student uchun").
+- **Analitika paneli** (`TestAnalyticsPanel.tsx`) — 51,52-band to'liq: statistika + savollar ro'yxati eng qiyinidan boshlab, progress-bar bilan vizualizatsiya.
+
+Bu qism avvalgi suhbatda allaqachon fayllar sifatida mavjud edi — ularni
+ko'rib chiqib (kod sifatini tasdiqlab), `App.tsx` va `AdminNav.tsx`ga
+ulanganini tekshirdim, va bitta kichik nomuvofiqlikni (`onCreated` vs
+`onCancel` prop nomi) tuzatdim.
+
+**Tekshirildi:** `npx tsc -b --noEmit` + `npm run build` — xatosiz, 171 modul.
+Backend: `npx tsc --noEmit` + `npm test` (18/18) — xatosiz.
+
+---
+
+## ✅ Qism 2 — Question Bank + Test yaratish/biriktirish (tayyor)
+
+**Backend qo'shimchasi**: `GET /api/v1/tests`, `GET /api/v1/tests/:id` (Qism 1'da qo'shilgan edi, bu yerda ishlatildi).
+
+**Frontend:**
+
+| Sahifa/Komponent | Vazifasi |
+|---|---|
+| `pages/admin/questions/AdminQuestions.tsx` | Savollar banki — ro'yxat + o'chirish |
+| `components/admin/questions/CreateQuestionForm.tsx` | Savol yaratish: turi, qiyinlik, dinamik variantlar (2-6 ta), to'g'ri javob(lar) belgilash — SINGLE_CHOICE uchun radio, MULTIPLE_CHOICE uchun checkbox |
+| `pages/admin/tests/AdminTests.tsx` | Testlar ro'yxati (savol/biriktirish/urinish soni bilan) |
+| `components/admin/tests/CreateTestForm.tsx` | Test yaratish — Question Bank'dan savol tanlash, random questions/answer order sozlamalari (18,19-band) |
+| `pages/admin/tests/AdminTestDetail.tsx` | 4 ta tab: Ma'lumot, Biriktirish, Analitika, Qayta ochish |
+| `components/admin/tests/AssignTestForm.tsx` | ALL/GROUP/INDIVIDUAL biriktirish, guruh tanlash dropdown |
+| `components/admin/tests/TestAnalyticsPanel.tsx` | 51,52-band — statistika + eng qiyin savollar grafigi |
+
+**Muhim UX qarori — 26-band (Test qayta ochish) qasddan "og'ir" qilingan:**
+Reopen formasi alohida tab'da, ogohlantirish matni bilan ("faqat shu student
+uchun"), va Student ID'ni qo'lda kiritish talab qilinadi (dropdown emas) —
+bu tasodifan boshqa studentni tanlab qo'yish xavfini kamaytiradi.
+
+**Tekshirildi:** Backend `tsc`+18 test, Frontend `tsc`+`build` (171 modul) — barchasi xatosiz.
+
+## 🔜 Keyingi qismlar (navbatda)
+
+- **Qism 3**: Teacher panelini Content/Test sahifalariga ulash
+- **Qism 4**: Student — Darslarni ko'rish, Tayinlangan testlar ro'yxati, Profil sahifasi

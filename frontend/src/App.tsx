@@ -13,6 +13,9 @@ import { AdminCourseDetail } from './pages/admin/content/AdminCourseDetail';
 import { AdminSubjectDetail } from './pages/admin/content/AdminSubjectDetail';
 import { AdminSectionDetail } from './pages/admin/content/AdminSectionDetail';
 import { AdminTopicDetail } from './pages/admin/content/AdminTopicDetail';
+import { AdminQuestions } from './pages/admin/questions/AdminQuestions';
+import { AdminTests } from './pages/admin/tests/AdminTests';
+import { AdminTestDetail } from './pages/admin/tests/AdminTestDetail';
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
@@ -73,6 +76,9 @@ export function App() {
           <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
           <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
           <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
+          <Route path="/admin/questions" element={<AdminQuestions />} />
+          <Route path="/admin/tests" element={<AdminTests />} />
+          <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </BrowserRouter>
