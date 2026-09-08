@@ -12,7 +12,7 @@ export interface User {
   role: UserRole;
 }
 
-const API_BASE_URL: string = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3000/api/v1';
+const API_BASE_URL: string = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3000';
 
 export default function UsersAdminPage(): JSX.Element {
   const [users, setUsers] = useState<User[]>([]);
