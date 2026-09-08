@@ -100,7 +100,6 @@ export default function UsersAdminPage(): JSX.Element {
           <thead>
             <tr style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
               <th style={{ padding: '12px' }}>Foydalanuvchi</th>
-              <th style={{ padding: '12px' }}>Telegram ID</th>
               <th style={{ padding: '12px' }}>Joriy Rol</th>
               <th style={{ padding: '12px' }}>Amallar</th>
             </tr>
@@ -119,7 +118,6 @@ export default function UsersAdminPage(): JSX.Element {
                     <strong style={{ color: '#fff' }}>{u.firstName || '—'} {u.lastName || ''}</strong>
                     {u.username && <div style={{ color: '#9ca3af', fontSize: '12px' }}>@{u.username}</div>}
                   </td>
-                  <td style={{ padding: '12px' }}><code style={{ color: '#d1d5db' }}>{u.telegramId}</code></td>
                   <td style={{ padding: '12px' }}>
                     <span style={{
                       padding: '4px 8px',
