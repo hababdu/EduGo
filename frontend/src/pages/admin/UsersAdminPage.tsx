@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '../../lib/api-client'; // 👈 Loyihangizdagi apiFetch yo'lini moslang
 
 export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | string;
 
@@ -18,22 +19,11 @@ export default function UsersAdminPage(): JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Foydalanuvchilar ro'yxatini olish (tokensiz)
+  // Foydalanuvchilar ro'yxatini apiFetch orqali olish (token xotiradan avtomatik qo'shiladi)
   const fetchUsers = async (): Promise<void> => {
     try {
       setLoading(true);
-      const res = await fetch(`https://edugo-5h4d.onrender.com/api/v1/users`, {
-        headers: { 
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Xatolik: ${res.status} - ${errorText}`);
-      }
-      
-      const data: User[] = await res.json();
+      const data = await apiFetch<User[]>('/api/v1/users');
       setUsers(data);
       setErrorMessage(null);
     } catch (err) {
@@ -48,22 +38,14 @@ export default function UsersAdminPage(): JSX.Element {
     fetchUsers();
   }, []);
 
-  // Rolni o'zgartirish (tokensiz)
+  // Rolni o'zgartirish (apiFetch orqali PATCH so'rov)
   const handleRoleChange = async (userId: string, newRole: string): Promise<void> => {
     setUpdatingId(userId);
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/users/${userId}/role`, {
+      await apiFetch(`/api/v1/users/${userId}/role`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ role: newRole }),
       });
-
-      if (!res.ok) {
-        const errData = await res.text();
-        throw new Error(`Rolni o'zgartirib bo'lmadi: ${errData}`);
-      }
 
       // Lokal holatni darhol yangilash
       setUsers((prev) =>
@@ -86,6 +68,9 @@ export default function UsersAdminPage(): JSX.Element {
       <div style={{ padding: '24px', color: '#f87171', fontFamily: 'sans-serif' }}>
         <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>⚠️ Ma'lumotni yuklab bo'lmadi</h3>
         <p>{errorMessage}</p>
+        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+          Tizimga admin sifatida kirganingizni va xotirada token mavjudligini tekshiring.
+        </p>
         <button 
           onClick={fetchUsers}
           style={{ marginTop: '12px', padding: '8px 16px', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
