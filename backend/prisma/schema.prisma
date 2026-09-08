@@ -48,7 +48,7 @@ model User {
   groupMemberships   GroupMember[]
   scoreTransactions  ScoreTransaction[] @relation("ScoreOwner")
   adminScoreActions  ScoreTransaction[] @relation("ScoreCreatedBy")
-  xpTransactions     XPTransaction[]
+  xpTransactions     XpTransaction[]
   achievements       StudentAchievement[]
   testAttempts       TestAttempt[]
   notifications      Notification[]
@@ -292,6 +292,7 @@ model Question {
   createdBy     User         @relation("QuestionCreatedBy", fields: [createdById], references: [id])
   status        ContentStatus @default(DRAFT)
   deletedAt     DateTime?
+  createdAt     DateTime     @default(now())
 
   options       AnswerOption[]
   testQuestions TestQuestion[]
@@ -344,11 +345,13 @@ model Test {
   createdById      String
   createdBy        User       @relation("TestCreatedBy", fields: [createdById], references: [id])
   deletedAt        DateTime?
+  createdAt        DateTime   @default(now())
 
   questions   TestQuestion[]
   assignments TestAssignment[]
   sessions    TestSession[]
   attempts    TestAttempt[]
+  challenges  Challenge[]
 
   @@index([subjectId])
   @@index([status])
@@ -508,7 +511,7 @@ enum XPSourceType {
   ACHIEVEMENT
 }
 
-model XPTransaction {
+model XpTransaction {
   id        String       @id @default(cuid())
   studentId String
   student   User         @relation(fields: [studentId], references: [id])
@@ -555,6 +558,7 @@ model Challenge {
   title       String
   date        DateTime // shu kunga tegishli challenge
   testId      String?  // challenge alohida mini-test sifatida modellashtiriladi
+  test        Test?    @relation(fields: [testId], references: [id])
   rewardScore Int
   rewardXp    Int
   createdAt   DateTime @default(now())

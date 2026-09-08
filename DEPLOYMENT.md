@@ -3,6 +3,14 @@
 Bu hujjat loyihani birinchi marta deploy qilishda haqiqatda uchragan
 muammolar asosida yozildi — har bir band aslida yechilgan real xatolik.
 
+> ⚠️ **ENG MUHIM QOIDA**: Barcha `npx prisma ...` buyruqlari FAQAT
+> `backend/` papkasi ICHIDA ishga tushirilishi kerak (`schema.prisma`
+> aynan shu yerda: `backend/prisma/schema.prisma`). Agar loyihaning tashqi
+> (ildiz) papkasidan ishga tushirsangiz — "Could not find Prisma Schema"
+> xatosi chiqadi. To'g'ri: `cd backend && npx prisma generate` (yoki Render
+> build command'ida buyruq avtomatik `backend/` papkasida ishlaydi, chunki
+> Render "Root Directory" sozlamasi shunga ko'rsatilgan bo'lishi kerak).
+
 ## 1. Uchta alohida servis
 
 | Servis | Turi | Nega |
@@ -39,6 +47,17 @@ muammolar asosida yozildi — har bir band aslida yechilgan real xatolik.
 | "Kirishda xatolik", backend 500 | `BOT_TOKEN` **backend**da yo'q (faqat botda bor edi) | Backend va bot — ikkalasida ham BIR XIL `BOT_TOKEN` alohida-alohida sozlanishi kerak |
 | "Not allowed to request resource" (faqat Safari/Telegram Desktop'da, Chrome'da ishlaydi) | Ba'zi WebView kontekstlarida CORS origin mos kelmasligi | `main.ts`dagi origin-validator funksiyasi buni hal qiladi (bir nechta origin qabul qiladi) |
 | Backend loglarida jadval topilmadi xatosi | Migratsiya ishga tushirilmagan | Build command'ga `npx prisma db push` qo'shing |
+| `xpTransaction` mavjud emas (TS xatosi) | Prisma model nomi `XPTransaction` → client property `xPTransaction` (katta P) bo'lib generatsiya qilingan | Model nomi `XpTransaction`ga o'zgartirildi (schema'da tuzatilgan) |
+| `orderBy: { createdAt }` xatosi (`Question`, `Test`) | Bu modellarda `createdAt` maydoni umuman yo'q edi | Ikkalasiga ham `createdAt DateTime @default(now())` qo'shildi |
+| `Challenge.test` — "Type ... not assignable to never" | `Challenge` modelida `testId` bor edi, lekin haqiqiy Prisma relation (`test Test? @relation(...)`) yo'q edi | Relation qo'shildi (ikkala tomonda ham — `Test.challenges` bilan birga) |
+| "Could not find Prisma Schema" | Buyruq loyiha ildizidan ishga tushirilgan, `backend/` ichidan emas | Har doim `cd backend` qilib, keyin `npx prisma ...` ishlating |
+
+**Muhim eslatma:** Yuqoridagi Prisma bilan bog'liq 3 ta xato (`xpTransaction`,
+`createdAt`, `Challenge.test`) — bu sandbox muhitida haqiqiy `prisma generate`
+ishlamagani sababli oldindan aniqlanmagan edi (loyihaning "Prisma-stub"
+haqidagi ogohlantirishida aytilganidek). Bular endi **schema darajasida**
+tuzatilgan — boshqa shunga o'xshash xato chiqmasligi kerak, lekin agar
+chiqsa, xuddi shu tarzda (schema'ni to'g'rilab, keyin kodni emas) yechiladi.
 
 ## 4. Muhim: `db push` vs `migrate deploy`
 
