@@ -18,16 +18,13 @@ export default function UsersAdminPage(): JSX.Element {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const token = localStorage.getItem('token');
-
-  // Foydalanuvchilar ro'yxatini olish API so'rovi
+  // Foydalanuvchilar ro'yxatini olish (tokensiz)
   const fetchUsers = async (): Promise<void> => {
     try {
       setLoading(true);
       const res = await fetch(`https://edugo-5h4d.onrender.com/api/v1/users`, {
         headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
+          'Content-Type': 'application/json'
         },
       });
       
@@ -51,7 +48,7 @@ export default function UsersAdminPage(): JSX.Element {
     fetchUsers();
   }, []);
 
-  // Rolni o'zgartirish API so'rovi (PATCH /api/v1/users/:id/role)
+  // Rolni o'zgartirish (tokensiz)
   const handleRoleChange = async (userId: string, newRole: string): Promise<void> => {
     setUpdatingId(userId);
     try {
@@ -59,7 +56,6 @@ export default function UsersAdminPage(): JSX.Element {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ role: newRole }),
       });
@@ -90,9 +86,6 @@ export default function UsersAdminPage(): JSX.Element {
       <div style={{ padding: '24px', color: '#f87171', fontFamily: 'sans-serif' }}>
         <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>⚠️ Ma'lumotni yuklab bo'lmadi</h3>
         <p>{errorMessage}</p>
-        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
-          Token mavjudligini va ADMIN huquqingiz borligini tekshiring.
-        </p>
         <button 
           onClick={fetchUsers}
           style={{ marginTop: '12px', padding: '8px 16px', background: '#374151', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
