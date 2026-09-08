@@ -12,7 +12,7 @@ export interface User {
   role: UserRole;
 }
 
-const API_BASE_URL: string = (import.meta.env?.VITE_API_URL as string) ;
+const API_BASE_URL: string = ('https://edugo-5h4d.onrender.com' as string) ;
 
 export default function UsersAdminPage(): JSX.Element {
   const [users, setUsers] = useState<User[]>([]);
