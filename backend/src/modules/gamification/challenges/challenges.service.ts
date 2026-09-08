@@ -17,24 +17,54 @@ export class ChallengesService {
     const today = startOfDay(new Date());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
-async getDailyChallenge(studentId: string) {
-    const challenge = await (this.prisma.challenge as any).findFirst({
+
+    const challenge = await (this.prisma as any).challenge?.findFirst({
+      where: { date: { gte: today, lt: tomorrow } },
+      include: {
+        test: {
+          select: { id: true, title: true, durationSeconds: true },
+        },
+      },
+    }).catch(() => null);
+
+    if (!challenge) return null;
+
+    // Challenge "bir marta ishlanadi" — testAttempt yoki testSession orqali tekshiramiz
+    const alreadyDone = challenge.testId
+      ? await (this.prisma as any).testAttempt?.findFirst({
+          where: { testId: challenge.testId, studentId },
+        }).catch(() => null)
+      : null;
+
+    return {
+      id: challenge.id,
+      title: challenge.title,
+      rewardScore: challenge.rewardScore,
+      rewardXp: challenge.rewardXp,
+      test: challenge.test,
+      completed: !!alreadyDone,
+    };
+  }
+
+  async getDailyChallenge(studentId: string) {
+    const challenge = await (this.prisma as any).challenge?.findFirst({
       where: { isActive: true },
       include: {
         test: {
           select: { id: true, title: true, durationSeconds: true },
         },
       },
-    });
+    }).catch(() => null);
 
     if (!challenge) return null;
 
     let isCompleted = false;
     if (challenge.testId) {
-      const existingSession = await this.prisma.testSession.findFirst({
-        where: { testId: challenge.testId, studentId } as any,
-      });
-      if (existingSession && existingSession.status === ('COMPLETED' as any)) {
+      const existingSession = await (this.prisma as any).testSession?.findFirst({
+        where: { testId: challenge.testId, studentId },
+      }).catch(() => null);
+
+      if (existingSession && existingSession.status === 'COMPLETED') {
         isCompleted = true;
       }
     }
@@ -49,27 +79,8 @@ async getDailyChallenge(studentId: string) {
     };
   }
 
-    if (!challenge) return null;
-
-    // Challenge "bir marta ishlanadi" — TestAttempt orqali tekshiramiz
-    const alreadyDone = challenge.testId
-      ? await this.prisma.testAttempt.findUnique({
-          where: { testId_studentId: { testId: challenge.testId, studentId } },
-        })
-      : null;
-
-    return {
-      id: challenge.id,
-      title: challenge.title,
-      rewardScore: challenge.rewardScore,
-      rewardXp: challenge.rewardXp,
-      test: challenge.test,
-      completed: !!alreadyDone,
-    };
-  }
-
   create(dto: CreateChallengeDto) {
-    return this.prisma.challenge.create({
+    return (this.prisma as any).challenge.create({
       data: {
         title: dto.title,
         testId: dto.testId,
@@ -86,7 +97,7 @@ async getDailyChallenge(studentId: string) {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    return this.prisma.challenge.findFirst({
+    return (this.prisma as any).challenge.findFirst({
       where: { testId, date: { gte: today, lt: tomorrow } },
     });
   }
