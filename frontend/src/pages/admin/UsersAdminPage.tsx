@@ -12,8 +12,6 @@ export interface User {
   role: UserRole;
 }
 
-const API_BASE_URL: string = ('https://edugo-5h4d.onrender.com' as string) ;
-
 export default function UsersAdminPage(): JSX.Element {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -26,7 +24,7 @@ export default function UsersAdminPage(): JSX.Element {
   const fetchUsers = async (): Promise<void> => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/users`, {
+      const res = await fetch(`https://edugo-5h4d.onrender.com/api/v1/users`, {
         headers: { 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}` 
@@ -57,7 +55,7 @@ export default function UsersAdminPage(): JSX.Element {
   const handleRoleChange = async (userId: string, newRole: string): Promise<void> => {
     setUpdatingId(userId);
     try {
-      const res = await fetch(`${API_BASE_URL}/users/${userId}/role`, {
+      const res = await fetch(`http://localhost:3000/api/v1/users/${userId}/role`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
