@@ -21,7 +21,7 @@ import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
-import { UsersAdminPage } from './pages/admin/UsersAdminPage'
+import  UsersAdminPage  from './pages/admin/UsersAdminPage'
 
 export function App() {
   const status = useAuth();
