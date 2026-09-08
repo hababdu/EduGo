@@ -21,6 +21,7 @@ import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
+import { UsersAdminPage } from './pages/admin/UsersAdminPage'
 
 export function App() {
   const status = useAuth();
@@ -79,6 +80,7 @@ export function App() {
           <Route path="/admin/questions" element={<AdminQuestions />} />
           <Route path="/admin/tests" element={<AdminTests />} />
           <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
+          <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<AdminOverview />} />
         </Routes>
       </BrowserRouter>

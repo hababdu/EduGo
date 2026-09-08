@@ -10,9 +10,6 @@ export class UsersService {
    * 80-band, 1 va 2-qoidalar:
    * "Student faqat o'z accountini ko'ra oladi."
    * "Student boshqa student ma'lumotini ko'ra olmaydi."
-   *
-   * Bu tekshiruv FRONTEND yashirgan tugma emas — har qanday kishi
-   * DevTools'dan boshqa :id bilan so'rov yuborsa ham backend shu yerda to'xtatadi.
    */
   async getProfileFor(targetUserId: string, requester: CurrentUserPayload) {
     const isSelf = targetUserId === requester.id;
@@ -46,5 +43,50 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  // =========================================================================
+  // ADMIN PANEL UCHUN METODLAR
+  // =========================================================================
+
+  /**
+   * Barcha foydalanuvchilar ro'yxatini qaytaradi (Admin uchun)
+   */
+  async findAllUsers() {
+    return this.prisma.user.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        telegramId: true,
+        firstName: true,
+        lastName: true,
+        username: true,
+        role: true,
+      },
+    });
+  }
+
+  /**
+   * Foydalanuvchi rolini yangilash (ADMIN, TEACHER, USER/STUDENT)
+   */
+  async updateRole(userId: string, role: any) {
+    const user = await this.prisma.user.findUnique({ 
+      where: { id: userId } 
+    });
+    
+    if (!user || user.deletedAt) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { role: role },
+      select: {
+        id: true,
+        telegramId: true,
+        role: true,
+        firstName: true,
+      }
+    });
   }
 }

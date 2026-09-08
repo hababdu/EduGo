@@ -2,6 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 const items = [
   { to: '/admin', icon: '📊', label: 'Dashboard', end: true },
+  { to: '/admin/users', icon: '👥', label: 'Foydalanuvchilar' }, // 👈 Yangi qo'shildi
   { to: '/admin/students', icon: '👨‍🎓', label: 'Studentlar' },
   { to: '/admin/content/courses', icon: '📚', label: 'Kontent', matchPrefix: '/admin/content' },
   { to: '/admin/questions', icon: '❓', label: 'Savollar' },
