@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
-import { useAdminStudents, useAdminTeachers } from '../../hooks/useAdmin';
+import { useAdminStudents } from '../../hooks/useAdmin';
 
 export function AdminGroupDetail() {
   const { id = '' } = useParams();
@@ -26,15 +26,19 @@ export function AdminGroupDetail() {
       (allStudentsData as any)?.students || 
       (allStudentsData as any)?.data || [];
 
-  // Barcha ustozlar ro'yxatini useAdmin hook'idan olish
-  const { data: allTeachersData } = useAdminTeachers();
+  // Barcha userlarni olib, ichidan ustozlarni (TEACHER) ajratib olish
+  const { data: allUsersData } = useQuery({
+    queryKey: ['admin-users-list'],
+    queryFn: () => apiFetch<any>('/api/v1/admin/users'),
+  });
 
-const teachersList = Array.isArray(allTeachersData)
-  ? allTeachersData
-  : (allTeachersData as any)?.items ||
-    (allTeachersData as any)?.users || 
-    (allTeachersData as any)?.teachers ||
-    (allTeachersData as any)?.data || [];
+  const usersList = Array.isArray(allUsersData)
+    ? allUsersData
+    : (allUsersData as any)?.items ||
+      (allUsersData as any)?.users || 
+      (allUsersData as any)?.data || [];
+
+  const teachersList = usersList.filter((u: any) => u.role === 'TEACHER');
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
