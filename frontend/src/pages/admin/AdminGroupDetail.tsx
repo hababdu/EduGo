@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../../lib/api-client';
 import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
 import { useAdminStudents } from '../../hooks/useAdmin';
 
@@ -9,9 +11,22 @@ export function AdminGroupDetail() {
   const { data: groups } = useGroups();
   const group = groups?.find((g: any) => g.id === id);
 
-  const { data: allStudents } = useAdminStudents({ page: 1 });
-  const addStudent = useAddStudentToGroup();
+  // Guruhga biriktirilgan talabalar ro'yxatini olish
+  const { data: groupStudents, isLoading: isLoadingGroupStudents } = useQuery({
+    queryKey: ['group-students', id],
+    queryFn: () => apiFetch<any[]>(`/api/v1/groups/${id}/students`),
+    enabled: !!id,
+  });
+
+  // Barcha talabalar (dropdown uchun)
+  const { data: allStudentsData } = useAdminStudents({ page: 1 });
   
+  // Talabalar massivini har qanday formatdan xavfsiz ajratib olish
+  const studentsList = Array.isArray(allStudentsData)
+    ? allStudentsData
+    : (allStudentsData as any)?.students || (allStudentsData as any)?.data || [];
+
+  const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -53,9 +68,10 @@ export function AdminGroupDetail() {
             className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
           >
             <option value="">Talabani tanlang...</option>
-            {(allStudents as any)?.students?.map((s: any) => (
-              <option key={s.id} value={s.id}>
-                {s.firstName} {s.lastName || ''} ({s.username ? `@${s.username}` : 'id'})
+            {studentsList.map((s: any) => (
+              <option key={s.id || s.studentId} value={s.id || s.studentId}>
+                {s.firstName || s.user?.firstName || 'Talaba'} {s.lastName || s.user?.lastName || ''} 
+                ({s.username ? `@${s.username}` : s.user?.username ? `@${s.user.username}` : 'id'})
               </option>
             ))}
           </select>
@@ -69,6 +85,36 @@ export function AdminGroupDetail() {
         </div>
         {error && <p className="text-xs text-coral">{error}</p>}
       </form>
+
+      {/* Guruhdagi talabalar ro'yxati */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-ink">Guruhdagi talabalar</h3>
+        {isLoadingGroupStudents ? (
+          <p className="text-xs text-ink-muted">Yuklanmoqda...</p>
+        ) : !groupStudents || groupStudents.length === 0 ? (
+          <div className="text-center py-8 bg-surface/20 rounded-2xl border border-white/5">
+            <p className="text-xs text-ink-muted">Bu guruhda hali talabalar yo'q.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
+            {groupStudents.map((member: any) => {
+              const student = member.student || member;
+              return (
+                <div key={member.id || student.id} py-4  items-center justify-between className="py-3">
+                  <div>
+                    <p className="text-sm font-medium text-ink">
+                      {student.firstName || 'Ism yo\'q'} {student.lastName || ''}
+                    </p>
+                    <p className="text-xs text-ink-muted">
+                      {student.username ? `@${student.username}` : 'Username yo\'q'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
