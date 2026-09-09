@@ -29,7 +29,7 @@ export function AdminGroupDetail() {
   // Barcha userlarni olib, ichidan ustozlarni (TEACHER) ajratib olish
   const { data: allUsersData } = useQuery({
     queryKey: ['admin-users-list'],
-    queryFn: () => apiFetch<any>('/api/v1/ranking'),
+    queryFn: () => apiFetch<any>('/api/v1/ranking/global'),
   });
 
   const usersList = Array.isArray(allUsersData)
