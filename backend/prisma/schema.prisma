@@ -95,10 +95,13 @@ model AdminProfile {
 // ------------------------------------------------------------
 
 model Group {
-  id        String   @id @default(cuid())
-  name      String   // masalan "9-A"
-  teacherId String?
-  teacher   User?    @relation("GroupTeacher", fields: [teacherId], references: [id])
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  teacherId    String?
+  teacher      User?    @relation("GroupTeacher", fields: [teacherId], references: [id])
+  assistantId  String?
+  assistant    User?    @relation("GroupAssistant", fields: [assistantId], references: [id])
   createdAt DateTime @default(now())
   description String?
   deletedAt DateTime?

@@ -12,10 +12,53 @@ export class GroupsController {
     return this.groupsService.findAllForUser(user);
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.findOneOrThrow(id, user);
+  }
+
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Get(':id/students')
+  async listStudents(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    const group = await this.groupsService.findOneOrThrow(id, user);
+    return group.members;
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post()
+  async create(@Body() body: { name: string; description?: string }, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.createGroup(body, user);
+  }
+
   /**
-   * Guruhga ustoz biriktirish
+   * Guruhga talaba qo'shish
    */
-  
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post(':id/students')
+  async addStudentToGroup(
+    @Param('id') id: string,
+    @Body() body: { studentId: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.addStudentToGroup(id, body.studentId, user);
+  }
+
+  /**
+   * Talabani guruhdan chiqarib tashlash
+   */
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Delete(':id/students/:studentId')
+  async removeStudentFromGroup(
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.removeStudentFromGroup(id, studentId, user);
+  }
+
+  /**
+   * Guruhga asosiy ustoz biriktirish
+   */
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/teacher')
   async assignTeacher(
@@ -27,54 +70,24 @@ export class GroupsController {
   }
 
   /**
-   * Yangi guruh yaratish — faqat ADMIN va TEACHER lar uchun
+   * Guruhga yordamchi (mentoring/assistant) ustoz biriktirish
    */
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
-  @Post(':id/students')
-  async addStudentToGroup(
+  @Patch(':id/assistant')
+  async assignAssistant(
     @Param('id') id: string,
-    @Body() body: { studentId: string },
+    @Body() body: { assistantId: string },
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.groupsService.addStudentToGroup(id, body.studentId, user);
-  }
-  
-  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
-  @Post()
-  async create(
-    @Body() body: { name: string; description?: string },
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.groupsService.createGroup(body, user);
-  }
-
-  @Get(':id')
-  async findOne(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.groupsService.findOneOrThrow(id, user);
-  }
-
-  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
-  @Get(':id/students')
-  async listStudents(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    const group = await this.groupsService.findOneOrThrow(id, user);
-    return group.members;
+    return this.groupsService.assignAssistant(id, body.assistantId, user);
   }
 
   /**
-   * Guruhni o'chirish (Soft delete)
+   * Guruhni o'chirish
    */
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Delete(':id')
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.groupsService.deleteGroup(id, user);
   }
 }
