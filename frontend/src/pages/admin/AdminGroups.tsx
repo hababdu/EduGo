@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGroups, useCreateGroup, useDeleteGroup } from '../../hooks/useGroups';
 
 export default function AdminGroups() {
+  const navigate = useNavigate();
   const { data: groups, isLoading } = useGroups();
   const createGroup = useCreateGroup();
   const deleteGroup = useDeleteGroup();
@@ -110,7 +112,11 @@ export default function AdminGroups() {
       ) : (
         <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
           {filteredGroups.map((g: any) => (
-            <div key={g.id} className="py-4 flex items-center justify-between gap-4">
+            <div
+              key={g.id}
+              onClick={() => navigate(`/admin/groups/${g.id}`)}
+              className="py-4 flex items-center justify-between gap-4 cursor-pointer hover:bg-white/5 transition-colors px-2 rounded-xl"
+            >
               <div className="space-y-1 min-w-0">
                 <p className="text-sm font-medium text-ink">{g.name}</p>
                 {g.description && <p className="text-xs text-ink-muted truncate">{g.description}</p>}
@@ -119,7 +125,8 @@ export default function AdminGroups() {
                 </p>
               </div>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (confirm(`"${g.name}" guruhini o'chirasizmi?`)) {
                     deleteGroup.mutate(g.id);
                   }
