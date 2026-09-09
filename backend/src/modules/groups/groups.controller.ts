@@ -13,6 +13,19 @@ export class GroupsController {
   }
 
   /**
+   * Guruhga ustoz biriktirish
+   */
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Patch(':id/teacher')
+  async assignTeacher(
+    @Param('id') id: string,
+    @Body() body: { teacherId: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.assignTeacher(id, body.teacherId, user);
+  }
+
+  /**
    * Yangi guruh yaratish — faqat ADMIN va TEACHER lar uchun
    */
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
