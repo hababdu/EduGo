@@ -15,6 +15,7 @@ export class GroupsController {
   /**
    * Guruhga ustoz biriktirish
    */
+  
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/teacher')
   async assignTeacher(

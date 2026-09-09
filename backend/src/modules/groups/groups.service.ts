@@ -88,6 +88,7 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
   /**
    * Guruhni o'chirish
    */
+  
   async deleteGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.findOneOrThrow(groupId, user);
 
