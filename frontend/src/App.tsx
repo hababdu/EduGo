@@ -22,6 +22,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import  UsersAdminPage  from './pages/admin/UsersAdminPage'
+import { AdminGroups } from './pages/admin/AdminGroups';
 
 export function App() {
   const status = useAuth();
@@ -82,6 +83,7 @@ export function App() {
           <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
           <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<AdminOverview />} />
+          <Route path="/admin/groups" element={<AdminGroups />} />
         </Routes>
       </BrowserRouter>
     );
