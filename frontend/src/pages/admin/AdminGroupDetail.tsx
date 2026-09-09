@@ -27,9 +27,9 @@ export function AdminGroupDetail() {
       (allStudentsData as any)?.data || [];
 
   // Barcha userlarni olib, ichidan ustozlarni (TEACHER) ajratib olish
-  const { data: allUsersData } = useQuery({
-    queryKey: ['admin-users-list'],
-    queryFn: () => apiFetch<any>('/api/v1/teacher/overview'),
+ const { data: allUsersData } = useQuery({
+    queryKey: ['users-list'],
+    queryFn: () => apiFetch<any>('/api/v1/users'),
   });
 
   const usersList = Array.isArray(allUsersData)
