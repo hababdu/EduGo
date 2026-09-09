@@ -111,7 +111,7 @@ export function AdminGroupDetail() {
     setSuccessMessage(null);
 
     try {
-      await apiFetch(`/api/v1/groups/${id}/assistant`, {
+      await apiFetch(`/api/v1/groups/${id}/teacher`, {
         method: 'PATCH',
         body: JSON.stringify({ assistantId: selectedAssistantId }),
       });
