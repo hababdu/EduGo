@@ -59,28 +59,20 @@ export class GroupsController {
   /**
    * Guruhga asosiy ustoz biriktirish
    */
-  @Roles('ADMIN', 'SUPER_ADMIN')
-  @Patch(':id/teacher')
-  async assignTeacher(
-    @Param('id') id: string,
-    @Body() body: { teacherId: string },
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.groupsService.assignTeacher(id, body.teacherId, user);
-  }
+  
 
   /**
    * Guruhga yordamchi (mentoring/assistant) ustoz biriktirish
    */
-  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
-  @Patch(':id/assistant')
-  async assignAssistant(
-    @Param('id') id: string,
-    @Body() body: { assistantId: string },
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.groupsService.assignAssistant(id, body.assistantId, user);
-  }
+  @Roles('ADMIN', 'SUPER_ADMIN')
+@Patch(':id/teacher')
+async assignTeacher(
+  @Param('id') id: string,
+  @Body() body: { teacherId: string },
+  @CurrentUser() user: CurrentUserPayload,
+) {
+  return this.groupsService.assignTeacher(id, body.teacherId, user);
+}
 
   /**
    * Guruhni o'chirish

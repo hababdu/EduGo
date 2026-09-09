@@ -76,15 +76,7 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
   }
 
 
-  async assignTeacher(groupId: string, teacherId: string, user: CurrentUserPayload) {
-    // Guruh mavjudligini va foydalanuvchi huquqini tekshirish
-    await this.findOneOrThrow(groupId, user);
-
-    return this.prisma.group.update({
-      where: { id: groupId },
-      data: { teacherId: teacherId },
-    });
-  }
+  
   /**
    * Guruhni o'chirish
    */
@@ -97,24 +89,14 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
   }
 
   async assignTeacher(groupId: string, teacherId: string, user: CurrentUserPayload) {
-    await this.findOneOrThrow(groupId, user);
-    return this.prisma.group.update({
-      where: { id: groupId },
-      data: {
-        teacher: teacherId ? { connect: { id: teacherId } } : { disconnect: true },
-      },
-    });
-  }
-
-  async assignAssistant(groupId: string, assistantId: string, user: CurrentUserPayload) {
-    await this.findOneOrThrow(groupId, user);
-    return this.prisma.group.update({
-      where: { id: groupId },
-      data: {
-        assistantId: assistantId || null,
-      },
-    });
-  }
+  await this.findOneOrThrow(groupId, user);
+  return this.prisma.group.update({
+    where: { id: groupId },
+    data: {
+      teacher: teacherId ? { connect: { id: teacherId } } : { disconnect: true },
+    },
+  });
+}
   async deleteGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.findOneOrThrow(groupId, user);
 
