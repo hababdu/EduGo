@@ -74,11 +74,15 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
     this.assertCanAccess(group, user);
     return group;
   }
-async assignTeacher(groupId: string, teacherId: string, user: CurrentUserPayload) {
-    // Agar faqat adminlar o'zgartira olishi kerak bo'lsa tekshiruv qo'shish mumkin
+
+
+  async assignTeacher(groupId: string, teacherId: string, user: CurrentUserPayload) {
+    // Guruh mavjudligini va foydalanuvchi huquqini tekshirish
+    await this.findOneOrThrow(groupId, user);
+
     return this.prisma.group.update({
       where: { id: groupId },
-      data: { teacherId: teacherId }, // yoki bazadagi ustoz bog'lanish ustuniga qarab yoziladi
+      data: { teacherId: teacherId },
     });
   }
   /**
