@@ -23,6 +23,7 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import  UsersAdminPage  from './pages/admin/UsersAdminPage'
 import { AdminGroups } from './pages/admin/AdminGroups';
+import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; // Guruh detallari sahifasi
 
 export function App() {
   const status = useAuth();
@@ -84,6 +85,7 @@ export function App() {
           <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<AdminOverview />} />
           <Route path="/admin/groups" element={<AdminGroups />} />
+          <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
         </Routes>
       </BrowserRouter>
     );

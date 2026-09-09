@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException ,BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 
@@ -44,7 +44,23 @@ export class GroupsService {
       },
     });
   }
+async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPayload) {
+    // Guruh mavjudligini va ruxsat borligini tekshiramiz
+    await this.findOneOrThrow(groupId, user);
 
+    // Talaba allaqachon guruhda borligini tekshiramiz
+    const existing = await this.prisma.groupMember.findUnique({
+      where: { groupId_studentId: { groupId, studentId } },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Bu talaba allaqachon guruhga qo\'shilgan');
+    }
+
+    return this.prisma.groupMember.create({
+      data: { groupId, studentId },
+    });
+  }
   async findOneOrThrow(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },

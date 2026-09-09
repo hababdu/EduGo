@@ -16,6 +16,16 @@ export class GroupsController {
    * Yangi guruh yaratish — faqat ADMIN va TEACHER lar uchun
    */
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post(':id/students')
+  async addStudentToGroup(
+    @Param('id') id: string,
+    @Body() body: { studentId: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.addStudentToGroup(id, body.studentId, user);
+  }
+  
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
   async create(
     @Body() body: { name: string; description?: string },

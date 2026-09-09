@@ -31,7 +31,20 @@ export function useCreateGroup() {
     },
   });
 }
-
+export function useAddStudentToGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, studentId }: { groupId: string; studentId: string }) =>
+      apiFetch(`/api/v1/groups/${groupId}/students`, {
+        method: 'POST',
+        body: JSON.stringify({ studentId }),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['group-students', variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+}
 export function useDeleteGroup() {
   const queryClient = useQueryClient();
   return useMutation({
