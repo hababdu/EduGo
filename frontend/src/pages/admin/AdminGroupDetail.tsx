@@ -6,8 +6,11 @@ import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
 import { useAdminStudents } from '../../hooks/useAdmin';
 
 export function AdminGroupDetail() {
-  const { id = '' } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
+  
+  console.log("🔥 [DEBUG] URL'dan kelgan guruh ID si:", id);
+
   const { data: groups } = useGroups();
   const group = groups?.find((g: any) => g.id === id);
 
@@ -21,10 +24,12 @@ export function AdminGroupDetail() {
   // Barcha talabalar (dropdown uchun)
   const { data: allStudentsData } = useAdminStudents({ page: 1 });
   
-  // Talabalar massivini har qanday formatdan xavfsiz ajratib olish
+  // Talabalar massivini items, students yoki data kalitlaridan xavfsiz olish
   const studentsList = Array.isArray(allStudentsData)
     ? allStudentsData
-    : (allStudentsData as any)?.students || (allStudentsData as any)?.data || [];
+    : (allStudentsData as any)?.items ||
+      (allStudentsData as any)?.students || 
+      (allStudentsData as any)?.data || [];
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -32,6 +37,10 @@ export function AdminGroupDetail() {
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) {
+      setError("Guruh ID si topilmadi!");
+      return;
+    }
     if (!selectedStudentId) return;
     setError(null);
 
@@ -43,6 +52,10 @@ export function AdminGroupDetail() {
       }
     );
   };
+
+  if (!id) {
+    return <div className="p-6 text-center text-coral">Xatolik: Guruh ID si ko'rsatilmagan!</div>;
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 pb-16">
@@ -100,7 +113,7 @@ export function AdminGroupDetail() {
             {groupStudents.map((member: any) => {
               const student = member.student || member;
               return (
-                <div key={member.id || student.id} py-4  items-center justify-between className="py-3">
+                <div key={member.id || student.id} className="py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-ink">
                       {student.firstName || 'Ism yo\'q'} {student.lastName || ''}

@@ -85,7 +85,7 @@ export function App() {
           <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<AdminOverview />} />
           <Route path="/admin/groups" element={<AdminGroups />} />
-          <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
+         <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
         </Routes>
       </BrowserRouter>
     );
