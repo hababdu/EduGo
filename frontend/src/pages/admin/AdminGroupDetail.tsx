@@ -29,7 +29,7 @@ export function AdminGroupDetail() {
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState(group?.teacherId || '');
+  const [selectedTeacherId, setSelectedTeacherId] = useState<string>((group as any)?.teacherId || '');
   const [error, setError] = useState<string | null>(null);
   const [teacherSuccess, setTeacherSuccess] = useState(false);
 
