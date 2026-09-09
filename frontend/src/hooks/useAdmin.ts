@@ -12,7 +12,7 @@ export function useAdminOverview() {
 export function useAdminTeachers() {
   return useQuery({
     queryKey: ['admin', 'teachers'],
-    queryFn: () => apiFetch<any>('/api/v1/admin/teachers'), // yoki '/api/v1/teachers'
+    queryFn: () => apiFetch<any>('/api/v1/admin/users?role=TEACHER'), 
   });
 }
 export function useAdminStudents(params: { search?: string; status?: string; page: number }) {

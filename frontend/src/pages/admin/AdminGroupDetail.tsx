@@ -28,11 +28,13 @@ export function AdminGroupDetail() {
 
   // Barcha ustozlar ro'yxatini useAdmin hook'idan olish
   const { data: allTeachersData } = useAdminTeachers();
-  const teachersList = Array.isArray(allTeachersData)
-    ? allTeachersData
-    : (allTeachersData as any)?.items ||
-      (allTeachersData as any)?.teachers ||
-      (allTeachersData as any)?.data || [];
+
+const teachersList = Array.isArray(allTeachersData)
+  ? allTeachersData
+  : (allTeachersData as any)?.items ||
+    (allTeachersData as any)?.users || 
+    (allTeachersData as any)?.teachers ||
+    (allTeachersData as any)?.data || [];
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
