@@ -40,7 +40,6 @@ export class GroupsService {
     return this.prisma.group.create({
       data: {
         name: data.name,
-        description: data.description,
         teacherId: teacherId,
       },
     });
