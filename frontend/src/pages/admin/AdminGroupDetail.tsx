@@ -6,13 +6,10 @@ import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
 import { useAdminStudents } from '../../hooks/useAdmin';
 
 export function AdminGroupDetail() {
-  const { id } = useParams();
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  
-  console.log("🔥 [DEBUG] URL'dan kelgan guruh ID si:", id);
-
   const { data: groups } = useGroups();
-  const group = groups?.find((g: any) => g.id === id);
+  const group = groups?.find((g: any) => g.id === id || g._id === id);
 
   // Guruhga biriktirilgan talabalar ro'yxatini olish
   const { data: groupStudents, isLoading: isLoadingGroupStudents } = useQuery({
@@ -24,7 +21,6 @@ export function AdminGroupDetail() {
   // Barcha talabalar (dropdown uchun)
   const { data: allStudentsData } = useAdminStudents({ page: 1 });
   
-  // Talabalar massivini items, students yoki data kalitlaridan xavfsiz olish
   const studentsList = Array.isArray(allStudentsData)
     ? allStudentsData
     : (allStudentsData as any)?.items ||
@@ -33,29 +29,41 @@ export function AdminGroupDetail() {
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedTeacherId, setSelectedTeacherId] = useState(group?.teacherId || '');
   const [error, setError] = useState<string | null>(null);
+  const [teacherSuccess, setTeacherSuccess] = useState(false);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) {
-      setError("Guruh ID si topilmadi!");
-      return;
-    }
-    if (!selectedStudentId) return;
+    if (!id || !selectedStudentId) return;
     setError(null);
 
     addStudent.mutate(
       { groupId: id, studentId: selectedStudentId },
       {
         onSuccess: () => setSelectedStudentId(''),
-        onError: (err: any) => setError(err.message || 'Xatolik yuz berdi'),
+        onError: (err: any) => setError(err.message || 'Talaba qo\'shishda xatolik yuz berdi'),
       }
     );
   };
 
-  if (!id) {
-    return <div className="p-6 text-center text-coral">Xatolik: Guruh ID si ko'rsatilmagan!</div>;
-  }
+  // Guruhga ustoz biriktirish funksiyasi
+  const handleAssignTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id) return;
+    setError(null);
+    setTeacherSuccess(false);
+
+    try {
+      await apiFetch(`/api/v1/groups/${id}/teacher`, {
+        method: 'PATCH',
+        body: JSON.stringify({ teacherId: selectedTeacherId }),
+      });
+      setTeacherSuccess(true);
+    } catch (err: any) {
+      setError(err.message || 'Ustozni biriktirishda xatolik yuz berdi');
+    }
+  };
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 pb-16">
@@ -71,8 +79,29 @@ export function AdminGroupDetail() {
         <p className="text-xs text-ink-muted mt-1">{group?.description || 'Tavsif mavjud emas'}</p>
       </div>
 
+      {/* Ustoz biriktirish formasi */}
+      <form onSubmit={handleAssignTeacher} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
+        <h3 className="text-sm font-medium text-ink">Guruhga ustoz biriktirish</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={selectedTeacherId}
+            onChange={(e) => setSelectedTeacherId(e.target.value)}
+            placeholder="Ustoz ID raqamini kiriting..."
+            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink"
+          />
+          <button
+            type="submit"
+            className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-95 transition-opacity"
+          >
+            Saqlash
+          </button>
+        </div>
+        {teacherSuccess && <p className="text-xs text-green-400">Ustoz muvaffaqiyatli biriktirildi!</p>}
+      </form>
+
       {/* Talaba qo'shish formasi */}
-      <form onSubmit={handleAdd} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
+      <form onSubmit={handleAddStudent} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
         <h3 className="text-sm font-medium text-ink">Guruhga talaba qo'shish</h3>
         <div className="flex gap-2">
           <select
@@ -81,12 +110,17 @@ export function AdminGroupDetail() {
             className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
           >
             <option value="">Talabani tanlang...</option>
-            {studentsList.map((s: any) => (
-              <option key={s.id || s.studentId} value={s.id || s.studentId}>
-                {s.firstName || s.user?.firstName || 'Talaba'} {s.lastName || s.user?.lastName || ''} 
-                ({s.username ? `@${s.username}` : s.user?.username ? `@${s.user.username}` : 'id'})
-              </option>
-            ))}
+            {studentsList.map((s: any) => {
+              const sId = s.id || s._id || s.studentId;
+              const fName = s.firstName || s.user?.firstName || 'Talaba';
+              const lName = s.lastName || s.user?.lastName || '';
+              const uname = s.username || s.user?.username;
+              return (
+                <option key={sId} value={sId}>
+                  {fName} {lName} ({uname ? `@${uname}` : sId})
+                </option>
+              );
+            })}
           </select>
           <button
             type="submit"
@@ -111,15 +145,19 @@ export function AdminGroupDetail() {
         ) : (
           <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
             {groupStudents.map((member: any) => {
-              const student = member.student || member;
+              const student = member.student || member.user || member;
+              const sName = student.firstName || member.firstName || 'Ism yo\'q';
+              const sLastName = student.lastName || member.lastName || '';
+              const sUsername = student.username || member.username;
+
               return (
                 <div key={member.id || student.id} className="py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-ink">
-                      {student.firstName || 'Ism yo\'q'} {student.lastName || ''}
+                      {sName} {sLastName}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {student.username ? `@${student.username}` : 'Username yo\'q'}
+                      {sUsername ? `@${sUsername}` : 'Username yo\'q'}
                     </p>
                   </div>
                 </div>
