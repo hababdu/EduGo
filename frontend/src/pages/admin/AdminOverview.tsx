@@ -1,228 +1,106 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
-import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
-import { useAdminStudents } from '../../hooks/useAdmin';
+import { useAdminOverview } from '../../hooks/useAdmin';
 
-export default function AdminGroupDetail() {
-  const { id = '' } = useParams();
-  const navigate = useNavigate();
-  const { data: groups } = useGroups();
-  const group = groups?.find((g: any) => g.id === id || g._id === id);
+/**
+ * Admin panel — ma'lumot zich (data-dense) va vizual tahlillar (charts)
+ * bilan boyitilgan boshqaruv paneli.
+ */
+export function AdminOverview() {
+  const { data, isLoading } = useAdminOverview();
 
-  // Guruhga biriktirilgan talabalar ro'yxatini olish
-  const { data: groupStudents, isLoading: isLoadingGroupStudents, refetch: refetchGroupStudents } = useQuery({
-    queryKey: ['group-students', id],
-    queryFn: () => apiFetch<any[]>(`/api/v1/groups/${id}/students`),
-    enabled: !!id,
-  });
-
-  // Barcha talabalar (dropdown uchun)
-  const { data: allStudentsData } = useAdminStudents({ page: 1 });
-  const studentsList = Array.isArray(allStudentsData)
-    ? allStudentsData
-    : (allStudentsData as any)?.items ||
-      (allStudentsData as any)?.students || 
-      (allStudentsData as any)?.data || [];
-
-  // Barcha ustozlar ro'yxatini admin hook'idan yoki API'dan olish
- const { data: allTeachersData } = useQuery({
-    queryKey: ['admin-teachers-list'],
-    queryFn: () => apiFetch<any>('/api/v1/admin/teachers'),
-  });
-
-  const teachersList = Array.isArray(allTeachersData)
-    ? allTeachersData
-    : (allTeachersData as any)?.items ||
-      (allTeachersData as any)?.teachers ||
-      (allTeachersData as any)?.data || [];
-
-  const addStudent = useAddStudentToGroup();
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Guruh ma'lumotidan ustoz tanlangandayoq uni state'ga yozib qo'yish
-  useEffect(() => {
-    const g = group as any;
-    if (g && (g.teacherId || g.teacher?._id || g.teacher?.id)) {
-      setSelectedTeacherId(g.teacherId || g.teacher?._id || g.teacher?.id);
-    }
-  }, [group]);
-
-  // Guruhga talaba qo'shish
-  const handleAddStudent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id || !selectedStudentId) return;
-    setError(null);
-    setSuccessMessage(null);
-
-    addStudent.mutate(
-      { groupId: id, studentId: selectedStudentId },
-      {
-        onSuccess: () => {
-          setSelectedStudentId('');
-          setSuccessMessage('Talaba guruhga muvaffaqiyatli qo\'shildi!');
-          refetchGroupStudents();
-        },
-        onError: (err: any) => setError(err.message || 'Talaba qo\'shishda xatolik yuz berdi'),
-      }
+  if (isLoading || !data) {
+    return (
+      <div className="p-6 animate-pulse space-y-4 max-w-3xl mx-auto">
+        <div className="h-20 w-48 bg-surface rounded-xl" />
+        <div className="h-40 bg-surface rounded-xl" />
+        <div className="h-32 bg-surface rounded-xl" />
+      </div>
     );
-  };
+  }
 
-  // Guruhga ustoz biriktirish funksiyasi
-  const handleAssignTeacher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
-    setError(null);
-    setSuccessMessage(null);
+  const secondaryStats = [
+    { label: "Faol studentlar (7 kun)", value: data.totals.activeStudents },
+    { label: "O'qituvchilar", value: data.totals.teachers },
+    { label: "Kurslar", value: data.totals.courses },
+    { label: "Fanlar", value: data.totals.subjects },
+    { label: "Testlar", value: data.totals.tests },
+    { label: "Bugungi urinishlar", value: data.today.testAttempts },
+  ];
 
-    try {
-      await apiFetch(`/api/v1/groups/${id}/teacher`, {
-        method: 'PATCH',
-        body: JSON.stringify({ teacherId: selectedTeacherId }),
-      });
-      setSuccessMessage('Ustoz guruhga muvaffaqiyatli biriktirildi!');
-    } catch (err: any) {
-      setError(err.message || 'Ustozni biriktirishda xatolik yuz berdi');
-    }
-  };
-
-  const groupData = group as any;
+  // TypeScript xatoligini oldini olish uchun any tipiga o'tkazamiz
+  const charts = data.charts as any;
+  const maxDailyUsers = Math.max(...(charts?.dailyActiveUsers?.map((d: any) => d.count) || [1]), 1);
+  const dailyAttempts = charts?.dailyAttempts || charts?.dailyActiveUsers || [];
+  const maxDailyAttempts = Math.max(...(dailyAttempts.map((d: any) => d.count || d.attempts || 0) || [1]), 1);
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6 pb-16">
-      <button 
-        onClick={() => navigate(-1)} 
-        className="text-sm text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
-      >
-        ← Orqaga
-      </button>
+    <div className="p-6 max-w-3xl mx-auto space-y-10">
+      {/* Sarlavha */}
+      <h1 className="font-display text-2xl">Boshqaruv paneli</h1>
 
-      {/* Guruh umumiy ma'lumotlari */}
-      <div className="bg-surface/20 p-5 rounded-2xl border border-white/5 space-y-2">
-        <h1 className="font-display text-2xl text-ink">{groupData?.name || 'Guruh tafsilotlari'}</h1>
-        <p className="text-xs text-ink-muted">{groupData?.description || 'Tavsif mavjud emas'}</p>
-        <div className="flex gap-4 pt-2 text-xs text-ink-muted">
-          <span>Yaratilgan sana: {groupData?.createdAt ? new Date(groupData.createdAt).toLocaleDateString() : 'Noma\'lum'}</span>
-        </div>
+      {/* Hero raqam */}
+      <div>
+        <p className="text-sm text-ink-muted">Jami studentlar</p>
+        <p className="font-display text-6xl text-gold mt-1 tabular-nums">
+          {data.totals.students.toLocaleString('uz-UZ')}
+        </p>
       </div>
 
-      {/* Umumiy xatolik yoki muvaffaqiyat xabarlari */}
-      {error && (
-        <div className="p-3 bg-coral/10 border border-coral/20 rounded-xl text-xs text-coral">
-          {error}
-        </div>
-      )}
-      {successMessage && (
-        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400">
-          {successMessage}
-        </div>
-      )}
-
-      {/* Ustoz biriktirish formasi (Dropdown orqali) */}
-      <form onSubmit={handleAssignTeacher} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Guruh ustozini belgilash</h3>
-        <div className="flex gap-2">
-          <select
-            value={selectedTeacherId}
-            onChange={(e) => setSelectedTeacherId(e.target.value)}
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
-          >
-            <option value="">Ustozni tanlang...</option>
-            {teachersList.map((t: any) => {
-              const tId = t.id || t._id;
-              const tName = t.firstName || t.user?.firstName || 'Ustoz';
-              const tLastName = t.lastName || t.user?.lastName || '';
-              const tUsername = t.username || t.user?.username;
-              return (
-                <option key={tId} value={tId}>
-                  {tName} {tLastName} {tUsername ? `(@${tUsername})` : ''}
-                </option>
-              );
-            })}
-          </select>
-          <button
-            type="submit"
-            className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-95 transition-opacity"
-          >
-            Saqlash
-          </button>
-        </div>
-      </form>
-
-      {/* Talaba qo'shish formasi */}
-      <form onSubmit={handleAddStudent} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Guruhga talaba qo'shish</h3>
-        <div className="flex gap-2">
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
-          >
-            <option value="">Talabani tanlang...</option>
-            {studentsList.map((s: any) => {
-              const sId = s.id || s._id || s.studentId;
-              const fName = s.firstName || s.user?.firstName || 'Talaba';
-              const lName = s.lastName || s.user?.lastName || '';
-              const uname = s.username || s.user?.username;
-              return (
-                <option key={sId} value={sId}>
-                  {fName} {lName} ({uname ? `@${uname}` : sId})
-                </option>
-              );
-            })}
-          </select>
-          <button
-            type="submit"
-            disabled={addStudent.isPending || !selectedStudentId}
-            className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
-            {addStudent.isPending ? 'Qo\'shilmoqda...' : 'Qo\'shish'}
-          </button>
-        </div>
-      </form>
-
-      {/* Guruhdagi talabalar ro'yxati */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-ink">Guruhdagi talabalar ro'yxati</h3>
-          <span className="text-xs text-ink-muted">
-            Jami: {Array.isArray(groupStudents) ? groupStudents.length : 0} ta
-          </span>
-        </div>
-
-        {isLoadingGroupStudents ? (
-          <p className="text-xs text-ink-muted">Yuklanmoqda...</p>
-        ) : !groupStudents || groupStudents.length === 0 ? (
-          <div className="text-center py-8 bg-surface/20 rounded-2xl border border-white/5">
-            <p className="text-xs text-ink-muted">Bu guruhda hali talabalar mavjud emas.</p>
+      {/* Ikkilamchi statistika ro'yxati */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-5 border-t border-white/5 pt-6">
+        {secondaryStats.map((stat) => (
+          <div key={stat.label} className="bg-surface/30 p-4 rounded-2xl border border-white/5">
+            <p className="text-2xl font-semibold tabular-nums">{stat.value.toLocaleString('uz-UZ')}</p>
+            <p className="text-xs text-ink-muted mt-0.5">{stat.label}</p>
           </div>
-        ) : (
-          <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
-            {groupStudents.map((member: any) => {
-              const student = member.student || member.user || member;
-              const sName = student.firstName || member.firstName || 'Ism yo\'q';
-              const sLastName = student.lastName || member.lastName || '';
-              const sUsername = student.username || member.username;
+        ))}
+      </div>
 
+      {/* Vizual Diagrammalar (Charts) Gridi */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 border-t border-white/5 pt-8">
+        
+        {/* 1-diagramma: Kunlik faollik (DAU) */}
+        <div className="bg-surface/20 p-5 rounded-2xl border border-white/5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-ink">Kunlik faollik</p>
+            <span className="text-[10px] text-ink-muted bg-surface px-2 py-0.5 rounded-full">So'nggi 7 kun</span>
+          </div>
+          <div className="flex items-end gap-2 h-28 pt-2">
+            {charts?.dailyActiveUsers?.map((d: any) => (
+              <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                <div
+                  className="w-full rounded-t bg-teal/70 hover:bg-teal transition-colors"
+                  style={{ height: `${Math.max(6, (d.count / maxDailyUsers) * 100)}%` }}
+                  title={`${d.date}: ${d.count} ta faol`}
+                />
+                <span className="text-[10px] text-ink-faint">{d.date.slice(8, 10)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 2-diagramma: Test topshirish urinishlari */}
+        <div className="bg-surface/20 p-5 rounded-2xl border border-white/5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-ink">Test urinishlari</p>
+            <span className="text-[10px] text-ink-muted bg-surface px-2 py-0.5 rounded-full">Dinamika</span>
+          </div>
+          <div className="flex items-end gap-2 h-28 pt-2">
+            {dailyAttempts.map((d: any, idx: number) => {
+              const val = d.count ?? d.attempts ?? 0;
               return (
-                <div key={member.id || student.id || Math.random()} className="py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-ink">
-                      {sName} {sLastName}
-                    </p>
-                    <p className="text-xs text-ink-muted">
-                      {sUsername ? `@${sUsername}` : 'Username kiritilmagan'}
-                    </p>
-                  </div>
+                <div key={d.date || idx} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                  <div
+                    className="w-full rounded-t bg-gold/70 hover:bg-gold transition-colors"
+                    style={{ height: `${Math.max(6, (val / maxDailyAttempts) * 100)}%` }}
+                    title={`${d.date || 'Kun'}: ${val} ta urinish`}
+                  />
+                  <span className="text-[10px] text-ink-faint">{(d.date || '').slice(8, 10) || `#${idx+1}`}</span>
                 </div>
               );
             })}
           </div>
-        )}
+        </div>
+
       </div>
     </div>
   );

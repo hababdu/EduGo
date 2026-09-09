@@ -9,7 +9,12 @@ export function useAdminOverview() {
     staleTime: 60_000,
   });
 }
-
+export function useAdminTeachers() {
+  return useQuery({
+    queryKey: ['admin', 'teachers'],
+    queryFn: () => apiFetch<any>('/api/v1/admin/teachers'), // yoki '/api/v1/teachers'
+  });
+}
 export function useAdminStudents(params: { search?: string; status?: string; page: number }) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);

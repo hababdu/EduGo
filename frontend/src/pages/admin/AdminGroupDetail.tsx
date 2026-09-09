@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
-import { useAdminStudents } from '../../hooks/useAdmin';
+import { useAdminStudents, useAdminTeachers } from '../../hooks/useAdmin';
 
 export function AdminGroupDetail() {
   const { id = '' } = useParams();
@@ -12,7 +12,7 @@ export function AdminGroupDetail() {
   const group = groups?.find((g: any) => g.id === id || g._id === id);
 
   // Guruhga biriktirilgan talabalar ro'yxatini olish
-  const { data: groupStudents, isLoading: isLoadingGroupStudents } = useQuery({
+  const { data: groupStudents, isLoading: isLoadingGroupStudents, refetch: refetchGroupStudents } = useQuery({
     queryKey: ['group-students', id],
     queryFn: () => apiFetch<any[]>(`/api/v1/groups/${id}/students`),
     enabled: !!id,
@@ -20,30 +20,25 @@ export function AdminGroupDetail() {
 
   // Barcha talabalar (dropdown uchun)
   const { data: allStudentsData } = useAdminStudents({ page: 1 });
-  
   const studentsList = Array.isArray(allStudentsData)
     ? allStudentsData
     : (allStudentsData as any)?.items ||
       (allStudentsData as any)?.students || 
       (allStudentsData as any)?.data || [];
 
-  // Barcha ustozlar ro'yxatini olish (Dropdown uchun)
-  const { data: teachersData } = useQuery({
-    queryKey: ['admin-teachers'],
-    queryFn: () => apiFetch<any>('/api/v1/admin/teachers'), // Agar endpoint boshqacha bo'lsa o'zgartirasiz
-  });
-
-  const teachersList = Array.isArray(teachersData)
-    ? teachersData
-    : (teachersData as any)?.items ||
-      (teachersData as any)?.teachers ||
-      (teachersData as any)?.data || [];
+  // Barcha ustozlar ro'yxatini useAdmin hook'idan olish
+  const { data: allTeachersData } = useAdminTeachers();
+  const teachersList = Array.isArray(allTeachersData)
+    ? allTeachersData
+    : (allTeachersData as any)?.items ||
+      (allTeachersData as any)?.teachers ||
+      (allTeachersData as any)?.data || [];
 
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [teacherSuccess, setTeacherSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Guruh ma'lumotidan ustoz tanlangandayoq uni state'ga yozib qo'yish
   useEffect(() => {
@@ -53,15 +48,21 @@ export function AdminGroupDetail() {
     }
   }, [group]);
 
+  // Guruhga talaba qo'shish
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !selectedStudentId) return;
     setError(null);
+    setSuccessMessage(null);
 
     addStudent.mutate(
       { groupId: id, studentId: selectedStudentId },
       {
-        onSuccess: () => setSelectedStudentId(''),
+        onSuccess: () => {
+          setSelectedStudentId('');
+          setSuccessMessage('Talaba guruhga muvaffaqiyatli qo\'shildi!');
+          refetchGroupStudents();
+        },
         onError: (err: any) => setError(err.message || 'Talaba qo\'shishda xatolik yuz berdi'),
       }
     );
@@ -72,36 +73,54 @@ export function AdminGroupDetail() {
     e.preventDefault();
     if (!id) return;
     setError(null);
-    setTeacherSuccess(false);
+    setSuccessMessage(null);
 
     try {
       await apiFetch(`/api/v1/groups/${id}/teacher`, {
         method: 'PATCH',
         body: JSON.stringify({ teacherId: selectedTeacherId }),
       });
-      setTeacherSuccess(true);
+      setSuccessMessage('Ustoz guruhga muvaffaqiyatli biriktirildi!');
     } catch (err: any) {
       setError(err.message || 'Ustozni biriktirishda xatolik yuz berdi');
     }
   };
 
+  const groupData = group as any;
+
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 pb-16">
       <button 
         onClick={() => navigate(-1)} 
-        className="text-sm text-ink-muted hover:text-ink transition-colors"
+        className="text-sm text-ink-muted hover:text-ink transition-colors flex items-center gap-1"
       >
         ← Orqaga
       </button>
 
-      <div>
-        <h1 className="font-display text-2xl text-ink">{group?.name || 'Guruh'}</h1>
-        <p className="text-xs text-ink-muted mt-1">{group?.description || 'Tavsif mavjud emas'}</p>
+      {/* Guruh umumiy ma'lumotlari */}
+      <div className="bg-surface/20 p-5 rounded-2xl border border-white/5 space-y-2">
+        <h1 className="font-display text-2xl text-ink">{groupData?.name || 'Guruh tafsilotlari'}</h1>
+        <p className="text-xs text-ink-muted">{groupData?.description || 'Tavsif mavjud emas'}</p>
+        <div className="flex gap-4 pt-2 text-xs text-ink-muted">
+          <span>Yaratilgan sana: {groupData?.createdAt ? new Date(groupData.createdAt).toLocaleDateString() : 'Noma\'lum'}</span>
+        </div>
       </div>
+
+      {/* Xatolik yoki muvaffaqiyat xabarlari */}
+      {error && (
+        <div className="p-3 bg-coral/10 border border-coral/20 rounded-xl text-xs text-coral">
+          {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400">
+          {successMessage}
+        </div>
+      )}
 
       {/* Ustoz biriktirish formasi (Dropdown orqali) */}
       <form onSubmit={handleAssignTeacher} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Guruhga ustoz biriktirish</h3>
+        <h3 className="text-sm font-medium text-ink">Guruh ustozini belgilash</h3>
         <div className="flex gap-2">
           <select
             value={selectedTeacherId}
@@ -128,7 +147,6 @@ export function AdminGroupDetail() {
             Saqlash
           </button>
         </div>
-        {teacherSuccess && <p className="text-xs text-green-400">Ustoz muvaffaqiyatli biriktirildi!</p>}
       </form>
 
       {/* Talaba qo'shish formasi */}
@@ -161,17 +179,22 @@ export function AdminGroupDetail() {
             {addStudent.isPending ? 'Qo\'shilmoqda...' : 'Qo\'shish'}
           </button>
         </div>
-        {error && <p className="text-xs text-coral">{error}</p>}
       </form>
 
       {/* Guruhdagi talabalar ro'yxati */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-ink">Guruhdagi talabalar</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-ink">Guruhdagi talabalar ro'yxati</h3>
+          <span className="text-xs text-ink-muted">
+            Jami: {Array.isArray(groupStudents) ? groupStudents.length : 0} ta
+          </span>
+        </div>
+
         {isLoadingGroupStudents ? (
           <p className="text-xs text-ink-muted">Yuklanmoqda...</p>
         ) : !groupStudents || groupStudents.length === 0 ? (
           <div className="text-center py-8 bg-surface/20 rounded-2xl border border-white/5">
-            <p className="text-xs text-ink-muted">Bu guruhda hali talabalar yo'q.</p>
+            <p className="text-xs text-ink-muted">Bu guruhda hali talabalar mavjud emas.</p>
           </div>
         ) : (
           <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
@@ -182,13 +205,13 @@ export function AdminGroupDetail() {
               const sUsername = student.username || member.username;
 
               return (
-                <div key={member.id || student.id} className="py-3 flex items-center justify-between">
+                <div key={member.id || student.id || Math.random()} className="py-3 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-ink">
                       {sName} {sLastName}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {sUsername ? `@${sUsername}` : 'Username yo\'q'}
+                      {sUsername ? `@${sUsername}` : 'Username kiritilmagan'}
                     </p>
                   </div>
                 </div>
