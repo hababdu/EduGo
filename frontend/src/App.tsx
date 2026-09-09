@@ -22,7 +22,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import  UsersAdminPage  from './pages/admin/UsersAdminPage'
-import { AdminGroups } from './pages/admin/AdminGroups';
+import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; // Guruh detallari sahifasi
 
 export function App() {
