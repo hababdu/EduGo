@@ -6,36 +6,46 @@ import { CurrentUserPayload } from '../../common/decorators/current-user.decorat
 export class GroupsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Rolga qarab RO'YXAT o'zi filtrlanadi — bu "list endpoint"lar uchun
-   * eng ishonchli usul: teacher so'rov yuborayotganda hech qachon
-   * boshqa teacherning guruhlari umuman qaytarilmaydi (keyin
-   * frontendda "yashirish" emas, DB darajasida chiqarilmaydi).
-   */
   async findAllForUser(user: CurrentUserPayload) {
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-      return this.prisma.group.findMany({ where: { deletedAt: null } });
+      return this.prisma.group.findMany({
+        where: { deletedAt: null },
+        include: { _count: { select: { members: true } } },
+      });
     }
 
     if (user.role === 'TEACHER') {
       return this.prisma.group.findMany({
         where: { teacherId: user.id, deletedAt: null },
+        include: { _count: { select: { members: true } } },
       });
     }
 
-    // STUDENT — faqat o'zi a'zo bo'lgan guruh(lar)
     return this.prisma.group.findMany({
       where: {
         deletedAt: null,
         members: { some: { studentId: user.id } },
       },
+      include: { _count: { select: { members: true } } },
     });
   }
 
   /**
-   * SINGLE resource uchun — avval topamiz, keyin OWNERSHIP tekshiramiz.
-   * Bu funksiya har bir "detail"/"update"/"delete" endpointida chaqiriladi.
+   * Guruh yaratish
    */
+  async createGroup(data: { name: string; description?: string }, user: CurrentUserPayload) {
+    // Agar o'qituvchi yaratayotgan bo'lsa, teacherId avtomatik o'ziga bog'lanadi
+    const teacherId = user.role === 'TEACHER' ? user.id : undefined;
+
+    return this.prisma.group.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        teacherId: teacherId,
+      },
+    });
+  }
+
   async findOneOrThrow(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
@@ -51,15 +61,24 @@ export class GroupsService {
   }
 
   /**
-   * MARKAZIY ownership qoidasi — barcha joyda shu funksiya orqali tekshiriladi,
-   * shunda qoida bitta joyda o'zgartiriladi va hech qayerda unutilmaydi.
+   * Guruhni o'chirish
    */
+  async deleteGroup(groupId: string, user: CurrentUserPayload) {
+    const group = await this.findOneOrThrow(groupId, user);
+
+    // Agar o'qituvchi bo'lsa, faqat o'zining guruhini o'chira oladi (assertCanAccess buni tekshiradi)
+    return this.prisma.group.update({
+      where: { id: group.id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
   private assertCanAccess(
     group: { teacherId: string | null; members: { studentId: string }[] },
     user: CurrentUserPayload,
   ) {
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
-      return; // admin hammasiga kira oladi
+      return;
     }
 
     if (user.role === 'TEACHER') {
@@ -69,7 +88,6 @@ export class GroupsService {
       return;
     }
 
-    // STUDENT — faqat o'zi a'zo bo'lsa
     const isMember = group.members.some((m) => m.studentId === user.id);
     if (!isMember) {
       throw new ForbiddenException('Siz bu guruhga a\'zo emassiz');

@@ -100,6 +100,7 @@ model Group {
   teacherId String?
   teacher   User?    @relation("GroupTeacher", fields: [teacherId], references: [id])
   createdAt DateTime @default(now())
+  description String?
   deletedAt DateTime?
 
   members         GroupMember[]
