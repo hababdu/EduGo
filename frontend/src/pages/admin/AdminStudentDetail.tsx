@@ -13,11 +13,23 @@ export function AdminStudentDetail() {
   const [reason, setReason] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   
-  // Qo'shimcha filtrlar va qidiruv state'lari
   const [testSearch, setTestSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PASSED' | 'FAILED'>('ALL');
   const [showBlockModal, setShowBlockModal] = useState(false);
 
+  // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
+  const filteredAttempts = useMemo(() => {
+    if (!student?.testAttempts) return [];
+    return student.testAttempts.filter((a: any) => {
+      const title = a.test?.title || '';
+      const matchesSearch = title.toLowerCase().includes(testSearch.toLowerCase());
+      if (statusFilter === 'PASSED') return matchesSearch && a.passed;
+      if (statusFilter === 'FAILED') return matchesSearch && !a.passed;
+      return matchesSearch;
+    });
+  }, [student?.testAttempts, testSearch, statusFilter]);
+
+  // NOW CONDITIONAL RETURNS ARE SAFE
   if (isLoading) {
     return (
       <div className="p-6 max-w-xl mx-auto space-y-4">
@@ -44,7 +56,6 @@ export function AdminStudentDetail() {
 
   const isBlocked = student.status === 'BLOCKED';
 
-  // Ballni tezkor o'zgartirish tugmalari uchun yordamchi funksiya
   const handleQuickScore = (val: number) => {
     setAmount(val.toString());
   };
@@ -74,21 +85,8 @@ export function AdminStudentDetail() {
     );
   }
 
-  // Test natijalarini qidirish va filtrlash
-  const filteredAttempts = useMemo(() => {
-    if (!student.testAttempts) return [];
-    return student.testAttempts.filter((a: any) => {
-      const title = a.test?.title || '';
-      const matchesSearch = title.toLowerCase().includes(testSearch.toLowerCase());
-      if (statusFilter === 'PASSED') return matchesSearch && a.passed;
-      if (statusFilter === 'FAILED') return matchesSearch && !a.passed;
-      return matchesSearch;
-    });
-  }, [student.testAttempts, testSearch, statusFilter]);
-
   return (
     <div className="p-6 max-w-xl mx-auto space-y-8 pb-16">
-      {/* Yuqori navigatsiya va asosiy ma'lumot */}
       <div>
         <button onClick={() => navigate(-1)} className="text-sm text-ink-muted mb-4 hover:text-ink transition-colors">
           ← Orqaga
@@ -119,7 +117,6 @@ export function AdminStudentDetail() {
         </div>
       </div>
 
-      {/* Asosiy statistika gridi */}
       <div className="grid grid-cols-3 gap-4 border-t border-b border-white/5 py-5">
         <div className="bg-surface/50 p-3 rounded-xl border border-white/5">
           <p className="text-xl font-semibold tabular-nums text-gold">{student.studentProfile?.totalScore ?? 0}</p>
@@ -135,11 +132,9 @@ export function AdminStudentDetail() {
         </div>
       </div>
 
-      {/* Qo'lda ball berish / ayirish bo'limi */}
       <section className="bg-surface/30 p-5 rounded-2xl border border-white/5 space-y-4">
         <h2 className="text-sm font-medium text-ink">Qo'lda ball berish / ayirish</h2>
         
-        {/* Tezkor tugmalar */}
         <div className="flex flex-wrap gap-2">
           {[-50, -10, 10, 50, 100].map((val) => (
             <button
@@ -180,12 +175,10 @@ export function AdminStudentDetail() {
         </form>
       </section>
 
-      {/* Test natijalari bo'limi (Qidiruv va filtrlar bilan) */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h2 className="text-sm font-medium text-ink">So'nggi test natijalari</h2>
           
-          {/* Filtrlash va qidirish */}
           <div className="flex items-center gap-2">
             <input
               type="text"
@@ -232,7 +225,6 @@ export function AdminStudentDetail() {
         )}
       </section>
 
-      {/* Bloklashni tasdiqlash uchun Modal oynacha */}
       {showBlockModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
