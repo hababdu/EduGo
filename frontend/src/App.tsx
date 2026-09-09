@@ -5,7 +5,7 @@ import { StudentDashboard } from './pages/StudentDashboard';
 import { TestTaking } from './pages/tests/TestTaking';
 import { RankingPage } from './pages/ranking/RankingPage';
 import { NotificationsPage } from './pages/NotificationsPage';
-import { AdminOverview } from './pages/admin/AdminOverview';
+import   AdminOverview  from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
 import { AdminCourses } from './pages/admin/content/AdminCourses';

@@ -5,7 +5,7 @@ import { apiFetch } from '../../lib/api-client';
 import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
 import { useAdminStudents } from '../../hooks/useAdmin';
 
-export function AdminGroupDetail() {
+export default function AdminGroupDetail() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { data: groups } = useGroups();
