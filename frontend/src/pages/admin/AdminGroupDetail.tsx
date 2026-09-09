@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
@@ -27,11 +27,31 @@ export function AdminGroupDetail() {
       (allStudentsData as any)?.students || 
       (allStudentsData as any)?.data || [];
 
+  // Barcha ustozlar ro'yxatini olish (Dropdown uchun)
+  const { data: teachersData } = useQuery({
+    queryKey: ['admin-teachers'],
+    queryFn: () => apiFetch<any>('/api/v1/admin/teachers'), // Agar endpoint boshqacha bo'lsa o'zgartirasiz
+  });
+
+  const teachersList = Array.isArray(teachersData)
+    ? teachersData
+    : (teachersData as any)?.items ||
+      (teachersData as any)?.teachers ||
+      (teachersData as any)?.data || [];
+
   const addStudent = useAddStudentToGroup();
   const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [selectedTeacherId, setSelectedTeacherId] = useState<string>((group as any)?.teacherId || '');
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [teacherSuccess, setTeacherSuccess] = useState(false);
+
+  // Guruh ma'lumotidan ustoz tanlangandayoq uni state'ga yozib qo'yish
+  useEffect(() => {
+    const g = group as any;
+    if (g && (g.teacherId || g.teacher?._id || g.teacher?.id)) {
+      setSelectedTeacherId(g.teacherId || g.teacher?._id || g.teacher?.id);
+    }
+  }, [group]);
 
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,17 +99,28 @@ export function AdminGroupDetail() {
         <p className="text-xs text-ink-muted mt-1">{group?.description || 'Tavsif mavjud emas'}</p>
       </div>
 
-      {/* Ustoz biriktirish formasi */}
+      {/* Ustoz biriktirish formasi (Dropdown orqali) */}
       <form onSubmit={handleAssignTeacher} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
         <h3 className="text-sm font-medium text-ink">Guruhga ustoz biriktirish</h3>
         <div className="flex gap-2">
-          <input
-            type="text"
+          <select
             value={selectedTeacherId}
             onChange={(e) => setSelectedTeacherId(e.target.value)}
-            placeholder="Ustoz ID raqamini kiriting..."
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink"
-          />
+            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
+          >
+            <option value="">Ustozni tanlang...</option>
+            {teachersList.map((t: any) => {
+              const tId = t.id || t._id;
+              const tName = t.firstName || t.user?.firstName || 'Ustoz';
+              const tLastName = t.lastName || t.user?.lastName || '';
+              const tUsername = t.username || t.user?.username;
+              return (
+                <option key={tId} value={tId}>
+                  {tName} {tLastName} {tUsername ? `(@${tUsername})` : ''}
+                </option>
+              );
+            })}
+          </select>
           <button
             type="submit"
             className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-95 transition-opacity"
