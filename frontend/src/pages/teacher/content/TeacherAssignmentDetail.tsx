@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
+import { useTeacherOverview } from '../../../hooks/useTeacher'; // Hookni import qilish
 
 export function TeacherAssignmentDetail() {
   const { assignmentId = '' } = useParams();
@@ -36,18 +37,9 @@ export function TeacherAssignmentDetail() {
     },
   });
 
-  const { data: groups } = useQuery({
-    queryKey: ['teacher-assigned-groups'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.get('/api/v1/teacher/groups');
-        return res.data;
-      } catch {
-        const res = await apiClient.get('/api/v1/groups');
-        return res.data;
-      }
-    },
-  });
+  // Guruhlarni useTeacherOverview hukidan olish
+  const { data: overviewData } = useTeacherOverview();
+  const groups = overviewData?.groups || [];
 
   const getEmbedUrl = (url: string) => {
     if (!url) return '';
@@ -172,7 +164,6 @@ export function TeacherAssignmentDetail() {
             </span>
             <h1 className="font-display text-2xl text-ink">{assignment.title}</h1>
 
-            {/* Kontent turiga qarab chiqarish */}
             {contentType === 'VIDEO' && embedUrl && (
               <div className="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
                 <iframe src={embedUrl} title="Video" className="w-full h-full" allowFullScreen />

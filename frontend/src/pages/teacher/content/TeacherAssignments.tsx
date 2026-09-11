@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
+import { useTeacherOverview } from '../../../hooks/useTeacher'; // Hookni import qilish
 
 export function TeacherAssignments() {
   const navigate = useNavigate();
@@ -15,9 +16,9 @@ export function TeacherAssignments() {
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState<'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'>('TEXT');
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [mediaUrl, setMediaUrl] = useState(''); // Video, rasm yoki PDF havolasi uchun
+  const [mediaUrl, setMediaUrl] = useState('');
 
-  // Materiallarni olish (backenddagi mavjud test/material endpointi)
+  // Materiallarni olish
   const { data: items, isLoading } = useQuery({
     queryKey: ['teacher-assignments-list'],
     queryFn: async () => {
@@ -26,25 +27,14 @@ export function TeacherAssignments() {
     },
   });
 
-  // Ustozga biriktirilgan guruhlarni olish (backenddan to'g'ridan-to'g'ri o'qituvchi guruhlari)
-  const { data: groups } = useQuery({
-    queryKey: ['teacher-assigned-groups'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.get('/api/v1/teacher/groups');
-        return res.data;
-      } catch {
-        // Agar maxsus endpoint bo'lmasa, umumiy guruhlar endpointidan foydalanish
-        const res = await apiClient.get('/api/v1/groups');
-        return res.data;
-      }
-    },
-  });
+  // Guruhlarni useTeacherOverview hukidan olish
+  const { data: overviewData } = useTeacherOverview();
+  // Hook qaytaradigan tuzilishga qarab guruhlarni ajratib olamiz (masalan: overviewData?.groups)
+  const groups = overviewData?.groups ||  [];
 
-  // Yangi material yaratish (Backend talablariga moslashtirilgan holda)
+  // Yangi material yaratish
   const createMutation = useMutation({
     mutationFn: async (newData: any) => {
-      // Barcha ma'lumotlarni description ichida JSON yoki maxsus formatda saqlaymiz
       const payloadData = {
         type: newData.contentType,
         mediaUrl: newData.mediaUrl,
