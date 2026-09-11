@@ -29,39 +29,40 @@ enum AccountStatus {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  telegramId     String        @unique
-  username       String?
-  firstName      String
-  lastName       String?
-  profilePhotoUrl String?
-  role           RoleName      @default(STUDENT)
-  status         AccountStatus @default(ACTIVE)
-  registeredAt   DateTime      @default(now())
-  lastActiveAt   DateTime      @default(now())
-  deletedAt      DateTime?     // soft delete
+  id                String       @id @default(cuid())
+  telegramId        String       @unique
+  username          String?
+  firstName         String
+  lastName          String?
+  profilePhotoUrl   String?
+  role              RoleName     @default(STUDENT)
+  status            AccountStatus @default(ACTIVE)
+  registeredAt      DateTime     @default(now())
+  lastActiveAt      DateTime     @default(now())
+  deletedAt         DateTime?    // soft delete
 
-  studentProfile StudentProfile?
-  teacherProfile TeacherProfile?
-  adminProfile   AdminProfile?
+  studentProfile    StudentProfile?
+  teacherProfile    TeacherProfile?
+  adminProfile      AdminProfile?
 
-  groupMemberships   GroupMember[]
-  scoreTransactions  ScoreTransaction[] @relation("ScoreOwner")
-  adminScoreActions  ScoreTransaction[] @relation("ScoreCreatedBy")
-  xpTransactions     XpTransaction[]
-  achievements       StudentAchievement[]
-  testAttempts       TestAttempt[]
-  notifications      Notification[]
-  adminActionLogs    AdminActionLog[]   @relation("AuditActor")
-  activityLogs       ActivityLog[]
-  streak             Streak?
+  groupMemberships  GroupMember[]
+  scoreTransactions ScoreTransaction[] @relation("ScoreOwner")
+  adminScoreActions ScoreTransaction[] @relation("ScoreCreatedBy")
+  xpTransactions    XpTransaction[]
+  achievements      StudentAchievement[]
+  testAttempts      TestAttempt[]
+  notifications     Notification[]
+  adminActionLogs   AdminActionLog[]   @relation("AuditActor")
+  activityLogs      ActivityLog[]
+  streak            Streak?
 
-  createdCourses     Course[]           @relation("CourseCreatedBy")
-  taughtGroups       Group[]            @relation("GroupTeacher")
-  createdTests       Test[]             @relation("TestCreatedBy")
-  createdQuestions   Question[]         @relation("QuestionCreatedBy")
-  assignedTests      TestAssignment[]   @relation("AssignedBy")
-  createdAnnouncements Announcement[]   @relation("AnnouncementCreatedBy")
+  createdCourses    Course[]           @relation("CourseCreatedBy")
+  taughtGroups      Group[]            @relation("GroupTeacher")
+  assistantGroups   Group[]            @relation("GroupAssistant")
+  createdTests      Test[]             @relation("TestCreatedBy")
+  createdQuestions  Question[]         @relation("QuestionCreatedBy")
+  assignedTests     TestAssignment[]   @relation("AssignedBy")
+  createdAnnouncements Announcement[]  @relation("AnnouncementCreatedBy")
 
   @@index([telegramId])
   @@index([role])
@@ -93,33 +94,38 @@ model AdminProfile {
 // ------------------------------------------------------------
 // 2. GROUPS
 // ------------------------------------------------------------
-
 model Group {
-  id        String   @id @default(cuid())
-  name      String   // masalan "9-A"
-  teacherId String?
-  teacher   User?    @relation("GroupTeacher", fields: [teacherId], references: [id])
-  createdAt DateTime @default(now())
-  deletedAt DateTime?
+  id          String       @id @default(cuid())
+  name        String       // masalan "9-A"
+  description String?      // Guruh tavsifi uchun
+  teacherId   String?
+  teacher     User?        @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  
+  assistantId String?      // Yordamchi ustoz uchun
+  assistant   User?        @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime     @default(now())
+  deletedAt   DateTime?    // Soft delete uchun
 
   members         GroupMember[]
   testAssignments TestAssignment[]
 
   @@index([teacherId])
+  @@index([assistantId])
 }
-
 model GroupMember {
   id        String   @id @default(cuid())
   groupId   String
-  group     Group    @relation(fields: [groupId], references: [id])
   studentId String
-  student   User     @relation(fields: [studentId], references: [id])
   joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, studentId])
   @@index([studentId])
 }
-
 // ------------------------------------------------------------
 // 3. LEARNING HIERARCHY: Course → Subject → Section → Topic → Lesson
 // ------------------------------------------------------------

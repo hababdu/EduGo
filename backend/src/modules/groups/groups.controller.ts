@@ -85,4 +85,75 @@ async assignTeacher(
   async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.groupsService.deleteGroup(id, user);
   }
+}import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { GroupsService } from './groups.service';
+
+@UseGuards(JwtAuthGuard)
+@Controller('api/v1/groups')
+export class GroupsController {
+  constructor(private readonly groupsService: GroupsService) {}
+
+  @Get()
+  async findAll(@CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.findAllForUser(user);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.findOneOrThrow(id, user);
+  }
+
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Get(':id/students')
+  async getGroupStudents(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.findGroupStudents(id, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post()
+  async create(
+    @Body() body: { name: string; description?: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.createGroup(body, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post(':id/students')
+  async addStudentToGroup(
+    @Param('id') id: string,
+    @Body() body: { studentId: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.addStudentToGroup(id, body.studentId, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Delete(':id/students/:studentId')
+  async removeStudentFromGroup(
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.removeStudentFromGroup(id, studentId, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Patch(':id/teacher')
+  async assignTeacher(
+    @Param('id') id: string,
+    @Body() body: { teacherId: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.assignTeacher(id, body.teacherId, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Delete(':id')
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.deleteGroup(id, user);
+  }
 }

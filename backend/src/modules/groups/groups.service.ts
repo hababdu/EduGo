@@ -1,15 +1,12 @@
-import { ForbiddenException, Injectable, NotFoundException ,BadRequestException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class GroupsService {
   constructor(private readonly prisma: PrismaService) {}
-/**
-   * Guruh talabalarini (a'zolarini) shaxsiy ma'lumotlari (User) bilan birga olish
-   */
+
   async findGroupStudents(groupId: string, user: CurrentUserPayload) {
-    // Avval guruhga kirish huquqi bor-yo'qligini tekshiramiz
     await this.findOneOrThrow(groupId, user);
 
     return this.prisma.groupMember.findMany({
@@ -21,23 +18,32 @@ export class GroupsService {
             firstName: true,
             lastName: true,
             username: true,
+            phone: true,
+            role: true,
           },
         },
       },
     });
   }
+
   async findAllForUser(user: CurrentUserPayload) {
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
       return this.prisma.group.findMany({
         where: { deletedAt: null },
-        include: { _count: { select: { members: true } } },
+        include: {
+          _count: { select: { members: true } },
+          teacher: { select: { id: true, firstName: true, lastName: true, username: true } },
+        },
       });
     }
 
     if (user.role === 'TEACHER') {
       return this.prisma.group.findMany({
         where: { teacherId: user.id, deletedAt: null },
-        include: { _count: { select: { members: true } } },
+        include: {
+          _count: { select: { members: true } },
+          teacher: { select: { id: true, firstName: true, lastName: true, username: true } },
+        },
       });
     }
 
@@ -46,45 +52,48 @@ export class GroupsService {
         deletedAt: null,
         members: { some: { studentId: user.id } },
       },
-      include: { _count: { select: { members: true } } },
+      include: {
+        _count: { select: { members: true } },
+        teacher: { select: { id: true, firstName: true, lastName: true, username: true } },
+      },
     });
   }
 
-  /**
-   * Guruh yaratish
-   */
   async createGroup(data: { name: string; description?: string }, user: CurrentUserPayload) {
-    // Agar o'qituvchi yaratayotgan bo'lsa, teacherId avtomatik o'ziga bog'lanadi
     const teacherId = user.role === 'TEACHER' ? user.id : undefined;
 
     return this.prisma.group.create({
       data: {
         name: data.name,
+        description: data.description,
         teacherId: teacherId,
       },
     });
   }
-async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPayload) {
-    // Guruh mavjudligini va ruxsat borligini tekshiramiz
+
+  async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPayload) {
     await this.findOneOrThrow(groupId, user);
 
-    // Talaba allaqachon guruhda borligini tekshiramiz
     const existing = await this.prisma.groupMember.findUnique({
       where: { groupId_studentId: { groupId, studentId } },
     });
 
     if (existing) {
-      throw new BadRequestException('Bu talaba allaqachon guruhga qo\'shilgan');
+      throw new BadRequestException("Bu talaba allaqachon guruhga qo'shilgan");
     }
 
     return this.prisma.groupMember.create({
       data: { groupId, studentId },
     });
   }
+
   async findOneOrThrow(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      include: { members: true },
+      include: {
+        members: true,
+        teacher: { select: { id: true, firstName: true, lastName: true, username: true } },
+      },
     });
 
     if (!group || group.deletedAt) {
@@ -95,32 +104,26 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
     return group;
   }
 
-
-  
-  /**
-   * Guruhni o'chirish
-   */
   async removeStudentFromGroup(groupId: string, studentId: string, user: CurrentUserPayload) {
     await this.findOneOrThrow(groupId, user);
-    // Prisma yordamida guruh a'zosini o'chirish (yoki bazangiz tuzilishiga qarab)
     return this.prisma.groupMember.deleteMany({
       where: { groupId, studentId },
     });
   }
 
   async assignTeacher(groupId: string, teacherId: string, user: CurrentUserPayload) {
-  await this.findOneOrThrow(groupId, user);
-  return this.prisma.group.update({
-    where: { id: groupId },
-    data: {
-      teacher: teacherId ? { connect: { id: teacherId } } : { disconnect: true },
-    },
-  });
-}
+    await this.findOneOrThrow(groupId, user);
+    return this.prisma.group.update({
+      where: { id: groupId },
+      data: {
+        teacher: teacherId ? { connect: { id: teacherId } } : { disconnect: true },
+      },
+    });
+  }
+
   async deleteGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.findOneOrThrow(groupId, user);
 
-    // Agar o'qituvchi bo'lsa, faqat o'zining guruhini o'chira oladi (assertCanAccess buni tekshiradi)
     return this.prisma.group.update({
       where: { id: group.id },
       data: { deletedAt: new Date() },
@@ -144,7 +147,7 @@ async addStudentToGroup(groupId: string, studentId: string, user: CurrentUserPay
 
     const isMember = group.members.some((m) => m.studentId === user.id);
     if (!isMember) {
-      throw new ForbiddenException('Siz bu guruhga a\'zo emassiz');
+      throw new ForbiddenException("Siz bu guruhga a'zo emassiz");
     }
   }
 }
