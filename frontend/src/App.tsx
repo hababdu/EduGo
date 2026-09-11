@@ -21,10 +21,10 @@ import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
-import  UsersAdminPage  from './pages/admin/UsersAdminPage'
+import UsersAdminPage from './pages/admin/UsersAdminPage';
 import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; 
-import {TeacherStudentDetail} from './pages/teacher/TeacherStudentDetail'
+import { TeacherStudentDetail } from './pages/teacher/TeacherStudentDetail';
 
 export function App() {
   const status = useAuth();
@@ -70,7 +70,6 @@ export function App() {
   if (isAdmin) {
     return (
       <BrowserRouter>
-        {/* Asosiy konteynerga pb-24 qo'shildi */}
         <div className="min-h-screen pb-24">
           <Routes>
             <Route path="/admin" element={<AdminOverview />} />
@@ -90,18 +89,18 @@ export function App() {
   if (isTeacher) {
     return (
       <BrowserRouter>
-        {/* Asosiy konteynerga pb-24 qo'shildi */}
         <div className="min-h-screen pb-24">
           <Routes>
+            {/* O'qituvchi yo'llari /teacher ga o'zgartirildi */}
+            <Route path="/teacher" element={<TeacherOverview />} />
+            <Route path="/teacher/content/courses" element={<AdminCourses />} />
+            <Route path="/teacher/content/courses/:courseId" element={<AdminCourseDetail />} />
             <Route path="/teacher/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
             <Route path="/teacher/content/sections/:sectionId" element={<AdminSectionDetail />} />
             <Route path="/teacher/content/topics/:topicId" element={<AdminTopicDetail />} />
             <Route path="/teacher/questions" element={<AdminQuestions />} />
             <Route path="/teacher/tests" element={<AdminTests />} />
             <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
-            <Route path="/teacher/content/courses/:courseId" element={<AdminCourseDetail />} />
-            <Route path="/teacher/content/courses" element={<AdminCourses />} />
-            <Route path="/teacher" element={<TeacherOverview />} />
             <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
             <Route path="/teacher/groups/:groupId/students/:studentId" element={<TeacherStudentDetail />} />
             <Route path="*" element={<TeacherOverview />} />
