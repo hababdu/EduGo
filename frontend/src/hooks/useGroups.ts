@@ -18,6 +18,24 @@ export function useGroups() {
   });
 }
 
+// Guruh tafsilotlarini olish
+export function useGroup(id: string) {
+  return useQuery({
+    queryKey: ['group', id],
+    queryFn: () => apiFetch<GroupItem>(`/api/v1/groups/${id}`),
+    enabled: !!id,
+  });
+}
+
+// Guruh a'zolarini (talabalarini) olish
+export function useGroupMembers(groupId: string) {
+  return useQuery({
+    queryKey: ['group-students', groupId],
+    queryFn: () => apiFetch<any[]>(`/api/v1/groups/${groupId}/students`),
+    enabled: !!groupId,
+  });
+}
+
 export function useCreateGroup() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -31,6 +49,7 @@ export function useCreateGroup() {
     },
   });
 }
+
 export function useAddStudentToGroup() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -45,6 +64,38 @@ export function useAddStudentToGroup() {
     },
   });
 }
+
+// Talabani guruhdan chiqarish
+export function useRemoveStudentFromGroup() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, studentId }: { groupId: string; studentId: string }) =>
+      apiFetch(`/api/v1/groups/${groupId}/students/${studentId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['group-students', variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+}
+
+// Guruhga o'qituvchi tayinlash
+export function useAssignGroupTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, teacherId }: { groupId: string; teacherId: string | null }) =>
+      apiFetch(`/api/v1/groups/${groupId}/teacher`, {
+        method: 'PATCH',
+        body: JSON.stringify({ teacherId }),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['group', variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+}
+
 export function useDeleteGroup() {
   const queryClient = useQueryClient();
   return useMutation({
