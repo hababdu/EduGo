@@ -111,7 +111,7 @@ export function AdminTests() {
           {filteredTests.map((t: any) => (
             <button
               key={t.id}
-              onClick={() => navigate(`/admin/tests/${t.id}`)}
+              onClick={() => navigate(`/teacher/tests/${t.id}`)}
               className="w-full flex items-center justify-between py-4 text-left hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-colors group"
             >
               <div>
