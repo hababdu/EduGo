@@ -55,7 +55,7 @@ export function AdminSectionDetail() {
               title={t.title}
               status={t.status}
               subtitle={t.sequentialLocked ? '🔒 Ketma-ket ochiladi' : undefined}
-              onClick={() => navigate(`/admin/content/topics/${t.id}`)}
+              onClick={() => navigate(`/teacher/content/topics/${t.id}`)}
             />
           ))}
         </div>

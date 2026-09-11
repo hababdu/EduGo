@@ -18,7 +18,7 @@ export function AdminCourseDetail() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <button onClick={() => navigate('/admin/content/courses')} className="text-sm text-ink-muted mb-6">
+      <button onClick={() => navigate('/teacher/content/courses')} className="text-sm text-ink-muted mb-6">
         ← Kurslar
       </button>
 
