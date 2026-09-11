@@ -14,43 +14,41 @@ export function TeacherAssignmentDetail() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
-  const [contentType, setContentType] = useState<'LESSON' | 'HOMEWORK' | 'RESOURCE'>('LESSON');
+  const [contentType, setContentType] = useState<'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'>('TEXT');
+  const [mediaUrl, setMediaUrl] = useState('');
 
-  // Ma'lumotlarni olish va videoni ajratib olish
   const { data: assignment, isLoading } = useQuery({
     queryKey: ['teacher-assignment', assignmentId],
     queryFn: async () => {
       const res = await apiClient.get(`/api/v1/tests/${assignmentId}`);
       setTitle(res.data.title);
       
-      const rawDesc = res.data.description || '';
-      
-      // Tipe'ni aniqlab olish ([HOMEWORK], [RESOURCE] yoki [LESSON])
-      if (rawDesc.includes('[HOMEWORK]')) setContentType('HOMEWORK');
-      else if (rawDesc.includes('[RESOURCE]')) setContentType('RESOURCE');
-      else setContentType('LESSON');
-
-      // YouTube videoni ajratib olish
-      const videoMatch = rawDesc.match(/\[VIDEO:(.*?)\]/);
-      if (videoMatch) {
-        setVideoUrl(videoMatch[1]);
-      } else {
-        setVideoUrl('');
+      try {
+        const parsed = JSON.parse(res.data.description);
+        setContentType(parsed.type || 'TEXT');
+        setMediaUrl(parsed.mediaUrl || '');
+        setDescription(parsed.content || '');
+      } catch {
+        setContentType('TEXT');
+        setDescription(res.data.description || '');
       }
-
-      // Tag'larni tozalab, sof description'ni olish
-      const cleanDesc = rawDesc
-        .replace(/\[(LESSON|HOMEWORK|RESOURCE)\]/, '')
-        .replace(/\[VIDEO:.*?\]/, '')
-        .trim();
-      
-      setDescription(cleanDesc);
       return res.data;
     },
   });
 
-  // YouTube havolasini embed (iframe) formatiga o'tkazish funksiyasi
+  const { data: groups } = useQuery({
+    queryKey: ['teacher-assigned-groups'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get('/api/v1/teacher/groups');
+        return res.data;
+      } catch {
+        const res = await apiClient.get('/api/v1/groups');
+        return res.data;
+      }
+    },
+  });
+
   const getEmbedUrl = (url: string) => {
     if (!url) return '';
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -58,30 +56,21 @@ export function TeacherAssignmentDetail() {
     return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : '';
   };
 
-  const { data: groups } = useQuery({
-    queryKey: ['teacher-groups'],
-    queryFn: async () => {
-      try {
-        const res = await apiClient.get('/api/v1/groups');
-        return res.data;
-      } catch {
-        return [];
-      }
-    },
-  });
-
   const updateMutation = useMutation({
-    mutationFn: async (updatedData: { title: string; description: string; contentType: string; videoUrl: string }) => {
-      const fullDesc = `[${updatedData.contentType}]${updatedData.videoUrl ? ` [VIDEO:${updatedData.videoUrl}]` : ''} ${updatedData.description}`;
+    mutationFn: async (updatedData: any) => {
+      const payloadData = {
+        type: updatedData.contentType,
+        mediaUrl: updatedData.mediaUrl,
+        content: updatedData.description,
+      };
       const res = await apiClient.patch(`/api/v1/tests/${assignmentId}`, {
         title: updatedData.title,
-        description: fullDesc,
+        description: JSON.stringify(payloadData),
       });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-assignment', assignmentId] });
-      queryClient.invalidateQueries({ queryKey: ['teacher-assignments-list'] });
       setIsEditing(false);
     },
   });
@@ -114,167 +103,121 @@ export function TeacherAssignmentDetail() {
   };
 
   if (isLoading || !assignment) {
-    return (
-      <div className="p-6 max-w-3xl mx-auto space-y-6">
-        <div className="h-64 bg-surface/30 rounded-3xl animate-pulse border border-white/5" />
-      </div>
-    );
+    return <div className="p-6 animate-pulse h-40 bg-surface rounded-3xl m-6" />;
   }
 
-  const embedUrl = getEmbedUrl(videoUrl);
+  const embedUrl = contentType === 'VIDEO' ? getEmbedUrl(mediaUrl) : '';
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
-      {/* Yuqori navigatsiya va tugmalar */}
       <div className="flex items-center justify-between">
-        <button onClick={() => navigate('/teacher/assignments')} className="text-xs text-ink-muted hover:text-ink transition-colors">
+        <button onClick={() => navigate('/teacher/assignments')} className="text-xs text-ink-muted hover:text-ink">
           ← Orqaga qaytish
         </button>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="text-xs bg-surface/50 hover:bg-surface text-ink px-3.5 py-2 rounded-xl border border-white/5 transition-all"
-          >
+          <button onClick={() => setIsEditing(!isEditing)} className="text-xs bg-surface/50 text-ink px-3.5 py-2 rounded-xl border border-white/5">
             {isEditing ? 'Bekor qilish' : 'Tahrirlash'}
           </button>
-          <button
-            onClick={() => {
-              if (confirm('Haqiqatan ham bu materialni oʻchirmoqchimisiz?')) deleteMutation.mutate();
-            }}
-            className="text-xs bg-coral/10 hover:bg-coral/20 text-coral px-3.5 py-2 rounded-xl transition-all"
-          >
+          <button onClick={() => { if (confirm('Oʻchirmoqchimisiz?')) deleteMutation.mutate(); }} className="text-xs bg-coral/10 text-coral px-3.5 py-2 rounded-xl">
             O'chirish
           </button>
         </div>
       </div>
 
-      {/* Asosiy ma'lumot yoki tahrirlash formasi */}
       <div className="bg-surface/30 p-6 sm:p-8 rounded-3xl border border-white/5 backdrop-blur-md space-y-6">
         {isEditing ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              updateMutation.mutate({ title, description, contentType, videoUrl });
-            }}
-            className="space-y-4"
-          >
-            <div className="border-b border-white/5 pb-3">
-              <h2 className="font-display text-lg text-ink">Materialni tahrirlash</h2>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Material turi</label>
-              <select
-                value={contentType}
-                onChange={(e) => setContentType(e.target.value as any)}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
-              >
-                <option value="LESSON">📖 Dars mavzusi va Video</option>
-                <option value="HOMEWORK">📝 Uy vazifasi</option>
-                <option value="RESOURCE">📎 Foydali resurs</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Mavzu nomi</label>
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">YouTube video havolasi (URL)</label>
-              <input
-                value={videoUrl}
-                onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Tavsif / Izoh</label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={updateMutation.isPending}
-              className="w-full bg-gold text-base rounded-2xl py-3 font-semibold text-xs hover:opacity-90 transition-opacity"
+          <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate({ title, description, contentType, mediaUrl }); }} className="space-y-4">
+            <h2 className="font-display text-lg text-ink">Materialni tahrirlash</h2>
+            
+            <select
+              value={contentType}
+              onChange={(e) => setContentType(e.target.value as any)}
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
             >
-              {updateMutation.isPending ? 'Saqlanmoqda...' : 'O\'zgarishlarni saqlash'}
-            </button>
+              <option value="TEXT">📄 Matn</option>
+              <option value="IMAGE">🖼️ Rasm</option>
+              <option value="PDF">📑 PDF</option>
+              <option value="VIDEO">📹 Video</option>
+            </select>
+
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
+            />
+
+            {contentType !== 'TEXT' && (
+              <input
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                placeholder="Media URL"
+                required
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
+              />
+            )}
+
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none"
+            />
+            <button type="submit" className="bg-gold text-base text-xs font-semibold px-5 py-2.5 rounded-xl">Saqlash</button>
           </form>
         ) : (
           <div className="space-y-5">
-            <div className="space-y-2">
-              <span className={`text-xs px-3 py-1 rounded-full font-semibold inline-block ${
-                contentType === 'HOMEWORK' ? 'bg-coral/10 text-coral' : contentType === 'RESOURCE' ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold'
-              }`}>
-                {contentType === 'HOMEWORK' ? 'Uy vazifasi' : contentType === 'RESOURCE' ? 'Foydali resurs' : 'Dars mavzusi'}
-              </span>
-              <h1 className="font-display text-2xl text-ink">{assignment.title}</h1>
-            </div>
-            
-            {/* YouTube Videoni to'g'ridan-to'g'ri ijro etish oynasi (iframe) */}
-            {embedUrl ? (
-              <div className="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black shadow-lg">
-                <iframe
-                  src={embedUrl}
-                  title="YouTube video player"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            ) : videoUrl ? (
-              <div className="p-4 bg-surface/50 rounded-2xl border border-white/5 text-xs text-ink-muted">
-                YouTube havola kiritilgan, lekin uni ochib bo'lmadi: <a href={videoUrl} target="_blank" rel="noreferrer" className="text-gold underline">{videoUrl}</a>
-              </div>
-            ) : null}
+            <span className="text-xs px-3 py-1 rounded-full font-semibold bg-gold/10 text-gold uppercase">
+              {contentType}
+            </span>
+            <h1 className="font-display text-2xl text-ink">{assignment.title}</h1>
 
-            <div className="pt-2">
-              <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-2">Dars tavsifi va ko'rsatmalar</h3>
-              <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed bg-surface/20 p-4 rounded-2xl border border-white/5">
-                {description || 'Tavsif mavjud emas'}
-              </p>
-            </div>
+            {/* Kontent turiga qarab chiqarish */}
+            {contentType === 'VIDEO' && embedUrl && (
+              <div className="aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-black">
+                <iframe src={embedUrl} title="Video" className="w-full h-full" allowFullScreen />
+              </div>
+            )}
+
+            {contentType === 'IMAGE' && mediaUrl && (
+              <div className="rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                <img src={mediaUrl} alt="Content" className="w-full max-h-96 object-contain mx-auto" />
+              </div>
+            )}
+
+            {contentType === 'PDF' && mediaUrl && (
+              <div className="p-4 bg-surface/50 rounded-2xl border border-white/5 flex items-center justify-between">
+                <span className="text-xs text-ink truncate">PDF Hujjat biriktirilgan</span>
+                <a href={mediaUrl} target="_blank" rel="noreferrer" className="text-xs text-gold underline shrink-0 ml-4">
+                  Faylni ochish →
+                </a>
+              </div>
+            )}
+
+            <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed bg-surface/20 p-4 rounded-2xl border border-white/5">
+              {description || 'Tavsif mavjud emas'}
+            </p>
           </div>
         )}
       </div>
 
-      {/* Guruhga biriktirish qismi */}
-      <div className="bg-surface/30 p-6 sm:p-8 rounded-3xl border border-white/5 backdrop-blur-md space-y-4">
-        <div>
-          <h2 className="font-display text-lg text-ink">Guruhga biriktirish</h2>
-          <p className="text-xs text-ink-muted">Bu materialni ma'lum bir o'quv guruhiga yuborish</p>
-        </div>
+      {/* Guruhga biriktirish */}
+      <div className="bg-surface/30 p-6 sm:p-8 rounded-3xl border border-white/5 space-y-4">
+        <h2 className="font-display text-lg text-ink">Guruhga biriktirish</h2>
         <form onSubmit={handleAssignToGroup} className="flex flex-col sm:flex-row gap-3">
           <select
             value={selectedGroup}
             onChange={(e) => setSelectedGroup(e.target.value)}
             required
-            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
           >
             <option value="">Guruhni tanlang...</option>
             {groups?.map((g: any) => (
               <option key={g.id} value={g.id}>{g.name}</option>
             ))}
           </select>
-          <button
-            type="submit"
-            disabled={isAssigning}
-            className="bg-gold text-base rounded-2xl px-6 py-3 font-semibold text-xs hover:opacity-90 transition-opacity disabled:opacity-50 shrink-0"
-          >
-            {isAssigning ? 'Yuborilmoqda...' : 'Guruhga biriktirish'}
+          <button type="submit" disabled={isAssigning} className="bg-gold text-base rounded-2xl px-6 py-3 font-semibold text-xs shrink-0">
+            {isAssigning ? 'Yuborilmoqda...' : 'Guruhga yuborish'}
           </button>
         </form>
       </div>
