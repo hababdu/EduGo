@@ -23,7 +23,7 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import  UsersAdminPage  from './pages/admin/UsersAdminPage'
 import AdminGroups from './pages/admin/AdminGroups';
-import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; // Guruh detallari sahifasi
+import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; 
 import {TeacherStudentDetail} from './pages/teacher/TeacherStudentDetail'
 
 export function App() {
@@ -70,17 +70,19 @@ export function App() {
   if (isAdmin) {
     return (
       <BrowserRouter>
+        {/* Asosiy konteynerga pb-24 qo'shildi */}
+        <div className="min-h-screen pb-24">
+          <Routes>
+            <Route path="/admin" element={<AdminOverview />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
+            <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
+            <Route path="/admin/users" element={<UsersAdminPage />} />
+            <Route path="/admin/groups" element={<AdminGroups />} />
+            <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
+            <Route path="*" element={<AdminOverview />} />
+          </Routes>
+        </div>
         <AdminNav />
-        <Routes>
-          <Route path="/admin" element={<AdminOverview />} />
-          <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
-         
-          <Route path="/admin/users" element={<UsersAdminPage />} />
-          <Route path="*" element={<AdminOverview />} />
-          <Route path="/admin/groups" element={<AdminGroups />} />
-         <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
-        </Routes>
       </BrowserRouter>
     );
   }
@@ -88,21 +90,24 @@ export function App() {
   if (isTeacher) {
     return (
       <BrowserRouter>
+        {/* Asosiy konteynerga pb-24 qo'shildi */}
+        <div className="min-h-screen pb-24">
+          <Routes>
+            <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
+            <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
+            <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
+            <Route path="/admin/questions" element={<AdminQuestions />} />
+            <Route path="/admin/tests" element={<AdminTests />} />
+            <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
+            <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
+            <Route path="/admin/content/courses" element={<AdminCourses />} />
+            <Route path="/teacher" element={<TeacherOverview />} />
+            <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
+            <Route path="/teacher/groups/:groupId/students/:studentId" element={<TeacherStudentDetail />} />
+            <Route path="*" element={<TeacherOverview />} />
+          </Routes>
+        </div>
         <TeacherNav />
-        <Routes>
-          <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
-          <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
-          <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
-          <Route path="/admin/questions" element={<AdminQuestions />} />
-          <Route path="/admin/tests" element={<AdminTests />} />
-          <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
-          <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
-          <Route path="/admin/content/courses" element={<AdminCourses />} />
-          <Route path="/teacher" element={<TeacherOverview />} />
-          <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
-          <Route path="*" element={<TeacherOverview />} />
-          <Route path="/teacher/groups/:groupId/students/:studentId" element={<TeacherStudentDetail />} />
-        </Routes>
       </BrowserRouter>
     );
   }
@@ -119,15 +124,14 @@ function StudentRoutes() {
   const hideBottomNav = location.pathname.startsWith('/tests/');
 
   return (
-    <>
+    <div className="min-h-screen pb-24">
       <Routes>
         <Route path="/" element={<StudentDashboard />} />
         <Route path="/tests/:testId" element={<TestTaking />} />
         <Route path="/ranking" element={<RankingPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
-        {/* /lessons, /profile — Phase 13'da to'ldiriladi */}
       </Routes>
       {!hideBottomNav && <BottomNav />}
-    </>
+    </div>
   );
 }
