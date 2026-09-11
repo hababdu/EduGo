@@ -221,25 +221,26 @@ export function AdminGroupDetail() {
           </div>
         ) : (
           <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
-            {groupStudents.map((member: any) => {
-              const student = member.student || member.user || member;
-              const sId = student.id || student._id || member.studentId;
-              return (
-                <div key={sId || Math.random()} className="py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-ink">{student.firstName || 'Ism yo\'q'} {student.lastName || ''}</p>
-                    <p className="text-xs text-ink-muted">{student.username ? `@${student.username}` : 'Username yo\'q'}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveStudent(sId)}
-                    className="text-xs text-coral hover:underline px-2 py-1 bg-coral/10 rounded-lg"
-                  >
-                    Chiqarish
-                  </button>
-                </div>
-              );
-            })}
+            {groupStudents.map((m: any) => {
+  const student = m?.student; // Backenddan kelayotgan student obyekti
+  const fullName = `${student?.firstName || ''} ${student?.lastName || ''}`.trim();
+
+  return (
+    <div key={m.id || student?.id} className="flex items-center justify-between py-3.5">
+      <div>
+        <p className="text-sm font-medium">{fullName || "Noma'lum talaba"}</p>
+        <p className="text-xs text-ink-muted">@{student?.username}</p>
+      </div>
+      {/* O'chirish tugmasi */}
+      <button
+        onClick={() => handleRemoveStudent(student.id)}
+        className="text-xs text-coral hover:underline"
+      >
+        Chiqarish
+      </button>
+    </div>
+  );
+})}
           </div>
         )}
       </div>
