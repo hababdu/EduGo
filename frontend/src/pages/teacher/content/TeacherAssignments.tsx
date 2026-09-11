@@ -1,249 +1,280 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTests, useCreateTest } from '../../../hooks/useTests';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import apiClient from '../../../api/client';
 
 export function TeacherAssignments() {
-  const { data: tests, isLoading } = useTests();
-  const createTest = useCreateTest();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
-  const navigate = useNavigate();
+  const [filterType, setFilterType] = useState('ALL');
 
+  // Kengaytirilgan forma state'lari
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [durationSeconds, setDurationSeconds] = useState(1800);
-  const [passingScore, setPassingScore] = useState(50);
-  
-  const [questions, setQuestions] = useState([
-    { text: '', difficulty: 'MEDIUM', points: 1, options: ['', ''], correctAnswerIndex: 0 }
-  ]);
+  const [contentType, setContentType] = useState<'LESSON' | 'HOMEWORK' | 'RESOURCE'>('LESSON');
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState('');
 
-  const filteredTests = useMemo(() => {
-    if (!tests) return [];
-    return tests.filter((t: any) => t.title.toLowerCase().includes(search.toLowerCase()));
-  }, [tests, search]);
+  // Mavzular va materiallarni olish
+  const { data: items, isLoading } = useQuery({
+    queryKey: ['teacher-assignments-list'],
+    queryFn: async () => {
+      const res = await apiClient.get('/api/v1/tests');
+      return res.data;
+    },
+  });
 
-  const handleAddQuestion = () => {
-    setQuestions([...questions, { text: '', difficulty: 'MEDIUM', points: 1, options: ['', ''], correctAnswerIndex: 0 }]);
-  };
+  // O'qituvchining o'z guruhlarini olish uchun so'rov (agar mavjud bo'lsa)
+  const { data: groups } = useQuery({
+    queryKey: ['teacher-groups'],
+    queryFn: async () => {
+      try {
+        const res = await apiClient.get('/api/v1/groups');
+        return res.data;
+      } catch {
+        return [];
+      }
+    },
+  });
 
-  const handleRemoveQuestion = (index: number) => {
-    setQuestions(questions.filter((_, i) => i !== index));
-  };
+  // Yangi material / dars mavzusini yaratish
+  const createMutation = useMutation({
+    mutationFn: async (newData: any) => {
+      const res = await apiClient.post('/api/v1/tests', {
+        title: newData.title,
+        description: `[${newData.contentType}] ${newData.description}`,
+        durationSeconds: 1800,
+        passingScore: 50,
+        questions: [],
+      });
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-assignments-list'] });
+      setShowForm(false);
+      setTitle('');
+      setDescription('');
+      setContentType('LESSON');
+      setSelectedGroup('');
+      setDueDate('');
+      setAttachmentUrl('');
+    },
+  });
 
-  const handleQuestionChange = (index: number, field: string, value: any) => {
-    const updated = [...questions];
-    updated[index] = { ...updated[index], [field]: value };
-    setQuestions(updated);
-  };
-
-  const handleOptionChange = (qIndex: number, optIndex: number, value: string) => {
-    const updated = [...questions];
-    const options = [...updated[qIndex].options];
-    options[optIndex] = value;
-    updated[qIndex].options = options;
-    setQuestions(updated);
-  };
-
-  const handleAddOption = (qIndex: number) => {
-    const updated = [...questions];
-    updated[qIndex].options.push('');
-    setQuestions(updated);
-  };
+  const filteredItems = useMemo(() => {
+    if (!items) return [];
+    return items.filter((item: any) => {
+      const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
+                            item.description?.toLowerCase().includes(search.toLowerCase());
+      if (filterType === 'ALL') return matchesSearch;
+      return matchesSearch && item.description?.includes(`[${filterType}]`);
+    });
+  }, [items, search, filterType]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-
-    createTest.mutate(
-      {
-        title,
-        description,
-        durationSeconds: Number(durationSeconds),
-        passingScore: Number(passingScore),
-        questions,
-      } as any,
-      {
-        onSuccess: () => {
-          setShowForm(false);
-          setTitle('');
-          setDescription('');
-          setQuestions([{ text: '', difficulty: 'MEDIUM', points: 1, options: ['', ''], correctAnswerIndex: 0 }]);
-        },
-      }
-    );
+    createMutation.mutate({
+      title,
+      description,
+      contentType,
+      selectedGroup,
+      dueDate,
+      attachmentUrl,
+    });
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Sarlavha va Yaratish tugmasi */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/20 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
         <div>
-          <h1 className="font-display text-2xl text-ink">Dars mavzulari va Topsiriqlar</h1>
+          <div className="flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-lg bg-gold/10 text-gold text-xs font-semibold">O'qituvchi Paneli</span>
+          </div>
+          <h1 className="font-display text-2xl text-ink mt-2">Dars Rejalari va Topshiriqlar</h1>
           <p className="text-xs text-ink-muted mt-1">
-            Guruhlaringiz uchun o'quv rejalari va topshiriqlarni boshqaring
+            Guruhlaringiz uchun dars mavzulari, uy vazifalari va o'quv materiallarini boshqaring
           </p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="text-xs bg-gold text-base rounded-xl px-4 py-2.5 font-semibold hover:opacity-90 transition-opacity"
+          className="text-xs bg-gold text-base rounded-2xl px-5 py-3 font-semibold hover:opacity-90 transition-all shadow-lg shadow-gold/10 flex items-center justify-center gap-2"
         >
-          {showForm ? 'Yopish' : '+ Yangi topshiriq qo\'shish'}
+          <span>{showForm ? '✕ Yopish' : '+ Yangi material qo\'shish'}</span>
         </button>
       </div>
 
+      {/* Yaratish Formasi */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface/30 p-6 rounded-2xl border border-white/5 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg text-ink">Yangi topshiriq yoki mavzu yaratish</h2>
-            <button type="button" onClick={() => setShowForm(false)} className="text-xs text-ink-muted hover:text-ink">
+        <form onSubmit={handleSubmit} className="bg-surface/40 p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <div>
+              <h2 className="font-display text-lg text-ink">Yangi dars yoki vazifa yaratish</h2>
+              <p className="text-xs text-ink-muted">O'quvchilaringiz uchun kerakli ma'lumotlarni kiriting</p>
+            </div>
+            <button type="button" onClick={() => setShowForm(false)} className="text-xs text-ink-muted hover:text-ink px-3 py-1.5 rounded-xl bg-white/5">
               Bekor qilish
             </button>
           </div>
 
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Topshiriq yoki mavzu nomi *"
-            required
-            className="w-full bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Material turi</label>
+              <select
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value as any)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+              >
+                <option value="LESSON">📖 Dars mavzusi</option>
+                <option value="HOMEWORK">📝 Uy vazifasi</option>
+                <option value="RESOURCE">📎 Foydali resurs / Fayl</option>
+              </select>
+            </div>
 
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Mavzu tavsifi yoki ko'rsatmalar"
-            rows={2}
-            className="w-full bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink resize-none"
-          />
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Qaysi guruhga</label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+              >
+                <option value="">Barcha guruhlarga</option>
+                {groups?.map((g: any) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs text-ink-muted block mb-1">Vaqt chegarasi (sekund)</label>
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">Mavzu yoki topshiriq nomi *</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masalan: 3-mavzu: Funksiyalar hosilasi va uning tatbiqi"
+              required
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Topshirish muddati (agar uy ishi bo'lsa)</label>
               <input
-                type="number"
-                value={durationSeconds}
-                onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                className="w-full bg-surface rounded-xl px-3 py-2 text-xs outline-none border border-white/5 text-ink"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
               />
             </div>
-            <div>
-              <label className="text-xs text-ink-muted block mb-1">O'tish balli</label>
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Fayl / Qo'shimcha havola (URL)</label>
               <input
-                type="number"
-                value={passingScore}
-                onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="w-full bg-surface rounded-xl px-3 py-2 text-xs outline-none border border-white/5 text-ink"
+                value={attachmentUrl}
+                onChange={(e) => setAttachmentUrl(e.target.value)}
+                placeholder="https://t.me/... yoki Google Drive havola"
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
               />
             </div>
           </div>
 
-          <div className="space-y-4 pt-4 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-ink">Savollar va topshiriqlar ({questions.length})</h3>
-              <button
-                type="button"
-                onClick={handleAddQuestion}
-                className="text-xs bg-gold/10 text-gold px-3 py-1.5 rounded-xl font-semibold hover:bg-gold/20 transition-colors"
-              >
-                + Savol qo'shish
-              </button>
-            </div>
-
-            {questions.map((q, qIndex) => (
-              <div key={qIndex} className="bg-surface/50 p-4 rounded-2xl border border-white/5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-ink-muted">{qIndex + 1}-savol</span>
-                  {questions.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveQuestion(qIndex)}
-                      className="text-xs text-coral hover:underline"
-                    >
-                      O'chirish
-                    </button>
-                  )}
-                </div>
-
-                <input
-                  value={q.text}
-                  onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
-                  placeholder="Savol matni..."
-                  required
-                  className="w-full bg-surface rounded-xl px-3 py-2 text-sm outline-none border border-white/5 text-ink"
-                />
-
-                <div className="space-y-2 pt-2">
-                  <label className="text-xs text-ink-muted">Javob variantlari:</label>
-                  {q.options.map((opt, optIndex) => (
-                    <div key={optIndex} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={`correct-${qIndex}`}
-                        checked={q.correctAnswerIndex === optIndex}
-                        onChange={() => handleQuestionChange(qIndex, 'correctAnswerIndex', optIndex)}
-                        className="cursor-pointer"
-                      />
-                      <input
-                        value={opt}
-                        onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
-                        placeholder={`${optIndex + 1}-variant`}
-                        required
-                        className="flex-1 bg-surface rounded-xl px-3 py-1.5 text-xs outline-none border border-white/5 text-ink"
-                      />
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handleAddOption(qIndex)}
-                    className="text-xs text-gold hover:underline pt-1"
-                  >
-                    + Variant qo'shish
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">Dars mazmuni / Batafsil ko'rsatmalar</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="O'quvchilar bajarishi kerak bo'lgan qadamlar, qoidalar yoki nazariy matn..."
+              rows={4}
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50 transition-colors"
+            />
           </div>
 
           <button
             type="submit"
-            disabled={createTest.isPending}
-            className="w-full bg-gold text-base rounded-xl py-3 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+            disabled={createMutation.isPending}
+            className="w-full bg-gold text-base rounded-2xl py-3.5 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-gold/10"
           >
-            {createTest.isPending ? 'Saqlanmoqda...' : 'Topshiriqni saqlash'}
+            {createMutation.isPending ? 'Saqlanmoqda...' : 'Materialni guruhga yuklash'}
           </button>
         </form>
       )}
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Topshiriq nomi bo'yicha qidirish..."
-        className="w-full bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink"
-      />
+      {/* Qidiruv va Filterlar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Mavzu yoki vazifa nomi bo'yicha qidirish..."
+          className="flex-1 bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+        />
+        <div className="flex gap-1 bg-surface/30 p-1 rounded-2xl border border-white/5">
+          {['ALL', 'LESSON', 'HOMEWORK', 'RESOURCE'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`px-3 py-2 text-xs rounded-xl font-medium transition-colors ${
+                filterType === type ? 'bg-gold text-base' : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              {type === 'ALL' ? 'Barchasi' : type === 'LESSON' ? 'Darslar' : type === 'HOMEWORK' ? 'Vazifalar' : 'Resurslar'}
+            </button>
+          ))}
+        </div>
+      </div>
 
+      {/* Ro'yxat qismi */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-16 bg-surface/50 rounded-xl animate-pulse border border-white/5" />
+            <div key={i} className="h-20 bg-surface/30 rounded-2xl animate-pulse border border-white/5" />
           ))}
         </div>
-      ) : filteredTests.length === 0 ? (
-        <p className="text-sm text-ink-muted py-10 text-center">Hali topshiriqlar mavjud emas.</p>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-16 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+          <div className="w-12 h-12 rounded-full bg-gold/10 text-gold flex items-center justify-center mx-auto text-lg font-bold">📂</div>
+          <p className="text-sm text-ink-muted">Hali hech qanday dars mavzulari yoki topshiriqlar topilmadi.</p>
+        </div>
       ) : (
-        <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
-          {filteredTests.map((t: any) => (
-            <div
-              key={t.id}
-              onClick={() => navigate(`/teacher/assignments/${t.id}`)}
-              className="py-4 flex items-center justify-between cursor-pointer hover:bg-white/[0.02] px-2 rounded-xl transition-colors"
-            >
-              <div>
-                <p className="text-sm font-medium text-ink">{t.title}</p>
-                <p className="text-xs text-ink-muted mt-1">{t._count?.questions ?? 0} ta savol</p>
+        <div className="space-y-3">
+          {filteredItems.map((item: any) => {
+            const isHomework = item.description?.includes('[HOMEWORK]');
+            const isResource = item.description?.includes('[RESOURCE]');
+            const cleanDescription = item.description?.replace(/\[(LESSON|HOMEWORK|RESOURCE)\]/, '').trim();
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => navigate(`/teacher/assignments/${item.id}`)}
+                className="group bg-surface/20 hover:bg-surface/40 p-5 rounded-3xl border border-white/5 transition-all cursor-pointer flex items-center justify-between gap-4"
+              >
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${
+                      isHomework ? 'bg-coral/10 text-coral' : isResource ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold'
+                    }`}>
+                      {isHomework ? 'Uy vazifasi' : isResource ? 'Resurs' : 'Dars mavzusi'}
+                    </span>
+                    <span className="text-xs text-ink-muted">· Yaratilgan sana</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-ink group-hover:text-gold transition-colors truncate">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-ink-muted line-clamp-1">
+                    {cleanDescription || 'Qo\'shimcha tavsif kiritilmagan'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="text-xs font-semibold text-gold bg-gold/10 px-3 py-1.5 rounded-xl group-hover:bg-gold group-hover:text-base transition-all">
+                    Boshqarish →
+                  </span>
+                </div>
               </div>
-              <span className="text-xs text-gold font-semibold">Boshqarish →</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
