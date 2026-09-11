@@ -226,19 +226,26 @@ export function AdminGroupDetail() {
         ) : (
           <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
             {groupStudents.map((m: any) => {
-              const studentData = m?.student || m?.user;
-              const fullName = `${studentData?.firstName || ''} ${studentData?.lastName || ''}`.trim();
-              const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
+  const studentData = m?.student || m?.user || m;
+  
+  // Ism va familiyani turli xil variantlarda qidirib topamiz
+  const firstName = studentData?.firstName || studentData?.name || '';
+  const lastName = studentData?.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  
+  const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
 
-              return (
-                <div key={m.id || targetStudentId} className="flex items-center justify-between py-3.5">
-                  <div>
-                    <p className="text-sm font-medium">{fullName || "Noma'lum talaba"}</p>
-                    <p className="text-xs text-ink-muted">
-                      {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
-                    </p>
-                  </div>
-                  <button
+  return (
+    <div key={m.id || targetStudentId} className="flex items-center justify-between py-3.5">
+      <div>
+        <p className="text-sm font-medium">
+          {fullName || studentData?.username || "Noma'lum talaba"}
+        </p>
+        <p className="text-xs text-ink-muted">
+          {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
+        </p>
+      </div>
+      <button
                     onClick={() => handleRemoveStudent(targetStudentId)}
                     className="text-xs text-coral hover:underline font-medium"
                   >

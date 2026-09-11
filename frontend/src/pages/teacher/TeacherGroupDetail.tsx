@@ -173,29 +173,32 @@ export function TeacherGroupDetail() {
             </div>
           ) : (
             <div className="divide-y divide-white/5 bg-surface rounded-2xl border border-white/5 overflow-hidden px-4">
-              {members.map((m: any) => {
-                const studentData = m?.student || m?.user;
-                const fullName = `${studentData?.firstName || ''} ${studentData?.lastName || ''}`.trim();
-                const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
+              {
+members.map((m: any) => {
+  const studentData = m?.student || m?.user || m;
+  const firstName = studentData?.firstName || studentData?.name || '';
+  const lastName = studentData?.lastName || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
 
-                return (
-                  <div key={m.id || targetStudentId} className="flex items-center justify-between py-3.5">
-                    <div>
-                      <p className="text-sm font-medium">{fullName || "Noma'lum talaba"}</p>
-                      <p className="text-xs text-ink-muted">
-                        {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemove(targetStudentId)}
-                      disabled={isRemoving}
-                      className="text-xs text-coral hover:underline font-medium transition-opacity disabled:opacity-50"
-                    >
-                      Chiqarish
-                    </button>
-                  </div>
-                );
-              })}
+  return (
+    <div 
+      key={m.id || targetStudentId} 
+      onClick={() => navigate(`/teacher/groups/${groupId}/students/${targetStudentId}`)}
+      className="flex items-center justify-between py-3.5 px-2 hover:bg-surface-muted/50 rounded-xl cursor-pointer transition-colors"
+    >
+      <div>
+        <p className="text-sm font-medium">
+          {fullName || studentData?.username || "Noma'lum talaba"}
+        </p>
+        <p className="text-xs text-ink-muted">
+          {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
+        </p>
+      </div>
+      <span className="text-xs text-primary font-medium">Batafsil →</span>
+    </div>
+  );
+})}
             </div>
           )}
         </section>

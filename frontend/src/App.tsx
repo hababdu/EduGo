@@ -24,6 +24,7 @@ import { TeacherNav } from './components/teacher/TeacherNav';
 import  UsersAdminPage  from './pages/admin/UsersAdminPage'
 import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; // Guruh detallari sahifasi
+import {TeacherStudentDetail} from './pages/teacher/TeacherStudentDetail'
 
 export function App() {
   const status = useAuth();
@@ -99,6 +100,7 @@ export function App() {
           <Route path="/teacher" element={<TeacherOverview />} />
           <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
           <Route path="*" element={<TeacherOverview />} />
+          <Route path="/teacher/groups/:groupId/students/:studentId" element={<TeacherStudentDetail />} />
         </Routes>
       </BrowserRouter>
     );
