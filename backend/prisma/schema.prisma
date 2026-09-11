@@ -31,6 +31,7 @@ enum AccountStatus {
 model User {
   id                String       @id @default(cuid())
   telegramId        String       @unique
+  phone             String?
   username          String?
   firstName         String
   lastName          String?
@@ -116,6 +117,7 @@ model Group {
 model GroupMember {
   id        String   @id @default(cuid())
   groupId   String
+  description String?
   studentId String
   joinedAt  DateTime @default(now())
   createdAt DateTime @default(now())
