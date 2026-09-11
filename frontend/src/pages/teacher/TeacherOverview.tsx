@@ -6,7 +6,6 @@ export function TeacherOverview() {
   const { data, isLoading } = useTeacherOverview();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   if (isLoading || !data) {
     return (
@@ -27,20 +26,9 @@ export function TeacherOverview() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
-      {/* Yuqori qism va Tezkor tugmalar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl text-ink">Mening ish maydonim</h1>
-          <p className="text-xs text-ink-muted mt-1">O'qituvchi boshqaruv paneli, guruhlar va testlar statistikasi</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsAssignModalOpen(true)}
-            className="px-4 py-2 bg-primary text-white text-xs font-medium rounded-xl hover:opacity-90 transition-opacity shadow-sm flex items-center gap-2"
-          >
-            <span>➕</span> Test biriktirish
-          </button>
-        </div>
+      <div>
+        <h1 className="font-display text-2xl text-ink">Mening ish maydonim</h1>
+        <p className="text-xs text-ink-muted mt-1">O'qituvchi boshqaruv paneli va guruhlar ro'yxati</p>
       </div>
 
       {/* Statistika kartalari */}
@@ -64,12 +52,12 @@ export function TeacherOverview() {
         </div>
       </div>
 
-      {/* Mening guruhlarim bo'limi (Qidiruv bilan) */}
+      {/* Mening guruhlarim ro'yxati (Bosganda o'sha guruh sahifasiga o'tadi) */}
       <section className="bg-surface p-6 rounded-2xl border border-white/5 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-medium text-ink">Mening guruhlarim</h2>
-            <p className="text-xs text-ink-muted">Guruhlarni boshqarish va o'quvchilar ro'yxati</p>
+            <p className="text-xs text-ink-muted">Guruhni tanlab tafsilotlariga o'ting</p>
           </div>
           <input
             type="text"
@@ -132,44 +120,6 @@ export function TeacherOverview() {
           </div>
         )}
       </section>
-
-      {/* Test biriktirish modali (Oddiy holat uchun shablon) */}
-      {isAssignModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-md space-y-4 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-medium text-ink">Guruhga test biriktirish</h3>
-              <button
-                onClick={() => setIsAssignModalOpen(false)}
-                className="text-ink-muted hover:text-ink text-sm"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-xs text-ink-muted">
-              Bu yerdan istalgan testingizni o'zingizga biriktirilgan guruhlarga yuborishingiz mumkin.
-            </p>
-            {/* Modal form elementlari shu yerga yoziladi */}
-            <div className="flex justify-end gap-2 pt-4">
-              <button
-                onClick={() => setIsAssignModalOpen(false)}
-                className="px-4 py-2 text-xs bg-surface-muted rounded-xl text-ink-muted hover:text-ink"
-              >
-                Bekor qilish
-              </button>
-              <button
-                onClick={() => {
-                  // Test biriktirish logikasi
-                  setIsAssignModalOpen(false);
-                }}
-                className="px-4 py-2 text-xs bg-primary text-white rounded-xl hover:opacity-90"
-              >
-                Biriktirish
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
