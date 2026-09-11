@@ -72,6 +72,10 @@ export function AdminGroupDetail() {
   };
 
   const handleRemoveStudent = async (studentId: string) => {
+    if (!studentId) {
+      setError('Talaba ID topilmadi');
+      return;
+    }
     if (!confirm('Haqiqatan ham bu talabani guruhdan chiqarmoqchimisiz?')) return;
     setError(null);
     setSuccessMessage(null);
@@ -222,25 +226,27 @@ export function AdminGroupDetail() {
         ) : (
           <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
             {groupStudents.map((m: any) => {
-  const student = m?.student; // Backenddan kelayotgan student obyekti
-  const fullName = `${student?.firstName || ''} ${student?.lastName || ''}`.trim();
+              const studentData = m?.student || m?.user;
+              const fullName = `${studentData?.firstName || ''} ${studentData?.lastName || ''}`.trim();
+              const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
 
-  return (
-    <div key={m.id || student?.id} className="flex items-center justify-between py-3.5">
-      <div>
-        <p className="text-sm font-medium">{fullName || "Noma'lum talaba"}</p>
-        <p className="text-xs text-ink-muted">@{student?.username}</p>
-      </div>
-      {/* O'chirish tugmasi */}
-      <button
-        onClick={() => handleRemoveStudent(student.id)}
-        className="text-xs text-coral hover:underline"
-      >
-        Chiqarish
-      </button>
-    </div>
-  );
-})}
+              return (
+                <div key={m.id || targetStudentId} className="flex items-center justify-between py-3.5">
+                  <div>
+                    <p className="text-sm font-medium">{fullName || "Noma'lum talaba"}</p>
+                    <p className="text-xs text-ink-muted">
+                      {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveStudent(targetStudentId)}
+                    className="text-xs text-coral hover:underline font-medium"
+                  >
+                    Chiqarish
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
