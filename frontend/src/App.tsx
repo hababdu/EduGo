@@ -1,5 +1,4 @@
-import { BrowserRouter, Routes, Route, useLocation  } from 'react-router-dom';
-import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { useAuthStore } from './store/auth.store';
 import { StudentDashboard } from './pages/StudentDashboard';
@@ -26,32 +25,11 @@ import UsersAdminPage from './pages/admin/UsersAdminPage';
 import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail'; 
 import { TeacherStudentDetail } from './pages/teacher/TeacherStudentDetail';
-import apiClient, { setMemoryToken } from './api/client';
+
 export function App() {
   const status = useAuth();
   const user = useAuthStore((s) => s.user);
-useEffect(() => {
-    async function authenticateUser() {
-      try {
-        // Telegram WebApp initData ni olish (agar Telegram muhitida bo'lsa)
-        const initData = (window as any).Telegram?.WebApp?.initData || '';
 
-        // Backenddagi telegram orqali kirish endpointi (loyihangizga qarab o'zgarishi mumkin)
-        const response = await apiClient.post('/api/v1/auth/telegram', {
-          initData,
-        });
-
-        const token = response.data.accessToken || response.data.token;
-        if (token) {
-          setMemoryToken(token); // 👈 Tokenni xotiraga yozish
-        }
-      } catch (err) {
-        console.error("Avtorizatsiyadan o'tishda xatolik:", err);
-      }
-    }
-
-    authenticateUser();
-  }, []);
   if (status === 'checking') {
     return (
       <div className="h-screen flex items-center justify-center">
