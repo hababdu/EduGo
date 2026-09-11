@@ -31,14 +31,14 @@ export function TeacherAssignments() {
 
   // Guruhlarni useTeacherOverview hukidan olish
   const { data: overviewData } = useTeacherOverview();
-  const groups = overviewData?.groups ||  [];
+  const groups = overviewData?.groups || overviewData?.teacherGroups || [];
 
   // Yangi material yaratish
   const createMutation = useMutation({
     mutationFn: async (newData: any) => {
       const payloadData = {
         type: newData.contentType,
-        category: newData.assignmentCategory, // LESSON, HOMEWORK, RESOURCE
+        category: newData.assignmentCategory,
         mediaUrl: newData.mediaUrl,
         content: newData.description,
       };
@@ -68,18 +68,22 @@ export function TeacherAssignments() {
     },
   });
 
+  // Xavfsiz filtrlash (null va undefined xatoliklarini oldini oluvchi)
   const filteredItems = useMemo(() => {
-    if (!items) return [];
+    if (!items || !Array.isArray(items)) return [];
+    
     return items.filter((item: any) => {
+      if (!item) return false;
+
       let parsed;
       try {
-        parsed = JSON.parse(item.description);
+        parsed = item.description ? JSON.parse(item.description) : {};
       } catch {
         parsed = { type: 'TEXT', category: 'LESSON', content: item.description };
       }
 
-      const matchesSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
-                            parsed?.content?.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = (item.title?.toLowerCase() || '').includes(search.toLowerCase()) ||
+                            (parsed?.content?.toLowerCase() || '').includes(search.toLowerCase());
       
       const matchesType = filterType === 'ALL' || parsed?.type === filterType;
       const matchesCategory = filterCategory === 'ALL' || parsed?.category === filterCategory;
@@ -253,7 +257,7 @@ export function TeacherAssignments() {
           {filteredItems.map((item: any) => {
             let parsed: any = {};
             try {
-              parsed = JSON.parse(item.description);
+              parsed = item.description ? JSON.parse(item.description) : {};
             } catch {
               parsed = { type: 'TEXT', category: 'LESSON', content: item.description };
             }
