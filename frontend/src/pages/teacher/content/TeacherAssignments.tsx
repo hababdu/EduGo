@@ -10,13 +10,12 @@ export function TeacherAssignments() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
 
-  // Kengaytirilgan forma state'lari
+  // Forma state'lari
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState<'LESSON' | 'HOMEWORK' | 'RESOURCE'>('LESSON');
   const [selectedGroup, setSelectedGroup] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
 
   // Mavzular va materiallarni olish
   const { data: items, isLoading } = useQuery({
@@ -27,7 +26,7 @@ export function TeacherAssignments() {
     },
   });
 
-  // O'qituvchining o'z guruhlarini olish uchun so'rov (agar mavjud bo'lsa)
+  // Guruhlarni olish
   const { data: groups } = useQuery({
     queryKey: ['teacher-groups'],
     queryFn: async () => {
@@ -40,12 +39,14 @@ export function TeacherAssignments() {
     },
   });
 
-  // Yangi material / dars mavzusini yaratish
+  // Yangi material yaratish
   const createMutation = useMutation({
     mutationFn: async (newData: any) => {
+      const fullDescription = `[${newData.contentType}]${newData.videoUrl ? ` [VIDEO:${newData.videoUrl}]` : ''} ${newData.description}`;
+      
       const res = await apiClient.post('/api/v1/tests', {
         title: newData.title,
-        description: `[${newData.contentType}] ${newData.description}`,
+        description: fullDescription,
         durationSeconds: 1800,
         passingScore: 50,
         questions: [],
@@ -59,8 +60,7 @@ export function TeacherAssignments() {
       setDescription('');
       setContentType('LESSON');
       setSelectedGroup('');
-      setDueDate('');
-      setAttachmentUrl('');
+      setVideoUrl('');
     },
   });
 
@@ -82,14 +82,13 @@ export function TeacherAssignments() {
       description,
       contentType,
       selectedGroup,
-      dueDate,
-      attachmentUrl,
+      videoUrl,
     });
   };
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Sarlavha va Yaratish tugmasi */}
+      {/* Sarlavha qismi */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/20 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
         <div>
           <div className="flex items-center gap-2">
@@ -97,12 +96,12 @@ export function TeacherAssignments() {
           </div>
           <h1 className="font-display text-2xl text-ink mt-2">Dars Rejalari va Topshiriqlar</h1>
           <p className="text-xs text-ink-muted mt-1">
-            Guruhlaringiz uchun dars mavzulari, uy vazifalari va o'quv materiallarini boshqaring
+            Guruhlaringiz uchun dars mavzulari, video darslar va uy vazifalarini boshqaring
           </p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="text-xs bg-gold text-base rounded-2xl px-5 py-3 font-semibold hover:opacity-90 transition-all shadow-lg shadow-gold/10 flex items-center justify-center gap-2"
+          className="text-xs bg-gold text-base rounded-2xl px-5 py-3 font-semibold hover:opacity-95 transition-all shadow-lg shadow-gold/10 flex items-center justify-center gap-2"
         >
           <span>{showForm ? '✕ Yopish' : '+ Yangi material qo\'shish'}</span>
         </button>
@@ -110,11 +109,11 @@ export function TeacherAssignments() {
 
       {/* Yaratish Formasi */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-surface/40 p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl animate-in fade-in slide-in-from-top-4 duration-300">
+        <form onSubmit={handleSubmit} className="bg-surface/40 p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">
             <div>
-              <h2 className="font-display text-lg text-ink">Yangi dars yoki vazifa yaratish</h2>
-              <p className="text-xs text-ink-muted">O'quvchilaringiz uchun kerakli ma'lumotlarni kiriting</p>
+              <h2 className="font-display text-lg text-ink">Yangi dars yoki video material yaratish</h2>
+              <p className="text-xs text-ink-muted">O'quvchilar uchun mavzu va YouTube video havolasini kiriting</p>
             </div>
             <button type="button" onClick={() => setShowForm(false)} className="text-xs text-ink-muted hover:text-ink px-3 py-1.5 rounded-xl bg-white/5">
               Bekor qilish
@@ -127,11 +126,11 @@ export function TeacherAssignments() {
               <select
                 value={contentType}
                 onChange={(e) => setContentType(e.target.value as any)}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
               >
-                <option value="LESSON">📖 Dars mavzusi</option>
+                <option value="LESSON">📖 Dars mavzusi va Video</option>
                 <option value="HOMEWORK">📝 Uy vazifasi</option>
-                <option value="RESOURCE">📎 Foydali resurs / Fayl</option>
+                <option value="RESOURCE">📎 Foydali resurs</option>
               </select>
             </div>
 
@@ -140,7 +139,7 @@ export function TeacherAssignments() {
               <select
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
               >
                 <option value="">Barcha guruhlarga</option>
                 {groups?.map((g: any) => (
@@ -155,41 +154,30 @@ export function TeacherAssignments() {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Masalan: 3-mavzu: Funksiyalar hosilasi va uning tatbiqi"
+              placeholder="Masalan: 4-mavzu: Integrallar mavzusi bo'yicha video dars"
               required
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Topshirish muddati (agar uy ishi bo'lsa)</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Fayl / Qo'shimcha havola (URL)</label>
-              <input
-                value={attachmentUrl}
-                onChange={(e) => setAttachmentUrl(e.target.value)}
-                placeholder="https://t.me/... yoki Google Drive havola"
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
-              />
-            </div>
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">YouTube video havolasi (URL)</label>
+            <input
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+            />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs text-ink-muted font-medium">Dars mazmuni / Batafsil ko'rsatmalar</label>
+            <label className="text-xs text-ink-muted font-medium">Dars mazmuni / izoh</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="O'quvchilar bajarishi kerak bo'lgan qadamlar, qoidalar yoki nazariy matn..."
-              rows={4}
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50 transition-colors"
+              placeholder="Video bo'yicha qisqacha ma'lumot yoki o'quvchilarga ko'rsatmalar..."
+              rows={3}
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
             />
           </div>
 
@@ -198,18 +186,18 @@ export function TeacherAssignments() {
             disabled={createMutation.isPending}
             className="w-full bg-gold text-base rounded-2xl py-3.5 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-gold/10"
           >
-            {createMutation.isPending ? 'Saqlanmoqda...' : 'Materialni guruhga yuklash'}
+            {createMutation.isPending ? 'Saqlanmoqda...' : 'Materialni yuklash'}
           </button>
         </form>
       )}
 
-      {/* Qidiruv va Filterlar */}
+      {/* Qidirish va Filtrlash */}
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Mavzu yoki vazifa nomi bo'yicha qidirish..."
-          className="flex-1 bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 transition-colors"
+          placeholder="Mavzu nomi bo'yicha qidirish..."
+          className="flex-1 bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
         />
         <div className="flex gap-1 bg-surface/30 p-1 rounded-2xl border border-white/5">
           {['ALL', 'LESSON', 'HOMEWORK', 'RESOURCE'].map((type) => (
@@ -226,7 +214,7 @@ export function TeacherAssignments() {
         </div>
       </div>
 
-      {/* Ro'yxat qismi */}
+      {/* Ro'yxat */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -235,15 +223,18 @@ export function TeacherAssignments() {
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-16 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-          <div className="w-12 h-12 rounded-full bg-gold/10 text-gold flex items-center justify-center mx-auto text-lg font-bold">📂</div>
-          <p className="text-sm text-ink-muted">Hali hech qanday dars mavzulari yoki topshiriqlar topilmadi.</p>
+          <p className="text-sm text-ink-muted">Hali dars mavzulari yoki videolar yuklanmagan.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredItems.map((item: any) => {
+            const hasVideo = item.description?.includes('[VIDEO:');
             const isHomework = item.description?.includes('[HOMEWORK]');
             const isResource = item.description?.includes('[RESOURCE]');
-            const cleanDescription = item.description?.replace(/\[(LESSON|HOMEWORK|RESOURCE)\]/, '').trim();
+            const cleanDescription = item.description
+              ?.replace(/\[(LESSON|HOMEWORK|RESOURCE)\]/, '')
+              ?.replace(/\[VIDEO:.*?\]/, '')
+              ?.trim();
 
             return (
               <div
@@ -256,22 +247,19 @@ export function TeacherAssignments() {
                     <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${
                       isHomework ? 'bg-coral/10 text-coral' : isResource ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold'
                     }`}>
-                      {isHomework ? 'Uy vazifasi' : isResource ? 'Resurs' : 'Dars mavzusi'}
+                      {isHomework ? 'Uy vazifasi' : isResource ? 'Resurs' : hasVideo ? '📹 Video dars' : '📖 Mavzu'}
                     </span>
-                    <span className="text-xs text-ink-muted">· Yaratilgan sana</span>
                   </div>
                   <h3 className="text-sm font-semibold text-ink group-hover:text-gold transition-colors truncate">
                     {item.title}
                   </h3>
                   <p className="text-xs text-ink-muted line-clamp-1">
-                    {cleanDescription || 'Qo\'shimcha tavsif kiritilmagan'}
+                    {cleanDescription || 'Tavsif kiritilmagan'}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-xs font-semibold text-gold bg-gold/10 px-3 py-1.5 rounded-xl group-hover:bg-gold group-hover:text-base transition-all">
-                    Boshqarish →
-                  </span>
-                </div>
+                <span className="text-xs font-semibold text-gold bg-gold/10 px-3 py-1.5 rounded-xl group-hover:bg-gold group-hover:text-base transition-all shrink-0">
+                  Ochish →
+                </span>
               </div>
             );
           })}
