@@ -54,7 +54,7 @@ export function AdminCourseDetail() {
               key={s.id}
               title={s.title}
               status={s.status}
-              onClick={() => navigate(`/admin/content/subjects/${s.id}`)}
+              onClick={() => navigate(`/teacher/content/subjects/${s.id}`)}
             />
           ))}
         </div>
