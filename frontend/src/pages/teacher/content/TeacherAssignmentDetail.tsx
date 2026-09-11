@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
-import { useTeacherOverview } from '../../../hooks/useTeacher'; // Hookni import qilish
+import { useTeacherOverview } from '../../../hooks/useTeacher';
 
 export function TeacherAssignmentDetail() {
   const { assignmentId = '' } = useParams();
@@ -16,6 +16,7 @@ export function TeacherAssignmentDetail() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState<'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'>('TEXT');
+  const [assignmentCategory, setAssignmentCategory] = useState<'LESSON' | 'HOMEWORK' | 'RESOURCE'>('LESSON');
   const [mediaUrl, setMediaUrl] = useState('');
 
   const { data: assignment, isLoading } = useQuery({
@@ -27,17 +28,18 @@ export function TeacherAssignmentDetail() {
       try {
         const parsed = JSON.parse(res.data.description);
         setContentType(parsed.type || 'TEXT');
+        setAssignmentCategory(parsed.category || 'LESSON');
         setMediaUrl(parsed.mediaUrl || '');
         setDescription(parsed.content || '');
       } catch {
         setContentType('TEXT');
+        setAssignmentCategory('LESSON');
         setDescription(res.data.description || '');
       }
       return res.data;
     },
   });
 
-  // Guruhlarni useTeacherOverview hukidan olish
   const { data: overviewData } = useTeacherOverview();
   const groups = overviewData?.groups || [];
 
@@ -52,6 +54,7 @@ export function TeacherAssignmentDetail() {
     mutationFn: async (updatedData: any) => {
       const payloadData = {
         type: updatedData.contentType,
+        category: updatedData.assignmentCategory,
         mediaUrl: updatedData.mediaUrl,
         content: updatedData.description,
       };
@@ -99,6 +102,7 @@ export function TeacherAssignmentDetail() {
   }
 
   const embedUrl = contentType === 'VIDEO' ? getEmbedUrl(mediaUrl) : '';
+  const catLabel = assignmentCategory === 'HOMEWORK' ? 'Uy vazifasi' : assignmentCategory === 'RESOURCE' ? 'Qo\'shimcha topshiriq' : 'Dars mavzusi';
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
@@ -118,19 +122,31 @@ export function TeacherAssignmentDetail() {
 
       <div className="bg-surface/30 p-6 sm:p-8 rounded-3xl border border-white/5 backdrop-blur-md space-y-6">
         {isEditing ? (
-          <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate({ title, description, contentType, mediaUrl }); }} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate({ title, description, contentType, assignmentCategory, mediaUrl }); }} className="space-y-4">
             <h2 className="font-display text-lg text-ink">Materialni tahrirlash</h2>
             
-            <select
-              value={contentType}
-              onChange={(e) => setContentType(e.target.value as any)}
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
-            >
-              <option value="TEXT">📄 Matn</option>
-              <option value="IMAGE">🖼️ Rasm</option>
-              <option value="PDF">📑 PDF</option>
-              <option value="VIDEO">📹 Video</option>
-            </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <select
+                value={assignmentCategory}
+                onChange={(e) => setAssignmentCategory(e.target.value as any)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
+              >
+                <option value="LESSON">📖 Dars mavzusi</option>
+                <option value="HOMEWORK">📝 Uy vazifasi</option>
+                <option value="RESOURCE">📎 Qo'shimcha resurs</option>
+              </select>
+
+              <select
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value as any)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
+              >
+                <option value="TEXT">📄 Matn</option>
+                <option value="IMAGE">🖼️ Rasm</option>
+                <option value="PDF">📑 PDF</option>
+                <option value="VIDEO">📹 Video</option>
+              </select>
+            </div>
 
             <input
               value={title}
@@ -159,9 +175,14 @@ export function TeacherAssignmentDetail() {
           </form>
         ) : (
           <div className="space-y-5">
-            <span className="text-xs px-3 py-1 rounded-full font-semibold bg-gold/10 text-gold uppercase">
-              {contentType}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs px-3 py-1 rounded-full font-semibold bg-gold/10 text-gold uppercase">
+                {catLabel}
+              </span>
+              <span className="text-xs px-3 py-1 rounded-full font-semibold bg-white/5 text-ink-muted uppercase">
+                {contentType}
+              </span>
+            </div>
             <h1 className="font-display text-2xl text-ink">{assignment.title}</h1>
 
             {contentType === 'VIDEO' && embedUrl && (
