@@ -75,14 +75,7 @@ export function App() {
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
-          <Route path="/admin/content/courses" element={<AdminCourses />} />
-          <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
-          <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
-          <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
-          <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
-          <Route path="/admin/questions" element={<AdminQuestions />} />
-          <Route path="/admin/tests" element={<AdminTests />} />
-          <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
+         
           <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="*" element={<AdminOverview />} />
           <Route path="/admin/groups" element={<AdminGroups />} />
@@ -97,6 +90,14 @@ export function App() {
       <BrowserRouter>
         <TeacherNav />
         <Routes>
+          <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
+          <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
+          <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
+          <Route path="/admin/questions" element={<AdminQuestions />} />
+          <Route path="/admin/tests" element={<AdminTests />} />
+          <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
+          <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
+          <Route path="/admin/content/courses" element={<AdminCourses />} />
           <Route path="/teacher" element={<TeacherOverview />} />
           <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
           <Route path="*" element={<TeacherOverview />} />

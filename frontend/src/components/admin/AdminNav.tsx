@@ -2,36 +2,31 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 const items = [
   { to: '/admin', icon: '📊', label: 'Dashboard', end: true },
-  { to: '/admin/users', icon: '👥', label: 'Foydalanuvchilar' }, // 👈 Yangi qo'shildi
+  { to: '/admin/users', icon: '👥', label: 'Foydalanuvchilar' },
   { to: '/admin/students', icon: '👨‍🎓', label: 'Studentlar' },
-  { to: '/admin/groups', icon: '👨‍🎓', label: 'Guruhlash' },
-  { to: '/admin/content/courses', icon: '📚', label: 'Kontent', matchPrefix: '/admin/content' },
-  { to: '/admin/questions', icon: '❓', label: 'Savollar' },
-  { to: '/admin/tests', icon: '📝', label: 'Testlar' },
+  { to: '/admin/groups', icon: '🏢', label: 'Guruhlash' },
 ];
 
 export function AdminNav() {
   const location = useLocation();
 
   return (
-    <nav className="border-b border-white/5 px-6 flex gap-1 overflow-x-auto no-scrollbar">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-t border-white/10 px-4 py-2 flex items-center justify-around overflow-x-auto no-scrollbar shadow-lg">
       {items.map((item) => {
-        const isActive = item.matchPrefix
-          ? location.pathname.startsWith(item.matchPrefix)
-          : item.end
-            ? location.pathname === item.to
-            : location.pathname.startsWith(item.to);
+        const isActive = item.end
+          ? location.pathname === item.to
+          : location.pathname.startsWith(item.to);
 
         return (
           <NavLink
             key={item.to}
             to={item.to}
-            className={`flex items-center gap-2 px-3 py-3.5 text-sm border-b-2 -mb-px shrink-0 ${
-              isActive ? 'border-gold text-ink' : 'border-transparent text-ink-muted'
+            title={item.label}
+            className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all shrink-0 ${
+              isActive ? 'text-gold bg-gold/10 scale-105' : 'text-ink-muted hover:text-ink hover:bg-surface-muted/50'
             }`}
           >
-            <span aria-hidden="true">{item.icon}</span>
-            {item.label}
+            <span className="text-xl" aria-hidden="true">{item.icon}</span>
           </NavLink>
         );
       })}
