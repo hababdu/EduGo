@@ -31,7 +31,7 @@ export function TeacherAssignments() {
 
   // Guruhlarni useTeacherOverview hukidan olish
   const { data: overviewData } = useTeacherOverview();
-  const groups = overviewData?.groups || overviewData?.teacherGroups || [];
+  const groups = overviewData?.groups ||  [];
 
   // Yangi material yaratish
   const createMutation = useMutation({
