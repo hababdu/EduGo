@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGroup, useGroupMembers } from '../../hooks/useGroups';
 
 export function TeacherGroupDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>() ;
   const navigate = useNavigate();
 
   // Agar ID mavjud bo'lmasa, hooklarga bo'sh string beramiz
