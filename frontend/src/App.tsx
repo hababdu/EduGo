@@ -86,12 +86,11 @@ export function App() {
     );
   }
 
-  if (isTeacher) {
+ if (isTeacher) {
     return (
       <BrowserRouter>
         <div className="min-h-screen pb-24">
           <Routes>
-            {/* O'qituvchi yo'llari /teacher ga o'zgartirildi */}
             <Route path="/teacher" element={<TeacherOverview />} />
             <Route path="/teacher/content/courses" element={<AdminCourses />} />
             <Route path="/teacher/content/courses/:courseId" element={<AdminCourseDetail />} />
