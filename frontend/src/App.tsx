@@ -8,8 +8,8 @@ import { NotificationsPage } from './pages/NotificationsPage';
 import { AdminOverview } from './pages/admin/AdminOverview';
 import { AdminStudents } from './pages/admin/AdminStudents';
 import { AdminStudentDetail } from './pages/admin/AdminStudentDetail';
-import { AdminCourses } from './pages/teacher/content/AdminCourses';
-import { AdminCourseDetail } from './pages/teacher/content/AdminCourseDetail';
+import { TeacherAssignments } from './pages/teacher/content/TeacherAssignments';
+import { TeacherAssignmentDetail } from './pages/teacher/content/TeacherAssignmentDetail';
 import { AdminSubjectDetail } from './pages/teacher/content/AdminSubjectDetail';
 import { AdminSectionDetail } from './pages/teacher/content/AdminSectionDetail';
 import { AdminTopicDetail } from './pages/teacher/content/AdminTopicDetail';
@@ -92,8 +92,8 @@ export function App() {
         <div className="min-h-screen pb-24">
           <Routes>
             <Route path="/teacher" element={<TeacherOverview />} />
-            <Route path="/teacher/content/courses" element={<AdminCourses />} />
-            <Route path="/teacher/content/courses/:courseId" element={<AdminCourseDetail />} />
+            <Route path="/teacher/content/courses" element={<TeacherAssignments />} />
+            <Route path="/teacher/content/courses/:courseId" element={<TeacherAssignmentDetail />} />
             <Route path="/teacher/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
             <Route path="/teacher/content/sections/:sectionId" element={<AdminSectionDetail />} />
             <Route path="/teacher/content/topics/:topicId" element={<AdminTopicDetail />} />
