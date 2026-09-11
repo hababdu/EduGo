@@ -93,14 +93,14 @@ export function App() {
         {/* Asosiy konteynerga pb-24 qo'shildi */}
         <div className="min-h-screen pb-24">
           <Routes>
-            <Route path="/admin/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
-            <Route path="/admin/content/sections/:sectionId" element={<AdminSectionDetail />} />
-            <Route path="/admin/content/topics/:topicId" element={<AdminTopicDetail />} />
-            <Route path="/admin/questions" element={<AdminQuestions />} />
-            <Route path="/admin/tests" element={<AdminTests />} />
-            <Route path="/admin/tests/:id" element={<AdminTestDetail />} />
-            <Route path="/admin/content/courses/:courseId" element={<AdminCourseDetail />} />
-            <Route path="/admin/content/courses" element={<AdminCourses />} />
+            <Route path="/teacher/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
+            <Route path="/teacher/content/sections/:sectionId" element={<AdminSectionDetail />} />
+            <Route path="/teacher/content/topics/:topicId" element={<AdminTopicDetail />} />
+            <Route path="/teacher/questions" element={<AdminQuestions />} />
+            <Route path="/teacher/tests" element={<AdminTests />} />
+            <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
+            <Route path="/teacher/content/courses/:courseId" element={<AdminCourseDetail />} />
+            <Route path="/teacher/content/courses" element={<AdminCourses />} />
             <Route path="/teacher" element={<TeacherOverview />} />
             <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
             <Route path="/teacher/groups/:groupId/students/:studentId" element={<TeacherStudentDetail />} />
