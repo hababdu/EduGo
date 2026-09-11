@@ -73,7 +73,10 @@ async assignTeacher(
 ) {
   return this.groupsService.assignTeacher(id, body.teacherId, user);
 }
-
+@Get(':id/students')
+  async getGroupStudents(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.groupsService.findGroupStudents(id, user);
+  }
   /**
    * Guruhni o'chirish
    */

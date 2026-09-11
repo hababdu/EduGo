@@ -5,7 +5,27 @@ import { CurrentUserPayload } from '../../common/decorators/current-user.decorat
 @Injectable()
 export class GroupsService {
   constructor(private readonly prisma: PrismaService) {}
+/**
+   * Guruh talabalarini (a'zolarini) shaxsiy ma'lumotlari (User) bilan birga olish
+   */
+  async findGroupStudents(groupId: string, user: CurrentUserPayload) {
+    // Avval guruhga kirish huquqi bor-yo'qligini tekshiramiz
+    await this.findOneOrThrow(groupId, user);
 
+    return this.prisma.groupMember.findMany({
+      where: { groupId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+          },
+        },
+      },
+    });
+  }
   async findAllForUser(user: CurrentUserPayload) {
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
       return this.prisma.group.findMany({
