@@ -11,8 +11,14 @@ export function AdminTests() {
   const [statusFilter, setStatusFilter] = useState('');
   const navigate = useNavigate();
 
-  // Test va savollar formasi uchun state'lar
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [subjectId, setSubjectId] = useState('');
+  const [durationSeconds, setDurationSeconds] = useState(1800);
+  const [passingScore, setPassingScore] = useState(50);
+  const [randomQuestions, setRandomQuestions] = useState(false);
+  const [randomAnswerOrder, setRandomAnswerOrder] = useState(false);
+  
   const [questions, setQuestions] = useState([
     { text: '', difficulty: 'MEDIUM', points: 1, options: ['', ''], correctAnswerIndex: 0 }
   ]);
@@ -66,11 +72,21 @@ export function AdminTests() {
     if (!title.trim()) return;
 
     createTest.mutate(
-      { title, questions } as any,
+      {
+        title,
+        description,
+        subjectId: subjectId || undefined,
+        durationSeconds: Number(durationSeconds),
+        passingScore: Number(passingScore),
+        randomQuestions,
+        randomAnswerOrder,
+        questions,
+      } as any,
       {
         onSuccess: () => {
           setShowForm(false);
           setTitle('');
+          setDescription('');
           setQuestions([{ text: '', difficulty: 'MEDIUM', points: 1, options: ['', ''], correctAnswerIndex: 0 }]);
         },
       }
@@ -78,43 +94,99 @@ export function AdminTests() {
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      {/* Sarlavha va Yangi test qo'shish */}
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-ink">Testlar Boshqaruvi</h1>
           <p className="text-xs text-ink-muted mt-1">
-            {tests ? `Jami: ${tests.length} ta test` : "Testlar ro'yxati"}
+            {tests ? `Jami: ${tests.length} ta test` : "Testlar ro'yxati yuklanmoqda..."}
           </p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="text-xs bg-gold text-base rounded-xl px-4 py-2.5 font-semibold hover:opacity-90 transition-opacity"
         >
-          {showForm ? 'Yopish' : '+ Yangi test va savollar'}
+          {showForm ? 'Yopish' : '+ Yangi test yaratish'}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-surface/30 p-6 rounded-2xl border border-white/5 space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg text-ink">Yangi test va savollar yaratish</h2>
+            <h2 className="font-display text-lg text-ink">Yangi test va savollar konfiguratsiyasi</h2>
             <button type="button" onClick={() => setShowForm(false)} className="text-xs text-ink-muted hover:text-ink">
               Bekor qilish
             </button>
           </div>
 
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Test nomi (masalan: Matematika 1-modul)"
-            required
-            className="w-full bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink"
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Test nomi *"
+              required
+              className="bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink"
+            />
+            <input
+              value={subjectId}
+              onChange={(e) => setSubjectId(e.target.value)}
+              placeholder="Fan ID (Subject ID)"
+              className="bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink"
+            />
+          </div>
+
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Test tavsifi (ixtiyoriy)"
+            rows={2}
+            className="w-full bg-surface rounded-xl px-4 py-2.5 text-sm outline-none border border-white/5 text-ink resize-none"
           />
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-ink-muted block mb-1">Davomiyligi (sek)</label>
+              <input
+                type="number"
+                value={durationSeconds}
+                onChange={(e) => setDurationSeconds(Number(e.target.value))}
+                className="w-full bg-surface rounded-xl px-3 py-2 text-xs outline-none border border-white/5 text-ink"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-ink-muted block mb-1">O'tish balli</label>
+              <input
+                type="number"
+                value={passingScore}
+                onChange={(e) => setPassingScore(Number(e.target.value))}
+                className="w-full bg-surface rounded-xl px-3 py-2 text-xs outline-none border border-white/5 text-ink"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <input
+                type="checkbox"
+                checked={randomQuestions}
+                onChange={(e) => setRandomQuestions(e.target.checked)}
+                id="rndQ"
+                className="cursor-pointer"
+              />
+              <label htmlFor="rndQ" className="text-xs text-ink cursor-pointer">Savollarni qorishtirish</label>
+            </div>
+            <div className="flex items-center gap-2 pt-5">
+              <input
+                type="checkbox"
+                checked={randomAnswerOrder}
+                onChange={(e) => setRandomAnswerOrder(e.target.checked)}
+                id="rndA"
+                className="cursor-pointer"
+              />
+              <label htmlFor="rndA" className="text-xs text-ink cursor-pointer">Variantlarni qorishtirish</label>
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-white/5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-ink">Test savollari ({questions.length})</h3>
+              <h3 className="text-sm font-semibold text-ink">Savollar ro'yxati ({questions.length})</h3>
               <button
                 type="button"
                 onClick={handleAddQuestion}
@@ -153,9 +225,9 @@ export function AdminTests() {
                     onChange={(e) => handleQuestionChange(qIndex, 'difficulty', e.target.value)}
                     className="bg-surface rounded-xl px-3 py-2 text-xs outline-none border border-white/5 text-ink"
                   >
-                    <option value="EASY">Oson</option>
-                    <option value="MEDIUM">O'rtacha</option>
-                    <option value="HARD">Qiyin</option>
+                    <option value="EASY">Oson (Easy)</option>
+                    <option value="MEDIUM">O'rtacha (Medium)</option>
+                    <option value="HARD">Qiyin (Hard)</option>
                   </select>
 
                   <input
@@ -169,7 +241,7 @@ export function AdminTests() {
                 </div>
 
                 <div className="space-y-2 pt-2">
-                  <label className="text-xs text-ink-muted">Javob variantlari (To'g'risini belgilang):</label>
+                  <label className="text-xs text-ink-muted">Javob variantlari (To'g'risini radio orqali belgilang):</label>
                   {q.options.map((opt, optIndex) => (
                     <div key={optIndex} className="flex items-center gap-2">
                       <input
@@ -182,7 +254,7 @@ export function AdminTests() {
                       <input
                         value={opt}
                         onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
-                        placeholder={`${optIndex + 1}-variant`}
+                        placeholder={`${optIndex + 1}-variant matni`}
                         required
                         className="flex-1 bg-surface rounded-xl px-3 py-1.5 text-xs outline-none border border-white/5 text-ink"
                       />
@@ -205,12 +277,11 @@ export function AdminTests() {
             disabled={createTest.isPending}
             className="w-full bg-gold text-base rounded-xl py-3 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {createTest.isPending ? 'Saqlanmoqda...' : 'Testni saqlash va yaratish'}
+            {createTest.isPending ? 'Saqlanmoqda...' : 'Test va savollarni to\'liq saqlash'}
           </button>
         </form>
       )}
 
-      {/* Qidirish va Filtrlar paneli */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <input
           value={search}
@@ -235,35 +306,23 @@ export function AdminTests() {
           <span className="text-xs text-ink-muted">
             Topildi: <strong className="text-ink">{filteredTests.length}</strong> ta test
           </span>
-          <button
-            onClick={handleResetFilters}
-            className="text-xs text-gold hover:underline"
-          >
+          <button onClick={handleResetFilters} className="text-xs text-gold hover:underline">
             Filtrlarni tozalash
           </button>
         </div>
       )}
 
-      {/* Kontent qismi */}
       {isLoading ? (
         <div className="space-y-3">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(3)].map((_, i) => (
             <div key={i} className="h-16 bg-surface/50 rounded-xl animate-pulse border border-white/5" />
           ))}
         </div>
       ) : filteredTests.length === 0 ? (
         <div className="text-center py-12 bg-surface/20 rounded-2xl border border-white/5 space-y-3">
           <p className="text-sm text-ink-muted">
-            {hasActiveFilters ? "Qidiruvga mos testlar topilmadi." : "Hali testlar yo'q. Yuqoridan birinchisini yarating."}
+            {hasActiveFilters ? "Qidiruvga mos testlar topilmadi." : "Hali testlar mavjud emas."}
           </p>
-          {hasActiveFilters && (
-            <button
-              onClick={handleResetFilters}
-              className="text-xs bg-gold text-base font-semibold px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
-            >
-              Filtrlarni olib tashlash
-            </button>
-          )}
         </div>
       ) : (
         <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
@@ -278,11 +337,11 @@ export function AdminTests() {
                   {t.title}
                 </p>
                 <p className="text-xs text-ink-muted mt-1 flex items-center gap-2">
-                  <span>{t._count?.questions ?? 0} savol</span>
+                  <span>{t._count?.questions ?? 0} ta savol</span>
                   <span>·</span>
-                  <span>{t._count?.assignments ?? 0} biriktirilgan</span>
+                  <span>{t._count?.assignments ?? 0} ta biriktirma</span>
                   <span>·</span>
-                  <span>{t._count?.attempts ?? 0} urinish</span>
+                  <span>{t._count?.attempts ?? 0} ta urinish</span>
                 </p>
               </div>
               <StatusBadge status={t.status} />

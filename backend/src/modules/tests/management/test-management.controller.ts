@@ -8,7 +8,6 @@ import { CreateTestDto, AssignTestDto, ReopenTestDto } from './dto/test.dto';
 export class TestManagementController {
   constructor(private readonly service: TestManagementService) {}
 
-  /** Student uchun — o'ziga tayinlangan testlar. Rol cheklovi yo'q, hamma o'zinikini ko'radi. */
   @Get('assigned/me')
   listAssigned(@CurrentUser() user: CurrentUserPayload) {
     return this.service.listAssignedForStudent(user.id);
@@ -52,7 +51,6 @@ export class TestManagementController {
     return this.service.assign(id, dto, user.id);
   }
 
-  /** 26-band — faqat ADMIN/SUPER_ADMIN (teacher emas — bu jiddiy amal) */
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Patch(':id/reopen')
   reopen(

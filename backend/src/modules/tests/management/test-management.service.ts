@@ -74,7 +74,6 @@ export class TestManagementService {
       orderBy: { assignedAt: 'desc' },
     });
 
-    // Bir xil test bir necha marta tayinlangan bo'lishi mumkin — testId bo'yicha unique qilamiz
     const uniqueByTest = new Map<string, (typeof assignments)[number]>(
       assignments.map((a) => [a.testId, a]),
     );
@@ -114,8 +113,7 @@ export class TestManagementService {
     }
 
     const maxScore = dto.randomQuestions
-      ? // random bo'lsa: tanlanadigan savollar sonining o'rtacha ball taxminiy hisobi
-        (dto.questionCount ?? dto.questionIds.length) *
+      ? (dto.questionCount ?? dto.questionIds.length) *
         Math.round(questions.reduce((s, q) => s + q.points, 0) / questions.length)
       : questions.reduce((sum, q) => sum + q.points, 0);
 
@@ -194,7 +192,6 @@ export class TestManagementService {
       newValue: { targetType: dto.targetType, groupId: dto.groupId, studentId: dto.studentId },
     });
 
-    // 50-band — "📝 Yangi test biriktirildi." bildirishnomasi
     const test = await this.prisma.test.findUnique({ where: { id: testId } });
     const studentIds = await this.resolveTargetStudentIds(dto);
     if (test && studentIds.length > 0) {
@@ -230,12 +227,6 @@ export class TestManagementService {
     return [];
   }
 
-  /**
-   * 26-band — ADMIN TESTNI QAYTA OCHISHI.
-   * "Shunda test faqat shu student uchun qayta ochiladi. Boshqa studentlarga
-   * ta'sir qilmasin." — shuning uchun bu FAQAT shu (testId, studentId)
-   * juftligiga tegadi.
-   */
   async reopenForStudent(testId: string, dto: ReopenTestDto, actorId: string) {
     const attempt = await this.prisma.testAttempt.findUnique({
       where: { testId_studentId: { testId, studentId: dto.studentId } },
@@ -249,7 +240,6 @@ export class TestManagementService {
         where: { id: attempt.id },
         data: { isRetakeAllowed: true },
       }),
-      // Eski sessiyani ham tozalaymiz — shunda student qaytadan "start" qila oladi
       this.prisma.testSession.deleteMany({
         where: { testId, studentId: dto.studentId },
       }),
