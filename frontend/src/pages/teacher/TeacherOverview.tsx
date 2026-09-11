@@ -6,6 +6,7 @@ export function TeacherOverview() {
   const { data, isLoading } = useTeacherOverview();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
 
   if (isLoading || !data) {
     return (
@@ -28,13 +29,20 @@ export function TeacherOverview() {
     <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
       <div>
         <h1 className="font-display text-2xl text-ink">Mening ish maydonim</h1>
-        <p className="text-xs text-ink-muted mt-1">O'qituvchi boshqaruv paneli va guruhlar ro'yxati</p>
+        <p className="text-xs text-ink-muted mt-1">O'qituvchi boshqaruv paneli va umumiy statistika</p>
       </div>
 
       {/* Statistika kartalari */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-surface p-5 rounded-2xl border border-white/5 shadow-sm space-y-1 relative overflow-hidden">
-          <div className="text-xs text-ink-muted font-medium">Faol guruhlar</div>
+        {/* Faol guruhlar kartasi bosilganda modal ochiladi */}
+        <div
+          onClick={() => setIsGroupsModalOpen(true)}
+          className="bg-surface p-5 rounded-2xl border border-white/5 shadow-sm space-y-1 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-ink-muted font-medium group-hover:text-primary transition-colors">Faol guruhlar</div>
+            <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">Ko'rish →</span>
+          </div>
           <div className="font-display text-3xl text-gold tabular-nums">{data.groupsCount}</div>
           <div className="absolute right-4 bottom-4 text-white/5 font-display text-5xl pointer-events-none">📁</div>
         </div>
@@ -51,49 +59,6 @@ export function TeacherOverview() {
           <div className="absolute right-4 bottom-4 text-white/5 font-display text-5xl pointer-events-none">📝</div>
         </div>
       </div>
-
-      {/* Mening guruhlarim ro'yxati (Bosganda o'sha guruh sahifasiga o'tadi) */}
-      <section className="bg-surface p-6 rounded-2xl border border-white/5 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium text-ink">Mening guruhlarim</h2>
-            <p className="text-xs text-ink-muted">Guruhni tanlab tafsilotlariga o'ting</p>
-          </div>
-          <input
-            type="text"
-            placeholder="Guruhni qidirish..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-surface-muted border border-white/5 rounded-xl text-ink focus:outline-none focus:border-primary/50 transition-colors w-full sm:w-64"
-          />
-        </div>
-
-        {filteredGroups.length === 0 ? (
-          <div className="text-center py-10 bg-surface-muted/50 rounded-xl border border-white/5">
-            <p className="text-xs text-ink-muted">Guruh topilmadi yoki sizga hali guruh biriktirilmagan.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredGroups.map((g) => (
-              <div
-                key={g.id}
-                onClick={() => navigate(`/teacher/groups/${g.id}`)}
-                className="p-4 bg-surface-muted/30 hover:bg-surface-muted/70 border border-white/5 rounded-xl transition-all cursor-pointer flex items-center justify-between group"
-              >
-                <div className="space-y-1">
-                  <span className="text-sm font-medium text-ink group-hover:text-primary transition-colors">
-                    {g.name}
-                  </span>
-                  <p className="text-xs text-ink-muted">{g.studentsCount} nafar student</p>
-                </div>
-                <span className="text-xs px-2.5 py-1 bg-surface rounded-lg border border-white/5 text-ink-muted group-hover:border-primary/30 transition-colors">
-                  Ochish →
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* So'nggi biriktirilgan testlar */}
       <section className="bg-surface p-6 rounded-2xl border border-white/5 shadow-sm space-y-4">
@@ -120,6 +85,67 @@ export function TeacherOverview() {
           </div>
         )}
       </section>
+
+      {/* Guruhlar ro'yxati chiqadigan Modal oyna */}
+      {isGroupsModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-2xl space-y-5 shadow-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-medium text-ink">Mening guruhlarim</h3>
+                <p className="text-xs text-ink-muted">O'tish uchun guruhni tanlang</p>
+              </div>
+              <button
+                onClick={() => setIsGroupsModalOpen(false)}
+                className="text-ink-muted hover:text-ink text-sm p-2 rounded-lg bg-surface-muted border border-white/5"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Qidirish inputi */}
+            <input
+              type="text"
+              placeholder="Guruhni qidirish..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="px-3 py-2 text-xs bg-surface-muted border border-white/5 rounded-xl text-ink focus:outline-none focus:border-primary/50 transition-colors w-full"
+            />
+
+            {/* Guruhlar ro'yxati konteyneri */}
+            <div className="overflow-y-auto space-y-2 pr-1 flex-1">
+              {filteredGroups.length === 0 ? (
+                <div className="text-center py-10 bg-surface-muted/50 rounded-xl border border-white/5">
+                  <p className="text-xs text-ink-muted">Guruh topilmadi yoki sizga hali guruh biriktirilmagan.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2.5">
+                  {filteredGroups.map((g) => (
+                    <div
+                      key={g.id}
+                      onClick={() => {
+                        setIsGroupsModalOpen(false);
+                        navigate(`/teacher/groups/${g.id}`);
+                      }}
+                      className="p-4 bg-surface-muted/30 hover:bg-surface-muted/70 border border-white/5 rounded-xl transition-all cursor-pointer flex items-center justify-between group"
+                    >
+                      <div className="space-y-1">
+                        <span className="text-sm font-medium text-ink group-hover:text-primary transition-colors">
+                          {g.name}
+                        </span>
+                        <p className="text-xs text-ink-muted">{g.studentsCount} nafar student</p>
+                      </div>
+                      <span className="text-xs px-2.5 py-1 bg-surface rounded-lg border border-white/5 text-ink-muted group-hover:border-primary/30 transition-colors">
+                        Ochish →
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
