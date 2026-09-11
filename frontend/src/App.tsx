@@ -97,7 +97,7 @@ export function App() {
         <TeacherNav />
         <Routes>
           <Route path="/teacher" element={<TeacherOverview />} />
-          <Route path="/teacher/groups/:id" element={<TeacherGroupDetail />} />
+          <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
           <Route path="*" element={<TeacherOverview />} />
         </Routes>
       </BrowserRouter>
