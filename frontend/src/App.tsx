@@ -97,7 +97,6 @@ export function App() {
             <Route path="/teacher/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
             <Route path="/teacher/content/sections/:sectionId" element={<AdminSectionDetail />} />
             <Route path="/teacher/content/topics/:topicId" element={<AdminTopicDetail />} />
-            <Route path="/teacher/questions" element={<AdminQuestions />} />
             <Route path="/teacher/tests" element={<AdminTests />} />
             <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
             <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />

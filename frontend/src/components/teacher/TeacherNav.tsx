@@ -2,8 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 const items = [
   { to: '/teacher', icon: '🏫', label: 'Ish maydonim', end: true },
-  { to: '/teacher/content/courses', icon: '📚', label: 'Kontent', matchPrefix: '/teacher/content' },
-  { to: '/teacher/questions', icon: '❓', label: 'Savollar' },
+  { to: '/teacher/content/courses', icon: '📚', label: 'Kontent' },
   { to: '/teacher/tests', icon: '📝', label: 'Testlar' },
 ];
 
@@ -13,11 +12,9 @@ export function TeacherNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-t border-white/10 px-4 py-2 flex items-center justify-around overflow-x-auto no-scrollbar shadow-lg">
       {items.map((item) => {
-        const isActive = item.matchPrefix
-          ? location.pathname.startsWith(item.matchPrefix)
-          : item.end
-            ? location.pathname === item.to
-            : location.pathname.startsWith(item.to);
+        const isActive = item.end
+          ? location.pathname === item.to
+          : location.pathname.startsWith(item.to);
 
         return (
           <NavLink
