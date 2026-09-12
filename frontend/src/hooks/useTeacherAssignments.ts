@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
+import { useTeacherOverview } from './useTeacher'; // <--- Mavjud hook'ni import qilamiz
 
 export interface AssignmentItem {
   id: string;
@@ -8,26 +9,19 @@ export interface AssignmentItem {
   type?: string;
   category?: string;
   mediaUrl?: string | null;
+  groupId?: string;
   status?: string;
   [key: string]: unknown;
 }
 
-export interface TeacherGroup {
-  id: string;
-  name: string;
-  [key: string]: unknown;
-}
-
-// ---------- TEACHER GROUPS ----------
-
+// O'qituvchi guruhlarini overview orqali olamiz
 export function useTeacherGroups() {
-  return useQuery({
-    queryKey: ['teacher', 'groups'],
-    queryFn: () => apiFetch<TeacherGroup[]>('/api/v1/teacher/groups'), // O'qituvchining o'z guruhlari
-  });
+  const { data } = useTeacherOverview();
+  return {
+    data: data?.groups || [], // Gurihlar massivi
+    isLoading: !data,
+  };
 }
-
-// ---------- TEACHER ASSIGNMENTS ----------
 
 export function useTeacherAssignments(groupId?: string) {
   return useQuery({
@@ -54,7 +48,7 @@ export function useCreateTeacherAssignment() {
       type: string;
       category: string;
       mediaUrl?: string;
-      groupId: string; // Qaysi guruhga biriktirilishi
+      groupId: string;
     }) =>
       apiFetch('/api/v1/assignments', {
         method: 'POST',
