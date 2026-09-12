@@ -11,11 +11,6 @@ export class CoursesService {
     private readonly audit: AuditService,
   ) {}
 
-  /**
-   * 86-band: "O'quvchi faqat Published contentni ko'rsin."
-   * Admin/Teacher esa DRAFT/REVIEW holatidagilarni ham ko'rishi kerak
-   * (o'zi tayyorlayotgan kontentni tekshirish uchun).
-   */
   async findAllFor(user: CurrentUserPayload) {
     const isStudent = user.role === 'STUDENT';
     return this.prisma.course.findMany({
@@ -33,21 +28,32 @@ export class CoursesService {
       throw new NotFoundException('Kurs topilmadi');
     }
     if (user.role === 'STUDENT' && course.status !== 'PUBLISHED') {
-      throw new NotFoundException('Kurs topilmadi'); // student uchun DRAFT "yo'q" bo'lib ko'rinadi
+      throw new NotFoundException('Kurs topilmadi');
     }
     return course;
   }
 
-  async create(dto: CreateCourseDto, actorId: string) {
+  async create(dto: CreateCourseDto & { type?: string; category?: string; mediaUrl?: string }, actorId: string) {
+    const rawDto = dto as any;
+    const payloadData = {
+      type: rawDto.type || 'TEXT',
+      category: rawDto.category || 'LESSON',
+      mediaUrl: rawDto.mediaUrl || '',
+      content: rawDto.description || '',
+    };
+
+    const startDateValue = rawDto.startDate ? new Date(rawDto.startDate) : undefined;
+    const endDateValue = rawDto.endDate ? new Date(rawDto.endDate) : undefined;
+
     const course = await this.prisma.course.create({
       data: {
-        title: dto.title,
-        description: dto.description,
-        posterUrl: dto.posterUrl,
-        startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-        endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+        title: rawDto.title,
+        description: JSON.stringify(payloadData),
+        posterUrl: rawDto.posterUrl,
+        startDate: startDateValue,
+        endDate: endDateValue,
         createdById: actorId,
-      },
+      } as any,
     });
 
     await this.audit.log({
@@ -61,13 +67,50 @@ export class CoursesService {
     return course;
   }
 
-  async update(id: string, dto: UpdateCourseDto, actorId: string) {
+  async update(id: string, dto: UpdateCourseDto & { type?: string; category?: string; mediaUrl?: string }, actorId: string) {
+    const rawDto = dto as any;
     const existing = await this.prisma.course.findUnique({ where: { id } });
-    if (!existing || existing.deletedAt) {
+    if (!existing || !existing.id || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
     }
 
-    const updated = await this.prisma.course.update({ where: { id }, data: dto });
+    let descriptionToSave = existing.description;
+    if (rawDto.description || rawDto.type || rawDto.category || rawDto.mediaUrl !== undefined) {
+      let parsed: any = {};
+      try {
+        parsed = existing.description ? JSON.parse(existing.description) : {};
+      } catch {
+        parsed = { type: 'TEXT', category: 'LESSON', content: existing.description };
+      }
+
+      const updatedPayload = {
+        ...parsed,
+        ...(rawDto.type ? { type: rawDto.type } : {}),
+        ...(rawDto.category ? { category: rawDto.category } : {}),
+        ...(rawDto.mediaUrl !== undefined ? { mediaUrl: rawDto.mediaUrl } : {}),
+        ...(rawDto.description ? { content: rawDto.description } : {}),
+      };
+      descriptionToSave = JSON.stringify(updatedPayload);
+    }
+
+    const startDateValue = rawDto.startDate !== undefined 
+      ? (rawDto.startDate ? new Date(rawDto.startDate) : null) 
+      : existing.startDate;
+
+    const endDateValue = rawDto.endDate !== undefined 
+      ? (rawDto.endDate ? new Date(rawDto.endDate) : null) 
+      : existing.endDate;
+
+    const updated = await this.prisma.course.update({
+      where: { id },
+      data: {
+        title: rawDto.title ?? existing.title,
+        description: descriptionToSave,
+        posterUrl: rawDto.posterUrl ?? existing.posterUrl,
+        startDate: startDateValue,
+        endDate: endDateValue,
+      } as any,
+    });
 
     await this.audit.log({
       actorId,
@@ -75,20 +118,22 @@ export class CoursesService {
       targetType: 'Course',
       targetId: id,
       oldValue: existing,
-      newValue: dto,
+      newValue: rawDto,
     });
 
     return updated;
   }
 
-  /** 64-band — SOFT DELETE, tarixiy natijalar buzilmasligi uchun */
   async remove(id: string, actorId: string) {
     const existing = await this.prisma.course.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
     }
 
-    await this.prisma.course.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.prisma.course.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
     await this.audit.log({
       actorId,

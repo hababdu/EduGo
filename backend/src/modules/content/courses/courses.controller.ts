@@ -1,43 +1,62 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
-import { Roles } from '../../../common/decorators/roles.decorator';
-import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard'; // Loyihangizdagi Auth Guard yo'liga qarab o'zgartiring
+import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 
-@Controller('api/v1/courses')
+@Controller('tests') // Frontend /api/v1/tests ga so'rov yuborayotgani uchun yo'l 'tests' qilib belgilanadi
+@UseGuards(JwtAuthGuard) // Barcha so'rovlar avtorizatsiyadan o'tishi shart (401 xatosining oldini oladi)
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
-  /** Rol cheklovi yo'q — har bir rol o'ziga tegishlisini ko'radi (service ichida filtrlanadi) */
   @Get()
-  findAll(@CurrentUser() user: CurrentUserPayload) {
+  async findAll(@CurrentUser() user: CurrentUserPayload) {
     return this.coursesService.findAllFor(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
     return this.coursesService.findOneFor(id, user);
   }
 
-  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
-  create(@Body() dto: CreateCourseDto, @CurrentUser() user: CurrentUserPayload) {
-    return this.coursesService.create(dto, user.id);
-  }
-
-  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateCourseDto,
+  async create(
+    @Body() createCourseDto: CreateCourseDto & { type?: string; category?: string; mediaUrl?: string; groupId?: string },
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.coursesService.update(id, dto, user.id);
+    // user.sub yoki user.id aktor (foydalanuvchi) ID si hisoblanadi
+    const actorId = user.id || user['sub'];
+    return this.coursesService.create(createCourseDto, actorId);
   }
 
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateCourseDto: UpdateCourseDto & { type?: string; category?: string; mediaUrl?: string; groupId?: string },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const actorId = user.id || user['sub'];
+    return this.coursesService.update(id, updateCourseDto, actorId);
+  }
+
   @Delete(':id')
-  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.coursesService.remove(id, user.id);
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const actorId = user.id || user['sub'];
+    return this.coursesService.remove(id, actorId);
   }
 }
