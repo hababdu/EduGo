@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
-import { useTeacherOverview } from './useTeacher'; // <--- Mavjud hook'ni import qilamiz
+import { useTeacherOverview } from './useTeacher';
 
 export interface AssignmentItem {
   id: string;
@@ -55,15 +55,19 @@ export function useCreateTeacherAssignment() {
         body: JSON.stringify({
           title: data.title,
           description: data.description,
-          type: data.type,               // 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'
-          category: data.category,       // 'LESSON' | 'HOMEWORK' | 'RESOURCE'
+          type: data.type,               
+          category: data.category,       
           mediaUrl: data.mediaUrl,
-          groupId: data.groupId,         // Guruh ID si
+          groupId: data.groupId,         
         }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
+      alert('Material muvaffaqiyatli saqlandi!'); // Bildirishnoma qo'shildi
     },
+    onError: (error: any) => {
+      alert(error?.message || 'Saqlashda xatolik yuz berdi!');
+    }
   });
 }
 
@@ -78,7 +82,11 @@ export function useUpdateTeacherAssignment(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments', 'detail', id] });
+      alert('Material muvaffaqiyatli yangilandi!'); // Bildirishnoma qo'shildi
     },
+    onError: (error: any) => {
+      alert(error?.message || 'Yangilashda xatolik yuz berdi!');
+    }
   });
 }
 
@@ -91,6 +99,10 @@ export function useDeleteTeacherAssignment() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
+      alert('Material muvaffaqiyatli o\'chirildi!'); // Bildirishnoma qo'shildi
     },
+    onError: (error: any) => {
+      alert(error?.message || 'O\'chirishda xatolik yuz berdi!');
+    }
   });
 }
