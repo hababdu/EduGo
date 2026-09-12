@@ -30,7 +30,7 @@ export  function TeacherAssignments() {
   const createMutation = useCreateTeacherAssignment();
   const deleteMutation = useDeleteTeacherAssignment();
 
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !selectedGroup) {
       alert('Iltimos, sarlavha va guruhni tanlang!');
@@ -40,9 +40,9 @@ export  function TeacherAssignments() {
     createMutation.mutate(
       {
         title,
-        description,
-        type: contentType,
-        category: assignmentCategory,
+        description: description.trim() || undefined,
+        type: contentType,           // 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'
+        category: assignmentCategory, // 'LESSON' | 'HOMEWORK' | 'RESOURCE'
         mediaUrl: mediaUrl.trim() || undefined,
         groupId: selectedGroup,
       },
