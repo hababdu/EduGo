@@ -1,146 +1,223 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTeacherOverview } from '../../hooks/useTeacher';
+import { useTelegram } from '../../hooks/useTelegram';
 
 export function TeacherOverview() {
   const { data, isLoading } = useTeacherOverview();
   const navigate = useNavigate();
+  const { haptic, user } = useTelegram();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [isGroupsModalOpen, setIsGroupsModalOpen] = useState(false);
 
+  const filteredGroups = useMemo(() => {
+    if (!data?.groups) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return data.groups.filter(
+      (g: any) => !q || g.name.toLowerCase().includes(q)
+    );
+  }, [data?.groups, searchQuery]);
+
   if (isLoading || !data) {
     return (
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
-        <div className="h-10 w-64 bg-surface animate-pulse rounded-xl" />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="p-4 max-w-5xl mx-auto space-y-5">
+        <div className="h-12 w-64 bg-surface/30 animate-pulse rounded-2xl" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-32 bg-surface rounded-2xl animate-pulse border border-white/5" />
+            <div
+              key={i}
+              className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5"
+            />
           ))}
         </div>
       </div>
     );
   }
 
-  const filteredGroups = data.groups.filter((g) =>
-    g.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const openGroups = () => {
+    haptic('light');
+    setIsGroupsModalOpen(true);
+  };
+
+  const closeGroups = () => {
+    haptic('light');
+    setIsGroupsModalOpen(false);
+    setSearchQuery('');
+  };
+
+  const goToGroup = (id: string) => {
+    haptic('light');
+    setIsGroupsModalOpen(false);
+    navigate(`/teacher/groups/${id}`);
+  };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 pb-20">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 pb-32">
+      {/* Header */}
       <div>
-        <h1 className="font-display text-2xl text-ink">Mening ish maydonim</h1>
-        <p className="text-xs text-ink-muted mt-1">O'qituvchi boshqaruv paneli va umumiy statistika</p>
+        <h1 className="font-display text-xl sm:text-2xl text-ink">
+          {user?.first_name ? `Salom, ${user.first_name}` : 'Mening ish maydonim'}
+        </h1>
+        <p className="text-xs text-ink-muted mt-1">
+          O'qituvchi boshqaruv paneli
+        </p>
       </div>
 
-      {/* Statistika kartalari */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Faol guruhlar kartasi bosilganda modal ochiladi */}
-        <div
-          onClick={() => setIsGroupsModalOpen(true)}
-          className="bg-surface p-5 rounded-2xl border border-white/5 shadow-sm space-y-1 relative overflow-hidden cursor-pointer hover:border-primary/40 transition-all group"
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Groups card — clickable */}
+        <button
+          type="button"
+          onClick={openGroups}
+          className="relative bg-surface/20 p-5 rounded-3xl border border-white/5 active:scale-[0.98] transition-transform text-left overflow-hidden group min-h-[120px]"
         >
           <div className="flex items-center justify-between">
-            <div className="text-xs text-ink-muted font-medium group-hover:text-primary transition-colors">Faol guruhlar</div>
-            <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">Ko'rish →</span>
+            <span className="text-xs text-ink-muted font-medium group-active:text-gold transition-colors">
+              Faol guruhlar
+            </span>
+            <span className="text-xs text-gold opacity-0 group-hover:opacity-100 transition-opacity">
+              Ko'rish →
+            </span>
           </div>
-          <div className="font-display text-3xl text-gold tabular-nums">{data.groupsCount}</div>
-          <div className="absolute right-4 bottom-4 text-white/5 font-display text-5xl pointer-events-none">📁</div>
+          <div className="font-display text-3xl text-gold tabular-nums mt-2">
+            {data.groupsCount}
+          </div>
+          <div className="absolute right-3 bottom-2 text-white/5 font-display text-5xl pointer-events-none">
+            📁
+          </div>
+        </button>
+
+        {/* Students card */}
+        <div className="relative bg-surface/20 p-5 rounded-3xl border border-white/5 overflow-hidden min-h-[120px]">
+          <span className="text-xs text-ink-muted font-medium">
+            Jami talabalar
+          </span>
+          <div className="font-display text-3xl text-gold tabular-nums mt-2">
+            {data.studentsCount}
+          </div>
+          <div className="absolute right-3 bottom-2 text-white/5 font-display text-5xl pointer-events-none">
+            👥
+          </div>
         </div>
 
-        <div className="bg-surface p-5 rounded-2xl border border-white/5 shadow-sm space-y-1 relative overflow-hidden">
-          <div className="text-xs text-ink-muted font-medium">Jami talabalar</div>
-          <div className="font-display text-3xl text-gold tabular-nums">{data.studentsCount}</div>
-          <div className="absolute right-4 bottom-4 text-white/5 font-display text-5xl pointer-events-none">👥</div>
-        </div>
-
-        <div className="bg-surface p-5 rounded-2xl border border-white/5 shadow-sm space-y-1 relative overflow-hidden">
-          <div className="text-xs text-ink-muted font-medium">Biriktirilgan testlar</div>
-          <div className="font-display text-3xl text-gold tabular-nums">{data.assignedTestsCount}</div>
-          <div className="absolute right-4 bottom-4 text-white/5 font-display text-5xl pointer-events-none">📝</div>
+        {/* Tests card */}
+        <div className="relative bg-surface/20 p-5 rounded-3xl border border-white/5 overflow-hidden min-h-[120px]">
+          <span className="text-xs text-ink-muted font-medium">
+            Biriktirilgan testlar
+          </span>
+          <div className="font-display text-3xl text-gold tabular-nums mt-2">
+            {data.assignedTestsCount}
+          </div>
+          <div className="absolute right-3 bottom-2 text-white/5 font-display text-5xl pointer-events-none">
+            📝
+          </div>
         </div>
       </div>
 
-      {/* So'nggi biriktirilgan testlar */}
-      <section className="bg-surface p-6 rounded-2xl border border-white/5 shadow-sm space-y-4">
+      {/* Recent assignments */}
+      <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-4 backdrop-blur-md">
         <div>
-          <h2 className="text-sm font-medium text-ink">So'nggi biriktirilgan testlar</h2>
-          <p className="text-xs text-ink-muted">Guruhlarga berilgan oxirgi vazifalar</p>
+          <h2 className="text-sm font-semibold text-ink">
+            So'nggi biriktirilgan testlar
+          </h2>
+          <p className="text-xs text-ink-muted">
+            Guruhlarga berilgan oxirgi vazifalar
+          </p>
         </div>
 
         {data.recentAssignments.length === 0 ? (
-          <div className="text-center py-8 bg-surface-muted/50 rounded-xl border border-white/5">
+          <div className="text-center py-8 bg-surface/30 rounded-2xl border border-white/5">
             <p className="text-xs text-ink-muted">Hali test biriktirilmagan.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
-            {data.recentAssignments.map((a) => (
-              <div key={a.id} className="py-3.5 flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-ink">{a.testTitle}</p>
-                  <p className="text-xs text-ink-muted">Guruh: <span className="text-ink">{a.groupName}</span></p>
+          <div className="space-y-2">
+            {data.recentAssignments.map((a: any) => (
+              <div
+                key={a.id}
+                className="p-3.5 bg-surface/30 rounded-2xl flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0 space-y-0.5">
+                  <p className="text-sm font-medium text-ink truncate">
+                    {a.testTitle}
+                  </p>
+                  <p className="text-xs text-ink-muted truncate">
+                    Guruh: <span className="text-ink">{a.groupName}</span>
+                  </p>
                 </div>
-                <span className="text-xs text-gold bg-gold/10 px-2.5 py-1 rounded-lg">Faol</span>
+                <span className="text-[10px] text-gold bg-gold/10 px-2.5 py-1 rounded-lg font-semibold shrink-0">
+                  Faol
+                </span>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* Guruhlar ro'yxati chiqadigan Modal oyna */}
+      {/* Groups modal */}
       {isGroupsModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 w-full max-w-2xl space-y-5 shadow-2xl max-h-[85vh] flex flex-col">
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50"
+          onClick={closeGroups}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-surface border border-white/10 rounded-3xl p-5 w-full max-w-2xl space-y-4 shadow-2xl max-h-[85vh] flex flex-col"
+          >
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-medium text-ink">Mening guruhlarim</h3>
-                <p className="text-xs text-ink-muted">O'tish uchun guruhni tanlang</p>
+                <h3 className="text-base font-semibold text-ink">
+                  Mening guruhlarim
+                </h3>
+                <p className="text-xs text-ink-muted">
+                  O'tish uchun guruhni tanlang
+                </p>
               </div>
               <button
-                onClick={() => setIsGroupsModalOpen(false)}
-                className="text-ink-muted hover:text-ink text-sm p-2 rounded-lg bg-surface-muted border border-white/5"
+                type="button"
+                onClick={closeGroups}
+                className="text-ink-muted hover:text-ink text-sm p-2 rounded-xl bg-white/5 min-h-[40px]"
               >
                 ✕
               </button>
             </div>
 
-            {/* Qidirish inputi */}
             <input
               type="text"
-              placeholder="Guruhni qidirish..."
+              placeholder="🔍 Guruhni qidirish..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-2 text-xs bg-surface-muted border border-white/5 rounded-xl text-ink focus:outline-none focus:border-primary/50 transition-colors w-full"
+              className="w-full px-4 py-3 text-sm bg-surface/50 border border-white/5 rounded-2xl text-ink outline-none focus:border-gold/50 min-h-[44px]"
             />
 
-            {/* Guruhlar ro'yxati konteyneri */}
-            <div className="overflow-y-auto space-y-2 pr-1 flex-1">
+            <div className="overflow-y-auto space-y-2 flex-1 -mx-1 px-1">
               {filteredGroups.length === 0 ? (
-                <div className="text-center py-10 bg-surface-muted/50 rounded-xl border border-white/5">
-                  <p className="text-xs text-ink-muted">Guruh topilmadi yoki sizga hali guruh biriktirilmagan.</p>
+                <div className="text-center py-10 bg-surface/30 rounded-2xl border border-white/5">
+                  <p className="text-xs text-ink-muted">
+                    Guruh topilmadi
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-2.5">
-                  {filteredGroups.map((g) => (
-                    <div
-                      key={g.id}
-                      onClick={() => {
-                        setIsGroupsModalOpen(false);
-                        navigate(`/teacher/groups/${g.id}`);
-                      }}
-                      className="p-4 bg-surface-muted/30 hover:bg-surface-muted/70 border border-white/5 rounded-xl transition-all cursor-pointer flex items-center justify-between group"
-                    >
-                      <div className="space-y-1">
-                        <span className="text-sm font-medium text-ink group-hover:text-primary transition-colors">
-                          {g.name}
-                        </span>
-                        <p className="text-xs text-ink-muted">{g.studentsCount} nafar student</p>
-                      </div>
-                      <span className="text-xs px-2.5 py-1 bg-surface rounded-lg border border-white/5 text-ink-muted group-hover:border-primary/30 transition-colors">
-                        Ochish →
-                      </span>
+                filteredGroups.map((g: any) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => goToGroup(g.id)}
+                    className="w-full p-4 bg-surface/30 hover:bg-white/[0.05] border border-white/5 rounded-2xl transition-colors flex items-center justify-between gap-3 active:scale-[0.99] text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-ink truncate">
+                        {g.name}
+                      </p>
+                      <p className="text-xs text-ink-muted">
+                        {g.studentsCount} nafar talaba
+                      </p>
                     </div>
-                  ))}
-                </div>
+                    <span className="text-xs px-2.5 py-1 bg-surface rounded-lg border border-white/5 text-ink-muted shrink-0">
+                      Ochish →
+                    </span>
+                  </button>
+                ))
               )}
             </div>
           </div>
@@ -149,3 +226,5 @@ export function TeacherOverview() {
     </div>
   );
 }
+
+export default TeacherOverview;
