@@ -1,26 +1,21 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../../lib/api-client';
+import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  useTeacherAssignments, 
+  useTeacherGroups, 
+  useCreateTeacherAssignment, 
+  useDeleteTeacherAssignment 
+} from '../../../hooks/useTeacherAssignments'; // Yo'lni o'zingizdagi fayl turgan joyga moslang
 
-interface Assignment {
-  _id: string;
-  title: string;
-  description?: string;
-  type: 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
-  category: 'LESSON' | 'HOMEWORK' | 'RESOURCE';
-  mediaUrl?: string;
-  groupId: string;
-}
-
-interface Group {
-  _id: string;
-  name: string;
-}
-
-export function TeacherAssignments() {
-  const queryClient = useQueryClient();
+export  function TeacherAssignments() {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterType, setFilterType] = useState('ALL');
+  const [filterCategory, setFilterCategory] = useState('ALL');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
 
+  // Forma state'lari
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [contentType, setContentType] = useState<'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'>('TEXT');
@@ -28,190 +23,276 @@ export function TeacherAssignments() {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
 
-  const { data: groups = [] } = useQuery<Group[]>({
-    queryKey: ['teacher', 'groups'],
-    queryFn: () => apiFetch<Group[]>('/api/v1/groups/my'),
-  });
+  // Hook'lar orqali ma'lumotlarni olish
+  const { data: groups, isLoading: groupsLoading } = useTeacherGroups();
+  const { data: items, isLoading: itemsLoading } = useTeacherAssignments(selectedGroupFilter || undefined);
+  
+  const createMutation = useCreateTeacherAssignment();
+  const deleteMutation = useDeleteTeacherAssignment();
 
-  const { data: assignments = [], isLoading } = useQuery<Assignment[]>({
-    queryKey: ['teacher', 'assignments'],
-    queryFn: () => apiFetch<Assignment[]>('/api/v1/assignments'),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: {
-      title: string;
-      description?: string;
-      type: string;
-      category: string;
-      mediaUrl?: string;
-      groupId: string;
-    }) =>
-      apiFetch('/api/v1/assignments', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
-      setShowForm(false);
-      setTitle('');
-      setDescription('');
-      setContentType('TEXT');
-      setAssignmentCategory('LESSON');
-      setSelectedGroup('');
-      setMediaUrl('');
-      alert('Material muvaffaqiyatli saqlandi!');
-    },
-    onError: (error: any) => {
-      alert(error?.message || 'Saqlashda xatolik yuz berdi!');
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !selectedGroup) {
       alert('Iltimos, sarlavha va guruhni tanlang!');
       return;
     }
 
-    createMutation.mutate({
-      title,
-      description: description.trim() || undefined,
-      type: contentType,
-      category: assignmentCategory,
-      mediaUrl: mediaUrl.trim() || undefined,
-      groupId: selectedGroup,
-    });
+    createMutation.mutate(
+      {
+        title,
+        description: description.trim() || undefined,
+        type: contentType,           // 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'
+        category: assignmentCategory, // 'LESSON' | 'HOMEWORK' | 'RESOURCE'
+        mediaUrl: mediaUrl.trim() || undefined,
+        groupId: selectedGroup,
+      },
+      {
+        onSuccess: () => {
+          setShowForm(false);
+          setTitle('');
+          setDescription('');
+          setContentType('TEXT');
+          setAssignmentCategory('LESSON');
+          setSelectedGroup('');
+          setMediaUrl('');
+        },
+        onError: (error: any) => {
+          alert(error?.message || 'Saqlashda xatolik yuz berdi!');
+        },
+      }
+    );
   };
 
+  // Xavfsiz qidiruv va filtrlash
+  const filteredItems = useMemo(() => {
+    if (!items || !Array.isArray(items)) return [];
+    
+    return items.filter((item: any) => {
+      if (!item) return false;
+
+      const matchesSearch = (item.title?.toLowerCase() || '').includes(search.toLowerCase()) ||
+                            (item.description?.toLowerCase() || '').includes(search.toLowerCase());
+      
+      const matchesType = filterType === 'ALL' || item.type === filterType;
+      const matchesCategory = filterCategory === 'ALL' || item.category === filterCategory;
+
+      return matchesSearch && matchesType && matchesCategory;
+    });
+  }, [items, search, filterType, filterCategory]);
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">O'quv materiallari va vazifalar</h1>
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/20 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
+        <div>
+          <span className="px-2.5 py-1 rounded-lg bg-gold/10 text-gold text-xs font-semibold">O'qituvchi Paneli</span>
+          <h1 className="font-display text-2xl text-ink mt-2">Dars Materiallari va Topshiriqlar</h1>
+          <p className="text-xs text-ink-muted mt-1">Guruhlaringiz uchun darslar, uy vazifalari va resurslarni boshqaring</p>
+        </div>
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          onClick={() => setShowForm((v) => !v)}
+          className="text-xs bg-gold text-base rounded-2xl px-5 py-3 font-semibold hover:opacity-95 transition-all shadow-lg shadow-gold/10"
         >
-          {showForm ? 'Bekor qilish' : "+ Yangi material qo'shish"}
+          {showForm ? '✕ Yopish' : '+ Yangi material yuklash'}
         </button>
       </div>
 
+      {/* Material yaratish formasi */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md mb-6 space-y-4">
-          <h2 className="text-lg font-semibold">Yangi material yaratish</h2>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Sarlavha</label>
+        <form onSubmit={handleSubmit} className="bg-surface/40 p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <h2 className="font-display text-lg text-ink">Yangi material qo'shish</h2>
+            <button type="button" onClick={() => setShowForm(false)} className="text-xs text-ink-muted hover:text-ink px-3 py-1.5 rounded-xl bg-white/5">
+              Bekor qilish
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Material toifasi</label>
+              <select
+                value={assignmentCategory}
+                onChange={(e) => setAssignmentCategory(e.target.value as any)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+              >
+                <option value="LESSON">📖 Dars mavzusi</option>
+                <option value="HOMEWORK">📝 Uy vazifasi</option>
+                <option value="RESOURCE">📎 Qo'shimcha resurs</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Kontent formati</label>
+              <select
+                value={contentType}
+                onChange={(e) => setContentType(e.target.value as any)}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+              >
+                <option value="TEXT">📄 Matn</option>
+                <option value="IMAGE">🖼️ Rasm</option>
+                <option value="PDF">📑 PDF fayl</option>
+                <option value="VIDEO">📹 YouTube Video</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Qaysi guruhga *</label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => setSelectedGroup(e.target.value)}
+                required
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+              >
+                <option value="">Guruhni tanlang...</option>
+                {groups?.map((g: any) => (
+                  <option key={g.id} value={g.id}>{g.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">Sarlavha *</label>
             <input
-              type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masalan: 3-mavzu yuzasidan uyga vazifa"
               required
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              placeholder="Material sarlavhasi..."
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Tavsif</label>
+          {contentType !== 'TEXT' && (
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">
+                {contentType === 'VIDEO' ? 'YouTube Video URL' : contentType === 'IMAGE' ? 'Rasm URL' : 'PDF Fayl URL'}
+              </label>
+              <input
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                placeholder="https://..."
+                required
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50"
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">Tafsilotlar / Ko'rsatmalar</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              placeholder="Batafsil ma'lumot..."
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Kontent formati (Type)</label>
-              <select
-                value={contentType}
-                onChange={(e: any) => setContentType(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              >
-                <option value="TEXT">Matn</option>
-                <option value="IMAGE">Rasm</option>
-                <option value="PDF">PDF</option>
-                <option value="VIDEO">Video</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Material toifasi (Category)</label>
-              <select
-                value={assignmentCategory}
-                onChange={(e: any) => setAssignmentCategory(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              >
-                <option value="LESSON">Dars</option>
-                <option value="HOMEWORK">Uy vazifasi</option>
-                <option value="RESOURCE">Resurs</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Guruhni tanlang</label>
-            <select
-              value={selectedGroup}
-              onChange={(e) => setSelectedGroup(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-            >
-              <option value="">Guruhni tanlang...</option>
-              {groups.map((group) => (
-                <option key={group._id} value={group._id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Media havola (Media URL - ixtiyoriy)</label>
-            <input
-              type="text"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-              placeholder="https://..."
+              placeholder="O'quvchilar bajarishi kerak bo'lgan shartlar..."
+              rows={4}
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
             />
           </div>
 
           <button
             type="submit"
             disabled={createMutation.isPending}
-            className="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition"
+            className="w-full bg-gold text-base rounded-2xl py-3.5 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-gold/10"
           >
-            {createMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+            {createMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash va guruhga biriktirish'}
           </button>
         </form>
       )}
 
-      <div className="bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold mb-4">Mavjud materiallar</h2>
-        {isLoading ? (
-          <p>Yuklanmoqda...</p>
-        ) : assignments.length === 0 ? (
-          <p className="text-gray-500">Hozircha materiallar mavjud emas.</p>
-        ) : (
-          <div className="space-y-4">
-            {assignments.map((item) => (
-              <div key={item._id} className="border p-4 rounded-lg flex justify-between items-start">
-                <div>
-                  <h3 className="font-bold text-lg">{item.title}</h3>
-                  <p className="text-gray-600 text-sm">{item.description}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{item.type}</span>
-                    <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">{item.category}</span>
+      {/* Filterlar va Qidiruv */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Qidirish..."
+          className="flex-1 bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
+        />
+        <select
+          value={selectedGroupFilter}
+          onChange={(e) => setSelectedGroupFilter(e.target.value)}
+          className="bg-surface/30 rounded-2xl px-4 py-3 text-xs outline-none border border-white/5 text-ink"
+        >
+          <option value="">Barcha guruhlarim</option>
+          {groups?.map((g: any) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="bg-surface/30 rounded-2xl px-4 py-3 text-xs outline-none border border-white/5 text-ink"
+        >
+          <option value="ALL">Barcha toifalar</option>
+          <option value="LESSON">📖 Darslar</option>
+          <option value="HOMEWORK">📝 Uy vazifalari</option>
+          <option value="RESOURCE">📎 Qo'shimcha</option>
+        </select>
+      </div>
+
+      {/* Ro'yxat */}
+      {itemsLoading || groupsLoading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-20 bg-surface/30 rounded-2xl animate-pulse border border-white/5" />
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="text-center py-16 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+          <p className="text-sm text-ink-muted">Hech qanday material topilmadi.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredItems.map((item: any) => {
+            const catLabel = item.category === 'HOMEWORK' ? 'Uy vazifasi' : item.category === 'RESOURCE' ? 'Qo\'shimcha' : 'Dars';
+            const catColor = item.category === 'HOMEWORK' ? 'bg-coral/10 text-coral' : item.category === 'RESOURCE' ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold';
+
+            return (
+              <div
+                key={item.id}
+                className="group bg-surface/20 hover:bg-surface/40 p-5 rounded-3xl border border-white/5 transition-all flex items-center justify-between gap-4"
+              >
+                <div 
+                  onClick={() => navigate(`/teacher/assignments/${item.id}`)}
+                  className="space-y-1.5 min-w-0 cursor-pointer flex-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${catColor}`}>
+                      {catLabel}
+                    </span>
+                    <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-white/5 text-ink-muted uppercase">
+                      {item.type || 'TEXT'}
+                    </span>
                   </div>
+                  <h3 className="text-sm font-semibold text-ink group-hover:text-gold transition-colors truncate">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs text-ink-muted line-clamp-1">
+                    {item.description || 'Tavsif yoʻq'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => navigate(`/teacher/assignments/${item.id}`)}
+                    className="text-xs font-semibold text-gold bg-gold/10 px-3 py-2 rounded-xl hover:bg-gold hover:text-base transition-all"
+                  >
+                    Ochish →
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Haqiqatan ham bu materialni oʻchirmoqchimisiz?')) {
+                        deleteMutation.mutate(item.id);
+                      }
+                    }}
+                    className="text-xs font-semibold text-red-400 bg-red-500/10 px-3 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                  >
+                    O'chirish
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
