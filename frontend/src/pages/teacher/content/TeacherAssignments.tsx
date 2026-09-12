@@ -5,9 +5,9 @@ import {
   useTeacherGroups, 
   useCreateTeacherAssignment, 
   useDeleteTeacherAssignment 
-} from '../../../hooks/useTeacherAssignments'; // Yo'lni o'zingizdagi fayl turgan joyga moslang
+} from '../../../hooks/useTeacherAssignments';
 
-export  function TeacherAssignments() {
+export function TeacherAssignments() {
   const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
@@ -30,7 +30,7 @@ export  function TeacherAssignments() {
   const createMutation = useCreateTeacherAssignment();
   const deleteMutation = useDeleteTeacherAssignment();
 
-const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !selectedGroup) {
       alert('Iltimos, sarlavha va guruhni tanlang!');
@@ -41,8 +41,8 @@ const handleSubmit = (e: React.FormEvent) => {
       {
         title,
         description: description.trim() || undefined,
-        type: contentType,           // 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'
-        category: assignmentCategory, // 'LESSON' | 'HOMEWORK' | 'RESOURCE'
+        type: contentType,
+        category: assignmentCategory,
         mediaUrl: mediaUrl.trim() || undefined,
         groupId: selectedGroup,
       },
@@ -55,6 +55,9 @@ const handleSubmit = (e: React.FormEvent) => {
           setAssignmentCategory('LESSON');
           setSelectedGroup('');
           setMediaUrl('');
+          
+          // Muvaffaqiyatli saqlanganini bildiruvchi xabar
+          alert('Material muvaffaqiyatli saqlandi!');
         },
         onError: (error: any) => {
           alert(error?.message || 'Saqlashda xatolik yuz berdi!');
