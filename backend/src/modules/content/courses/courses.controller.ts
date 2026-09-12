@@ -10,11 +10,11 @@ import {
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
-import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard'; // Loyihangizdagi Auth Guard yo'liga qarab o'zgartiring
+import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 
-@Controller('tests') // Frontend /api/v1/tests ga so'rov yuborayotgani uchun yo'l 'tests' qilib belgilanadi
-@UseGuards(JwtAuthGuard) // Barcha so'rovlar avtorizatsiyadan o'tishi shart (401 xatosining oldini oladi)
+@Controller('tests')
+@UseGuards(JwtAuthGuard)
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
 
@@ -36,7 +36,6 @@ export class CoursesController {
     @Body() createCourseDto: CreateCourseDto & { type?: string; category?: string; mediaUrl?: string; groupId?: string },
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    // user.sub yoki user.id aktor (foydalanuvchi) ID si hisoblanadi
     const actorId = user.id || user['sub'];
     return this.coursesService.create(createCourseDto, actorId);
   }

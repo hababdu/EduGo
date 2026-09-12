@@ -1,11 +1,11 @@
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
 import { useTeacherOverview } from '../../../hooks/useTeacher';
 
-export function TeacherAssignmentDetail() {
-  const { assignmentId = '' } = useParams();
+export default function TeacherAssignmentDetail() {
+  const { id: assignmentId = '' } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -213,7 +213,6 @@ export function TeacherAssignmentDetail() {
         )}
       </div>
 
-      {/* Guruhga biriktirish */}
       <div className="bg-surface/30 p-6 sm:p-8 rounded-3xl border border-white/5 space-y-4">
         <h2 className="font-display text-lg text-ink">Guruhga biriktirish</h2>
         <form onSubmit={handleAssignToGroup} className="flex flex-col sm:flex-row gap-3">

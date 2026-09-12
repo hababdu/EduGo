@@ -1,16 +1,16 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
 import { useTeacherOverview } from '../../../hooks/useTeacher';
 
-export function TeacherAssignments() {
+export default function TeacherAssignments() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
-  const [filterCategory, setFilterCategory] = useState('ALL'); // LESSON, HOMEWORK, RESOURCE
+  const [filterCategory, setFilterCategory] = useState('ALL');
 
   // Forma state'lari
   const [title, setTitle] = useState('');
@@ -29,9 +29,9 @@ export function TeacherAssignments() {
     },
   });
 
-  // Guruhlarni useTeacherOverview hukidan olish
+  // Guruhlarni olish
   const { data: overviewData } = useTeacherOverview();
-  const groups = overviewData?.groups ||  [];
+  const groups = overviewData?.groups || [];
 
   // Yangi material yaratish
   const createMutation = useMutation({
@@ -48,7 +48,6 @@ export function TeacherAssignments() {
         description: JSON.stringify(payloadData),
         durationSeconds: 1800,
         passingScore: 50,
-        questions: [],
         groupId: newData.selectedGroup || undefined,
       });
       return res.data;
@@ -68,7 +67,7 @@ export function TeacherAssignments() {
     },
   });
 
-  // Xavfsiz filtrlash (null va undefined xatoliklarini oldini oluvchi)
+  // Xavfsiz filtrlash
   const filteredItems = useMemo(() => {
     if (!items || !Array.isArray(items)) return [];
     
@@ -221,7 +220,6 @@ export function TeacherAssignments() {
         </form>
       )}
 
-      {/* Filterlar */}
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={search}
@@ -241,7 +239,6 @@ export function TeacherAssignments() {
         </select>
       </div>
 
-      {/* Ro'yxat */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
