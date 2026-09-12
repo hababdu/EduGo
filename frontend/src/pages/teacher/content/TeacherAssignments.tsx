@@ -33,7 +33,7 @@ export  function TeacherAssignments() {
   const { data: overviewData } = useTeacherOverview();
   const groups = overviewData?.groups || [];
 
-  // Yangi material yaratish
+  // Yangi material yaratish va guruhga biriktirish
   const createMutation = useMutation({
     mutationFn: async (newData: any) => {
       const payloadData = {
@@ -43,13 +43,25 @@ export  function TeacherAssignments() {
         content: newData.description,
       };
 
+      // 1. Test/Material yaratish (backend talabiga ko'ra questionIds yuboriladi, groupId olib tashlandi)
       const res = await apiClient.post('/api/v1/tests', {
         title: newData.title,
         description: JSON.stringify(payloadData),
         durationSeconds: 1800,
         passingScore: 50,
-        groupId: newData.selectedGroup || undefined,
+        questionIds: ['dummy-question-id'],
       });
+
+      const createdId = res.data.id;
+
+      // 2. Agar guruh tanlangan bo'lsa, yaratilgandan keyin alohida guruhga biriktiramiz
+      if (newData.selectedGroup && createdId) {
+        await apiClient.post(`/api/v1/tests/${createdId}/assign`, {
+          targetType: 'GROUP',
+          groupId: newData.selectedGroup,
+        });
+      }
+
       return res.data;
     },
     onSuccess: () => {
