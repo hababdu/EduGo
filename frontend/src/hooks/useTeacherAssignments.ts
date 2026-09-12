@@ -57,8 +57,8 @@ export function useCreateTeacherAssignment() {
         content: newData.description,
       };
 
-      // 1. Asosiy test/materialni yaratish (/api/v1/tests ga yuboriladi)
-      const res = await apiFetch<any>('/api/v1/tests', {
+      // 1. Asosiy test/materialni yaratish (/api/v1/assignments ga yuboriladi)
+      const res = await apiFetch<any>('/api/v1/assignments', {
         method: 'POST',
         body: JSON.stringify({
           title: newData.title,
@@ -73,7 +73,7 @@ export function useCreateTeacherAssignment() {
 
       // 2. Guruhga biriktirish
       if (newData.groupId && createdId) {
-        await apiFetch(`/api/v1/tests/${createdId}/assign`, {
+        await apiFetch(`/api/v1/assignments/${createdId}/assign`, {
           method: 'POST',
           body: JSON.stringify({
             targetType: 'GROUP',
