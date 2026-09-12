@@ -115,9 +115,9 @@ useEffect(() => {
           <Routes>
             <Route path="/teacher" element={<TeacherOverview />} />
             <Route path="/teacher/content/courses" element={<TeacherAssignments />} />
-            <Route path="/teacher/content/courses/:courseId" element={<TeacherAssignmentDetail />} />
             <Route path="/teacher/content/subjects/:subjectId" element={<AdminSubjectDetail />} />
             <Route path="/teacher/content/sections/:sectionId" element={<AdminSectionDetail />} />
+            <Route path="/teacher/assignments/:id" element={<TeacherAssignmentDetail />} />
             <Route path="/teacher/content/topics/:topicId" element={<AdminTopicDetail />} />
             <Route path="/teacher/tests" element={<AdminTests />} />
             <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
