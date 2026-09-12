@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, Query, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, Query, Req } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
 
@@ -7,28 +7,28 @@ export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}
 
   @Post()
-  create(@Body() dto: CreateAssignmentDto, @Req() req) {
-    const teacherId = req.user.id; // Autentifikatsiya qilingan o'qituvchi ID si
-    return this.assignmentsService.create(teacherId, dto);
+  async create(@Body() dto: CreateAssignmentDto, @Req() req) {
+    const teacherId = req.user?.id || req.user?._id;
+    return await this.assignmentsService.create(teacherId, dto);
   }
 
   @Get()
-  findAll(@Query('groupId') groupId?: string) {
-    return this.assignmentsService.findAll(groupId);
+  async findAll(@Query('groupId') groupId?: string) {
+    return await this.assignmentsService.findAll(groupId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.assignmentsService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    return await this.assignmentsService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: Partial<CreateAssignmentDto>) {
-    return this.assignmentsService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: Partial<CreateAssignmentDto>) {
+    return await this.assignmentsService.update(id, dto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.assignmentsService.remove(id);
+  async remove(@Param('id') id: string) {
+    return await this.assignmentsService.remove(id);
   }
 }
