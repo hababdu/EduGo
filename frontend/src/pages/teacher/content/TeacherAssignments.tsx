@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '../../../api/client';
-import { useTeacherOverview } from '../../../hooks/useTeacher';
+import { 
+  useTeacherAssignments, 
+  useTeacherGroups, 
+  useCreateTeacherAssignment, 
+  useDeleteTeacherAssignment 
+} from '../../../hooks/useTeacherAssignments'; // Yo'lni o'zingizdagi fayl turgan joyga moslang
 
 export  function TeacherAssignments() {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
 
   // Forma state'lari
   const [title, setTitle] = useState('');
@@ -20,109 +23,71 @@ export  function TeacherAssignments() {
   const [selectedGroup, setSelectedGroup] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
 
-  // Materiallarni olish
-  const { data: items, isLoading } = useQuery({
-    queryKey: ['teacher-assignments-list'],
-    queryFn: async () => {
-      const res = await apiClient.get('/api/v1/tests');
-      return res.data;
-    },
-  });
+  // Hook'lar orqali ma'lumotlarni olish
+  const { data: groups, isLoading: groupsLoading } = useTeacherGroups();
+  const { data: items, isLoading: itemsLoading } = useTeacherAssignments(selectedGroupFilter || undefined);
+  
+  const createMutation = useCreateTeacherAssignment();
+  const deleteMutation = useDeleteTeacherAssignment();
 
-  // Guruhlarni olish
-  const { data: overviewData } = useTeacherOverview();
-  const groups = overviewData?.groups || [];
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !selectedGroup) {
+      alert('Iltimos, sarlavha va guruhni tanlang!');
+      return;
+    }
 
-  // Yangi material yaratish va guruhga biriktirish
-  const createMutation = useMutation({
-    mutationFn: async (newData: any) => {
-      const payloadData = {
-        type: newData.contentType,
-        category: newData.assignmentCategory,
-        mediaUrl: newData.mediaUrl,
-        content: newData.description,
-      };
-
-      // 1. Test/Material yaratish (backend talabiga ko'ra questionIds yuboriladi, groupId olib tashlandi)
-      const res = await apiClient.post('/api/v1/tests', {
-        title: newData.title,
-        description: JSON.stringify(payloadData),
-        durationSeconds: 1800,
-        passingScore: 50,
-        questionIds: ['dummy-question-id'],
-      });
-
-      const createdId = res.data.id;
-
-      // 2. Agar guruh tanlangan bo'lsa, yaratilgandan keyin alohida guruhga biriktiramiz
-      if (newData.selectedGroup && createdId) {
-        await apiClient.post(`/api/v1/tests/${createdId}/assign`, {
-          targetType: 'GROUP',
-          groupId: newData.selectedGroup,
-        });
+    createMutation.mutate(
+      {
+        title,
+        description,
+        type: contentType,
+        category: assignmentCategory,
+        mediaUrl: mediaUrl.trim() || undefined,
+        groupId: selectedGroup,
+      },
+      {
+        onSuccess: () => {
+          setShowForm(false);
+          setTitle('');
+          setDescription('');
+          setContentType('TEXT');
+          setAssignmentCategory('LESSON');
+          setSelectedGroup('');
+          setMediaUrl('');
+        },
+        onError: (error: any) => {
+          alert(error?.message || 'Saqlashda xatolik yuz berdi!');
+        },
       }
+    );
+  };
 
-      return res.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['teacher-assignments-list'] });
-      setShowForm(false);
-      setTitle('');
-      setDescription('');
-      setContentType('TEXT');
-      setAssignmentCategory('LESSON');
-      setSelectedGroup('');
-      setMediaUrl('');
-    },
-    onError: (error: any) => {
-      alert(error?.response?.data?.message || 'Saqlashda xatolik yuz berdi!');
-    },
-  });
-
-  // Xavfsiz filtrlash
+  // Xavfsiz qidiruv va filtrlash
   const filteredItems = useMemo(() => {
     if (!items || !Array.isArray(items)) return [];
     
     return items.filter((item: any) => {
       if (!item) return false;
 
-      let parsed;
-      try {
-        parsed = item.description ? JSON.parse(item.description) : {};
-      } catch {
-        parsed = { type: 'TEXT', category: 'LESSON', content: item.description };
-      }
-
       const matchesSearch = (item.title?.toLowerCase() || '').includes(search.toLowerCase()) ||
-                            (parsed?.content?.toLowerCase() || '').includes(search.toLowerCase());
+                            (item.description?.toLowerCase() || '').includes(search.toLowerCase());
       
-      const matchesType = filterType === 'ALL' || parsed?.type === filterType;
-      const matchesCategory = filterCategory === 'ALL' || parsed?.category === filterCategory;
+      const matchesType = filterType === 'ALL' || item.type === filterType;
+      const matchesCategory = filterCategory === 'ALL' || item.category === filterCategory;
 
       return matchesSearch && matchesType && matchesCategory;
     });
   }, [items, search, filterType, filterCategory]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) return;
-    createMutation.mutate({
-      title,
-      description,
-      contentType,
-      assignmentCategory,
-      selectedGroup,
-      mediaUrl,
-    });
-  };
-
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface/20 p-6 rounded-3xl border border-white/5 backdrop-blur-md">
         <div>
           <span className="px-2.5 py-1 rounded-lg bg-gold/10 text-gold text-xs font-semibold">O'qituvchi Paneli</span>
           <h1 className="font-display text-2xl text-ink mt-2">Dars Materiallari va Topshiriqlar</h1>
-          <p className="text-xs text-ink-muted mt-1">Darslar, uy vazifalari va qo'shimcha topshiriqlarni boshqaring</p>
+          <p className="text-xs text-ink-muted mt-1">Guruhlaringiz uchun darslar, uy vazifalari va resurslarni boshqaring</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -132,6 +97,7 @@ export  function TeacherAssignments() {
         </button>
       </div>
 
+      {/* Material yaratish formasi */}
       {showForm && (
         <form onSubmit={handleSubmit} className="bg-surface/40 p-6 sm:p-8 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-white/5 pb-4">
@@ -151,7 +117,7 @@ export  function TeacherAssignments() {
               >
                 <option value="LESSON">📖 Dars mavzusi</option>
                 <option value="HOMEWORK">📝 Uy vazifasi</option>
-                <option value="RESOURCE">📎 Qo'shimcha topshiriq / Resurs</option>
+                <option value="RESOURCE">📎 Qo'shimcha resurs</option>
               </select>
             </div>
 
@@ -170,7 +136,7 @@ export  function TeacherAssignments() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">Qaysi guruhga</label>
+              <label className="text-xs text-ink-muted font-medium">Qaysi guruhga *</label>
               <select
                 value={selectedGroup}
                 onChange={(e) => setSelectedGroup(e.target.value)}
@@ -227,11 +193,12 @@ export  function TeacherAssignments() {
             disabled={createMutation.isPending}
             className="w-full bg-gold text-base rounded-2xl py-3.5 font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-gold/10"
           >
-            {createMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash va yuklash'}
+            {createMutation.isPending ? 'Saqlanmoqda...' : 'Saqlash va guruhga biriktirish'}
           </button>
         </form>
       )}
 
+      {/* Filterlar va Qidiruv */}
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           value={search}
@@ -239,6 +206,16 @@ export  function TeacherAssignments() {
           placeholder="Qidirish..."
           className="flex-1 bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink"
         />
+        <select
+          value={selectedGroupFilter}
+          onChange={(e) => setSelectedGroupFilter(e.target.value)}
+          className="bg-surface/30 rounded-2xl px-4 py-3 text-xs outline-none border border-white/5 text-ink"
+        >
+          <option value="">Barcha guruhlarim</option>
+          {groups?.map((g: any) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
@@ -251,7 +228,8 @@ export  function TeacherAssignments() {
         </select>
       </div>
 
-      {isLoading ? (
+      {/* Ro'yxat */}
+      {itemsLoading || groupsLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-20 bg-surface/30 rounded-2xl animate-pulse border border-white/5" />
@@ -264,41 +242,52 @@ export  function TeacherAssignments() {
       ) : (
         <div className="space-y-3">
           {filteredItems.map((item: any) => {
-            let parsed: any = {};
-            try {
-              parsed = item.description ? JSON.parse(item.description) : {};
-            } catch {
-              parsed = { type: 'TEXT', category: 'LESSON', content: item.description };
-            }
-
-            const catLabel = parsed.category === 'HOMEWORK' ? 'Uy vazifasi' : parsed.category === 'RESOURCE' ? 'Qo\'shimcha' : 'Dars';
-            const catColor = parsed.category === 'HOMEWORK' ? 'bg-coral/10 text-coral' : parsed.category === 'RESOURCE' ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold';
+            const catLabel = item.category === 'HOMEWORK' ? 'Uy vazifasi' : item.category === 'RESOURCE' ? 'Qo\'shimcha' : 'Dars';
+            const catColor = item.category === 'HOMEWORK' ? 'bg-coral/10 text-coral' : item.category === 'RESOURCE' ? 'bg-sky-500/10 text-sky-400' : 'bg-gold/10 text-gold';
 
             return (
               <div
                 key={item.id}
-                onClick={() => navigate(`/teacher/assignments/${item.id}`)}
-                className="group bg-surface/20 hover:bg-surface/40 p-5 rounded-3xl border border-white/5 transition-all cursor-pointer flex items-center justify-between gap-4"
+                className="group bg-surface/20 hover:bg-surface/40 p-5 rounded-3xl border border-white/5 transition-all flex items-center justify-between gap-4"
               >
-                <div className="space-y-1.5 min-w-0">
+                <div 
+                  onClick={() => navigate(`/teacher/assignments/${item.id}`)}
+                  className="space-y-1.5 min-w-0 cursor-pointer flex-1"
+                >
                   <div className="flex items-center gap-2">
                     <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-semibold ${catColor}`}>
                       {catLabel}
                     </span>
                     <span className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-white/5 text-ink-muted uppercase">
-                      {parsed.type || 'TEXT'}
+                      {item.type || 'TEXT'}
                     </span>
                   </div>
                   <h3 className="text-sm font-semibold text-ink group-hover:text-gold transition-colors truncate">
                     {item.title}
                   </h3>
                   <p className="text-xs text-ink-muted line-clamp-1">
-                    {parsed.content || 'Tavsif yoʻq'}
+                    {item.description || 'Tavsif yoʻq'}
                   </p>
                 </div>
-                <span className="text-xs font-semibold text-gold bg-gold/10 px-3 py-1.5 rounded-xl group-hover:bg-gold group-hover:text-base transition-all shrink-0">
-                  Ochish →
-                </span>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => navigate(`/teacher/assignments/${item.id}`)}
+                    className="text-xs font-semibold text-gold bg-gold/10 px-3 py-2 rounded-xl hover:bg-gold hover:text-base transition-all"
+                  >
+                    Ochish →
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('Haqiqatan ham bu materialni oʻchirmoqchimisiz?')) {
+                        deleteMutation.mutate(item.id);
+                      }
+                    }}
+                    className="text-xs font-semibold text-red-400 bg-red-500/10 px-3 py-2 rounded-xl hover:bg-red-500 hover:text-white transition-all"
+                  >
+                    O'chirish
+                  </button>
+                </div>
               </div>
             );
           })}
