@@ -18,15 +18,14 @@ import { RankingModule } from './modules/ranking/ranking.module';
 import { GamificationModule } from './modules/gamification/gamification.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AssignmentsModule } from './modules/content/assignments/assignments.module'; // <-- 1. IMPORT QILISH
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // .env'ni yuklaydi
-    EventEmitterModule.forRoot(), // score.changed kabi ichki eventlar uchun
-    // 63-band — RATE LIMITING: har bir IP daqiqasiga 100 so'rov (test/auth
-    // endpointlar uchun kelajakda alohida qattiqroq limit qo'yish mumkin)
+    ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule,
     AuthModule,
@@ -43,12 +42,9 @@ import { RolesGuard } from './common/guards/roles.guard';
     GamificationModule,
     TestsModule,
     RankingModule,
+    AssignmentsModule, // <-- 2. IMPORTS MASSIVIGA QO'SHISH
   ],
   providers: [
-    // Guard'lar TARTIB bilan ishlaydi:
-    // 1) ThrottlerGuard — birinchi navbatda haddan tashqari ko'p so'rovni kesadi
-    // 2) JwtAuthGuard — kim ekanligini aniqlaydi (req.user'ni to'ldiradi)
-    // 3) RolesGuard — shu user.role @Roles()'ga mos keladimi tekshiradi
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
