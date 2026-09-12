@@ -1,36 +1,74 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useTelegram } from '../../../hooks/useTelegram';
+import { toast } from '../../ui/Toast';
 
 interface CreateItemFormProps {
   placeholder: string;
-  onSubmit: (title: string) => void;
   isPending?: boolean;
+  onSubmit: (title: string) => void;
+  buttonLabel?: string;
+  maxLength?: number;
 }
 
-export function CreateItemForm({ placeholder, onSubmit, isPending }: CreateItemFormProps) {
-  const [title, setTitle] = useState('');
+export function CreateItemForm({
+  placeholder,
+  isPending,
+  onSubmit,
+  buttonLabel = "Qo'shish",
+  maxLength = 120,
+}: CreateItemFormProps) {
+  const { haptic, hapticNotify } = useTelegram();
+  const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
-    onSubmit(title.trim());
-    setTitle('');
-  }
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      hapticNotify('error');
+      toast('error', "Nomini kiriting!");
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (trimmed.length > maxLength) {
+      hapticNotify('error');
+      toast('error', `Maksimal ${maxLength} ta belgi`);
+      return;
+    }
+
+    haptic('light');
+    onSubmit(trimmed);
+    setValue('');
+  };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
+    <form onSubmit={handleSubmit} className="flex gap-2 items-stretch">
       <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
-        className="flex-1 bg-surface rounded-lg px-4 py-2.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        maxLength={maxLength}
+        disabled={isPending}
+        className="flex-1 bg-surface/40 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px] disabled:opacity-50"
       />
       <button
         type="submit"
-        disabled={isPending || !title.trim()}
-        className="rounded-lg bg-gold text-base font-semibold px-4 py-2.5 text-sm disabled:opacity-40"
+        disabled={isPending || !value.trim()}
+        className="shrink-0 text-xs font-semibold px-4 py-3 rounded-2xl bg-gold text-base active:scale-[0.97] transition-transform disabled:opacity-50 min-h-[44px]"
       >
-        Qo'shish
+        {isPending ? (
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          </span>
+        ) : (
+          buttonLabel
+        )}
       </button>
     </form>
   );
 }
+
+export default CreateItemForm;
