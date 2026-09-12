@@ -7,7 +7,7 @@ import {
   useTeacherGroups 
 } from '../../../hooks/useTeacherAssignments'; // Yo'lni o'zingizdagi fayl turgan joyga moslang
 
-export default function TeacherAssignmentDetail() {
+export  function TeacherAssignmentDetail() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
 
