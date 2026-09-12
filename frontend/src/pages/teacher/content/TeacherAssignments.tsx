@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '../../../api/client';
 import { useTeacherOverview } from '../../../hooks/useTeacher';
 
-export default function TeacherAssignments() {
+export  function TeacherAssignments() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
