@@ -42,51 +42,27 @@ export function useTeacherAssignment(id: string) {
 export function useCreateTeacherAssignment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (newData: {
+    mutationFn: (data: {
       title: string;
       description?: string;
       type: string;
       category: string;
       mediaUrl?: string;
       groupId: string;
-    }) => {
-      const payloadData = {
-        type: newData.type,
-        category: newData.category,
-        mediaUrl: newData.mediaUrl,
-        content: newData.description,
-      };
-
-      // 1. Asosiy test/materialni yaratish (/api/v1/assignments ga yuboriladi)
-      const res = await apiFetch<any>('/api/v1/assignments', {
+    }) =>
+      apiFetch('/api/v1/assignments', {
         method: 'POST',
         body: JSON.stringify({
-          title: newData.title,
-          description: JSON.stringify(payloadData),
-          durationSeconds: 1800,
-          passingScore: 50,
-          questionIds: ['dummy-question-id'], // Agar bazada real savol bo'lsa uning ID sini yozing
+          title: data.title,
+          description: data.description,
+          type: data.type,               // 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO'
+          category: data.category,       // 'LESSON' | 'HOMEWORK' | 'RESOURCE'
+          mediaUrl: data.mediaUrl,
+          groupId: data.groupId,         // Guruh ID si
         }),
-      });
-
-      const createdId = res.id;
-
-      // 2. Guruhga biriktirish
-      if (newData.groupId && createdId) {
-        await apiFetch(`/api/v1/assignments/${createdId}/assign`, {
-          method: 'POST',
-          body: JSON.stringify({
-            targetType: 'GROUP',
-            groupId: newData.groupId,
-          }),
-        });
-      }
-
-      return res;
-    },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
-      qc.invalidateQueries({ queryKey: ['teacher-assignments-list'] });
     },
   });
 }
