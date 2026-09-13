@@ -96,20 +96,18 @@ model AdminProfile {
 // 2. GROUPS
 // ------------------------------------------------------------
 model Group {
-  id          String       @id @default(cuid())
-  name        String       // masalan "9-A"
-  description String?      // Guruh tavsifi uchun
-  teacherId   String?
-  teacher     User?        @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
-  assignments TeacherAssignment[]
-  assistantId String?      // Yordamchi ustoz uchun
-  assistant   User?        @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
-
-  createdAt   DateTime     @default(now())
-  deletedAt   DateTime?    // Soft delete uchun
-
+  id              String            @id @default(cuid())
+  name            String
+  description     String?
+  teacherId       String?
+  teacher         User?             @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  assistantId     String?
+  assistant       User?             @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
+  
   members         GroupMember[]
   testAssignments TestAssignment[]
+  assignments     Assignment[]
+  teacherAssignments TeacherAssignment[] // <--- SHUNI QO'SHING
 
   @@index([teacherId])
   @@index([assistantId])
@@ -199,9 +197,19 @@ model Assignment {
   category    String
   mediaUrl    String?
   groupId     String
+  group       Group    @relation(fields: [groupId], references: [id]) // <--- SHUNI QO'SHING
   teacherId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  tests       AssignmentTest[]
+}
+model AssignmentTest {
+  id           String     @id @default(uuid())
+  assignmentId String
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  question     String
+  options      String[]
+  correctOption Int
 }
 model Subject {
   id          String        @id @default(cuid())
