@@ -56,7 +56,7 @@ model User {
   adminActionLogs   AdminActionLog[]   @relation("AuditActor")
   activityLogs      ActivityLog[]
   streak            Streak?
-
+  teacherAssignments TeacherAssignment[] @relation("TeacherAssignments")
   createdCourses    Course[]           @relation("CourseCreatedBy")
   taughtGroups      Group[]            @relation("GroupTeacher")
   assistantGroups   Group[]            @relation("GroupAssistant")
@@ -101,7 +101,7 @@ model Group {
   description String?      // Guruh tavsifi uchun
   teacherId   String?
   teacher     User?        @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
-  
+  assignments TeacherAssignment[]
   assistantId String?      // Yordamchi ustoz uchun
   assistant   User?        @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
 
@@ -131,6 +131,41 @@ model GroupMember {
 // ------------------------------------------------------------
 // 3. LEARNING HIERARCHY: Course → Subject → Section → Topic → Lesson
 // ------------------------------------------------------------
+model TeacherAssignment {
+  id          String               @id @default(cuid())
+  title       String
+  description String?
+  type        ContentType          @default(TEXT)
+  category    AssignmentCategory   @default(LESSON)
+  mediaUrl    String?
+  groupId     String
+  teacherId   String               // 👈 YANGI — majburiy
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  deletedAt   DateTime?
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher User  @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  // 👇 Muhim indekslar
+  @@index([teacherId, createdAt(sort: Desc)])
+  @@index([groupId, createdAt(sort: Desc)])
+  @@index([deletedAt, createdAt(sort: Desc)])
+  @@index([teacherId, groupId, deletedAt])
+}
+
+enum ContentType {
+  TEXT
+  IMAGE
+  PDF
+  VIDEO
+}
+
+enum AssignmentCategory {
+  LESSON
+  HOMEWORK
+  RESOURCE
+}
 
 enum ContentStatus {
   DRAFT
