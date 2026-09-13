@@ -108,6 +108,7 @@ model Group {
   testAssignments TestAssignment[]
   assignments     Assignment[]
   teacherAssignments TeacherAssignment[] // <--- SHUNI QO'SHING
+  deletedAt          DateTime?
 
   @@index([teacherId])
   @@index([assistantId])
