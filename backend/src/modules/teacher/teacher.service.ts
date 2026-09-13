@@ -16,10 +16,13 @@ export class TeacherService {
    * resurslarga kira olsin").
    */
   async getOverview(teacherId: string) {
-    const groups = await this.prisma.group.findMany({
-      where: { teacherId, deletedAt: null },
-      include: { members: true },
-    });
+ // teacher.service.ts ichidagi getOverview metodi bosh qismida groups olinadigan joy:
+const groups = await this.prisma.group.findMany({
+  where: { teacherId },
+  include: {
+    members: true, // <--- SHUNI QO'SHING
+  },
+});
 
     const groupIds = groups.map((g) => g.id);
     const distinctStudentIds = new Set(
