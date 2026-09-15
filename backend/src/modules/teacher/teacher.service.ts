@@ -40,10 +40,9 @@ export class TeacherService {
     const studentIds = Array.from(
       new Set(groups.flatMap((g) => g.members.map((m) => m.studentId))),
     );
-
     const attemptsWhere: Prisma.TestAttemptWhereInput = {
       studentId: { in: studentIds },
-      completedAt: { not: null as any },
+      completedAt: { not: { equals: null as any } },
     };
 
     const [
