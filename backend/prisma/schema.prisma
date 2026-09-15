@@ -136,6 +136,7 @@ model TeacherAssignment {
   description String?
   type        ContentType          @default(TEXT)
   category    AssignmentCategory   @default(LESSON)
+  tests       Test[]    // Shu maydon yetishmayotgan bo'lishi mumkin
   mediaUrl    String?
   groupId     String
   teacherId   String               // 👈 YANGI — majburiy
