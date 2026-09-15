@@ -1,3 +1,4 @@
+// src/modules/teacher/teacher.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -23,7 +24,7 @@ export class TeacherService {
   ) {}
 
   /* ============================================================
-     OVERVIEW — charts + stats
+     OVERVIEW
      ============================================================ */
   async getOverview(teacherId: string) {
     const sevenDaysAgo = new Date();
@@ -32,19 +33,18 @@ export class TeacherService {
 
     const groups = await this.prisma.group.findMany({
       where: { teacherId, deletedAt: null },
-      include: {
-        members: { select: { studentId: true } },
-      },
+      include: { members: { select: { studentId: true } } },
     });
 
     const studentIds = Array.from(
       new Set(groups.flatMap((g) => g.members.map((m) => m.studentId))),
     );
 
-  const attemptsWhere: Prisma.TestAttemptWhereInput = {
-  studentId: { in: studentIds },
-  completedAt: { lte: new Date() },
-};
+    const attemptsWhere: Prisma.TestAttemptWhereInput = {
+      studentId: { in: studentIds },
+      completedAt: { lte: new Date() },
+    };
+
     const [
       assignedTestsCount,
       assignmentsCount,
@@ -77,10 +77,7 @@ export class TeacherService {
             _count: { _all: true },
             _avg: { percent: true },
           })
-        : Promise.resolve({
-            _count: { _all: 0 },
-            _avg: { percent: 0 },
-          }),
+        : Promise.resolve({ _count: { _all: 0 }, _avg: { percent: 0 } }),
 
       studentIds.length > 0
         ? this.getDailyActivity(studentIds, sevenDaysAgo)
@@ -115,13 +112,11 @@ export class TeacherService {
       assignmentsCount,
       totalAttempts,
       averageScore,
-
       groups: groups.map((g) => ({
         id: g.id,
         name: g.name,
         studentsCount: g.members.length,
       })),
-
       recentAssignments: recentAssignments.map((a) => ({
         id: a.id,
         testId: a.test.id,
@@ -130,11 +125,7 @@ export class TeacherService {
         groupName: a.group?.name ?? 'Individual',
         assignedAt: a.assignedAt,
       })),
-
-      charts: {
-        dailyActivity,
-      },
-
+      charts: { dailyActivity },
       topStudents: topStudents.map((s) => ({
         id: s.id,
         firstName: s.firstName,
@@ -146,9 +137,6 @@ export class TeacherService {
     };
   }
 
-  /* ============================================================
-     Kunlik faollik
-     ============================================================ */
   private async getDailyActivity(studentIds: string[], from: Date) {
     const where: Prisma.TestAttemptWhereInput = {
       studentId: { in: studentIds },
@@ -157,11 +145,7 @@ export class TeacherService {
 
     const attempts = await this.prisma.testAttempt.findMany({
       where,
-      select: {
-        completedAt: true,
-        percent: true,
-        studentId: true,
-      },
+      select: { completedAt: true, percent: true, studentId: true },
     });
 
     const map = new Map<string, { students: Set<string>; percents: number[] }>();
@@ -194,12 +178,11 @@ export class TeacherService {
         avgPercent: avg,
       });
     }
-
     return result;
   }
 
   /* ============================================================
-     GURUH STUDENTLARI
+     GROUP STUDENTS
      ============================================================ */
   async getGroupStudents(groupId: string, requester: CurrentUserPayload) {
     const group = await this.groupsService.findOneOrThrow(groupId, requester);
@@ -245,14 +228,11 @@ export class TeacherService {
   }
 
   /* ============================================================
-     TEACHER GROUPS — barcha guruhlar
+     TEACHER GROUPS
      ============================================================ */
   async listMyGroups(teacherId: string) {
     return this.prisma.group.findMany({
-      where: {
-        teacherId,
-        deletedAt: null,
-      },
+      where: { teacherId, deletedAt: null },
       include: {
         _count: {
           select: { members: true, assignments: true },
@@ -263,11 +243,7 @@ export class TeacherService {
 
   async getMyGroup(teacherId: string, groupId: string) {
     const group = await this.prisma.group.findFirst({
-      where: {
-        id: groupId,
-        teacherId,
-        deletedAt: null,
-      },
+      where: { id: groupId, teacherId, deletedAt: null },
       include: {
         members: {
           include: {
@@ -299,29 +275,41 @@ export class TeacherService {
   }
 
   /* ============================================================
-     ASSIGNMENTS — CRUD
+     ASSIGNMENTS — LIST
      ============================================================ */
   async listAssignments(teacherId: string, groupId?: string) {
-    const where: any = { teacherId, deletedAt: null };
+    // ✅ MUHIM: `teacherId` filter orqali faqat o'z materiallari
+    const where: Prisma.TeacherAssignmentWhereInput = {
+      teacherId,
+      deletedAt: null,
+    };
 
     if (groupId) {
+      // Guruh o'qituvchiga tegishli ekanini tekshirish
       const group = await this.prisma.group.findFirst({
         where: { id: groupId, teacherId, deletedAt: null },
       });
-      if (!group) throw new ForbiddenException('Bu guruh sizga tegishli emas');
+      if (!group) {
+        throw new ForbiddenException('Bu guruh sizga tegishli emas');
+      }
       where.groupId = groupId;
     }
 
-    return this.prisma.teacherAssignment.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        group: { select: { id: true, name: true } },
-        tests: { orderBy: { order: 'asc' } },
-      },
-    });
+return this.prisma.teacherAssignment.findMany({
+  where,
+  orderBy: { createdAt: 'desc' }, // Asosiy tartiblash (bu to'g'ri ishlaydi)
+  include: {
+    group: { select: { id: true, name: true } },
+    tests: { 
+      select: { id: true, title: true } // orderBy olib tashlandi
+    },
+  },
+});
   }
 
+  /* ============================================================
+     ASSIGNMENTS — GET ONE
+     ============================================================ */
   async getAssignment(teacherId: string, id: string) {
     const item = await this.prisma.teacherAssignment.findFirst({
       where: { id, deletedAt: null },
@@ -339,6 +327,9 @@ export class TeacherService {
     return item;
   }
 
+  /* ============================================================
+     ASSIGNMENTS — CREATE
+     ============================================================ */
   async createAssignment(teacherId: string, dto: CreateAssignmentDto) {
     const group = await this.prisma.group.findFirst({
       where: { id: dto.groupId, deletedAt: null },
@@ -421,6 +412,9 @@ export class TeacherService {
     return created;
   }
 
+  /* ============================================================
+     ASSIGNMENTS — UPDATE
+     ============================================================ */
   async updateAssignment(
     teacherId: string,
     id: string,
@@ -497,6 +491,9 @@ export class TeacherService {
     return updated;
   }
 
+  /* ============================================================
+     ASSIGNMENTS — DELETE
+     ============================================================ */
   async removeAssignment(teacherId: string, id: string) {
     const existing = await this.prisma.teacherAssignment.findFirst({
       where: { id, deletedAt: null },

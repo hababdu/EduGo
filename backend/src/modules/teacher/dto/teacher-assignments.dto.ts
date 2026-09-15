@@ -1,3 +1,4 @@
+// src/modules/teacher/dto/teacher-assignments.dto.ts
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -23,8 +24,8 @@ export class AssignmentTestDto {
   question: string;
 
   @IsArray()
-  @ArrayMinSize(2, { message: 'Kamida 2 ta variant kerak' })
-  @ArrayMaxSize(6, { message: 'Maksimal 6 ta variant' })
+  @ArrayMinSize(2)
+  @ArrayMaxSize(6)
   @IsString({ each: true })
   options: string[];
 
@@ -62,7 +63,7 @@ export class CreateAssignmentDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(50, { message: 'Maksimal 50 ta savol' })
+  @ArrayMaxSize(50)
   @ValidateNested({ each: true })
   @Type(() => AssignmentTestDto)
   tests?: AssignmentTestDto[];

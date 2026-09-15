@@ -1,82 +1,20 @@
 // src/pages/teacher/TeacherGroupDetail.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
-
-/* ============================================================
-   TYPES
-   ============================================================ */
-interface GroupMemberStudent {
-  id: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  username?: string | null;
-  status?: string | null;
-  studentProfile?: {
-    totalScore: number;
-    level: number;
-  } | null;
-}
-
-interface GroupMember {
-  id: string;
-  studentId: string;
-  student: GroupMemberStudent;
-}
-
-interface GroupDetail {
-  id: string;
-  name: string;
-  description?: string | null;
-  teacherId?: string | null;
-  members: GroupMember[];
-  _count?: {
-    members?: number;
-    assignments?: number;
-  };
-}
-
-interface AssignmentTest {
-  id: string;
-  question: string;
-  options: string[];
-  correctOption: number;
-  order: number;
-}
-
-interface AssignmentItem {
-  id: string;
-  title: string;
-  description?: string | null;
-  type: string;
-  category: string;
-  mediaUrl?: string | null;
-  groupId: string;
-  createdAt: string;
-  tests?: AssignmentTest[];
-}
+import {
+  useTeacherGroup,
+  useTeacherAssignments,
+  type AssignmentItem,
+} from '../../hooks/useTeacherAssignments';
 
 /* ============================================================
    CONSTANTS
    ============================================================ */
-const CATEGORY_META: Record<
-  string,
-  { label: string; badge: string }
-> = {
-  LESSON: {
-    label: 'Dars mavzusi',
-    badge: 'bg-gold/10 text-gold',
-  },
-  HOMEWORK: {
-    label: 'Uy vazifasi',
-    badge: 'bg-coral/10 text-coral',
-  },
-  RESOURCE: {
-    label: "Qo'shimcha",
-    badge: 'bg-sky-500/10 text-sky-400',
-  },
+const CATEGORY_META: Record<string, { label: string; badge: string }> = {
+  LESSON: { label: 'Dars mavzusi', badge: 'bg-gold/10 text-gold' },
+  HOMEWORK: { label: 'Uy vazifasi', badge: 'bg-coral/10 text-coral' },
+  RESOURCE: { label: "Qo'shimcha", badge: 'bg-sky-500/10 text-sky-400' },
 };
 
 const CONTENT_META: Record<string, { label: string; emoji: string }> = {
@@ -87,48 +25,20 @@ const CONTENT_META: Record<string, { label: string; emoji: string }> = {
 };
 
 /* ============================================================
-   HOOKS
-   ============================================================ */
-function useGroupDetail(groupId: string) {
-  return useQuery({
-    queryKey: ['teacher', 'group', groupId],
-    // ✅ `/api/v1/teacher/groups/:id` — bu student bilan to'liq qaytaradi
-    queryFn: () =>
-      apiFetch<GroupDetail>(`/api/v1/teacher/groups/${groupId}`),
-    enabled: !!groupId,
-  });
-}
-
-function useGroupAssignments(groupId: string) {
-  return useQuery({
-    queryKey: ['teacher', 'assignments', 'group', groupId],
-    queryFn: () =>
-      apiFetch<AssignmentItem[]>(
-        `/api/v1/teacher/assignments?groupId=${groupId}`,
-      ),
-    enabled: !!groupId,
-  });
-}
-
-/* ============================================================
    COMPONENT
    ============================================================ */
 export function TeacherGroupDetail() {
   const { groupId = '' } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
-
   const { haptic, showBackButton, hideBackButton } = useTelegram();
 
-  const {
-    data: group,
-    isLoading: groupLoading,
-    error: groupError,
-  } = useGroupDetail(groupId);
+  const { data: group, isLoading: groupLoading, error: groupError } =
+    useTeacherGroup(groupId);
   const {
     data: assignments,
     isLoading: assignmentsLoading,
     error: assignmentsError,
-  } = useGroupAssignments(groupId);
+  } = useTeacherAssignments(groupId);
 
   const [activeTab, setActiveTab] = useState<'students' | 'materials'>(
     'students',
@@ -167,7 +77,7 @@ export function TeacherGroupDetail() {
           : 0,
       total: scores.reduce((s, x) => s + x, 0),
       studentsCount: members.length,
-      activeCount: members.filter((m) => m.student?.status === 'ACTIVE')
+      activeCount: members.filter((m: any) => m.student?.status === 'ACTIVE')
         .length,
     };
   }, [group?.members]);
@@ -188,9 +98,7 @@ export function TeacherGroupDetail() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-          <p className="text-sm font-semibold text-ink">
-            Guruh topilmadi
-          </p>
+          <p className="text-sm font-semibold text-ink">Guruh topilmadi</p>
           <p className="text-xs text-ink-muted">
             {(groupError as any)?.response?.data?.message ||
               (groupError as any)?.message ||
@@ -212,7 +120,7 @@ export function TeacherGroupDetail() {
   }
 
   const members = group.members ?? [];
-  const materialsCount = assignments?.length ?? group._count?.assignments ?? 0;
+  const materialsCount = assignments?.length ?? 0;
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-32 space-y-5">
@@ -311,7 +219,7 @@ export function TeacherGroupDetail() {
         </button>
       </div>
 
-      {/* ============ TAB: STUDENTS (read-only) ============ */}
+      {/* ============ TAB: STUDENTS (READ-ONLY) ============ */}
       {activeTab === 'students' && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-ink-muted">
@@ -326,19 +234,17 @@ export function TeacherGroupDetail() {
             </div>
           ) : (
             <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
-              {members.map((m) => {
-                const s = m.student;
-
-                // ✅ Ismni xavfsiz olish
-                const firstName = s?.firstName || '';
-                const lastName = s?.lastName || '';
+              {members.map((m: any) => {
+                const s = m.student || {};
+                const firstName = s.firstName || '';
+                const lastName = s.lastName || '';
                 const fullName =
                   `${firstName} ${lastName}`.trim() ||
-                  s?.username ||
+                  s.username ||
                   "Noma'lum talaba";
 
                 const initial = fullName[0]?.toUpperCase() || 'T';
-                const status = s?.status || 'ACTIVE';
+                const status = s.status || 'ACTIVE';
                 const statusColor =
                   status === 'ACTIVE'
                     ? 'bg-teal/15 text-teal'
@@ -352,17 +258,15 @@ export function TeacherGroupDetail() {
                     onClick={() => {
                       haptic('light');
                       navigate(
-                        `/teacher/groups/${groupId}/students/${s.id}`,
+                        `/teacher/groups/${groupId}/students/${s.id || m.studentId}`,
                       );
                     }}
                     className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
                   >
-                    {/* Avatar */}
                     <div className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
                       {initial}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-ink truncate">
@@ -379,8 +283,8 @@ export function TeacherGroupDetail() {
                         </span>
                       </div>
                       <p className="text-xs text-ink-muted truncate">
-                        {s?.username ? `@${s.username}` : `ID: ${s?.id}`}
-                        {s?.studentProfile && (
+                        {s.username ? `@${s.username}` : `ID: ${s.id || m.studentId}`}
+                        {s.studentProfile && (
                           <>
                             {' · '}
                             <span className="text-gold">
@@ -393,10 +297,7 @@ export function TeacherGroupDetail() {
                       </p>
                     </div>
 
-                    {/* Arrow (batafsil) */}
-                    <span className="text-ink-muted text-xs shrink-0">
-                      ›
-                    </span>
+                    <span className="text-ink-muted text-xs shrink-0">›</span>
                   </div>
                 );
               })}
@@ -429,17 +330,25 @@ export function TeacherGroupDetail() {
               <p className="text-xs text-ink-muted">
                 {(assignmentsError as any)?.response?.data?.message ||
                   (assignmentsError as any)?.message ||
-                  "Server xatosi"}
+                  'Server xatosi'}
               </p>
             </div>
           ) : !assignments || assignments.length === 0 ? (
             <div className="text-center py-12 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-              <p className="text-sm font-semibold text-ink">
-                Materiallar yo'q
-              </p>
+              <p className="text-sm font-semibold text-ink">Materiallar yo'q</p>
               <p className="text-xs text-ink-muted">
                 Bu guruhga hali material biriktirilmagan
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  haptic('light');
+                  navigate('/teacher/content/courses');
+                }}
+                className="mt-2 text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
+              >
+                + Material qo'shish
+              </button>
             </div>
           ) : (
             <div className="space-y-3">

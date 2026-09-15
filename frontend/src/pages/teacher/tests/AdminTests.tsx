@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTests, useCreateTest } from '../../../hooks/useTests';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusBadge } from '../../../components/admin/content/StatusBadge';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
+import { apiFetch } from '../../../lib/api-client';
 
 /* ============================================================
    TYPES
@@ -29,6 +30,14 @@ interface TestItem {
   };
 }
 
+interface TeacherGroup {
+  id: string;
+  name: string;
+  _count?: {
+    members?: number;
+  };
+}
+
 const EMPTY_QUESTION: QuestionDraft = {
   text: '',
   difficulty: 'MEDIUM',
@@ -38,18 +47,60 @@ const EMPTY_QUESTION: QuestionDraft = {
 };
 
 /* ============================================================
+   HOOKS
+   ============================================================ */
+function useTests() {
+  return useQuery({
+    queryKey: ['tests'],
+    queryFn: () => apiFetch<TestItem[]>('/api/v1/tests'),
+    staleTime: 30_000,
+  });
+}
+
+function useTeacherGroups() {
+  return useQuery({
+    queryKey: ['teacher', 'groups'],
+    queryFn: () => apiFetch<TeacherGroup[]>('/api/v1/teacher/groups'),
+    staleTime: 60_000,
+  });
+}
+
+function useCreateTest() {
+  const qc = useQueryClient();
+  return useMutation<
+    TestItem,
+    Error,
+    {
+      title: string;
+      description?: string;
+      durationSeconds: number;
+      passingScore: number;
+      randomQuestions: boolean;
+      randomAnswerOrder: boolean;
+      questions: QuestionDraft[];
+      groupIds: string[];
+    }
+  >({
+    mutationFn: (data) =>
+      apiFetch<TestItem>('/api/v1/tests', { method: 'POST', data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tests'] });
+      qc.invalidateQueries({ queryKey: ['teacher', 'groups'] });
+      qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
+    },
+  });
+}
+
+/* ============================================================
    COMPONENT
    ============================================================ */
 export function AdminTests() {
   const navigate = useNavigate();
-  const {
-    haptic,
-    hapticNotify,
-    showMainButton,
-    hideMainButton,
-  } = useTelegram();
+  const { haptic, hapticNotify, showMainButton, hideMainButton } =
+    useTelegram();
 
   const { data: tests, isLoading } = useTests();
+  const { data: teacherGroups, isLoading: groupsLoading } = useTeacherGroups();
   const createTest = useCreateTest();
 
   const [showForm, setShowForm] = useState(false);
@@ -59,18 +110,20 @@ export function AdminTests() {
   /* ---------- Form state ---------- */
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [subjectId, setSubjectId] = useState('');
   const [durationSeconds, setDurationSeconds] = useState(1800);
   const [passingScore, setPassingScore] = useState(50);
   const [randomQuestions, setRandomQuestions] = useState(false);
   const [randomAnswerOrder, setRandomAnswerOrder] = useState(false);
-  const [questions, setQuestions] = useState<QuestionDraft[]>([{ ...EMPTY_QUESTION }]);
+  const [questions, setQuestions] = useState<QuestionDraft[]>([
+    { ...EMPTY_QUESTION },
+  ]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
   /* ---------- Filter ---------- */
   const filteredTests = useMemo<TestItem[]>(() => {
     if (!tests || !Array.isArray(tests)) return [];
     const q = search.trim().toLowerCase();
-    return (tests as TestItem[]).filter((t) => {
+    return tests.filter((t) => {
       const matchesSearch = !q || t.title.toLowerCase().includes(q);
       const matchesStatus = statusFilter ? t.status === statusFilter : true;
       return matchesSearch && matchesStatus;
@@ -83,6 +136,16 @@ export function AdminTests() {
     haptic('light');
     setSearch('');
     setStatusFilter('');
+  };
+
+  /* ---------- Group toggle ---------- */
+  const toggleGroup = (groupId: string) => {
+    haptic('light');
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId],
+    );
   };
 
   /* ---------- Question handlers ---------- */
@@ -99,7 +162,7 @@ export function AdminTests() {
   const handleQuestionChange = <K extends keyof QuestionDraft>(
     index: number,
     field: K,
-    value: QuestionDraft[K]
+    value: QuestionDraft[K],
   ) => {
     setQuestions((prev) => {
       const updated = [...prev];
@@ -108,7 +171,11 @@ export function AdminTests() {
     });
   };
 
-  const handleOptionChange = (qIndex: number, optIndex: number, value: string) => {
+  const handleOptionChange = (
+    qIndex: number,
+    optIndex: number,
+    value: string,
+  ) => {
     setQuestions((prev) => {
       const updated = [...prev];
       const options = [...updated[qIndex].options];
@@ -135,7 +202,6 @@ export function AdminTests() {
     setQuestions((prev) => {
       const updated = [...prev];
       const options = updated[qIndex].options.filter((_, i) => i !== optIndex);
-      // correctAnswerIndex ni tuzatish
       let correctIdx = updated[qIndex].correctAnswerIndex;
       if (optIndex === correctIdx) correctIdx = 0;
       else if (optIndex < correctIdx) correctIdx -= 1;
@@ -152,12 +218,12 @@ export function AdminTests() {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setSubjectId('');
     setDurationSeconds(1800);
     setPassingScore(50);
     setRandomQuestions(false);
     setRandomAnswerOrder(false);
     setQuestions([{ ...EMPTY_QUESTION }]);
+    setSelectedGroupIds([]);
   };
 
   /* ---------- Submit ---------- */
@@ -167,6 +233,11 @@ export function AdminTests() {
       toast('error', 'Test nomini kiriting!');
       return;
     }
+    if (selectedGroupIds.length === 0) {
+      hapticNotify('error');
+      toast('error', 'Kamida 1 ta guruh tanlang!');
+      return;
+    }
     const hasEmptyQuestion = questions.some((q) => !q.text.trim());
     if (hasEmptyQuestion) {
       hapticNotify('error');
@@ -174,7 +245,7 @@ export function AdminTests() {
       return;
     }
     const hasEmptyOption = questions.some((q) =>
-      q.options.some((o) => !o.trim())
+      q.options.some((o) => !o.trim()),
     );
     if (hasEmptyOption) {
       hapticNotify('error');
@@ -186,35 +257,39 @@ export function AdminTests() {
       {
         title: title.trim(),
         description: description.trim() || undefined,
-        subjectId: subjectId || undefined,
         durationSeconds: Number(durationSeconds),
         passingScore: Number(passingScore),
         randomQuestions,
         randomAnswerOrder,
         questions,
-      } as any,
+        groupIds: selectedGroupIds,
+      },
       {
         onSuccess: () => {
           hapticNotify('success');
-          toast('success', 'Test muvaffaqiyatli yaratildi!');
+          toast('success', 'Test muvaffaqiyatli yaratildi va guruhga biriktirildi!');
           setShowForm(false);
           resetForm();
         },
         onError: (error: any) => {
           hapticNotify('error');
-          toast('error', error?.message || 'Saqlashda xatolik!');
+          const msg =
+            error?.response?.data?.message ||
+            error?.message ||
+            'Saqlashda xatolik!';
+          toast('error', Array.isArray(msg) ? msg[0] : msg);
         },
-      }
+      },
     );
   }, [
     title,
     description,
-    subjectId,
     durationSeconds,
     passingScore,
     randomQuestions,
     randomAnswerOrder,
     questions,
+    selectedGroupIds,
     createTest,
     hapticNotify,
   ]);
@@ -231,28 +306,32 @@ export function AdminTests() {
       {
         loading: createTest.isPending,
         disabled: createTest.isPending,
-      }
+      },
     );
     return () => {
       cleanup?.();
       hideMainButton();
     };
-  }, [showForm, createTest.isPending, handleSubmit, showMainButton, hideMainButton]);
+  }, [
+    showForm,
+    createTest.isPending,
+    handleSubmit,
+    showMainButton,
+    hideMainButton,
+  ]);
 
   /* ============================================================
      RENDER
      ============================================================ */
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5 pb-32">
-      {/* ========== HEADER ========== */}
+      {/* HEADER */}
       <div className="flex flex-col gap-4 bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display text-xl sm:text-2xl text-ink">Testlar</h1>
-            <p className="text-xs text-ink-muted mt-1">
-              {tests ? `Jami: ${tests.length} ta test` : 'Yuklanmoqda...'}
-            </p>
-          </div>
+        <div>
+          <h1 className="font-display text-xl sm:text-2xl text-ink">Testlar</h1>
+          <p className="text-xs text-ink-muted mt-1">
+            {tests ? `Jami: ${tests.length} ta test` : 'Yuklanmoqda...'}
+          </p>
         </div>
 
         <button
@@ -268,7 +347,7 @@ export function AdminTests() {
         </button>
       </div>
 
-      {/* ========== FORMA ========== */}
+      {/* FORMA */}
       {showForm && (
         <div className="bg-surface/40 p-5 sm:p-6 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
@@ -297,14 +376,7 @@ export function AdminTests() {
               />
             </Field>
 
-            <Field label="Fan ID (ixtiyoriy)">
-              <input
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                placeholder="Subject ID"
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              />
-            </Field>
+            {/* ❌ FAN ID OLIB TASHLANDI */}
 
             <Field label="Tavsif (ixtiyoriy)">
               <textarea
@@ -317,8 +389,77 @@ export function AdminTests() {
             </Field>
           </div>
 
+          {/* 👇 GURUHLARNI TANLASH */}
+          <div className="space-y-3 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold text-ink">
+                Qaysi guruhlarga biriktirilsin? *
+              </label>
+              <span className="text-xs text-ink-muted">
+                {selectedGroupIds.length} ta tanlangan
+              </span>
+            </div>
+
+            {groupsLoading ? (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-14 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
+                  />
+                ))}
+              </div>
+            ) : !teacherGroups || teacherGroups.length === 0 ? (
+              <div className="text-center py-6 bg-surface/30 rounded-2xl border border-white/5">
+                <p className="text-xs text-ink-muted">
+                  Sizga hali guruh biriktirilmagan
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {teacherGroups.map((g) => {
+                  const isSelected = selectedGroupIds.includes(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => toggleGroup(g.id)}
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all active:scale-[0.99] flex items-center gap-3 ${
+                        isSelected
+                          ? 'bg-gold/10 border-gold/40'
+                          : 'bg-surface/50 border-white/5 hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+                          isSelected
+                            ? 'bg-gold border-gold'
+                            : 'border-white/20'
+                        }`}
+                      >
+                        {isSelected && (
+                          <span className="text-base text-xs font-bold">✓</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-ink truncate">
+                          {g.name}
+                        </p>
+                        {g._count?.members !== undefined && (
+                          <p className="text-xs text-ink-muted">
+                            👥 {g._count.members} ta talaba
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Sozlamalar */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
             <Field label="Davomiyligi (sek)">
               <input
                 type="number"
@@ -388,7 +529,9 @@ export function AdminTests() {
 
                 <textarea
                   value={q.text}
-                  onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
+                  onChange={(e) =>
+                    handleQuestionChange(qIndex, 'text', e.target.value)
+                  }
                   placeholder="Savol matnini kiriting..."
                   rows={2}
                   className="w-full bg-surface rounded-xl px-3 py-2.5 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
@@ -401,7 +544,7 @@ export function AdminTests() {
                       handleQuestionChange(
                         qIndex,
                         'difficulty',
-                        e.target.value as Difficulty
+                        e.target.value as Difficulty,
                       )
                     }
                     className="bg-surface rounded-xl px-3 py-2.5 text-xs outline-none border border-white/5 text-ink min-h-[44px]"
@@ -416,7 +559,11 @@ export function AdminTests() {
                     min="1"
                     value={q.points}
                     onChange={(e) =>
-                      handleQuestionChange(qIndex, 'points', Number(e.target.value))
+                      handleQuestionChange(
+                        qIndex,
+                        'points',
+                        Number(e.target.value),
+                      )
                     }
                     placeholder="Ball"
                     className="bg-surface rounded-xl px-3 py-2.5 text-xs outline-none border border-white/5 text-ink min-h-[44px]"
@@ -434,7 +581,11 @@ export function AdminTests() {
                         name={`correct-${qIndex}`}
                         checked={q.correctAnswerIndex === optIndex}
                         onChange={() =>
-                          handleQuestionChange(qIndex, 'correctAnswerIndex', optIndex)
+                          handleQuestionChange(
+                            qIndex,
+                            'correctAnswerIndex',
+                            optIndex,
+                          )
                         }
                         className="cursor-pointer accent-gold shrink-0"
                       />
@@ -475,7 +626,7 @@ export function AdminTests() {
         </div>
       )}
 
-      {/* ========== SEARCH + FILTER ========== */}
+      {/* SEARCH + FILTER */}
       <div className="space-y-3">
         <input
           value={search}
@@ -510,11 +661,12 @@ export function AdminTests() {
         </div>
       </div>
 
-      {/* ========== ACTIVE FILTERS ========== */}
+      {/* ACTIVE FILTERS */}
       {hasActiveFilters && (
         <div className="flex items-center justify-between bg-surface/20 px-4 py-3 rounded-2xl border border-white/5">
           <span className="text-xs text-ink-muted">
-            Topildi: <strong className="text-ink">{filteredTests.length}</strong> ta
+            Topildi: <strong className="text-ink">{filteredTests.length}</strong>{' '}
+            ta
           </span>
           <button
             type="button"
@@ -526,7 +678,7 @@ export function AdminTests() {
         </div>
       )}
 
-      {/* ========== LIST ========== */}
+      {/* LIST */}
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
@@ -538,11 +690,11 @@ export function AdminTests() {
         </div>
       ) : filteredTests.length === 0 ? (
         <EmptyState
-          title={hasActiveFilters ? 'Natija topilmadi' : 'Hali testlar yo\'q'}
+          title={hasActiveFilters ? 'Natija topilmadi' : "Hali testlar yo'q"}
           subtitle={
             hasActiveFilters
               ? "Filtr yoki qidiruvni o'zgartirib ko'ring"
-              : "Birinchi testingizni yarating"
+              : 'Birinchi testingizni yarating'
           }
           ctaLabel={hasActiveFilters ? 'Filtrlarni tozalash' : '+ Test yaratish'}
           onCta={() => {
@@ -586,7 +738,13 @@ export function AdminTests() {
 /* ============================================================
    YORDAMCHI KOMPONENTLAR
    ============================================================ */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs text-ink-muted font-medium">{label}</label>
