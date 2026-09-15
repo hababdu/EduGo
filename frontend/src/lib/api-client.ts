@@ -1,17 +1,26 @@
+// src/lib/api-client.ts
 import { useAuthStore } from '../store/auth.store';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-class ApiError extends Error {
-  constructor(public status: number, message: string) {
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
 
 let refreshPromise: Promise<void> | null = null;
 
+/* ============================================================
+   Refresh session
+   ============================================================ */
 async function refreshSession(): Promise<void> {
-  const { refreshToken, setSession, clearSession, user } = useAuthStore.getState();
+  const { refreshToken, setSession, clearSession, user } =
+    useAuthStore.getState();
+
   if (!refreshToken) {
     clearSession();
     throw new ApiError(401, 'Sessiya tugagan');
@@ -25,7 +34,7 @@ async function refreshSession(): Promise<void> {
 
   if (!res.ok) {
     clearSession();
-    throw new ApiError(401, 'Sessiyani yangilab bo\'lmadi');
+    throw new ApiError(401, "Sessiyani yangilab bo'lmadi");
   }
 
   const data = await res.json();
@@ -36,26 +45,56 @@ async function refreshSession(): Promise<void> {
   });
 }
 
-/**
- * Barcha himoyalangan so'rovlar shu funksiya orqali o'tadi.
- * 401 kelsa — BIR MARTA avtomatik refresh qilib, so'rovni qayta yuboradi.
- * (parallel bir nechta 401 kelsa ham faqat bitta refresh so'rovi ketadi.)
- */
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+/* ============================================================
+   API FETCH OPTIONS
+   ============================================================ */
+export interface ApiFetchOptions extends Omit<RequestInit, 'body'> {
+  /**
+   * So'rov body'si. Avtomatik `JSON.stringify` qilinadi.
+   * `GET`/`DELETE` so'rovlar uchun ishlatilmaydi.
+   */
+  data?: unknown;
+
+  /**
+   * Native `body` — `FormData`, `Blob`, `URLSearchParams` uchun.
+   */
+  body?: BodyInit | null;
+}
+
+/* ============================================================
+   apiFetch
+   ============================================================ */
+export async function apiFetch<T = unknown>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const { data, headers, ...rest } = options;
+
   const doFetch = async (): Promise<Response> => {
     const { accessToken } = useAuthStore.getState();
+    const tg = (window as any).Telegram?.WebApp;
+
+    const finalHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(tg?.initData ? { 'X-Telegram-Init-Data': tg.initData } : {}),
+      ...((headers as Record<string, string>) ?? {}),
+    };
+
+    // `data` bo'lsa — JSON.stringify
+    const body: BodyInit | undefined =
+      data !== undefined ? JSON.stringify(data) : rest.body ?? undefined;
+
     return fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-        ...options.headers,
-      },
+      ...rest,
+      headers: finalHeaders,
+      ...(body !== undefined && { body }),
     });
   };
 
   let res = await doFetch();
 
+  // 401 → refresh va qayta urinish
   if (res.status === 401) {
     if (!refreshPromise) {
       refreshPromise = refreshSession().finally(() => {
@@ -66,16 +105,23 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
     res = await doFetch();
   }
 
+  // Xato
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(res.status, body.message ?? 'So\'rovda xatolik yuz berdi');
+    const errorBody = await res.json().catch(() => ({}));
+    const msg =
+      (errorBody as any).message ?? "So'rovda xatolik yuz berdi";
+    throw new ApiError(res.status, Array.isArray(msg) ? msg[0] : msg);
   }
 
+  // Bo'sh response
   const text = await res.text();
   if (!text) return undefined as T;
-  return JSON.parse(text);
+  return JSON.parse(text) as T;
 }
 
+/* ============================================================
+   Login via Telegram
+   ============================================================ */
 export async function loginWithTelegram(initData: string) {
   const res = await fetch(`${API_URL}/api/v1/auth/telegram`, {
     method: 'POST',
