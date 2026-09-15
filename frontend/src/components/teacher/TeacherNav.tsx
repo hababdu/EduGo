@@ -21,7 +21,7 @@ const NAV_ITEMS: NavItem[] = [
     key: 'groups',
     label: 'Guruhlar',
     icon: '👥',
-    path: '/teacher?tab=groups',
+    path: '/teacher/groups',
     match: (p) => p.startsWith('/teacher/groups'),
   },
   {
