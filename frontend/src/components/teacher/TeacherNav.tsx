@@ -55,12 +55,7 @@ export function TeacherNav() {
 
   const handleNavigate = (item: NavItem) => {
     haptic('light');
-    if (item.key === 'groups') {
-      // Groups modal ochish uchun event
-      navigate('/teacher', { state: { openGroups: true } });
-    } else {
-      navigate(item.path);
-    }
+    navigate(item.path);  // ✅ HAR DOIM `item.path` ga o'tish
   };
 
   return (
