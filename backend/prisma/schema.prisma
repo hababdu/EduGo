@@ -29,60 +29,60 @@ enum AccountStatus {
 }
 
 model User {
-  id                String       @id @default(cuid())
-  telegramId        String       @unique
-  phone             String?
-  username          String?
-  firstName         String
-  lastName          String?
-  profilePhotoUrl   String?
-  role              RoleName     @default(STUDENT)
-  status            AccountStatus @default(ACTIVE)
-  registeredAt      DateTime     @default(now())
-  lastActiveAt      DateTime     @default(now())
-  deletedAt         DateTime?    // soft delete
+  id              String        @id @default(cuid())
+  telegramId      String        @unique
+  phone           String?
+  username        String?
+  firstName       String
+  lastName        String?
+  profilePhotoUrl String?
+  role            RoleName      @default(STUDENT)
+  status          AccountStatus @default(ACTIVE)
+  registeredAt    DateTime      @default(now())
+  lastActiveAt    DateTime      @default(now())
+  deletedAt       DateTime? // soft delete
 
-  studentProfile    StudentProfile?
-  teacherProfile    TeacherProfile?
-  adminProfile      AdminProfile?
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+  adminProfile   AdminProfile?
 
-  groupMemberships  GroupMember[]
-  scoreTransactions ScoreTransaction[] @relation("ScoreOwner")
-  adminScoreActions ScoreTransaction[] @relation("ScoreCreatedBy")
-  xpTransactions    XpTransaction[]
-  achievements      StudentAchievement[]
-  testAttempts      TestAttempt[]
-  notifications     Notification[]
-  adminActionLogs   AdminActionLog[]   @relation("AuditActor")
-  activityLogs      ActivityLog[]
-  streak            Streak?
-  teacherAssignments TeacherAssignment[] @relation("TeacherAssignments")
-  createdCourses    Course[]           @relation("CourseCreatedBy")
-  taughtGroups      Group[]            @relation("GroupTeacher")
-  assistantGroups   Group[]            @relation("GroupAssistant")
-  createdTests      Test[]             @relation("TestCreatedBy")
-  createdQuestions  Question[]         @relation("QuestionCreatedBy")
-  assignedTests     TestAssignment[]   @relation("AssignedBy")
-  createdAnnouncements Announcement[]  @relation("AnnouncementCreatedBy")
+  groupMemberships     GroupMember[]
+  scoreTransactions    ScoreTransaction[]   @relation("ScoreOwner")
+  adminScoreActions    ScoreTransaction[]   @relation("ScoreCreatedBy")
+  xpTransactions       XpTransaction[]
+  achievements         StudentAchievement[]
+  testAttempts         TestAttempt[]
+  notifications        Notification[]
+  adminActionLogs      AdminActionLog[]     @relation("AuditActor")
+  activityLogs         ActivityLog[]
+  streak               Streak?
+  teacherAssignments   TeacherAssignment[]  @relation("TeacherAssignments")
+  createdCourses       Course[]             @relation("CourseCreatedBy")
+  taughtGroups         Group[]              @relation("GroupTeacher")
+  assistantGroups      Group[]              @relation("GroupAssistant")
+  createdTests         Test[]               @relation("TestCreatedBy")
+  createdQuestions     Question[]           @relation("QuestionCreatedBy")
+  assignedTests        TestAssignment[]     @relation("AssignedBy")
+  createdAnnouncements Announcement[]       @relation("AnnouncementCreatedBy")
 
   @@index([telegramId])
   @@index([role])
 }
 
 model StudentProfile {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id])
-  totalScore Int      @default(0)
-  totalXp    Int      @default(0)
-  level      Int      @default(1)
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id])
+  totalScore Int     @default(0)
+  totalXp    Int     @default(0)
+  level      Int     @default(1)
   bio        String?
 }
 
 model TeacherProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  id     String  @id @default(cuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
   bio    String?
 }
 
@@ -96,52 +96,54 @@ model AdminProfile {
 // 2. GROUPS
 // ------------------------------------------------------------
 model Group {
-  id              String            @id @default(cuid())
-  name            String
-  description     String?
-  teacherId       String?
-  teacher         User?             @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
-  assistantId     String?
-  assistant       User?             @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
-  
-  members         GroupMember[]
-  testAssignments TestAssignment[]
-  assignments     Assignment[]
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  teacherId   String?
+  teacher     User?   @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
+  assistantId String?
+  assistant   User?   @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
+
+  members            GroupMember[]
+  testAssignments    TestAssignment[]
+  assignments        Assignment[]
   teacherAssignments TeacherAssignment[] // <--- SHUNI QO'SHING
   deletedAt          DateTime?
 
   @@index([teacherId])
   @@index([assistantId])
 }
-model GroupMember {
-  id        String   @id @default(cuid())
-  groupId   String
-  description String?
-  studentId String
-  joinedAt  DateTime @default(now())
-  createdAt DateTime @default(now())
 
-  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+model GroupMember {
+  id          String   @id @default(cuid())
+  groupId     String
+  description String?
+  studentId   String
+  joinedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, studentId])
   @@index([studentId])
 }
+
 // ------------------------------------------------------------
 // 3. LEARNING HIERARCHY: Course → Subject → Section → Topic → Lesson
 // ------------------------------------------------------------
 model TeacherAssignment {
-  id          String               @id @default(cuid())
+  id          String             @id @default(cuid())
   title       String
   description String?
-  type        ContentType          @default(TEXT)
-  category    AssignmentCategory   @default(LESSON)
-  tests       Test[]    // Shu maydon yetishmayotgan bo'lishi mumkin
+  type        ContentType        @default(TEXT)
+  category    AssignmentCategory @default(LESSON)
+  tests       Test[] // Shu maydon yetishmayotgan bo'lishi mumkin
   mediaUrl    String?
   groupId     String
-  teacherId   String               // 👈 YANGI — majburiy
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  teacherId   String // 👈 YANGI — majburiy
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   deletedAt   DateTime?
 
   group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -191,28 +193,31 @@ model Course {
 
   @@index([status])
 }
+
 model Assignment {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   title       String
   description String?
   type        String
   category    String
   mediaUrl    String?
   groupId     String
-  group       Group    @relation(fields: [groupId], references: [id]) // <--- SHUNI QO'SHING
+  group       Group            @relation(fields: [groupId], references: [id]) // <--- SHUNI QO'SHING
   teacherId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   tests       AssignmentTest[]
 }
+
 model AssignmentTest {
-  id           String     @id @default(uuid())
-  assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  question     String
-  options      String[]
+  id            String     @id @default(uuid())
+  assignmentId  String
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  question      String
+  options       String[]
   correctOption Int
 }
+
 model Subject {
   id          String        @id @default(cuid())
   courseId    String
@@ -247,19 +252,19 @@ model Section {
 }
 
 model Topic {
-  id                String        @id @default(cuid())
-  sectionId         String
-  section           Section       @relation(fields: [sectionId], references: [id])
-  title             String
-  description       String?
-  posterUrl         String?
-  order             Int           @default(0)
-  status            ContentStatus @default(DRAFT)
-  sequentialLocked  Boolean       @default(false) // oldingi topic tugamaguncha yopiqmi
-  deletedAt         DateTime?
+  id               String        @id @default(cuid())
+  sectionId        String
+  section          Section       @relation(fields: [sectionId], references: [id])
+  title            String
+  description      String?
+  posterUrl        String?
+  order            Int           @default(0)
+  status           ContentStatus @default(DRAFT)
+  sequentialLocked Boolean       @default(false) // oldingi topic tugamaguncha yopiqmi
+  deletedAt        DateTime?
 
-  lessons  Lesson[]
-  tests    Test[]
+  lessons Lesson[]
+  tests   Test[]
 
   @@index([sectionId])
 }
@@ -291,18 +296,18 @@ model Video {
   lesson   Lesson      @relation(fields: [lessonId], references: [id])
   source   VideoSource
   url      String
-  duration Int?        // seconds
+  duration Int? // seconds
 
   progress VideoProgress[]
 }
 
 model VideoProgress {
-  id             String   @id @default(cuid())
-  videoId        String
-  video          Video    @relation(fields: [videoId], references: [id])
-  studentId      String
-  percent        Int      @default(0) // 0,25,50,75,100
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id])
+  studentId String
+  percent   Int      @default(0) // 0,25,50,75,100
+  updatedAt DateTime @updatedAt
 
   @@unique([videoId, studentId])
 }
@@ -316,13 +321,13 @@ enum MaterialType {
 }
 
 model Material {
-  id       String       @id @default(cuid())
-  lessonId String
-  lesson   Lesson       @relation(fields: [lessonId], references: [id])
-  type     MaterialType
-  fileUrl  String
-  title    String
-  downloadable Boolean  @default(true)
+  id           String       @id @default(cuid())
+  lessonId     String
+  lesson       Lesson       @relation(fields: [lessonId], references: [id])
+  type         MaterialType
+  fileUrl      String
+  title        String
+  downloadable Boolean      @default(true)
 }
 
 // ------------------------------------------------------------
@@ -343,20 +348,20 @@ enum Difficulty {
 }
 
 model Question {
-  id            String       @id @default(cuid())
-  subjectId     String?
-  topicId       String?
-  type          QuestionType
-  difficulty    Difficulty   @default(MEDIUM)
-  text          String
-  explanation   String?
-  points        Int          @default(1)
-  tags          String[]
-  createdById   String
-  createdBy     User         @relation("QuestionCreatedBy", fields: [createdById], references: [id])
-  status        ContentStatus @default(DRAFT)
-  deletedAt     DateTime?
-  createdAt     DateTime     @default(now())
+  id          String        @id @default(cuid())
+  subjectId   String?
+  topicId     String?
+  type        QuestionType
+  difficulty  Difficulty    @default(MEDIUM)
+  text        String
+  explanation String?
+  points      Int           @default(1)
+  tags        String[]
+  createdById String
+  createdBy   User          @relation("QuestionCreatedBy", fields: [createdById], references: [id])
+  status      ContentStatus @default(DRAFT)
+  deletedAt   DateTime?
+  createdAt   DateTime      @default(now())
 
   options       AnswerOption[]
   testQuestions TestQuestion[]
@@ -389,29 +394,30 @@ enum TestStatus {
 }
 
 model Test {
-  id               String     @id @default(cuid())
-  title            String
-  description      String?
-  posterUrl        String?
-  subjectId        String?
-  subject          Subject?   @relation(fields: [subjectId], references: [id])
-  topicId          String?
-  topic            Topic?     @relation(fields: [topicId], references: [id])
-  durationSeconds  Int        // server-side timer bazasi
-  passingScore     Int        // percent, masalan 70
-  maxScore         Int        // hisoblab qo'yiladi yoki qo'lda
-  randomQuestions  Boolean    @default(false)
-  randomAnswerOrder Boolean   @default(false)
-  questionCount    Int?       // random bo'lsa nechta savol tanlanadi
-  teacherAssignmentId String?            // Agar majburiy bo'lmasa ? bilan
+  id                  String             @id @default(cuid())
+  title               String
+  description         String?
+  posterUrl           String?
+  subjectId           String?
+  order               Int                @default(0) // Shu maydonni qo'shing
+  subject             Subject?           @relation(fields: [subjectId], references: [id])
+  topicId             String?
+  topic               Topic?             @relation(fields: [topicId], references: [id])
+  durationSeconds     Int // server-side timer bazasi
+  passingScore        Int // percent, masalan 70
+  maxScore            Int // hisoblab qo'yiladi yoki qo'lda
+  randomQuestions     Boolean            @default(false)
+  randomAnswerOrder   Boolean            @default(false)
+  questionCount       Int? // random bo'lsa nechta savol tanlanadi
+  teacherAssignmentId String? // Agar majburiy bo'lmasa ? bilan
   teacherAssignment   TeacherAssignment? @relation(fields: [teacherAssignmentId], references: [id])
-  startDate        DateTime?
-  endDate          DateTime?
-  status           TestStatus @default(DRAFT)
-  createdById      String
-  createdBy        User       @relation("TestCreatedBy", fields: [createdById], references: [id])
-  deletedAt        DateTime?
-  createdAt        DateTime   @default(now())
+  startDate           DateTime?
+  endDate             DateTime?
+  status              TestStatus         @default(DRAFT)
+  createdById         String
+  createdBy           User               @relation("TestCreatedBy", fields: [createdById], references: [id])
+  deletedAt           DateTime?
+  createdAt           DateTime           @default(now())
 
   questions   TestQuestion[]
   assignments TestAssignment[]
@@ -453,7 +459,7 @@ model TestAssignment {
   targetType   AssignmentTargetType
   groupId      String?
   group        Group?               @relation(fields: [groupId], references: [id])
-  studentId    String?              // individual assignment uchun
+  studentId    String? // individual assignment uchun
   assignedById String
   assignedBy   User                 @relation("AssignedBy", fields: [assignedById], references: [id])
   assignedAt   DateTime             @default(now())
@@ -476,15 +482,15 @@ enum SessionStatus {
 }
 
 model TestSession {
-  id               String        @id @default(cuid())
-  testId           String
-  test             Test          @relation(fields: [testId], references: [id])
-  studentId        String
-  startedAt        DateTime      @default(now()) // SERVER vaqti - source of truth
-  durationSeconds  Int           // testdan nusxa olinadi, keyin o'zgarmaydi
-  selectedQuestionIds String[]   // random tanlangan bo'lsa shu yerda saqlanadi (barqarorlik uchun)
-  answerOrderSeed  Int?          // random answer shuffle uchun deterministik seed
-  status           SessionStatus @default(IN_PROGRESS)
+  id                  String        @id @default(cuid())
+  testId              String
+  test                Test          @relation(fields: [testId], references: [id])
+  studentId           String
+  startedAt           DateTime      @default(now()) // SERVER vaqti - source of truth
+  durationSeconds     Int // testdan nusxa olinadi, keyin o'zgarmaydi
+  selectedQuestionIds String[] // random tanlangan bo'lsa shu yerda saqlanadi (barqarorlik uchun)
+  answerOrderSeed     Int? // random answer shuffle uchun deterministik seed
+  status              SessionStatus @default(IN_PROGRESS)
 
   answers TestAnswer[]
 
@@ -499,20 +505,20 @@ enum AttemptStatus {
 }
 
 model TestAttempt {
-  id             String        @id @default(cuid())
-  testId         String
-  test           Test          @relation(fields: [testId], references: [id])
-  studentId      String
-  student        User          @relation(fields: [studentId], references: [id])
-  sessionId      String        @unique
-  score          Int
-  maxScore       Int
-  percent        Float
-  passed         Boolean
+  id               String        @id @default(cuid())
+  testId           String
+  test             Test          @relation(fields: [testId], references: [id])
+  studentId        String
+  student          User          @relation(fields: [studentId], references: [id])
+  sessionId        String        @unique
+  score            Int
+  maxScore         Int
+  percent          Float
+  passed           Boolean
   timeSpentSeconds Int
-  status         AttemptStatus @default(COMPLETED)
-  isRetakeAllowed Boolean      @default(false) // faqat admin ON qilganda true
-  completedAt    DateTime      @default(now())
+  status           AttemptStatus @default(COMPLETED)
+  isRetakeAllowed  Boolean       @default(false) // faqat admin ON qilganda true
+  completedAt      DateTime      @default(now())
 
   @@unique([testId, studentId]) // asosiy "bir marta" cheklovi
   @@index([studentId])
@@ -520,15 +526,15 @@ model TestAttempt {
 }
 
 model TestAnswer {
-  id           String      @id @default(cuid())
-  sessionId    String
-  session      TestSession @relation(fields: [sessionId], references: [id])
-  questionId   String
-  question     Question    @relation(fields: [questionId], references: [id])
+  id                String      @id @default(cuid())
+  sessionId         String
+  session           TestSession @relation(fields: [sessionId], references: [id])
+  questionId        String
+  question          Question    @relation(fields: [questionId], references: [id])
   selectedOptionIds String[]
-  textAnswer   String?
-  isCorrect    Boolean?    // faqat submit'dan keyin to'ldiriladi
-  answeredAt   DateTime    @default(now())
+  textAnswer        String?
+  isCorrect         Boolean? // faqat submit'dan keyin to'ldiriladi
+  answeredAt        DateTime    @default(now())
 
   @@unique([sessionId, questionId])
 }
@@ -551,12 +557,12 @@ model ScoreTransaction {
   id          String               @id @default(cuid())
   studentId   String
   student     User                 @relation("ScoreOwner", fields: [studentId], references: [id])
-  amount      Int                  // musbat yoki manfiy bo'lishi mumkin
+  amount      Int // musbat yoki manfiy bo'lishi mumkin
   type        ScoreTransactionType
-  subjectId   String?              // fan bo'yicha ball ajratish uchun
+  subjectId   String? // fan bo'yicha ball ajratish uchun
   testId      String?
   description String?
-  createdById String?              // admin qo'lda bergan bo'lsa
+  createdById String? // admin qo'lda bergan bo'lsa
   createdBy   User?                @relation("ScoreCreatedBy", fields: [createdById], references: [id])
   createdAt   DateTime             @default(now())
 
@@ -611,11 +617,11 @@ model StudentAchievement {
 }
 
 model Streak {
-  id            String   @id @default(cuid())
-  studentId     String   @unique
-  student       User     @relation(fields: [studentId], references: [id])
-  currentStreak Int      @default(0)
-  longestStreak Int      @default(0)
+  id             String    @id @default(cuid())
+  studentId      String    @unique
+  student        User      @relation(fields: [studentId], references: [id])
+  currentStreak  Int       @default(0)
+  longestStreak  Int       @default(0)
   lastActiveDate DateTime?
 }
 
@@ -623,7 +629,7 @@ model Challenge {
   id          String   @id @default(cuid())
   title       String
   date        DateTime // shu kunga tegishli challenge
-  testId      String?  // challenge alohida mini-test sifatida modellashtiriladi
+  testId      String? // challenge alohida mini-test sifatida modellashtiriladi
   test        Test?    @relation(fields: [testId], references: [id])
   rewardScore Int
   rewardXp    Int
@@ -647,29 +653,29 @@ enum NotificationType {
 }
 
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  type      NotificationType
-  title     String
-  body      String
-  isRead    Boolean          @default(false)
-  sentViaTelegram Boolean    @default(false)
-  createdAt DateTime         @default(now())
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id])
+  type            NotificationType
+  title           String
+  body            String
+  isRead          Boolean          @default(false)
+  sentViaTelegram Boolean          @default(false)
+  createdAt       DateTime         @default(now())
 
   @@index([userId])
   @@index([isRead])
 }
 
 model Announcement {
-  id          String   @id @default(cuid())
-  title       String
-  body        String
-  createdById String
-  createdBy   User     @relation("AnnouncementCreatedBy", fields: [createdById], references: [id])
-  groupId     String?  // null bo'lsa hammaga
-  publishedOnTelegram Boolean @default(false)
-  createdAt   DateTime @default(now())
+  id                  String   @id @default(cuid())
+  title               String
+  body                String
+  createdById         String
+  createdBy           User     @relation("AnnouncementCreatedBy", fields: [createdById], references: [id])
+  groupId             String? // null bo'lsa hammaga
+  publishedOnTelegram Boolean  @default(false)
+  createdAt           DateTime @default(now())
 
   @@index([groupId])
 }
@@ -679,13 +685,13 @@ model Announcement {
 // ------------------------------------------------------------
 
 model RefreshToken {
-  id          String    @id @default(cuid())
-  userId      String
-  tokenHash   String    @unique // xom token hech qachon DB'da saqlanmaydi, faqat hash
-  createdAt   DateTime  @default(now())
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  replacedBy  String?   // rotation zanjiri uchun (audit maqsadida)
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique // xom token hech qachon DB'da saqlanmaydi, faqat hash
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String? // rotation zanjiri uchun (audit maqsadida)
 
   @@index([userId])
   @@index([tokenHash])
@@ -699,8 +705,8 @@ model AdminActionLog {
   id         String   @id @default(cuid())
   actorId    String
   actor      User     @relation("AuditActor", fields: [actorId], references: [id])
-  action     String   // masalan "SCORE_ADJUST", "TEST_REOPEN", "STUDENT_BLOCK"
-  targetType String   // masalan "Test", "User"
+  action     String // masalan "SCORE_ADJUST", "TEST_REOPEN", "STUDENT_BLOCK"
+  targetType String // masalan "Test", "User"
   targetId   String
   oldValue   Json?
   newValue   Json?
@@ -716,7 +722,7 @@ model ActivityLog {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  action    String   // masalan "LOGIN", "TEST_STARTED", "LESSON_VIEWED"
+  action    String // masalan "LOGIN", "TEST_STARTED", "LESSON_VIEWED"
   metadata  Json?
   createdAt DateTime @default(now())
 
