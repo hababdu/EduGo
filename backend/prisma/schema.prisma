@@ -403,6 +403,8 @@ model Test {
   randomQuestions  Boolean    @default(false)
   randomAnswerOrder Boolean   @default(false)
   questionCount    Int?       // random bo'lsa nechta savol tanlanadi
+  teacherAssignmentId String?            // Agar majburiy bo'lmasa ? bilan
+  teacherAssignment   TeacherAssignment? @relation(fields: [teacherAssignmentId], references: [id])
   startDate        DateTime?
   endDate          DateTime?
   status           TestStatus @default(DRAFT)
