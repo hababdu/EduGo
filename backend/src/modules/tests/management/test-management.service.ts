@@ -222,19 +222,21 @@ export class TestManagementService {
       const createdQuestions = await this.prisma.$transaction(
         dto.questions.map((q) =>
           this.prisma.question.create({
-            data: {
-              text: q.text.trim(),
-              difficulty: q.difficulty,
-              points: q.points,
-              options: {
-                create: q.options.map((opt, idx) => ({
-                  text: opt.trim(),
-                  isCorrect: idx === q.correctAnswerIndex,
-                })),
-              },
-            },
-            select: { id: true },
-          }),
+  data: {
+    text: q.text.trim(),
+    difficulty: q.difficulty,
+    points: q.points,
+  type: ('SINGLE' as any),// <-- Savol turini qo'shing (agar q.type bo'lmasa 'SINGLE' yoki mos keladigan turingiz)
+    createdById: actorId,      // <-- Kim yaratganini qo'shing (funksiyaga kelayotgan actorId)
+    options: {
+      create: q.options.map((opt, idx) => ({
+        text: opt.trim(),
+        isCorrect: idx === q.correctAnswerIndex,
+      })),
+    },
+  },
+  select: { id: true },
+})
         ),
       );
       newQuestionIds = createdQuestions.map((q) => q.id);
