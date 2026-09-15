@@ -1,9 +1,9 @@
+// src/pages/teacher/TeacherGroupDetail.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
-import { toast } from '../../components/ui/Toast';
 
 /* ============================================================
    TYPES
@@ -38,13 +38,6 @@ interface GroupDetail {
   };
 }
 
-interface StudentListItem {
-  id: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  username?: string | null;
-}
-
 interface AssignmentTest {
   id: string;
   question: string;
@@ -68,20 +61,20 @@ interface AssignmentItem {
 /* ============================================================
    CONSTANTS
    ============================================================ */
-const CATEGORY_META: Record<string, { label: string; short: string; badge: string }> = {
+const CATEGORY_META: Record<
+  string,
+  { label: string; badge: string }
+> = {
   LESSON: {
     label: 'Dars mavzusi',
-    short: 'Dars',
     badge: 'bg-gold/10 text-gold',
   },
   HOMEWORK: {
     label: 'Uy vazifasi',
-    short: 'Uy vazifasi',
     badge: 'bg-coral/10 text-coral',
   },
   RESOURCE: {
     label: "Qo'shimcha",
-    short: "Qo'shimcha",
     badge: 'bg-sky-500/10 text-sky-400',
   },
 };
@@ -99,7 +92,9 @@ const CONTENT_META: Record<string, { label: string; emoji: string }> = {
 function useGroupDetail(groupId: string) {
   return useQuery({
     queryKey: ['teacher', 'group', groupId],
-    queryFn: () => apiFetch<GroupDetail>(`/api/v1/groups/${groupId}`),
+    // ✅ `/api/v1/teacher/groups/:id` — bu student bilan to'liq qaytaradi
+    queryFn: () =>
+      apiFetch<GroupDetail>(`/api/v1/teacher/groups/${groupId}`),
     enabled: !!groupId,
   });
 }
@@ -115,67 +110,6 @@ function useGroupAssignments(groupId: string) {
   });
 }
 
-function useUpdateGroup(groupId: string) {
-  const qc = useQueryClient();
-
-  return useMutation<
-    unknown,                                      // 👈 TData
-    Error,                                        // 👈 TError
-    { name?: string; description?: string }       // 👈 TVariables — MANA SHU
-  >({
-    mutationFn: (data) =>
-      apiFetch(`/api/v1/groups/${groupId}`, {
-        method: 'PATCH',
-        data,
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['teacher', 'group', groupId] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'groups'] });
-    },
-  });
-}
-
-function useAddStudent(groupId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (studentId: string) =>
-      apiFetch(`/api/v1/groups/${groupId}/students`, {
-        method: 'POST',
-        data: { studentId },
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['teacher', 'group', groupId] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
-    },
-  });
-}
-
-function useRemoveStudent(groupId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (studentId: string) =>
-      apiFetch(`/api/v1/groups/${groupId}/students/${studentId}`, {
-        method: 'DELETE',
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['teacher', 'group', groupId] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
-    },
-  });
-}
-
-function useAllStudents() {
-  return useQuery({
-    queryKey: ['admin', 'students', 'for-picker'],
-    queryFn: () =>
-      apiFetch<{ items?: StudentListItem[]; data?: StudentListItem[] } | StudentListItem[]>(
-        '/api/v1/admin/students?page=1&pageSize=50',
-      ),
-    staleTime: 60_000,
-  });
-}
-
 /* ============================================================
    COMPONENT
    ============================================================ */
@@ -183,36 +117,22 @@ export function TeacherGroupDetail() {
   const { groupId = '' } = useParams<{ groupId: string }>();
   const navigate = useNavigate();
 
+  const { haptic, showBackButton, hideBackButton } = useTelegram();
+
   const {
-    haptic,
-    hapticNotify,
-    showConfirm,
-    showBackButton,
-    hideBackButton,
-  } = useTelegram();
+    data: group,
+    isLoading: groupLoading,
+    error: groupError,
+  } = useGroupDetail(groupId);
+  const {
+    data: assignments,
+    isLoading: assignmentsLoading,
+    error: assignmentsError,
+  } = useGroupAssignments(groupId);
 
-  const { data: group, isLoading, error } = useGroupDetail(groupId);
-  const { data: assignments, isLoading: assignmentsLoading } = useGroupAssignments(groupId);
-  const updateGroup = useUpdateGroup(groupId);
-  const addStudent = useAddStudent(groupId);
-  const removeStudent = useRemoveStudent(groupId);
-  const { data: allStudentsData } = useAllStudents();
-
-  const [activeTab, setActiveTab] = useState<'students' | 'materials' | 'edit'>(
+  const [activeTab, setActiveTab] = useState<'students' | 'materials'>(
     'students',
   );
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-
-  useEffect(() => {
-    if (group) {
-      setEditName(group.name || '');
-      setEditDescription(group.description || '');
-    }
-  }, [group]);
 
   /* ---------- BackButton ---------- */
   useEffect(() => {
@@ -231,12 +151,7 @@ export function TeacherGroupDetail() {
   const groupStats = useMemo(() => {
     const members = group?.members ?? [];
     if (members.length === 0) {
-      return {
-        avg: 0,
-        total: 0,
-        studentsCount: 0,
-        activeCount: 0,
-      };
+      return { avg: 0, total: 0, studentsCount: 0, activeCount: 0 };
     }
 
     const scores: number[] = [];
@@ -252,102 +167,13 @@ export function TeacherGroupDetail() {
           : 0,
       total: scores.reduce((s, x) => s + x, 0),
       studentsCount: members.length,
-      activeCount: members.filter((m) => m.student?.status === 'ACTIVE').length,
+      activeCount: members.filter((m) => m.student?.status === 'ACTIVE')
+        .length,
     };
   }, [group?.members]);
 
-  /* ---------- Remove ---------- */
-  const handleRemove = async (studentId: string, name: string) => {
-    haptic('medium');
-    const confirmed = await showConfirm(`${name} ni guruhdan chiqarmoqchimisiz?`);
-    if (!confirmed) return;
-
-    removeStudent.mutate(studentId, {
-      onSuccess: () => {
-        hapticNotify('success');
-        toast('success', 'Talaba guruhdan chiqarildi');
-      },
-      onError: (err: any) => {
-        hapticNotify('error');
-        toast('error', err?.response?.data?.message || err?.message || 'Xatolik');
-      },
-    });
-  };
-
-  /* ---------- Add ---------- */
-  const handleAddSubmit = () => {
-    if (!selectedStudentId) return;
-    haptic('light');
-    addStudent.mutate(selectedStudentId, {
-      onSuccess: () => {
-        hapticNotify('success');
-        toast('success', "Talaba guruhga qo'shildi!");
-        setSelectedStudentId('');
-        setIsAddModalOpen(false);
-        setSearchQuery('');
-      },
-      onError: (err: any) => {
-        hapticNotify('error');
-        toast('error', err?.response?.data?.message || err?.message || 'Xatolik');
-      },
-    });
-  };
-
-  /* ---------- Update ---------- */
-  const handleUpdate = () => {
-    if (!editName.trim()) {
-      hapticNotify('error');
-      toast('error', 'Guruh nomini kiriting!');
-      return;
-    }
-    haptic('light');
-    updateGroup.mutate(
-      {
-        name: editName.trim(),
-        description: editDescription.trim() || undefined,
-      },
-      {
-        onSuccess: () => {
-          hapticNotify('success');
-          toast('success', "Guruh ma'lumotlari saqlandi");
-        },
-        onError: (err: any) => {
-          hapticNotify('error');
-          toast('error', err?.response?.data?.message || err?.message || 'Xatolik');
-        },
-      },
-    );
-  };
-
-  /* ---------- Students for modal ---------- */
-  const allStudents: StudentListItem[] = useMemo(() => {
-    if (!allStudentsData) return [];
-    if (Array.isArray(allStudentsData)) return allStudentsData;
-    return allStudentsData.items || allStudentsData.data || [];
-  }, [allStudentsData]);
-
-  const currentMemberIds = useMemo(
-    () => new Set((group?.members ?? []).map((m) => m.studentId)),
-    [group?.members],
-  );
-
-  const filteredStudents = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return allStudents.filter((s) => {
-      if (currentMemberIds.has(s.id)) return false;
-      if (!q) return true;
-      const name = `${s.firstName || ''} ${s.lastName || ''}`.toLowerCase();
-      const username = (s.username || '').toLowerCase();
-      return name.includes(q) || username.includes(q);
-    });
-  }, [allStudents, searchQuery, currentMemberIds]);
-
-  /* ---------- Loading / Error ---------- */
-  if (!groupId) {
-    return <div className="p-6 text-center text-coral">Guruh ID topilmadi.</div>;
-  }
-
-  if (isLoading) {
+  /* ---------- Loading ---------- */
+  if (groupLoading) {
     return (
       <div className="p-4 max-w-4xl mx-auto space-y-4 pb-32">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
@@ -357,13 +183,18 @@ export function TeacherGroupDetail() {
     );
   }
 
-  if (error || !group) {
+  /* ---------- Error ---------- */
+  if (groupError || !group) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-          <p className="text-sm font-semibold text-ink">Guruh topilmadi</p>
+          <p className="text-sm font-semibold text-ink">
+            Guruh topilmadi
+          </p>
           <p className="text-xs text-ink-muted">
-            Guruh o'chirilgan yoki sizga tegishli emas
+            {(groupError as any)?.response?.data?.message ||
+              (groupError as any)?.message ||
+              "Guruh o'chirilgan yoki sizga tegishli emas"}
           </p>
           <button
             type="button"
@@ -381,6 +212,7 @@ export function TeacherGroupDetail() {
   }
 
   const members = group.members ?? [];
+  const materialsCount = assignments?.length ?? group._count?.assignments ?? 0;
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-32 space-y-5">
@@ -413,7 +245,7 @@ export function TeacherGroupDetail() {
             ✅ {groupStats.activeCount} ta faol
           </span>
           <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            📚 {assignments?.length ?? group._count?.assignments ?? 0} ta material
+            📚 {materialsCount} ta material
           </span>
         </div>
       </div>
@@ -440,60 +272,51 @@ export function TeacherGroupDetail() {
 
       {/* ============ TABS ============ */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-        {(
-          [
-            { key: 'students', label: 'Talabalar', icon: '👥' },
-            { key: 'materials', label: 'Materiallar', icon: '📚' },
-            { key: 'edit', label: 'Tahrirlash', icon: '✏️' },
-          ] as const
-        ).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => {
-              haptic('light');
-              setActiveTab(t.key);
-            }}
-            className={`shrink-0 px-3.5 py-2.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] ${
-              activeTab === t.key
-                ? 'bg-gold text-base'
-                : 'bg-white/5 text-ink-muted hover:bg-white/10'
-            }`}
-          >
-            <span>{t.icon}</span>
-            <span>{t.label}</span>
-            {t.key === 'students' && (
-              <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full">
-                {groupStats.studentsCount}
-              </span>
-            )}
-            {t.key === 'materials' && (
-              <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full">
-                {assignments?.length ?? 0}
-              </span>
-            )}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            setActiveTab('students');
+          }}
+          className={`shrink-0 px-3.5 py-2.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] ${
+            activeTab === 'students'
+              ? 'bg-gold text-base'
+              : 'bg-white/5 text-ink-muted hover:bg-white/10'
+          }`}
+        >
+          <span>👥</span>
+          <span>Talabalar</span>
+          <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full">
+            {groupStats.studentsCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            setActiveTab('materials');
+          }}
+          className={`shrink-0 px-3.5 py-2.5 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 min-h-[40px] ${
+            activeTab === 'materials'
+              ? 'bg-gold text-base'
+              : 'bg-white/5 text-ink-muted hover:bg-white/10'
+          }`}
+        >
+          <span>📚</span>
+          <span>Materiallar</span>
+          <span className="text-[10px] bg-black/20 px-1.5 py-0.5 rounded-full">
+            {materialsCount}
+          </span>
+        </button>
       </div>
 
-      {/* ============ TAB: STUDENTS ============ */}
+      {/* ============ TAB: STUDENTS (read-only) ============ */}
       {activeTab === 'students' && (
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink-muted">
-              Guruh a'zolari ({groupStats.studentsCount})
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                setIsAddModalOpen(true);
-              }}
-              className="text-xs bg-gold text-base px-3.5 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform"
-            >
-              + Talaba qo'shish
-            </button>
-          </div>
+          <h2 className="text-sm font-semibold text-ink-muted">
+            Guruh a'zolari ({groupStats.studentsCount})
+          </h2>
 
           {members.length === 0 ? (
             <div className="text-center py-12 bg-surface/20 rounded-3xl border border-white/5">
@@ -505,10 +328,15 @@ export function TeacherGroupDetail() {
             <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
               {members.map((m) => {
                 const s = m.student;
+
+                // ✅ Ismni xavfsiz olish
+                const firstName = s?.firstName || '';
+                const lastName = s?.lastName || '';
                 const fullName =
-                  `${s?.firstName || ''} ${s?.lastName || ''}`.trim() ||
+                  `${firstName} ${lastName}`.trim() ||
                   s?.username ||
-                  "Noma'lum";
+                  "Noma'lum talaba";
+
                 const initial = fullName[0]?.toUpperCase() || 'T';
                 const status = s?.status || 'ACTIVE';
                 const statusColor =
@@ -521,29 +349,21 @@ export function TeacherGroupDetail() {
                 return (
                   <div
                     key={m.id}
-                    className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors"
+                    onClick={() => {
+                      haptic('light');
+                      navigate(
+                        `/teacher/groups/${groupId}/students/${s.id}`,
+                      );
+                    }}
+                    className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
                   >
-                    <div
-                      onClick={() => {
-                        haptic('light');
-                        navigate(
-                          `/teacher/groups/${groupId}/students/${s.id}`,
-                        );
-                      }}
-                      className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0 cursor-pointer"
-                    >
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
                       {initial}
                     </div>
 
-                    <div
-                      onClick={() => {
-                        haptic('light');
-                        navigate(
-                          `/teacher/groups/${groupId}/students/${s.id}`,
-                        );
-                      }}
-                      className="flex-1 min-w-0 cursor-pointer"
-                    >
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium text-ink truncate">
                           {fullName}
@@ -573,14 +393,10 @@ export function TeacherGroupDetail() {
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(s.id, fullName)}
-                      disabled={removeStudent.isPending}
-                      className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 shrink-0"
-                    >
-                      ✕
-                    </button>
+                    {/* Arrow (batafsil) */}
+                    <span className="text-ink-muted text-xs shrink-0">
+                      ›
+                    </span>
                   </div>
                 );
               })}
@@ -592,21 +408,9 @@ export function TeacherGroupDetail() {
       {/* ============ TAB: MATERIALS ============ */}
       {activeTab === 'materials' && (
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-ink-muted">
-              Materiallar ({assignments?.length ?? 0})
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                navigate(`/teacher/content/courses`);
-              }}
-              className="text-xs bg-gold text-base px-3.5 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform"
-            >
-              + Material qo'shish
-            </button>
-          </div>
+          <h2 className="text-sm font-semibold text-ink-muted">
+            Materiallar ({materialsCount})
+          </h2>
 
           {assignmentsLoading ? (
             <div className="space-y-2">
@@ -617,21 +421,25 @@ export function TeacherGroupDetail() {
                 />
               ))}
             </div>
+          ) : assignmentsError ? (
+            <div className="text-center py-10 bg-red-500/5 rounded-3xl border border-red-500/20 space-y-2">
+              <p className="text-sm font-semibold text-red-400">
+                Materiallarni yuklashda xatolik
+              </p>
+              <p className="text-xs text-ink-muted">
+                {(assignmentsError as any)?.response?.data?.message ||
+                  (assignmentsError as any)?.message ||
+                  "Server xatosi"}
+              </p>
+            </div>
           ) : !assignments || assignments.length === 0 ? (
             <div className="text-center py-12 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+              <p className="text-sm font-semibold text-ink">
+                Materiallar yo'q
+              </p>
               <p className="text-xs text-ink-muted">
                 Bu guruhga hali material biriktirilmagan
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  haptic('light');
-                  navigate('/teacher/content/courses');
-                }}
-                className="text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
-              >
-                + Birinchi materialni qo'shish
-              </button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -640,17 +448,16 @@ export function TeacherGroupDetail() {
                 const content = CONTENT_META[a.type] ?? CONTENT_META.TEXT;
 
                 return (
-                  <div
+                  <button
                     key={a.id}
-                    className="bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-white/5 transition-all"
+                    type="button"
+                    onClick={() => {
+                      haptic('light');
+                      navigate(`/teacher/assignments/${a.id}`);
+                    }}
+                    className="w-full text-left bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-white/5 active:scale-[0.99] transition-all"
                   >
-                    <div
-                      onClick={() => {
-                        haptic('light');
-                        navigate(`/teacher/assignments/${a.id}`);
-                      }}
-                      className="space-y-2 cursor-pointer"
-                    >
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
                           className={`text-[10px] px-2.5 py-1 rounded-full font-semibold ${cat.badge}`}
@@ -677,171 +484,12 @@ export function TeacherGroupDetail() {
                         </p>
                       )}
                     </div>
-
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          haptic('light');
-                          navigate(`/teacher/assignments/${a.id}`);
-                        }}
-                        className="flex-1 text-xs font-semibold text-gold bg-gold/10 px-3 py-2.5 rounded-xl active:scale-[0.98] transition-transform min-h-[40px]"
-                      >
-                        Ochish →
-                      </button>
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           )}
         </section>
-      )}
-
-      {/* ============ TAB: EDIT ============ */}
-      {activeTab === 'edit' && (
-        <section className="space-y-4">
-          <div className="bg-surface/30 p-5 rounded-3xl border border-white/5 space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">
-                Guruh nomi *
-              </label>
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                maxLength={100}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs text-ink-muted font-medium">
-                Tavsif
-              </label>
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                maxLength={500}
-                rows={3}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={handleUpdate}
-              disabled={updateGroup.isPending}
-              className="w-full py-3.5 rounded-2xl bg-gold text-base font-semibold text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
-            >
-              {updateGroup.isPending
-                ? 'Saqlanmoqda...'
-                : "O'zgarishlarni saqlash"}
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* ============ MODAL: Add student ============ */}
-      {isAddModalOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4 z-50"
-          onClick={() => {
-            haptic('light');
-            setIsAddModalOpen(false);
-            setSearchQuery('');
-            setSelectedStudentId('');
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface border border-white/10 rounded-3xl p-5 w-full max-w-md space-y-4 shadow-2xl max-h-[85vh] flex flex-col"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-ink">
-                Guruhga talaba qo'shish
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  haptic('light');
-                  setIsAddModalOpen(false);
-                  setSearchQuery('');
-                  setSelectedStudentId('');
-                }}
-                className="text-ink-muted hover:text-ink text-sm p-2 rounded-xl bg-white/5 min-h-[40px]"
-              >
-                ✕
-              </button>
-            </div>
-
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="🔍 Talabani qidirish..."
-              className="w-full bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
-            />
-
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {filteredStudents.length === 0 ? (
-                <p className="text-xs text-ink-muted text-center py-6">
-                  {allStudents.length === 0
-                    ? "Talabalar ro'yxati yuklanmoqda..."
-                    : "Talaba topilmadi"}
-                </p>
-              ) : (
-                filteredStudents.map((s) => {
-                  const isSelected = selectedStudentId === s.id;
-                  const fullName =
-                    `${s.firstName || ''} ${s.lastName || ''}`.trim() ||
-                    'Talaba';
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => {
-                        haptic('light');
-                        setSelectedStudentId(s.id);
-                      }}
-                      className={`w-full text-left p-3 rounded-2xl border transition-colors ${
-                        isSelected
-                          ? 'bg-gold/10 border-gold/40'
-                          : 'bg-surface/50 border-white/5 hover:bg-white/[0.05]'
-                      }`}
-                    >
-                      <p className="text-sm font-medium text-ink">{fullName}</p>
-                      <p className="text-xs text-ink-muted">
-                        {s.username ? `@${s.username}` : s.id}
-                      </p>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  haptic('light');
-                  setIsAddModalOpen(false);
-                  setSearchQuery('');
-                  setSelectedStudentId('');
-                }}
-                className="flex-1 py-3 rounded-2xl bg-white/5 text-ink-muted text-sm font-semibold active:scale-[0.98] transition-transform"
-              >
-                Bekor qilish
-              </button>
-              <button
-                type="button"
-                onClick={handleAddSubmit}
-                disabled={addStudent.isPending || !selectedStudentId}
-                className="flex-1 py-3 rounded-2xl bg-gold text-base text-sm font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
-              >
-                {addStudent.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
