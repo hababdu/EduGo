@@ -1,8 +1,8 @@
 // src/services/api-client.ts
 import fetch, { RequestInit } from 'node-fetch';
 
-const WEBHOOK_URL =
-  process.env.WEBHOOK_URL ?? 'http://localhost:3000';
+const BACKEND_API_URL =
+  process.env.BACKEND_API_URL ?? 'http://localhost:3000';
 const BOT_INTERNAL_SECRET = process.env.BOT_INTERNAL_SECRET ?? '';
 
 /* ============================================================
@@ -33,7 +33,7 @@ async function internalGet<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = `${WEBHOOK_URL}${path}`;
+  const url = `${BACKEND_API_URL}${path}`;
 
   try {
     const res = await fetch(url, {
