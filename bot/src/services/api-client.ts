@@ -2,7 +2,7 @@
 import fetch, { RequestInit } from 'node-fetch';
 
 const BACKEND_API_URL =
-  process.env.BACKEND_API_URL ?? 'http://localhost:3000';
+  process.env.BACKEND_API_URL ?? 'https://edugobot.onrender.com';
 const BOT_INTERNAL_SECRET = process.env.BOT_INTERNAL_SECRET ?? '';
 
 /* ============================================================
