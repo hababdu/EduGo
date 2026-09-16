@@ -5,6 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
 
+/* ============================================================
+   TYPES
+   ============================================================ */
 type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
 type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
@@ -24,6 +27,7 @@ interface AssignmentItem {
   category: AssignmentCategory;
   mediaUrl?: string | null;
   groupId: string;
+  createdAt?: string;
   group?: { id: string; name: string } | null;
   teacher?: {
     id: string;
@@ -34,6 +38,9 @@ interface AssignmentItem {
   tests?: AssignmentTest[];
 }
 
+/* ============================================================
+   META
+   ============================================================ */
 const CATEGORY_META: Record<
   AssignmentCategory,
   { label: string; badge: string }
@@ -50,15 +57,22 @@ const CONTENT_META: Record<ContentType, { label: string; emoji: string }> = {
   VIDEO: { label: 'Video', emoji: '📹' },
 };
 
+/* ============================================================
+   HOOK
+   ============================================================ */
 function useLessonDetail(id: string) {
   return useQuery({
     queryKey: ['student', 'lesson', id],
-    queryFn: () => apiFetch<AssignmentItem>(`/api/v1/students/assignments/${id}`),
+    queryFn: () =>
+      apiFetch<AssignmentItem>(`/api/v1/dashboard/assignments/${id}`),
     enabled: !!id,
     staleTime: 60_000,
   });
 }
 
+/* ============================================================
+   COMPONENT
+   ============================================================ */
 export function LessonDetailPage() {
   const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -66,10 +80,11 @@ export function LessonDetailPage() {
 
   const { data: item, isLoading, error } = useLessonDetail(id);
 
+  /* ---------- Telegram BackButton ---------- */
   useEffect(() => {
     const cleanup = showBackButton(() => {
       haptic('light');
-      navigate(-1);
+      navigate('/lessons');
     });
     return () => {
       cleanup?.();
@@ -77,24 +92,28 @@ export function LessonDetailPage() {
     };
   }, [showBackButton, hideBackButton, navigate, haptic]);
 
-  if (isLoading || !item) {
+  /* ---------- Loading ---------- */
+  if (isLoading) {
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
         <div className="h-64 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
       </div>
     );
   }
 
-  if (error) {
+  /* ---------- Error ---------- */
+  if (error || !item) {
     return (
       <div className="p-4 max-w-3xl mx-auto pb-24">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-          <p className="text-sm font-semibold text-ink">
-            Material topilmadi
-          </p>
+          <div className="text-4xl">📚</div>
+          <p className="text-sm font-semibold text-ink">Material topilmadi</p>
           <p className="text-xs text-ink-muted">
-            Material o'chirilgan yoki siz a'zo emassiz
+            {(error as any)?.response?.data?.message ||
+              (error as any)?.message ||
+              "Material o'chirilgan yoki siz a'zo emassiz"}
           </p>
           <button
             type="button"
@@ -102,7 +121,7 @@ export function LessonDetailPage() {
               haptic('light');
               navigate('/lessons');
             }}
-            className="mt-2 text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl"
+            className="mt-2 text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
           >
             ← Darslarga qaytish
           </button>
@@ -122,7 +141,7 @@ export function LessonDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
-      {/* Back button */}
+      {/* ============ BACK BUTTON ============ */}
       <button
         type="button"
         onClick={() => {
@@ -136,7 +155,6 @@ export function LessonDetailPage() {
 
       {/* ============ HEADER ============ */}
       <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3 backdrop-blur-md">
-        {/* Group + badges */}
         <div className="flex items-center gap-2 flex-wrap">
           {item.group && (
             <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-teal/10 text-teal">
@@ -153,12 +171,10 @@ export function LessonDetailPage() {
           </span>
         </div>
 
-        {/* Title */}
         <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
           {item.title}
         </h1>
 
-        {/* Teacher */}
         {teacherName && (
           <p className="text-xs text-ink-muted">👤 {teacherName}</p>
         )}
@@ -242,6 +258,18 @@ export function LessonDetailPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ============ EMPTY CONTENT ============ */}
+      {!item.mediaUrl && !item.description && (!item.tests || item.tests.length === 0) && (
+        <div className="bg-surface/20 p-5 rounded-3xl border border-white/5">
+          <div className="text-center py-8 space-y-2">
+            <div className="text-3xl">📄</div>
+            <p className="text-xs text-ink-muted">
+              Bu material hali to'liq kiritilmagan
+            </p>
           </div>
         </div>
       )}
