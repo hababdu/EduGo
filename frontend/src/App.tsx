@@ -13,6 +13,7 @@ import { useAuthStore } from './store/auth.store';
 /* ============ STUDENT ============ */
 import { StudentDashboard } from './pages/StudentDashboard';
 import { LessonsPage } from './pages/student/LessonsPage';
+import  LessonDetailPage  from './pages/student/ LessonsPage'; // 👈 YANGI
 import { TestsPage } from './pages/student/TestsPage';
 import { GroupsPage } from './pages/student/GroupsPage';
 import { GroupDetailPage } from './pages/student/GroupDetailPage';
@@ -89,7 +90,6 @@ export function App() {
     authenticateUser();
   }, []);
 
-  /* ---------- Loading / Error states ---------- */
   if (status === 'checking') {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -167,7 +167,6 @@ function AdminRoutes() {
 function TeacherRoutes() {
   const location = useLocation();
 
-  // Detail sahifalarda bottom navni yashirish
   const hideBottomNav =
     location.pathname.startsWith('/teacher/assignments/') ||
     location.pathname.startsWith('/teacher/tests/') ||
@@ -180,10 +179,10 @@ function TeacherRoutes() {
     <>
       <div className="min-h-screen pb-24">
         <Routes>
-          {/* ============ OVERVIEW ============ */}
+          {/* OVERVIEW */}
           <Route path="/teacher" element={<TeacherOverview />} />
 
-          {/* ============ GROUPS ============ */}
+          {/* GROUPS */}
           <Route path="/teacher/groups" element={<TeacherGroups />} />
           <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
           <Route
@@ -191,7 +190,7 @@ function TeacherRoutes() {
             element={<TeacherStudentDetail />}
           />
 
-          {/* ============ MATERIALS ============ */}
+          {/* MATERIALS */}
           <Route path="/teacher/content/courses" element={<TeacherAssignments />} />
           <Route
             path="/teacher/assignments/:id"
@@ -210,12 +209,12 @@ function TeacherRoutes() {
             element={<AdminTopicDetail />}
           />
 
-          {/* ============ TESTS + QUESTIONS ============ */}
+          {/* TESTS + QUESTIONS */}
           <Route path="/teacher/questions" element={<AdminQuestions />} />
           <Route path="/teacher/tests" element={<AdminTests />} />
           <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
 
-          {/* ============ CATCH-ALL ============ */}
+          {/* CATCH-ALL */}
           <Route path="*" element={<Navigate to="/teacher" replace />} />
         </Routes>
       </div>
@@ -230,39 +229,45 @@ function TeacherRoutes() {
 function StudentRoutes() {
   const location = useLocation();
 
-  // Test topshirish sahifasida bottom navni yashirish
+  // Quyidagi sahifalarda bottom navni yashirish:
+  //  - Test topshirish
+  //  - Dars detali
+  //  - Guruh detali
   const hideBottomNav =
-    location.pathname.startsWith('/tests/') &&
-    location.pathname !== '/tests';
+    (location.pathname.startsWith('/tests/') &&
+      location.pathname !== '/tests') ||
+    location.pathname.startsWith('/lessons/') ||
+    location.pathname.startsWith('/groups/');
 
   return (
     <>
       <div className="min-h-screen pb-24">
         <Routes>
-          {/* ============ ASOSIY ============ */}
+          {/* ASOSIY */}
           <Route path="/" element={<StudentDashboard />} />
 
-          {/* ============ DARSLAR ============ */}
+          {/* DARSLAR */}
           <Route path="/lessons" element={<LessonsPage />} />
+          <Route path="/lessons/:id" element={<LessonDetailPage />} />   {/* 👈 YANGI */}
 
-          {/* ============ GURUHLAR ============ */}
-          <Route path="/groups" element={<GroupsPage />} />                    {/* 👈 YANGI */}
-          <Route path="/groups/:groupId" element={<GroupDetailPage />} />      {/* 👈 YANGI */}
+          {/* GURUHLAR */}
+          <Route path="/groups" element={<GroupsPage />} />
+          <Route path="/groups/:groupId" element={<GroupDetailPage />} />
 
-          {/* ============ TESTLAR ============ */}
+          {/* TESTLAR */}
           <Route path="/tests" element={<TestsPage />} />
           <Route path="/tests/:testId" element={<TestTaking />} />
 
-          {/* ============ REYTING ============ */}
+          {/* REYTING */}
           <Route path="/ranking" element={<RankingPage />} />
 
-          {/* ============ XABARLAR ============ */}
+          {/* XABARLAR */}
           <Route path="/notifications" element={<NotificationsPage />} />
 
-          {/* ============ PROFIL ============ */}
+          {/* PROFIL */}
           <Route path="/profile" element={<ProfilePage />} />
 
-          {/* ============ CATCH-ALL ============ */}
+          {/* CATCH-ALL */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

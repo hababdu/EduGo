@@ -1,45 +1,40 @@
-import { Injectable } from '@nestjs/common';
+// src/modules/dashboard/dashboard.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Student dashboard uchun yagona agregatsiyalangan endpoint —
-   * frontend bir nechta so'rov o'rniga bitta chaqiruv bilan
-   * hammasini oladi (mobil tarmoq uchun muhim).
-   *
-   * ESLATMA: "continueLesson" va "subject progress" hisoblash mantiqi
-   * bu yerda soddalashtirilgan (test natijalariga asoslangan taxminiy
-   * progress). To'liq LessonProgress modeli va aniqroq hisob-kitob
-   * Phase 9-10 (Course/Test engine)da chuqurlashtiriladi.
-   */
+  /* ============================================================
+     STUDENT DASHBOARD
+     ============================================================ */
   async getStudentDashboard(userId: string) {
-    const [user, profile, streak, subjects, recentAttempts, achievements] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId } }),
-      this.prisma.studentProfile.findUnique({ where: { userId } }),
-      this.prisma.streak.findUnique({ where: { studentId: userId } }),
-      this.prisma.subject.findMany({
-        where: { status: 'PUBLISHED', deletedAt: null },
-        include: {
-          sections: { include: { topics: true } },
-          tests: true,
-        },
-      }),
-      this.prisma.testAttempt.findMany({
-        where: { studentId: userId },
-        orderBy: { completedAt: 'desc' },
-        take: 5,
-        include: { test: { select: { title: true } } },
-      }),
-      this.prisma.studentAchievement.findMany({
-        where: { studentId: userId },
-        orderBy: { earnedAt: 'desc' },
-        take: 6,
-        include: { achievement: true },
-      }),
-    ]);
+    const [user, profile, streak, subjects, recentAttempts, achievements] =
+      await Promise.all([
+        this.prisma.user.findUnique({ where: { id: userId } }),
+        this.prisma.studentProfile.findUnique({ where: { userId } }),
+        this.prisma.streak.findUnique({ where: { studentId: userId } }),
+        this.prisma.subject.findMany({
+          where: { status: 'PUBLISHED', deletedAt: null },
+          include: {
+            sections: { include: { topics: true } },
+            tests: true,
+          },
+        }),
+        this.prisma.testAttempt.findMany({
+          where: { studentId: userId },
+          orderBy: { completedAt: 'desc' },
+          take: 5,
+          include: { test: { select: { title: true } } },
+        }),
+        this.prisma.studentAchievement.findMany({
+          where: { studentId: userId },
+          orderBy: { earnedAt: 'desc' },
+          take: 6,
+          include: { achievement: true },
+        }),
+      ]);
 
     const rankAbove = await this.prisma.studentProfile.count({
       where: { totalScore: { gt: profile?.totalScore ?? 0 } },
@@ -56,8 +51,11 @@ export class DashboardService {
 
     const subjectCards = subjects.map((subject) => {
       const totalTests = subject.tests.length;
-      const passedTests = subject.tests.filter((t) => passedTestIds.has(t.id)).length;
-      const progressPercent = totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
+      const passedTests = subject.tests.filter((t) =>
+        passedTestIds.has(t.id),
+      ).length;
+      const progressPercent =
+        totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
 
       return {
         id: subject.id,
@@ -67,14 +65,14 @@ export class DashboardService {
       };
     });
 
-    // "Davom eting" kartasi — eng past progressli, lekin boshlangan fan
+    // "Davom eting" kartasi — boshlangan, lekin tugatilmagan fan
     const continueSubject = subjectCards
       .filter((s) => s.progressPercent > 0 && s.progressPercent < 100)
       .sort((a, b) => a.progressPercent - b.progressPercent)[0];
 
     const xp = profile?.totalXp ?? 0;
     const level = profile?.level ?? 1;
-    const xpForNextLevel = level * 500; // oddiy formula — keyin balanslanadi
+    const xpForNextLevel = level * 500;
     const xpIntoLevel = xp % 500;
 
     return {
@@ -110,5 +108,77 @@ export class DashboardService {
         iconUrl: a.achievement.iconUrl,
       })),
     };
+  }
+
+  /* ============================================================
+     LIST MY ASSIGNMENTS — faqat o'z guruhlariga tegishli materiallar
+     ============================================================ */
+  async listMyAssignments(studentId: string) {
+    // 1. Student a'zo bo'lgan guruhlar
+    const memberships = await this.prisma.groupMember.findMany({
+      where: { studentId },
+      select: { groupId: true },
+    });
+    const groupIds = memberships.map((m) => m.groupId);
+
+    if (groupIds.length === 0) return [];
+
+    // 2. Faqat shu guruhlarga tegishli materiallar
+    return this.prisma.teacherAssignment.findMany({
+      where: {
+        groupId: { in: groupIds },
+        deletedAt: null,
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        group: { select: { id: true, name: true } },
+        teacher: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+          },
+        },
+        tests: { orderBy: { order: 'asc' } },
+      },
+    });
+  }
+
+  /* ============================================================
+     GET MY ASSIGNMENT — bitta material
+     ============================================================ */
+  async getMyAssignment(studentId: string, assignmentId: string) {
+    const memberships = await this.prisma.groupMember.findMany({
+      where: { studentId },
+      select: { groupId: true },
+    });
+    const groupIds = memberships.map((m) => m.groupId);
+
+    const item = await this.prisma.teacherAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        groupId: { in: groupIds },
+        deletedAt: null,
+      },
+      include: {
+        group: { select: { id: true, name: true } },
+        teacher: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            username: true,
+          },
+        },
+        tests: { orderBy: { order: 'asc' } },
+      },
+    });
+
+    if (!item) {
+      throw new NotFoundException('Material topilmadi');
+    }
+
+    return item;
   }
 }
