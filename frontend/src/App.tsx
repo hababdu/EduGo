@@ -1,3 +1,4 @@
+// src/App.tsx
 import {
   BrowserRouter,
   Routes,
@@ -13,6 +14,8 @@ import { useAuthStore } from './store/auth.store';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { LessonsPage } from './pages/student/LessonsPage';
 import { TestsPage } from './pages/student/TestsPage';
+import { GroupsPage } from './pages/student/GroupsPage';
+import { GroupDetailPage } from './pages/student/GroupDetailPage';
 import { ProfilePage } from './pages/student/ProfilePage';
 import { TestTaking } from './pages/tests/TestTaking';
 import { RankingPage } from './pages/ranking/RankingPage';
@@ -241,6 +244,10 @@ function StudentRoutes() {
 
           {/* ============ DARSLAR ============ */}
           <Route path="/lessons" element={<LessonsPage />} />
+
+          {/* ============ GURUHLAR ============ */}
+          <Route path="/groups" element={<GroupsPage />} />                    {/* 👈 YANGI */}
+          <Route path="/groups/:groupId" element={<GroupDetailPage />} />      {/* 👈 YANGI */}
 
           {/* ============ TESTLAR ============ */}
           <Route path="/tests" element={<TestsPage />} />

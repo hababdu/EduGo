@@ -5,7 +5,7 @@ const items = [
   { to: '/', icon: '🏠', label: 'Bosh sahifa' },
   { to: '/lessons', icon: '📚', label: 'Darslar' },
   { to: '/tests', icon: '📝', label: 'Testlar' },
-  { to: '/ranking', icon: '🏆', label: 'Reyting' },
+  { to: '/groups', icon: '👥', label: 'Guruhlar' },      // 👈 BU YERGA
   { to: '/profile', icon: '👤', label: 'Profil' },
 ];
 
