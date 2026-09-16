@@ -13,7 +13,7 @@ import { useAuthStore } from './store/auth.store';
 /* ============ STUDENT ============ */
 import { StudentDashboard } from './pages/StudentDashboard';
 import { LessonsPage } from './pages/student/LessonsPage';
-import  LessonDetailPage  from './pages/student/GroupDetailPage'; // 👈 YANGI
+import { LessonDetailPage } from './pages/student/LessonDetailPage';
 import { TestsPage } from './pages/student/TestsPage';
 import { GroupsPage } from './pages/student/GroupsPage';
 import { GroupDetailPage } from './pages/student/GroupDetailPage';
@@ -59,6 +59,7 @@ export function App() {
   const status = useAuth();
   const user = useAuthStore((s) => s.user);
 
+  /* ---------- Avtorizatsiya ---------- */
   useEffect(() => {
     async function authenticateUser() {
       try {
@@ -78,9 +79,31 @@ export function App() {
           initData,
         });
 
-        const token = response.data.accessToken || response.data.token;
-        if (token) {
-          setMemoryToken(token);
+        // Backend'dan barcha ma'lumotlarni olish
+        const accessToken =
+          response.data.accessToken || response.data.token;
+        const refreshToken = response.data.refreshToken || '';
+        const serverUser = response.data.user;
+
+        if (accessToken) {
+          // ✅ 1. Axios instance uchun
+          setMemoryToken(accessToken);
+
+          // ✅ 2. Zustand store uchun (apiFetch shundan foydalanadi)
+          useAuthStore.getState().setSession({
+            accessToken,
+            refreshToken,
+            user: serverUser || useAuthStore.getState().user!,
+          });
+
+          // 🔍 Debug (keyin olib tashlang)
+          console.log('[AUTH] Token saved:', {
+            memory: accessToken.slice(0, 20) + '...',
+            zustand:
+              useAuthStore.getState().accessToken?.slice(0, 20) + '...',
+            user: serverUser?.firstName || 'unknown',
+            role: serverUser?.role || 'unknown',
+          });
         }
       } catch (err) {
         console.error("Avtorizatsiyadan o'tishda xatolik:", err);
@@ -90,6 +113,7 @@ export function App() {
     authenticateUser();
   }, []);
 
+  /* ---------- Loading / Error states ---------- */
   if (status === 'checking') {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -126,7 +150,8 @@ export function App() {
     );
   }
 
-  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isAdmin =
+    user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const isTeacher = user?.role === 'TEACHER';
 
   return (
@@ -149,7 +174,10 @@ function AdminRoutes() {
         <Routes>
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
+          <Route
+            path="/admin/students/:id"
+            element={<AdminStudentDetail />}
+          />
           <Route path="/admin/users" element={<UsersAdminPage />} />
           <Route path="/admin/groups" element={<AdminGroups />} />
           <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
@@ -167,31 +195,40 @@ function AdminRoutes() {
 function TeacherRoutes() {
   const location = useLocation();
 
+  // Detail sahifalarda bottom navni yashirish
   const hideBottomNav =
     location.pathname.startsWith('/teacher/assignments/') ||
     location.pathname.startsWith('/teacher/tests/') ||
     location.pathname.startsWith('/teacher/content/subjects/') ||
     location.pathname.startsWith('/teacher/content/sections/') ||
     location.pathname.startsWith('/teacher/content/topics/') ||
-    /^\/teacher\/groups\/[^/]+\/students\/[^/]+/.test(location.pathname);
+    /^\/teacher\/groups\/[^/]+\/students\/[^/]+/.test(
+      location.pathname,
+    );
 
   return (
     <>
       <div className="min-h-screen pb-24">
         <Routes>
-          {/* OVERVIEW */}
+          {/* ============ OVERVIEW ============ */}
           <Route path="/teacher" element={<TeacherOverview />} />
 
-          {/* GROUPS */}
+          {/* ============ GROUPS ============ */}
           <Route path="/teacher/groups" element={<TeacherGroups />} />
-          <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
+          <Route
+            path="/teacher/groups/:groupId"
+            element={<TeacherGroupDetail />}
+          />
           <Route
             path="/teacher/groups/:groupId/students/:studentId"
             element={<TeacherStudentDetail />}
           />
 
-          {/* MATERIALS */}
-          <Route path="/teacher/content/courses" element={<TeacherAssignments />} />
+          {/* ============ MATERIALS ============ */}
+          <Route
+            path="/teacher/content/courses"
+            element={<TeacherAssignments />}
+          />
           <Route
             path="/teacher/assignments/:id"
             element={<TeacherAssignmentDetail />}
@@ -209,12 +246,15 @@ function TeacherRoutes() {
             element={<AdminTopicDetail />}
           />
 
-          {/* TESTS + QUESTIONS */}
-          <Route path="/teacher/questions" element={<AdminQuestions />} />
+          {/* ============ TESTS + QUESTIONS ============ */}
+          <Route
+            path="/teacher/questions"
+            element={<AdminQuestions />}
+          />
           <Route path="/teacher/tests" element={<AdminTests />} />
           <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
 
-          {/* CATCH-ALL */}
+          {/* ============ CATCH-ALL ============ */}
           <Route path="*" element={<Navigate to="/teacher" replace />} />
         </Routes>
       </div>
@@ -229,10 +269,7 @@ function TeacherRoutes() {
 function StudentRoutes() {
   const location = useLocation();
 
-  // Quyidagi sahifalarda bottom navni yashirish:
-  //  - Test topshirish
-  //  - Dars detali
-  //  - Guruh detali
+  // Detail sahifalarda bottom navni yashirish
   const hideBottomNav =
     (location.pathname.startsWith('/tests/') &&
       location.pathname !== '/tests') ||
@@ -243,31 +280,31 @@ function StudentRoutes() {
     <>
       <div className="min-h-screen pb-24">
         <Routes>
-          {/* ASOSIY */}
+          {/* ============ ASOSIY ============ */}
           <Route path="/" element={<StudentDashboard />} />
 
-          {/* DARSLAR */}
+          {/* ============ DARSLAR ============ */}
           <Route path="/lessons" element={<LessonsPage />} />
-          <Route path="/lessons/:id" element={<LessonDetailPage />} />   {/* 👈 YANGI */}
+          <Route path="/lessons/:id" element={<LessonDetailPage />} />
 
-          {/* GURUHLAR */}
+          {/* ============ GURUHLAR ============ */}
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/groups/:groupId" element={<GroupDetailPage />} />
 
-          {/* TESTLAR */}
+          {/* ============ TESTLAR ============ */}
           <Route path="/tests" element={<TestsPage />} />
           <Route path="/tests/:testId" element={<TestTaking />} />
 
-          {/* REYTING */}
+          {/* ============ REYTING ============ */}
           <Route path="/ranking" element={<RankingPage />} />
 
-          {/* XABARLAR */}
+          {/* ============ XABARLAR ============ */}
           <Route path="/notifications" element={<NotificationsPage />} />
 
-          {/* PROFIL */}
+          {/* ============ PROFIL ============ */}
           <Route path="/profile" element={<ProfilePage />} />
 
-          {/* CATCH-ALL */}
+          {/* ============ CATCH-ALL ============ */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
