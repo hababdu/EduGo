@@ -11,6 +11,9 @@ import { useAuthStore } from './store/auth.store';
 
 /* ============ STUDENT ============ */
 import { StudentDashboard } from './pages/StudentDashboard';
+import { LessonsPage } from './pages/student/LessonsPage';
+import { TestsPage } from './pages/student/TestsPage';
+import { ProfilePage } from './pages/student/ProfilePage';
 import { TestTaking } from './pages/tests/TestTaking';
 import { RankingPage } from './pages/ranking/RankingPage';
 import { NotificationsPage } from './pages/NotificationsPage';
@@ -25,7 +28,7 @@ import { AdminGroupDetail } from './pages/admin/AdminGroupDetail';
 
 /* ============ TEACHER ============ */
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
-import { TeacherGroups } from './pages/teacher/TeacherGroups';           // 👈 YANGI
+import { TeacherGroups } from './pages/teacher/TeacherGroups';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { TeacherStudentDetail } from './pages/teacher/TeacherStudentDetail';
 import { TeacherAssignments } from './pages/teacher/content/TeacherAssignments';
@@ -163,15 +166,11 @@ function TeacherRoutes() {
 
   // Detail sahifalarda bottom navni yashirish
   const hideBottomNav =
-    // Material tafsiloti
     location.pathname.startsWith('/teacher/assignments/') ||
-    // Test tafsiloti
     location.pathname.startsWith('/teacher/tests/') ||
-    // Content hierarchy
     location.pathname.startsWith('/teacher/content/subjects/') ||
     location.pathname.startsWith('/teacher/content/sections/') ||
     location.pathname.startsWith('/teacher/content/topics/') ||
-    // Student detail (nested)
     /^\/teacher\/groups\/[^/]+\/students\/[^/]+/.test(location.pathname);
 
   return (
@@ -182,7 +181,7 @@ function TeacherRoutes() {
           <Route path="/teacher" element={<TeacherOverview />} />
 
           {/* ============ GROUPS ============ */}
-          <Route path="/teacher/groups" element={<TeacherGroups />} />         {/* 👈 MUHIM */}
+          <Route path="/teacher/groups" element={<TeacherGroups />} />
           <Route path="/teacher/groups/:groupId" element={<TeacherGroupDetail />} />
           <Route
             path="/teacher/groups/:groupId/students/:studentId"
@@ -227,16 +226,36 @@ function TeacherRoutes() {
    ============================================================ */
 function StudentRoutes() {
   const location = useLocation();
-  const hideBottomNav = location.pathname.startsWith('/tests/');
+
+  // Test topshirish sahifasida bottom navni yashirish
+  const hideBottomNav =
+    location.pathname.startsWith('/tests/') &&
+    location.pathname !== '/tests';
 
   return (
     <>
       <div className="min-h-screen pb-24">
         <Routes>
+          {/* ============ ASOSIY ============ */}
           <Route path="/" element={<StudentDashboard />} />
+
+          {/* ============ DARSLAR ============ */}
+          <Route path="/lessons" element={<LessonsPage />} />
+
+          {/* ============ TESTLAR ============ */}
+          <Route path="/tests" element={<TestsPage />} />
           <Route path="/tests/:testId" element={<TestTaking />} />
+
+          {/* ============ REYTING ============ */}
           <Route path="/ranking" element={<RankingPage />} />
+
+          {/* ============ XABARLAR ============ */}
           <Route path="/notifications" element={<NotificationsPage />} />
+
+          {/* ============ PROFIL ============ */}
+          <Route path="/profile" element={<ProfilePage />} />
+
+          {/* ============ CATCH-ALL ============ */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
