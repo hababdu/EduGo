@@ -1,89 +1,175 @@
+// src/bot.ts
 import 'dotenv/config';
 import express from 'express';
-import { Bot, webhookCallback } from 'grammy';
-import { mainMenuKeyboard, WEBAPP_URL } from './keyboards/main-menu.keyboard';
+import { Bot, Context, webhookCallback } from 'grammy';
+import {
+  getMenuForRole,
+  WEBAPP_URL,
+} from './keyboards/main-menu.keyboard';
 import { registerMenuHandlers } from './handlers/menu.handler';
+import { api } from './services/api-client';
 
+/* ============================================================
+   ENV
+   ============================================================ */
 const BOT_TOKEN = process.env.BOT_TOKEN;
-if (!BOT_TOKEN) {
-  throw new Error('BOT_TOKEN .env faylida topilmadi');
-}
+if (!BOT_TOKEN) throw new Error('BOT_TOKEN topilmadi');
 
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+const PORT = Number(process.env.PORT) || 10000;
+
+/* ============================================================
+   BOT
+   ============================================================ */
 const bot = new Bot(BOT_TOKEN);
 
-/**
- * Persistent Menu Button — yozish maydonining chap tomonidagi doimiy tugma.
- * Bu ENG ISHONCHLI usul: initData to'liq keladi, foydalanuvchi /start
- * yozishi ham shart emas, tugma har doim ko'rinadi.
- */
-async function setupMenuButton() {
-  await bot.api.setChatMenuButton({
-    menu_button: {
-      type: 'web_app',
-      text: 'Ochish',
-      web_app: { url: WEBAPP_URL },
-    },
-  });
+/* ============ Menu Button ============ */
+async function setupMenuButton(): Promise<void> {
+  try {
+    await bot.api.setChatMenuButton({
+      menu_button: {
+        type: 'web_app',
+        text: 'Ochish',
+        web_app: { url: WEBAPP_URL },
+      },
+    });
+    console.log("[bot] Menu button o'rnatildi");
+  } catch (err) {
+    console.error('[bot] Menu button xatosi:', err);
+  }
 }
 
-bot.command('start', async (ctx) => {
+/* ============ /start ============ */
+bot.command('start', async (ctx: Context) => {
+  const telegramId = String(ctx.from?.id);
+  let role = 'STUDENT';
+  let firstName = ctx.from?.first_name ?? "do'stim";
+
+  try {
+    const info = await api.getUserRole(telegramId);
+    role = info.role;
+    firstName = info.firstName || firstName;
+  } catch {
+    // Ro'yxatdan o'tmagan — default STUDENT menyu
+  }
+
+  const menu = getMenuForRole(role);
+
+  const greeting: Record<string, string> = {
+    STUDENT: `Assalomu alaykum, ${firstName}! 👋\n\n📚 Platformaga kirish uchun menyudan foydalaning:`,
+    TEACHER: `Assalomu alaykum, ${firstName}! 👋\n\n🧑‍🏫 O'qituvchi paneli:`,
+    ADMIN: `Assalomu alaykum, ${firstName}! 👋\n\n🔧 Admin panel:`,
+    SUPER_ADMIN: `Assalomu alaykum, ${firstName}! 👋\n\n⚡ Super Admin:`,
+  };
+
+  await ctx.reply(greeting[role] ?? greeting.STUDENT, {
+    reply_markup: menu,
+  });
+});
+
+/* ============ /help ============ */
+bot.command('help', async (ctx: Context) => {
+  const telegramId = String(ctx.from?.id);
+  let role = 'STUDENT';
+  try {
+    const info = await api.getUserRole(telegramId);
+    role = info.role;
+  } catch {
+    /* noop */
+  }
+
   await ctx.reply(
-    `Assalomu alaykum, ${ctx.from?.first_name}! 👋\n\n` +
-      'Bu — online o\'quv platformamiz boti. Platformani ochish uchun ' +
-      'yozish maydoni yonidagi "Ochish" tugmasini bosing, yoki quyidagi ' +
-      'menyudan foydalaning:',
-    { reply_markup: mainMenuKeyboard },
+    'ℹ️ /start — botni qayta ishga tushirish\n' +
+      '/help — yordam\n\n' +
+      'Yoki menyudan foydalaning 👇',
+    { reply_markup: getMenuForRole(role) },
   );
 });
 
+/* ============ Menu handlers ============ */
 registerMenuHandlers(bot);
 
-// Tanilmagan matn kelsa — menyuga yo'naltirish
-bot.on('message:text', async (ctx) => {
-  await ctx.reply('Iltimos, quyidagi menyudan foydalaning 👇', {
-    reply_markup: mainMenuKeyboard,
+/* ============ Fallback ============ */
+bot.on('message:text', async (ctx: Context) => {
+  const telegramId = String(ctx.from?.id);
+  let role = 'STUDENT';
+
+  try {
+    const info = await api.getUserRole(telegramId);
+    role = info.role;
+  } catch {
+    /* noop */
+  }
+
+  await ctx.reply('Iltimos, menyudan foydalaning 👇', {
+    reply_markup: getMenuForRole(role),
   });
 });
 
+/* ============ Error ============ */
 bot.catch((err) => {
-  console.error('Bot xatosi:', err.error);
+  console.error('[bot] Xato:', err.error);
 });
 
-/**
- * Ikki rejim bir xil koddan ishlaydi:
- *
- * - WEBHOOK_URL berilgan bo'lsa (production, masalan Render Web Service) —
- *   webhook rejimi: kichik Express server ochiladi, Telegram xabar kelganda
- *   shu serverga HTTP POST yuboradi. Bepul Render tarifida bu MUHIM,
- *   chunki xuddi shu HTTP so'rovning o'zi uxlab qolgan servisni uyg'otadi.
- *
- * - WEBHOOK_URL berilmagan bo'lsa (lokal development) — oddiy polling
- *   rejimi, `npm run start:dev` bilan hech qanday qo'shimcha sozlashsiz ishlaydi.
- */
-const WEBHOOK_URL = process.env.WEBHOOK_URL;
-const PORT = process.env.PORT ? Number(process.env.PORT) : 10000;
-
-if (WEBHOOK_URL) {
+/* ============================================================
+   START
+   ============================================================ */
+async function startWebhookMode() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
-  // Render/UptimeRobot kabi tashqi "ping" xizmatlari uchun oddiy health-check
   app.get('/', (_req, res) => {
-    res.send('Bot ishlayapti ✅');
+    res.json({
+      status: 'ok',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
   });
 
-  app.use('/webhook', webhookCallback(bot, 'express'));
+  app.use(
+    '/webhook',
+    webhookCallback(bot, 'express', {
+      secretToken: process.env.WEBHOOK_SECRET,
+    }),
+  );
+
+  app.use((_req, res) => res.status(404).send('Not found'));
 
   app.listen(PORT, async () => {
-    await bot.api.setWebhook(`${WEBHOOK_URL.replace(/\/$/, '')}/webhook`);
+    await bot.api.setWebhook(`${WEBHOOK_URL!.replace(/\/$/, '')}/webhook`);
     await setupMenuButton();
-    console.log(`Bot webhook rejimida ishga tushdi: ${WEBHOOK_URL} (port ${PORT})`);
+    console.log(`[bot] Webhook: ${WEBHOOK_URL} (port ${PORT})`);
   });
-} else {
+}
+
+async function startPollingMode() {
+  await bot.api.deleteWebhook({ drop_pending_updates: true });
+  await setupMenuButton();
+
   bot.start({
-    onStart: () => {
-      setupMenuButton().catch((err) => console.error('Menu button xatosi:', err));
-      console.log('Bot polling rejimida ishga tushdi (lokal development)');
+    onStart: (info) => {
+      console.log(`[bot] Polling: @${info.username}`);
     },
   });
+}
+
+/* ============ Shutdown ============ */
+async function shutdown(signal: string) {
+  console.log(`[bot] ${signal} — to'xtatilmoqda...`);
+  try {
+    await bot.stop();
+    process.exit(0);
+  } catch {
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+/* ============ Boshlash ============ */
+if (WEBHOOK_URL) {
+  startWebhookMode();
+} else {
+  startPollingMode();
 }

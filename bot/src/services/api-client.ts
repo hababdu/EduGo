@@ -1,25 +1,86 @@
-import fetch from 'node-fetch';
+// src/services/api-client.ts
+import fetch, { RequestInit } from 'node-fetch';
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL ?? 'http://localhost:3000';
+const BACKEND_API_URL =
+  process.env.BACKEND_API_URL ?? 'http://localhost:3000';
 const BOT_INTERNAL_SECRET = process.env.BOT_INTERNAL_SECRET ?? '';
 
-/**
- * Backendning /api/v1/internal/* endpointlariga sirli kalit bilan murojaat.
- * Bu bot ↔ backend orasidagi YAGONA aloqa kanali.
- */
-async function internalGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${BACKEND_API_URL}${path}`, {
-    headers: { 'x-internal-secret': BOT_INTERNAL_SECRET },
-  });
-
-  if (!res.ok) {
-    if (res.status === 404) {
-      throw new Error('NOT_REGISTERED');
-    }
-    throw new Error(`Backend xatosi: ${res.status}`);
+/* ============================================================
+   XATO TIPLARI
+   ============================================================ */
+export class BotApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: unknown,
+  ) {
+    super(message);
+    this.name = 'BotApiError';
   }
+}
 
-  return res.json() as Promise<T>;
+export class NotRegisteredError extends Error {
+  constructor() {
+    super('NOT_REGISTERED');
+    this.name = 'NotRegisteredError';
+  }
+}
+
+/* ============================================================
+   INTERNAL GET
+   ============================================================ */
+async function internalGet<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
+  const url = `${BACKEND_API_URL}${path}`;
+
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': BOT_INTERNAL_SECRET,
+        ...(options.headers ?? {}),
+      },
+      timeout: 15_000,
+    });
+
+    if (res.status === 404) {
+      throw new NotRegisteredError();
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new BotApiError(
+        res.status,
+        `Backend xatosi: ${res.status} ${res.statusText}`,
+        body,
+      );
+    }
+
+    return (await res.json()) as T;
+  } catch (err) {
+    if (err instanceof NotRegisteredError) throw err;
+    if (err instanceof BotApiError) throw err;
+
+    console.error(`[api-client] Fetch error for ${url}:`, err);
+    throw new BotApiError(0, "Backend bilan aloqa yo'q");
+  }
+}
+
+/* ============================================================
+   TYPES
+   ============================================================ */
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN';
+
+export interface UserRoleInfo {
+  id: string;
+  role: UserRole;
+  status: 'ACTIVE' | 'BLOCKED' | 'PENDING';
+  firstName: string;
+  lastName?: string;
+  username?: string;
 }
 
 export interface StudentSummary {
@@ -59,19 +120,79 @@ export interface AnnouncementItem {
   createdAt: string;
 }
 
-export const api = {
-  getStudentSummary: (telegramId: string) =>
-    internalGet<StudentSummary>(`/api/v1/internal/students/by-telegram/${telegramId}/summary`),
+export interface TeacherOverview {
+  groupsCount: number;
+  studentsCount: number;
+  assignmentsCount: number;
+  assignedTestsCount: number;
+}
 
-  getRecentResults: (telegramId: string) =>
-    internalGet<TestResult[]>(`/api/v1/internal/students/by-telegram/${telegramId}/results?limit=5`),
+export interface TeacherGroupItem {
+  id: string;
+  name: string;
+  studentsCount: number;
+}
+
+export interface AdminOverview {
+  students: number;
+  activeStudents: number;
+  teachers: number;
+  courses: number;
+  tests: number;
+  totalScoreIssued: number;
+}
+
+/* ============================================================
+   API METHODS
+   ============================================================ */
+export const api = {
+  /* ---------- USER ---------- */
+  getUserRole: (telegramId: string) =>
+    internalGet<UserRoleInfo>(
+      `/api/v1/internal/users/by-telegram/${telegramId}/role`,
+    ),
+
+  /* ---------- STUDENT ---------- */
+  getStudentSummary: (telegramId: string) =>
+    internalGet<StudentSummary>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/summary`,
+    ),
+
+  getRecentResults: (telegramId: string, limit = 5) =>
+    internalGet<TestResult[]>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/results?limit=${limit}`,
+    ),
 
   getAchievements: (telegramId: string) =>
-    internalGet<Achievement[]>(`/api/v1/internal/students/by-telegram/${telegramId}/achievements`),
+    internalGet<Achievement[]>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/achievements`,
+    ),
 
-  getTopRanking: () =>
-    internalGet<RankingEntry[]>(`/api/v1/internal/ranking/top?limit=10`),
+  /* ---------- COMMON ---------- */
+  getTopRanking: (limit = 10) =>
+    internalGet<RankingEntry[]>(
+      `/api/v1/internal/ranking/top?limit=${limit}`,
+    ),
 
-  getAnnouncements: () =>
-    internalGet<AnnouncementItem[]>(`/api/v1/internal/announcements?limit=5`),
+  getAnnouncements: (limit = 5) =>
+    internalGet<AnnouncementItem[]>(
+      `/api/v1/internal/announcements?limit=${limit}`,
+    ),
+
+  /* ---------- TEACHER ---------- */
+  getTeacherOverview: (telegramId: string) =>
+    internalGet<TeacherOverview>(
+      `/api/v1/internal/teachers/by-telegram/${telegramId}/overview`,
+    ),
+
+  getTeacherGroups: (telegramId: string) =>
+    internalGet<TeacherGroupItem[]>(
+      `/api/v1/internal/teachers/by-telegram/${telegramId}/groups`,
+    ),
+
+  /* ---------- ADMIN ---------- */
+  getAdminOverview: (telegramId: string) =>
+    internalGet<AdminOverview>(
+      `/api/v1/internal/admins/by-telegram/${telegramId}/overview`,
+    ),
 };

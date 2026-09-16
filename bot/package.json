@@ -2,22 +2,34 @@
   "name": "lms-telegram-bot",
   "version": "0.1.0",
   "private": true,
+  "description": "LMS Telegram Bot — student, teacher, admin funksiyalari",
+  "main": "dist/bot.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "overrides": {
+    "esbuild": "0.19.12"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/bot.js",
-    "start:dev": "tsx watch src/bot.ts"
+    "start:dev": "tsx watch src/bot.ts",
+    "start:prod": "node dist/bot.js",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules",
+    "reinstall": "npm run clean && npm install"
   },
   "dependencies": {
-    "grammy": "^1.30.0",
     "dotenv": "^16.4.5",
-    "node-fetch": "^2.7.0",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "grammy": "^1.30.0",
+    "node-fetch": "^2.7.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
     "@types/node-fetch": "^2.6.11",
-    "@types/express": "^4.17.21",
-    "tsx": "^4.19.0",
+    "tsx": "4.7.0",
     "typescript": "^5.5.4"
   }
 }

@@ -1,20 +1,26 @@
+// src/modules/internal/internal.controller.ts
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
 import { InternalService } from './internal.service';
 
-/**
- * @Public() — chunki bu yerda oddiy JWT (user tokeni) yo'q,
- * lekin @UseGuards(InternalAuthGuard) orqali BOSHQA, alohida
- * himoya qatlami ishlatiladi (server-to-server sirli kalit).
- * Ya'ni bu endpointlar "ochiq" emas — faqat boshqacha usulda himoyalangan.
- */
 @Public()
 @UseGuards(InternalAuthGuard)
 @Controller('api/v1/internal')
 export class InternalController {
   constructor(private readonly internalService: InternalService) {}
 
+  /* ============================================================
+     USER ROLE
+     ============================================================ */
+  @Get('users/by-telegram/:telegramId/role')
+  getUserRole(@Param('telegramId') telegramId: string) {
+    return this.internalService.getUserRole(telegramId);
+  }
+
+  /* ============================================================
+     STUDENT
+     ============================================================ */
   @Get('students/by-telegram/:telegramId/summary')
   getSummary(@Param('telegramId') telegramId: string) {
     return this.internalService.getStudentSummary(telegramId);
@@ -36,15 +42,42 @@ export class InternalController {
     return this.internalService.getAchievements(telegramId);
   }
 
+  /* ============================================================
+     RANKING
+     ============================================================ */
   @Get('ranking/top')
   getTopRanking(@Query('limit') limit?: string) {
     return this.internalService.getTopRanking(limit ? Number(limit) : undefined);
   }
 
+  /* ============================================================
+     ANNOUNCEMENTS
+     ============================================================ */
   @Get('announcements')
   getAnnouncements(@Query('limit') limit?: string) {
     return this.internalService.getRecentAnnouncements(
       limit ? Number(limit) : undefined,
     );
+  }
+
+  /* ============================================================
+     TEACHER
+     ============================================================ */
+  @Get('teachers/by-telegram/:telegramId/overview')
+  getTeacherOverview(@Param('telegramId') telegramId: string) {
+    return this.internalService.getTeacherOverview(telegramId);
+  }
+
+  @Get('teachers/by-telegram/:telegramId/groups')
+  getTeacherGroups(@Param('telegramId') telegramId: string) {
+    return this.internalService.getTeacherGroups(telegramId);
+  }
+
+  /* ============================================================
+     ADMIN
+     ============================================================ */
+  @Get('admins/by-telegram/:telegramId/overview')
+  getAdminOverview(@Param('telegramId') telegramId: string) {
+    return this.internalService.getAdminOverview(telegramId);
   }
 }
