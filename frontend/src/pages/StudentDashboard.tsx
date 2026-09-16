@@ -1,9 +1,7 @@
 // src/pages/StudentDashboard.tsx
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
-import { useAuthStore } from '../store/auth.store';
 import { useTelegram } from '../hooks/useTelegram';
 import { ScoreHero } from '../components/dashboard/ScoreHero';
 import { StatChips } from '../components/dashboard/StatChips';
@@ -13,40 +11,52 @@ import { AchievementsRow } from '../components/dashboard/AchievementsRow';
 import { SubjectScoreList } from '../components/dashboard/SubjectScoreList';
 
 /* ============================================================
-   TYPES
+   BACKEND RESPONSE TIPI (dashboard.service.ts)
    ============================================================ */
-interface DashboardData {
-  totalScore: number;
-  level: number;
-  xpIntoLevel: number;
-  xpForNextLevel: number;
-  rank: number;
-  streak: number;
-  subjectCount: number;
-  continueLearning?: {
+interface DashboardResponse {
+  student: {
+    firstName: string;
+    profilePhotoUrl: string | null;
+    streak: number;
+    rank: number;
+  };
+  continueLesson: {
     subjectId: string;
     subjectTitle: string;
     progressPercent: number;
   } | null;
+  subjects: {
+    id: string;
+    title: string;
+    posterUrl: string | null;
+    progressPercent: number;
+  }[];
+  stats: {
+    totalScore: number;
+    xp: number;
+    level: number;
+    xpIntoLevel: number;
+    xpForNextLevel: number;
+  };
+  recentResults: {
+    testTitle: string;
+    percent: number;
+    passed: boolean;
+  }[];
   achievements: {
     id: string;
     title: string;
     iconUrl: string | null;
   }[];
-  subjects: {
-    id: string;
-    title: string;
-    progressPercent: number;
-  }[];
 }
 
 /* ============================================================
-   HOOKS
+   HOOK
    ============================================================ */
 function useStudentDashboard() {
   return useQuery({
     queryKey: ['student', 'dashboard'],
-    queryFn: () => apiFetch<DashboardData>('/api/v1/students/dashboard'),
+    queryFn: () => apiFetch<DashboardResponse>('/api/v1/dashboard/me'),
     staleTime: 30_000,
   });
 }
@@ -56,7 +66,6 @@ function useStudentDashboard() {
    ============================================================ */
 export function StudentDashboard() {
   const navigate = useNavigate();
-  const user = useAuthStore((s) => s.user);
   const { haptic } = useTelegram();
   const { data, isLoading, error } = useStudentDashboard();
 
@@ -76,9 +85,6 @@ export function StudentDashboard() {
               className="h-10 w-28 bg-surface/50 rounded-full animate-pulse"
             />
           ))}
-        </div>
-        <div className="px-5">
-          <div className="h-32 bg-surface/50 rounded-2xl animate-pulse" />
         </div>
       </div>
     );
@@ -113,35 +119,33 @@ export function StudentDashboard() {
   /* ---------- Render ---------- */
   return (
     <div className="pb-24 space-y-6">
-      {/* Hero — ball, level */}
+      {/* Hero — ball, level, XP */}
       <ScoreHero
-        firstName={user?.firstName || 'Talaba'}
-        totalScore={data.totalScore}
-        level={data.level}
-        xpIntoLevel={data.xpIntoLevel}
-        xpForNextLevel={data.xpForNextLevel}
+        firstName={data.student.firstName}
+        totalScore={data.stats.totalScore}
+        level={data.stats.level}
+        xpIntoLevel={data.stats.xpIntoLevel}
+        xpForNextLevel={data.stats.xpForNextLevel}
       />
 
       {/* Stat chips — reyting, streak, fanlar */}
       <StatChips
-        rank={data.rank}
-        streak={data.streak}
-        subjectCount={data.subjectCount}
+        rank={data.student.rank}
+        streak={data.student.streak}
+        subjectCount={data.subjects.length}
       />
 
       {/* Kunlik challenge */}
       <DailyChallengeCard />
 
       {/* Davom etish */}
-      {data.continueLearning && (
+      {data.continueLesson && (
         <ContinueLearningCard
-          subjectTitle={data.continueLearning.subjectTitle}
-          progressPercent={data.continueLearning.progressPercent}
+          subjectTitle={data.continueLesson.subjectTitle}
+          progressPercent={data.continueLesson.progressPercent}
           onContinue={() => {
             haptic('light');
-            navigate(
-              `/lessons/${data.continueLearning!.subjectId}`,
-            );
+            navigate(`/lessons/${data.continueLesson!.subjectId}`);
           }}
         />
       )}
@@ -150,7 +154,13 @@ export function StudentDashboard() {
       <AchievementsRow achievements={data.achievements} />
 
       {/* Fanlar bo'yicha progress */}
-      <SubjectScoreList subjects={data.subjects} />
+      <SubjectScoreList
+        subjects={data.subjects.map((s) => ({
+          id: s.id,
+          title: s.title,
+          progressPercent: s.progressPercent,
+        }))}
+      />
     </div>
   );
 }

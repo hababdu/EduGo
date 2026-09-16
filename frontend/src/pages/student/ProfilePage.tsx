@@ -4,30 +4,28 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
 
-interface ProfileData {
+interface UserProfileResponse {
   id: string;
   firstName: string;
   lastName?: string;
   username?: string;
   phone?: string;
-  totalScore: number;
-  level: number;
-  xp: number;
-  rank: number;
-  streak: {
+  role: string;
+  studentProfile?: {
+    totalScore: number;
+    level: number;
+    xp: number;
+  } | null;
+  streak?: {
     currentStreak: number;
     longestStreak: number;
   } | null;
-  _count?: {
-    testAttempts?: number;
-    achievements?: number;
-  };
 }
 
 function useProfile() {
   return useQuery({
     queryKey: ['student', 'profile'],
-    queryFn: () => apiFetch<ProfileData>('/api/v1/students/me'),
+    queryFn: () => apiFetch<UserProfileResponse>('/api/v1/users/me'),
     staleTime: 60_000,
   });
 }
@@ -63,6 +61,12 @@ export function ProfilePage() {
     `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Talaba';
   const initial = fullName[0]?.toUpperCase() || 'T';
 
+  const totalScore = data.studentProfile?.totalScore ?? 0;
+  const level = data.studentProfile?.level ?? 1;
+  const xp = data.studentProfile?.xp ?? 0;
+  const currentStreak = data.streak?.currentStreak ?? 0;
+  const longestStreak = data.streak?.longestStreak ?? 0;
+
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-5 pb-24">
       {/* Profile card */}
@@ -92,15 +96,13 @@ export function ProfilePage() {
         {/* Level bar */}
         <div className="pt-4 border-t border-white/5">
           <div className="flex items-center justify-between text-xs text-ink-muted mb-1.5">
-            <span className="text-gold font-semibold">
-              {data.level}-daraja
-            </span>
-            <span>{data.xp} XP</span>
+            <span className="text-gold font-semibold">{level}-daraja</span>
+            <span>{xp} XP</span>
           </div>
           <div className="h-2 rounded-full bg-surface overflow-hidden">
             <div
               className="h-full rounded-full bg-gold transition-all duration-700"
-              style={{ width: `${Math.min(100, data.xp % 100)}%` }}
+              style={{ width: `${Math.min(100, xp % 100)}%` }}
             />
           </div>
         </div>
@@ -113,15 +115,15 @@ export function ProfilePage() {
             Umumiy ball
           </span>
           <p className="text-2xl font-display text-gold mt-1 tabular-nums">
-            {data.totalScore.toLocaleString('uz-UZ')}
+            {totalScore.toLocaleString('uz-UZ')}
           </p>
         </div>
         <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
-            Reyting
+            Daraja
           </span>
           <p className="text-2xl font-display text-teal mt-1 tabular-nums">
-            #{data.rank}
+            {level}
           </p>
         </div>
         <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
@@ -129,16 +131,16 @@ export function ProfilePage() {
             🔥 Streak
           </span>
           <p className="text-2xl font-display text-coral mt-1 tabular-nums">
-            {data.streak?.currentStreak ?? 0}
+            {currentStreak}
             <span className="text-ink-muted text-base"> kun</span>
           </p>
         </div>
         <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
-            Testlar
+            Eng uzun streak
           </span>
           <p className="text-2xl font-display text-ink mt-1 tabular-nums">
-            {data._count?.testAttempts ?? 0}
+            {longestStreak}
           </p>
         </div>
       </div>
@@ -149,22 +151,22 @@ export function ProfilePage() {
           type="button"
           onClick={() => {
             haptic('light');
-            navigate('/notifications');
+            navigate('/ranking');
           }}
           className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
         >
-          <span className="text-sm text-ink">🔔 Bildirishnomalar</span>
+          <span className="text-sm text-ink">🏆 Reyting</span>
           <span className="text-ink-muted text-xs">›</span>
         </button>
         <button
           type="button"
           onClick={() => {
             haptic('light');
-            navigate('/ranking');
+            navigate('/notifications');
           }}
           className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
         >
-          <span className="text-sm text-ink">🏆 Reyting</span>
+          <span className="text-sm text-ink">🔔 Bildirishnomalar</span>
           <span className="text-ink-muted text-xs">›</span>
         </button>
         <button
