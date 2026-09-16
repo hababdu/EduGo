@@ -13,7 +13,7 @@ import { useAuthStore } from './store/auth.store';
 /* ============ STUDENT ============ */
 import { StudentDashboard } from './pages/StudentDashboard';
 import { LessonsPage } from './pages/student/LessonsPage';
-import  LessonDetailPage  from './pages/student/ LessonsPage'; // 👈 YANGI
+import  LessonDetailPage  from './pages/student/GroupDetailPage'; // 👈 YANGI
 import { TestsPage } from './pages/student/TestsPage';
 import { GroupsPage } from './pages/student/GroupsPage';
 import { GroupDetailPage } from './pages/student/GroupDetailPage';

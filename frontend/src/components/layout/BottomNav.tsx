@@ -8,7 +8,11 @@ const items = [
   { to: '/groups', icon: '👥', label: 'Guruhlar' },      // 👈 BU YERGA
   { to: '/profile', icon: '👤', label: 'Profil' },
 ];
-
+const hideBottomNav =
+    (location.pathname.startsWith('/tests/') &&
+      location.pathname !== '/tests') ||
+    location.pathname.startsWith('/lessons/') ||    // 👈 YANGI
+    location.pathname.startsWith('/groups/');        // 👈 YANGI
 export function BottomNav() {
   return (
     <nav
