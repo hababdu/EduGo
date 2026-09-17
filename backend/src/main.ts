@@ -2,11 +2,15 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';   // 👈
-import { join } from 'path';                                          // 👈
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
+/* ============================================================
+   RUXSAT ETILGAN ORIGINLAR
+   ============================================================ */
 function buildAllowedOrigins(): string[] {
   const origins = new Set<string>();
   if (process.env.WEBAPP_URL)
@@ -20,11 +24,29 @@ function buildAllowedOrigins(): string[] {
   return Array.from(origins);
 }
 
+/* ============================================================
+   UPLOADS PAPKA YARATISH — MUHIM!
+   ============================================================ */
+function ensureUploadsDir(): string {
+  const uploadsDir = join(process.cwd(), 'uploads', 'groups');
+
+  if (!existsSync(uploadsDir)) {
+    mkdirSync(uploadsDir, { recursive: true });
+    console.log(`[main] ✅ Uploads papka yaratildi: ${uploadsDir}`);
+  } else {
+    console.log(`[main] ✅ Uploads papka mavjud: ${uploadsDir}`);
+  }
+
+  return uploadsDir;
+}
+
 async function bootstrap() {
-  // 👇 `NestExpressApplication` — static fayllar uchun
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // ✅ Static fayllar (uploads)
+  // ✅ Uploads papka avtomatik yaratish — ENG MUHIM QADAM
+  const uploadsDir = ensureUploadsDir();
+
+  // ✅ Static fayllar serve
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
@@ -32,7 +54,7 @@ async function bootstrap() {
   // Security
   app.use(
     helmet({
-      crossOriginResourcePolicy: { policy: 'cross-origin' },   // 👈 MUHIM
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
 
@@ -66,11 +88,13 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`Backend ${port}-portda ishga tushdi`);
+
+  console.log(`[main] 🚀 Backend ${port}-portda ishga tushdi`);
   console.log(
-    `Ruxsat etilgan originlar: ${
+    `[main] 🌐 Ruxsat etilgan originlar: ${
       allowedOrigins.join(', ') || '(hech qaysi belgilanmagan!)'
     }`,
   );
+  console.log(`[main] 📁 Uploads: ${uploadsDir}`);
 }
 bootstrap();
