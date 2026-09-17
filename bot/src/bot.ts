@@ -34,10 +34,10 @@ async function setupMenuButton(): Promise<void> {
       menu_button: {
         type: 'web_app',
         text: 'Ochish',
-        web_app: { url: WEBAPP_URL },
+        web_app: {url:WEBAPP_URL},
       },
     });
-    console.log('[bot] ✅ Menu button o\'rnatildi:', WEBAPP_URL);
+    console.log('[bot] ✅ Menu button o\'rnatildi:',WEBAPP_URL);
   } catch (err) {
     console.error('[bot] ❌ Menu button xatosi:', err);
   }

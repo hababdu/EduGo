@@ -5,6 +5,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+
+// 👇 MUHIM: Prisma enumlarini import qilish
+import { QuestionType, Difficulty } from '@prisma/client';
+
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../../admin/audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
@@ -35,9 +39,6 @@ export class TestManagementService {
     if (requester.role === 'TEACHER') {
       where.createdById = requester.id;
     }
-
-    // ❌ `subjectId` filter olib tashlandi (endi mavjud emas)
-    // if (filters.subjectId) where.subjectId = filters.subjectId;
 
     if (filters.status) where.status = filters.status;
 
@@ -92,7 +93,7 @@ export class TestManagementService {
   }
 
   /* ============================================================
-     LIST ASSIGNED FOR STUDENT — faqat studentga tegishli testlar
+     LIST ASSIGNED FOR STUDENT
      ============================================================ */
   async listAssignedForStudent(studentId: string) {
     const groupIds = (
@@ -166,7 +167,6 @@ export class TestManagementService {
       throw new BadRequestException("Ba'zi guruhlar topilmadi");
     }
 
-    // Har bir guruh o'qituvchiniki ekanini tekshirish
     for (const g of groups) {
       if (g.teacherId !== actorId) {
         throw new BadRequestException(
@@ -194,6 +194,7 @@ export class TestManagementService {
 
     // 2b. Yangi savollar (questions) — bankka yozib, ID olish
     let newQuestionIds: string[] = [];
+
     if (dto.questions && dto.questions.length > 0) {
       // Validatsiya
       for (const [i, q] of dto.questions.entries()) {
@@ -218,28 +219,26 @@ export class TestManagementService {
         }
       }
 
-      // Savollarni bankka yozish (transaction ichida)
-      const createdQuestions = await this.prisma.$transaction(
-        dto.questions.map((q) =>
-          this.prisma.question.create({
-  data: {
-    text: q.text.trim(),
-    difficulty: q.difficulty,
-    points: q.points,
-  type: ('SINGLE' as any),// <-- Savol turini qo'shing (agar q.type bo'lmasa 'SINGLE' yoki mos keladigan turingiz)
-    createdById: actorId,      // <-- Kim yaratganini qo'shing (funksiyaga kelayotgan actorId)
-    options: {
-      create: q.options.map((opt, idx) => ({
-        text: opt.trim(),
-        isCorrect: idx === q.correctAnswerIndex,
-      })),
-    },
-  },
-  select: { id: true },
-})
-        ),
-      );
-      newQuestionIds = createdQuestions.map((q) => q.id);
+      // 👇 HAR BIR SAVOLNI ALOHIDA YARATISH (nested options uchun)
+      for (const q of dto.questions) {
+        const created = await this.prisma.question.create({
+          data: {
+            text: q.text.trim(),
+            difficulty: q.difficulty as Difficulty,     // 👈 cast
+             type: QuestionType.SINGLE_CHOICE,                   // 👈 ENUM MEMBER
+            points: q.points,
+            createdById: actorId,
+            options: {
+              create: q.options.map((opt, idx) => ({
+                text: opt.trim(),
+                isCorrect: idx === q.correctAnswerIndex,
+              })),
+            },
+          },
+          select: { id: true },
+        });
+        newQuestionIds.push(created.id);
+      }
     }
 
     finalQuestionIds = [...finalQuestionIds, ...newQuestionIds];
@@ -256,13 +255,12 @@ export class TestManagementService {
       select: { id: true, points: true },
     });
 
+    const totalPoints = allQuestions.reduce((s, q) => s + q.points, 0);
+
     const maxScore = dto.randomQuestions
       ? (dto.questionCount ?? finalQuestionIds.length) *
-        Math.round(
-          allQuestions.reduce((s, q) => s + q.points, 0) /
-            allQuestions.length,
-        )
-      : allQuestions.reduce((sum, q) => sum + q.points, 0);
+        Math.round(totalPoints / allQuestions.length)
+      : totalPoints;
 
     /* ---------- 4. Test yaratish + guruhlarga biriktirish ---------- */
     const test = await this.prisma.$transaction(async (tx) => {
@@ -271,14 +269,13 @@ export class TestManagementService {
         data: {
           title: dto.title.trim(),
           description: dto.description?.trim() || null,
-          // ❌ subjectId yo'q
           topicId: dto.topicId || null,
           durationSeconds: dto.durationSeconds,
           passingScore: dto.passingScore,
           maxScore,
           randomQuestions: dto.randomQuestions ?? false,
           randomAnswerOrder: dto.randomAnswerOrder ?? false,
-          questionCount: dto.questionCount,
+          questionCount: dto.questionCount ?? null,
           startDate: dto.startDate ? new Date(dto.startDate) : null,
           endDate: dto.endDate ? new Date(dto.endDate) : null,
           createdById: actorId,
@@ -338,7 +335,6 @@ export class TestManagementService {
         );
       }
     } catch (err) {
-      // Xabar yuborishda xato — test yaratilgan, lekin xabar ketmagan
       console.error('Notification error:', err);
     }
 
@@ -350,11 +346,6 @@ export class TestManagementService {
      ============================================================ */
   async publish(testId: string, actorId: string) {
     const test = await this.getOrThrow(testId);
-
-    if (test.createdById !== actorId) {
-      // Teacher faqat o'z testini publish qilishi mumkin (admin bundan mustasno)
-      // Bu tekshiruv controller darajasida ham bo'lishi mumkin
-    }
 
     await this.prisma.test.update({
       where: { id: testId },
@@ -374,12 +365,11 @@ export class TestManagementService {
   }
 
   /* ============================================================
-     ASSIGN TEST — qo'shimcha biriktirish
+     ASSIGN TEST
      ============================================================ */
   async assign(testId: string, dto: AssignTestDto, actorId: string) {
     const test = await this.getOrThrow(testId);
 
-    // Ruxsat: teacher faqat o'z testini biriktirishi mumkin
     if (test.createdById !== actorId) {
       throw new ForbiddenException('Bu test sizga tegishli emas');
     }
@@ -393,7 +383,6 @@ export class TestManagementService {
       );
     }
 
-    // GROUP bo'lsa — guruh teacherga tegishli ekanini tekshirish
     if (dto.targetType === 'GROUP' && dto.groupId) {
       const group = await this.prisma.group.findFirst({
         where: { id: dto.groupId, deletedAt: null },
@@ -428,7 +417,6 @@ export class TestManagementService {
       },
     });
 
-    // Talabalarga xabar
     const studentIds = await this.resolveTargetStudentIds(dto);
     if (studentIds.length > 0) {
       await this.notifications.notifyMany(
