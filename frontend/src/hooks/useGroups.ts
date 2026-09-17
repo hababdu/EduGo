@@ -66,16 +66,19 @@ export function useGroupMembers(groupId: string) {
 }
 
 /* ============================================================
-   👇 TEACHERS LIST — YANGI HOOK
+   TEACHERS LIST — faqat TEACHER rolidagi userlar
    ============================================================ */
 export function useTeachersList() {
   return useQuery({
     queryKey: ['teachers-list'],
     queryFn: async () => {
       const data = await apiFetch<any>('/api/v1/users?role=TEACHER');
-      return (Array.isArray(data)
+      const list = Array.isArray(data)
         ? data
-        : data?.items || data?.users || data?.data || []) as TeacherItem[];
+        : data?.items || data?.users || data?.data || [];
+
+      // ✅ Faqat TEACHER rolli userlarni qaytarish
+      return list.filter((u: any) => u.role === 'TEACHER') as TeacherItem[];
     },
     staleTime: 60_000,
   });

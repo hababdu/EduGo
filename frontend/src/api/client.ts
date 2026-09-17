@@ -1,33 +1,46 @@
+// src/api/client.ts
 import axios from 'axios';
 
-// Access tokenni xotirada (RAM) saqlash uchun o'zgaruvchi
 let memoryToken: string | null = null;
 
 export const setMemoryToken = (token: string | null) => {
   memoryToken = token;
 };
 
-export const getMemoryToken = () => {
-  return memoryToken;
-};
+export const getMemoryToken = () => memoryToken;
+
+const API_URL =
+  import.meta.env.VITE_API_URL ?? 'https://edugo-5h4d.onrender.com';
 
 const apiClient = axios.create({
-  baseURL: 'https://edugo-5h4d.onrender.com',
-  withCredentials: true, // Cookie'larni yuborish uchun muhim
+  baseURL: API_URL,
+  withCredentials: true,
 });
 
-// 1. Har bir so'rovga xotiradagi tokenni qo'shish
+/* ============================================================
+   REQUEST INTERCEPTOR
+   ============================================================ */
 apiClient.interceptors.request.use(
   (config) => {
+    // Token
     if (memoryToken) {
       config.headers.Authorization = `Bearer ${memoryToken}`;
     }
+
+    // Telegram initData
+    const tg = (window as any).Telegram?.WebApp;
+    if (tg?.initData) {
+      config.headers['X-Telegram-Init-Data'] = tg.initData;
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// 2. 401 (Unauthorized) xatosini ushlab, tokenni yangilashga urinish
+/* ============================================================
+   RESPONSE INTERCEPTOR — 401 refresh
+   ============================================================ */
 let isRefreshing = false;
 
 apiClient.interceptors.response.use(
@@ -35,7 +48,6 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Agar so'rov /auth/refresh ning o'zi bo'lsa va u ham 400/401 bersa, qayta urinmaslik kerak (cheksiz sikl oldini olish uchun)
     if (originalRequest.url?.includes('/auth/refresh')) {
       setMemoryToken(null);
       return Promise.reject(error);
@@ -46,12 +58,12 @@ apiClient.interceptors.response.use(
 
       if (!isRefreshing) {
         isRefreshing = true;
+
         try {
-          // Backendga refresh so'rovini yuborish
           const res = await axios.post(
-            'https://edugo-5h4d.onrender.com/api/v1/auth/refresh',
+            `${API_URL}/api/v1/auth/refresh`,
             {},
-            { withCredentials: true }
+            { withCredentials: true },
           );
 
           const newToken = res.data.accessToken || res.data.token;
@@ -63,14 +75,13 @@ apiClient.interceptors.response.use(
         } catch (refreshError) {
           isRefreshing = false;
           setMemoryToken(null);
-          // Sessiya butunlay yaroqsiz
           return Promise.reject(refreshError);
         }
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

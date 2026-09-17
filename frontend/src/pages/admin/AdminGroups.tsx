@@ -5,45 +5,12 @@ import {
   useGroups,
   useCreateGroup,
   useDeleteGroup,
+  useTeachersList,
 } from '../../hooks/useGroups';
-import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
 import { useImageUpload, getFullUrl } from '../../hooks/useImageUpload';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
 
-/* ============================================================
-   TYPES
-   ============================================================ */
-interface TeacherItem {
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  role?: string;
-}
-
-/* ============================================================
-   HOOK — faqat TEACHER ro'yxati
-   ============================================================ */
-function useTeachersList() {
-  return useQuery({
-    queryKey: ['teachers-list'],
-    queryFn: async () => {
-      const data = await apiFetch<any>('/api/v1/users?role=TEACHER');
-      return (
-        Array.isArray(data)
-          ? data
-          : data?.items || data?.users || data?.data || []
-      ) as TeacherItem[];
-    },
-    staleTime: 60_000,
-  });
-}
-
-/* ============================================================
-   COMPONENT
-   ============================================================ */
 export default function AdminGroups() {
   const navigate = useNavigate();
   const { haptic, hapticNotify, showConfirm } = useTelegram();
@@ -87,29 +54,40 @@ export default function AdminGroups() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /* ---------- File select ---------- */
+  /* ============================================================
+     FILE SELECT — asosiy tuzatish
+     ============================================================ */
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Preview
+    haptic('light');
+
+    // 1. Preview (base64, faqat frontend uchun)
     const reader = new FileReader();
     reader.onload = (ev) => {
       setPosterPreview(ev.target?.result as string);
     };
     reader.readAsDataURL(file);
 
-    haptic('light');
+    console.log('[AdminGroups] Selected file:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+    });
 
-    // Upload
+    // 2. Backend'ga yuklash
     const result = await upload(file);
 
-    if (result) {
-      setPosterUrl(result.url);
+    if (result?.url) {
+      console.log('[AdminGroups] Backend URL:', result.url);
+      setPosterUrl(result.url);        // ✅ BACKEND URL
       hapticNotify('success');
       toast('success', 'Rasm yuklandi');
     } else {
+      console.error('[AdminGroups] Upload failed');
       hapticNotify('error');
+      toast('error', 'Rasm yuklanmadi');
       setPosterPreview('');
       setPosterUrl('');
     }
@@ -134,6 +112,12 @@ export default function AdminGroups() {
     }
 
     haptic('light');
+
+    console.log('[AdminGroups] Creating group:', {
+      name,
+      posterUrl,           // ✅ Backend URL
+      teacherId: selectedTeacherId,
+    });
 
     createGroup.mutate(
       {
@@ -287,6 +271,11 @@ export default function AdminGroups() {
                   >
                     ✕
                   </button>
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <p className="text-white text-xs">Yuklanmoqda...</p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -337,7 +326,11 @@ export default function AdminGroups() {
               disabled={createGroup.isPending || isUploading}
               className="w-full rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {createGroup.isPending ? 'Yaratilmoqda...' : 'Saqlash'}
+              {createGroup.isPending
+                ? 'Yaratilmoqda...'
+                : isUploading
+                ? 'Rasm yuklanmoqda...'
+                : 'Saqlash'}
             </button>
           </div>
         </form>
@@ -388,7 +381,7 @@ export default function AdminGroups() {
                 }}
                 className="bg-surface/20 hover:bg-surface/40 rounded-3xl border border-white/5 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col"
               >
-                {/* ===== POSTER (to'liq ko'rinadi) ===== */}
+                {/* POSTER */}
                 <div className="relative w-full aspect-square bg-surface/50 overflow-hidden">
                   {posterFullUrl ? (
                     <img
@@ -396,6 +389,9 @@ export default function AdminGroups() {
                       alt={g.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gold/10 to-teal/10 flex items-center justify-center text-5xl">
@@ -403,7 +399,7 @@ export default function AdminGroups() {
                     </div>
                   )}
 
-                  {/* Delete button — tepada o'ng */}
+                  {/* Delete */}
                   <button
                     type="button"
                     onClick={(e) => handleDelete(e, g)}
@@ -413,13 +409,13 @@ export default function AdminGroups() {
                     🗑
                   </button>
 
-                  {/* Members count badge — pastda chap */}
+                  {/* Members count */}
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium">
                     👥 {membersCount}
                   </div>
                 </div>
 
-                {/* ===== INFO (pastda) ===== */}
+                {/* INFO */}
                 <div className="p-3 space-y-1 flex-1 flex flex-col">
                   <h3 className="text-sm font-semibold text-ink truncate">
                     {g.name}
