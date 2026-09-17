@@ -1,255 +1,441 @@
+// src/pages/admin/AdminGroupDetail.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
-import { useGroups, useAddStudentToGroup } from '../../hooks/useGroups';
+import { getFullUrl } from '../../hooks/useImageUpload';
+import {
+  useGroups,
+  useAddStudentToGroup,
+  useRemoveStudentFromGroup,
+  useAssignGroupTeacher,
+  useTeachersList,
+} from '../../hooks/useGroups';
 import { useAdminStudents } from '../../hooks/useAdmin';
+import { useTelegram } from '../../hooks/useTelegram';
+import { toast } from '../../components/ui/Toast';
 
+/* ============================================================
+   COMPONENT
+   ============================================================ */
 export function AdminGroupDetail() {
-  const { id = '' } = useParams();
+  const { id = '' } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: groups } = useGroups();
-  const group = groups?.find((g: any) => g.id === id || g._id === id);
 
-  const { data: groupStudents, isLoading: isLoadingGroupStudents, refetch: refetchGroupStudents } = useQuery({
+  const {
+    haptic,
+    hapticNotify,
+    showConfirm,
+    showBackButton,
+    hideBackButton,
+  } = useTelegram();
+
+  /* ---------- Group detail ---------- */
+  const { data: group, isLoading: groupLoading, refetch: refetchGroup } = useQuery({
+    queryKey: ['admin', 'group', id],
+    queryFn: () => apiFetch<any>(`/api/v1/groups/${id}`),
+    enabled: !!id,
+  });
+
+  /* ---------- Group students ---------- */
+  const {
+    data: groupStudents,
+    isLoading: studentsLoading,
+    refetch: refetchStudents,
+  } = useQuery({
     queryKey: ['group-students', id],
     queryFn: () => apiFetch<any[]>(`/api/v1/groups/${id}/students`),
     enabled: !!id,
   });
 
+  /* ---------- All students (for picker) ---------- */
   const { data: allStudentsData } = useAdminStudents({ page: 1 });
-  const studentsList = Array.isArray(allStudentsData)
+  const allStudents = Array.isArray(allStudentsData)
     ? allStudentsData
-    : (allStudentsData as any)?.items || (allStudentsData as any)?.students || (allStudentsData as any)?.data || [];
+    : (allStudentsData as any)?.items ||
+      (allStudentsData as any)?.students ||
+      (allStudentsData as any)?.data ||
+      [];
 
-  const { data: allUsersData } = useQuery({
-    queryKey: ['users-list'],
-    queryFn: () => apiFetch<any>('/api/v1/users'),
-  });
+  /* ---------- Teachers list ---------- */
+  const { data: teachers, isLoading: teachersLoading } = useTeachersList();
 
-  const usersList = Array.isArray(allUsersData)
-    ? allUsersData
-    : (allUsersData as any)?.items || (allUsersData as any)?.users || (allUsersData as any)?.data || [];
-
-  const teachersList = usersList.filter((u: any) => u.role === 'TEACHER' || u.role === 'ADMIN');
-
+  /* ---------- Mutations ---------- */
   const addStudent = useAddStudentToGroup();
+  const removeStudent = useRemoveStudentFromGroup();
+  const assignTeacher = useAssignGroupTeacher();
+
+  /* ---------- Local state ---------- */
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
-  const [selectedAssistantId, setSelectedAssistantId] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  /* ---------- Form state ---------- */
   useEffect(() => {
-    const g = group as any;
-    if (g) {
-      if (g.teacherId || g.teacher?._id || g.teacher?.id) {
-        setSelectedTeacherId(g.teacherId || g.teacher?._id || g.teacher?.id);
-      }
-      if (g.assistantId || g.assistant?._id || g.assistant?.id) {
-        setSelectedAssistantId(g.assistantId || g.assistant?._id || g.assistant?.id);
-      }
+    if (group?.teacherId) {
+      setSelectedTeacherId(group.teacherId);
+    } else if (group?.teacher?.id) {
+      setSelectedTeacherId(group.teacher.id);
     }
   }, [group]);
 
+  /* ---------- Telegram BackButton ---------- */
+  useEffect(() => {
+    const cleanup = showBackButton(() => {
+      haptic('light');
+      navigate('/admin/groups');
+    });
+    return () => {
+      cleanup?.();
+      hideBackButton();
+    };
+  }, [showBackButton, hideBackButton, navigate, haptic]);
+
+  /* ---------- Handle: Add student ---------- */
   const handleAddStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !selectedStudentId) return;
-    setError(null);
-    setSuccessMessage(null);
+    if (!selectedStudentId) {
+      hapticNotify('error');
+      toast('error', 'Talabani tanlang!');
+      return;
+    }
 
+    haptic('light');
     addStudent.mutate(
       { groupId: id, studentId: selectedStudentId },
       {
         onSuccess: () => {
+          hapticNotify('success');
+          toast('success', "Talaba guruhga qo'shildi!");
           setSelectedStudentId('');
-          setSuccessMessage('Talaba guruhga muvaffaqiyatli qo\'shildi!');
-          refetchGroupStudents();
+          refetchStudents();
+          refetchGroup();
         },
-        onError: (err: any) => setError(err.message || 'Talaba qo\'shishda xatolik yuz berdi'),
-      }
+        onError: (err: any) => {
+          hapticNotify('error');
+          toast(
+            'error',
+            err?.response?.data?.message ||
+              err?.message ||
+              "Qo'shishda xatolik",
+          );
+        },
+      },
     );
   };
 
-  const handleRemoveStudent = async (studentId: string) => {
-    if (!studentId) {
-      setError('Talaba ID topilmadi');
-      return;
-    }
-    if (!confirm('Haqiqatan ham bu talabani guruhdan chiqarmoqchimisiz?')) return;
-    setError(null);
-    setSuccessMessage(null);
+  /* ---------- Handle: Remove student ---------- */
+  const handleRemoveStudent = async (studentId: string, name: string) => {
+    if (!studentId) return;
 
-    try {
-      await apiFetch(`/api/v1/groups/${id}/students/${studentId}`, {
-        method: 'DELETE',
-      });
-      setSuccessMessage('Talaba guruhdan chiqarib yuborildi.');
-      refetchGroupStudents();
-    } catch (err: any) {
-      setError(err.message || 'Talabani chiqarishda xatolik yuz berdi');
-    }
+    haptic('medium');
+    const confirmed = await showConfirm(`${name} ni guruhdan chiqarmoqchimisiz?`);
+    if (!confirmed) return;
+
+    removeStudent.mutate(
+      { groupId: id, studentId },
+      {
+        onSuccess: () => {
+          hapticNotify('success');
+          toast('success', 'Talaba chiqarildi');
+          refetchStudents();
+          refetchGroup();
+        },
+        onError: (err: any) => {
+          hapticNotify('error');
+          toast(
+            'error',
+            err?.response?.data?.message ||
+              err?.message ||
+              "Chiqarishda xatolik",
+          );
+        },
+      },
+    );
   };
 
-  const handleAssignTeacher = async (e: React.FormEvent) => {
+  /* ---------- Handle: Assign teacher ---------- */
+  const handleAssignTeacher = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id) return;
-    setError(null);
-    setSuccessMessage(null);
 
-    try {
-      await apiFetch(`/api/v1/groups/${id}/teacher`, {
-        method: 'PATCH',
-        body: JSON.stringify({ teacherId: selectedTeacherId }),
-      });
-      setSuccessMessage('Asosiy ustoz muvaffaqiyatli biriktirildi!');
-    } catch (err: any) {
-      setError(err.message || 'Ustozni biriktirishda xatolik yuz berdi');
-    }
+    haptic('light');
+    assignTeacher.mutate(
+      { groupId: id, teacherId: selectedTeacherId || null },
+      {
+        onSuccess: () => {
+          hapticNotify('success');
+          toast(
+            'success',
+            selectedTeacherId
+              ? 'Ustoz muvaffaqiyatli biriktirildi!'
+              : 'Ustoz olib tashlandi',
+          );
+          refetchGroup();
+        },
+        onError: (err: any) => {
+          hapticNotify('error');
+          toast(
+            'error',
+            err?.response?.data?.message ||
+              err?.message ||
+              'Biriktirishda xatolik',
+          );
+        },
+      },
+    );
   };
 
-  const handleAssignAssistant = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!id) return;
-    setError(null);
-    setSuccessMessage(null);
+  /* ---------- Filter students (exclude existing members) ---------- */
+  const existingStudentIds = new Set(
+    (groupStudents ?? []).map((m: any) => {
+      const s = m?.student || m?.user || m;
+      return s?.id || s?._id || m?.studentId;
+    }),
+  );
 
-    try {
-      await apiFetch(`/api/v1/groups/${id}/teacher`, {
-        method: 'PATCH',
-        body: JSON.stringify({ assistantId: selectedAssistantId }),
-      });
-      setSuccessMessage('Yordamchi ustoz muvaffaqiyatli biriktirildi!');
-    } catch (err: any) {
-      setError(err.message || 'Yordamchi ustozni biriktirishda xatolik yuz berdi');
-    }
-  };
+  const availableStudents = allStudents.filter(
+    (s: any) => !existingStudentIds.has(s.id || s._id || s.studentId),
+  );
 
-  const groupData = group as any;
+  /* ---------- Loading ---------- */
+  if (groupLoading || !group) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto space-y-4 pb-24">
+        <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
+        <div className="h-40 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+      </div>
+    );
+  }
+
+  const posterFullUrl = group.posterUrl ? getFullUrl(group.posterUrl) : null;
+  const teacherName = group.teacher
+    ? `${group.teacher.firstName || ''} ${group.teacher.lastName || ''}`.trim() ||
+      group.teacher.username
+    : null;
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-6 pb-16">
-      <button onClick={() => navigate(-1)} className="text-sm text-ink-muted hover:text-ink transition-colors flex items-center gap-1">
+    <div className="p-4 max-w-2xl mx-auto space-y-5 pb-24">
+      {/* ============ BACK BUTTON ============ */}
+      <button
+        type="button"
+        onClick={() => {
+          haptic('light');
+          navigate('/admin/groups');
+        }}
+        className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
+      >
         ← Orqaga
       </button>
 
-      <div className="bg-surface/20 p-5 rounded-2xl border border-white/5 space-y-2">
-        <h1 className="font-display text-2xl text-ink">{groupData?.name || 'Guruh tafsilotlari'}</h1>
-        <p className="text-xs text-ink-muted">{groupData?.description || 'Tavsif mavjud emas'}</p>
+      {/* ============ HEADER — POSTER + INFO ============ */}
+      <div className="bg-surface/20 rounded-3xl border border-white/5 overflow-hidden backdrop-blur-md">
+        {/* Poster */}
+        {posterFullUrl ? (
+          <div className="w-full h-48 bg-surface/50 overflow-hidden">
+            <img
+              src={posterFullUrl}
+              alt={group.name}
+              className="w-full h-48 object-cover"
+            />
+          </div>
+        ) : (
+          <div className="w-full h-32 bg-gradient-to-br from-gold/10 to-teal/10 flex items-center justify-center text-5xl">
+            📁
+          </div>
+        )}
+
+        {/* Info */}
+        <div className="p-5 space-y-3">
+          <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
+            {group.name}
+          </h1>
+
+          {group.description && (
+            <p className="text-xs text-ink-muted leading-relaxed">
+              {group.description}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
+              👥 {Array.isArray(groupStudents) ? groupStudents.length : 0} talaba
+            </span>
+            {teacherName && (
+              <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
+                👤 {teacherName}
+              </span>
+            )}
+            {group.createdAt && (
+              <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
+                📅 {new Date(group.createdAt).toLocaleDateString('uz-UZ')}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {error && <div className="p-3 bg-coral/10 border border-coral/20 rounded-xl text-xs text-coral">{error}</div>}
-      {successMessage && <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-xs text-green-400">{successMessage}</div>}
+      {/* ============ TEACHER ASSIGN ============ */}
+      <form
+        onSubmit={handleAssignTeacher}
+        className="bg-surface/30 p-5 rounded-3xl border border-white/5 space-y-3"
+      >
+        <h3 className="text-sm font-semibold text-ink">
+          👤 Asosiy ustoz
+        </h3>
 
-      {/* Asosiy ustoz biriktirish */}
-      <form onSubmit={handleAssignTeacher} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Asosiy ustozni belgilash</h3>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={selectedTeacherId}
             onChange={(e) => setSelectedTeacherId(e.target.value)}
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
+            disabled={teachersLoading}
+            className="flex-1 bg-surface text-sm rounded-2xl px-4 py-3 outline-none border border-white/5 text-ink min-h-[44px] disabled:opacity-50"
           >
             <option value="">Ustozni tanlang...</option>
-            {teachersList.map((t: any) => (
-              <option key={t.id || t._id} value={t.id || t._id}>
-                {t.firstName} {t.lastName} {t.username ? `(@${t.username})` : ''}
-              </option>
-            ))}
+            {teachersLoading ? (
+              <option>Yuklanmoqda...</option>
+            ) : !teachers || teachers.length === 0 ? (
+              <option disabled>O'qituvchilar topilmadi</option>
+            ) : (
+              teachers.map((t: any) => (
+                <option key={t.id || t._id} value={t.id || t._id}>
+                  {t.firstName} {t.lastName}
+                  {t.username ? ` (@${t.username})` : ''}
+                </option>
+              ))
+            )}
           </select>
-          <button type="submit" className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-95 transition-opacity">
-            Saqlash
-          </button>
-        </div>
-      </form>
 
-      {/* Yordamchi ustoz biriktirish */}
-      <form onSubmit={handleAssignAssistant} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Yordamchi ustoz (Mentor) belgilash</h3>
-        <div className="flex gap-2">
-          <select
-            value={selectedAssistantId}
-            onChange={(e) => setSelectedAssistantId(e.target.value)}
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
+          <button
+            type="submit"
+            disabled={assignTeacher.isPending}
+            className="bg-gold text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
           >
-            <option value="">Yordamchi ustozni tanlang...</option>
-            {teachersList.map((t: any) => (
-              <option key={t.id || t._id} value={t.id || t._id}>
-                {t.firstName} {t.lastName} {t.username ? `(@${t.username})` : ''}
-              </option>
-            ))}
-          </select>
-          <button type="submit" className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-95 transition-opacity">
-            Saqlash
+            {assignTeacher.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
           </button>
         </div>
+
+        {!teacherName && (
+          <p className="text-[10px] text-ink-muted">
+            ℹ️ Hozircha ustoz biriktirilmagan
+          </p>
+        )}
       </form>
 
-      {/* Talaba qo'shish */}
-      <form onSubmit={handleAddStudent} className="bg-surface/30 p-4 rounded-2xl border border-white/5 space-y-3">
-        <h3 className="text-sm font-medium text-ink">Guruhga talaba qo'shish</h3>
-        <div className="flex gap-2">
+      {/* ============ ADD STUDENT ============ */}
+      <form
+        onSubmit={handleAddStudent}
+        className="bg-surface/30 p-5 rounded-3xl border border-white/5 space-y-3"
+      >
+        <h3 className="text-sm font-semibold text-ink">
+          ➕ Guruhga talaba qo'shish
+        </h3>
+
+        <div className="flex flex-col sm:flex-row gap-2">
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="flex-1 bg-surface text-xs rounded-xl px-3 py-2 outline-none border border-white/5 text-ink cursor-pointer"
+            className="flex-1 bg-surface text-sm rounded-2xl px-4 py-3 outline-none border border-white/5 text-ink min-h-[44px]"
           >
             <option value="">Talabani tanlang...</option>
-            {studentsList.map((s: any) => {
-              const sId = s.id || s._id || s.studentId;
-              return (
-                <option key={sId} value={sId}>
-                  {s.firstName || 'Talaba'} {s.lastName || ''} ({s.username ? `@${s.username}` : sId})
-                </option>
-              );
-            })}
+            {availableStudents.length === 0 ? (
+              <option disabled>
+                {allStudents.length === 0
+                  ? "Talabalar ro'yxati yuklanmoqda..."
+                  : "Barcha talabalar qo'shilgan"}
+              </option>
+            ) : (
+              availableStudents.map((s: any) => {
+                const sId = s.id || s._id || s.studentId;
+                return (
+                  <option key={sId} value={sId}>
+                    {s.firstName || 'Talaba'} {s.lastName || ''}{' '}
+                    {s.username ? `(@${s.username})` : ''}
+                  </option>
+                );
+              })
+            )}
           </select>
-          <button type="submit" disabled={addStudent.isPending || !selectedStudentId} className="bg-gold text-base text-xs font-semibold px-4 py-2 rounded-xl hover:opacity-90 disabled:opacity-50 transition-opacity">
-            {addStudent.isPending ? 'Qo\'shilmoqda...' : 'Qo\'shish'}
+
+          <button
+            type="submit"
+            disabled={addStudent.isPending || !selectedStudentId}
+            className="bg-gold text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
+          >
+            {addStudent.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
           </button>
         </div>
       </form>
 
-      {/* Guruhdagi talabalar ro'yxati va chiqarib yuborish */}
+      {/* ============ STUDENTS LIST ============ */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-ink">Guruhdagi talabalar ro'yxati</h3>
-          <span className="text-xs text-ink-muted">Jami: {Array.isArray(groupStudents) ? groupStudents.length : 0} ta</span>
+          <h3 className="text-sm font-semibold text-ink">
+            👥 Guruhdagi talabalar
+          </h3>
+          <span className="text-xs text-ink-muted">
+            Jami: {Array.isArray(groupStudents) ? groupStudents.length : 0} ta
+          </span>
         </div>
 
-        {isLoadingGroupStudents ? (
-          <p className="text-xs text-ink-muted">Yuklanmoqda...</p>
+        {studentsLoading ? (
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
+              />
+            ))}
+          </div>
         ) : !groupStudents || groupStudents.length === 0 ? (
-          <div className="text-center py-8 bg-surface/20 rounded-2xl border border-white/5">
-            <p className="text-xs text-ink-muted">Bu guruhda hali talabalar mavjud emas.</p>
+          <div className="text-center py-10 bg-surface/20 rounded-3xl border border-white/5">
+            <p className="text-xs text-ink-muted">
+              Bu guruhda hali talabalar mavjud emas.
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
+          <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
             {groupStudents.map((m: any) => {
-  const studentData = m?.student || m?.user || m;
-  
-  // Ism va familiyani turli xil variantlarda qidirib topamiz
-  const firstName = studentData?.firstName || studentData?.name || '';
-  const lastName = studentData?.lastName || '';
-  const fullName = `${firstName} ${lastName}`.trim();
-  
-  const targetStudentId = studentData?.id || studentData?._id || m?.studentId;
+              const s = m?.student || m?.user || m;
+              const fullName =
+                `${s?.firstName || ''} ${s?.lastName || ''}`.trim() ||
+                s?.username ||
+                "Noma'lum talaba";
+              const initial = fullName[0]?.toUpperCase() || 'T';
+              const targetId =
+                s?.id || s?._id || m?.studentId;
 
-  return (
-    <div key={m.id || targetStudentId} className="flex items-center justify-between py-3.5">
-      <div>
-        <p className="text-sm font-medium">
-          {fullName || studentData?.username || "Noma'lum talaba"}
-        </p>
-        <p className="text-xs text-ink-muted">
-          {studentData?.username ? `@${studentData.username}` : (targetStudentId ? `ID: ${targetStudentId}` : '')}
-        </p>
-      </div>
-      <button
-                    onClick={() => handleRemoveStudent(targetStudentId)}
-                    className="text-xs text-coral hover:underline font-medium"
+              return (
+                <div
+                  key={m.id || targetId}
+                  className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors"
+                >
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
+                    {initial}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink truncate">
+                      {fullName}
+                    </p>
+                    <p className="text-xs text-ink-muted truncate">
+                      {s?.username
+                        ? `@${s.username}`
+                        : targetId
+                        ? `ID: ${targetId}`
+                        : ''}
+                    </p>
+                  </div>
+
+                  {/* Remove */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStudent(targetId, fullName)}
+                    disabled={removeStudent.isPending}
+                    className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 shrink-0"
                   >
-                    Chiqarish
+                    ✕
                   </button>
                 </div>
               );
@@ -260,3 +446,5 @@ export function AdminGroupDetail() {
     </div>
   );
 }
+
+export default AdminGroupDetail;
