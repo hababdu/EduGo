@@ -1,5 +1,5 @@
 // src/pages/admin/AdminGroups.tsx
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useGroups,
@@ -7,26 +7,26 @@ import {
   useDeleteGroup,
   useTeachersList,
 } from '../../hooks/useGroups';
-import { useImageUpload, getFullUrl } from '../../hooks/useImageUpload';
+import { getFullUrl } from '../../hooks/useImageUpload';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
+import { PexelsPhotoPickerModal } from '../../components/admin/PexelsPhotoPickerModal';
 
 export default function AdminGroups() {
   const navigate = useNavigate();
   const { haptic, hapticNotify, showConfirm } = useTelegram();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: groups, isLoading } = useGroups();
   const { data: teachers, isLoading: teachersLoading } = useTeachersList();
   const createGroup = useCreateGroup();
   const deleteGroup = useDeleteGroup();
-  const { upload, isUploading, error: uploadError } = useImageUpload();
 
   const [showForm, setShowForm] = useState(false);
+  const [showPexelsModal, setShowPexelsModal] = useState(false);
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
-  const [posterPreview, setPosterPreview] = useState('');
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [search, setSearch] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
@@ -48,56 +48,20 @@ export default function AdminGroups() {
     setName('');
     setDescription('');
     setPosterUrl('');
-    setPosterPreview('');
     setSelectedTeacherId('');
     setFormError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  /* ============================================================
-     FILE SELECT — asosiy tuzatish
-     ============================================================ */
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    haptic('light');
-
-    // 1. Preview (base64, faqat frontend uchun)
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setPosterPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    console.log('[AdminGroups] Selected file:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-    });
-
-    // 2. Backend'ga yuklash
-    const result = await upload(file);
-
-    if (result?.url) {
-      console.log('[AdminGroups] Backend URL:', result.url);
-      setPosterUrl(result.url);        // ✅ BACKEND URL
-      hapticNotify('success');
-      toast('success', 'Rasm yuklandi');
-    } else {
-      console.error('[AdminGroups] Upload failed');
-      hapticNotify('error');
-      toast('error', 'Rasm yuklanmadi');
-      setPosterPreview('');
-      setPosterUrl('');
-    }
+  /* ---------- Pexels select ---------- */
+  const handlePexelsSelect = (url: string) => {
+    setPosterUrl(url);
+    hapticNotify('success');
+    toast('success', 'Rasm tanlandi');
   };
 
   const handleRemovePoster = () => {
     haptic('light');
     setPosterUrl('');
-    setPosterPreview('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   /* ---------- Create ---------- */
@@ -112,12 +76,6 @@ export default function AdminGroups() {
     }
 
     haptic('light');
-
-    console.log('[AdminGroups] Creating group:', {
-      name,
-      posterUrl,           // ✅ Backend URL
-      teacherId: selectedTeacherId,
-    });
 
     createGroup.mutate(
       {
@@ -175,7 +133,7 @@ export default function AdminGroups() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
-      {/* ============ HEADER ============ */}
+      {/* ==================== HEADER ==================== */}
       <div className="bg-surface/20 p-4 rounded-3xl border border-white/5 backdrop-blur-md space-y-3">
         <div>
           <h1 className="font-display text-xl text-ink">Guruhlar</h1>
@@ -197,7 +155,7 @@ export default function AdminGroups() {
         </button>
       </div>
 
-      {/* ============ FORMA ============ */}
+      {/* ==================== FORMA ==================== */}
       {showForm && (
         <form
           onSubmit={handleCreate}
@@ -241,26 +199,27 @@ export default function AdminGroups() {
                 Poster (ixtiyoriy)
               </label>
 
-              {!posterPreview && !posterUrl ? (
+              {!posterUrl ? (
                 <button
                   type="button"
                   onClick={() => {
                     haptic('light');
-                    fileInputRef.current?.click();
+                    setShowPexelsModal(true);
                   }}
-                  disabled={isUploading}
-                  className="w-full bg-surface rounded-2xl px-4 py-6 outline-none border border-dashed border-white/10 text-ink-muted hover:border-gold/50 active:scale-[0.99] transition-all disabled:opacity-50 min-h-[100px] flex flex-col items-center justify-center gap-2"
+                  className="w-full bg-surface rounded-2xl px-4 py-6 outline-none border border-dashed border-white/10 text-ink-muted hover:border-gold/50 active:scale-[0.99] transition-all min-h-[120px] flex flex-col items-center justify-center gap-2"
                 >
-                  <span className="text-3xl">📷</span>
+                  <span className="text-3xl">🔍</span>
                   <span className="text-xs font-medium">
-                    {isUploading ? 'Yuklanmoqda...' : 'Rasm tanlash'}
+                    Rasm qidirish
                   </span>
-                  <span className="text-[10px]">JPG, PNG, WEBP · 5 MB</span>
+                  <span className="text-[10px]">
+                    Pexels'dan bepul rasmlar
+                  </span>
                 </button>
               ) : (
                 <div className="relative bg-surface/50 rounded-2xl overflow-hidden border border-white/5">
                   <img
-                    src={posterPreview || getFullUrl(posterUrl)}
+                    src={getFullUrl(posterUrl)}
                     alt="Preview"
                     className="w-full h-40 object-cover"
                   />
@@ -271,24 +230,7 @@ export default function AdminGroups() {
                   >
                     ✕
                   </button>
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                      <p className="text-white text-xs">Yuklanmoqda...</p>
-                    </div>
-                  )}
                 </div>
-              )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-
-              {uploadError && (
-                <p className="text-[10px] text-coral">{uploadError}</p>
               )}
             </div>
 
@@ -323,20 +265,16 @@ export default function AdminGroups() {
 
             <button
               type="submit"
-              disabled={createGroup.isPending || isUploading}
+              disabled={createGroup.isPending}
               className="w-full rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {createGroup.isPending
-                ? 'Yaratilmoqda...'
-                : isUploading
-                ? 'Rasm yuklanmoqda...'
-                : 'Saqlash'}
+              {createGroup.isPending ? 'Yaratilmoqda...' : 'Saqlash'}
             </button>
           </div>
         </form>
       )}
 
-      {/* ============ SEARCH ============ */}
+      {/* ==================== SEARCH ==================== */}
       <input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -344,7 +282,7 @@ export default function AdminGroups() {
         className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
       />
 
-      {/* ============ LIST — 2 USTUN GRID ============ */}
+      {/* ==================== LIST — 2 USTUN ==================== */}
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3">
           {[...Array(4)].map((_, i) => (
@@ -390,7 +328,8 @@ export default function AdminGroups() {
                       className="w-full h-full object-cover"
                       loading="lazy"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
+                        (e.target as HTMLImageElement).style.display =
+                          'none';
                       }}
                     />
                   ) : (
@@ -409,7 +348,7 @@ export default function AdminGroups() {
                     🗑
                   </button>
 
-                  {/* Members count */}
+                  {/* Members */}
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium">
                     👥 {membersCount}
                   </div>
@@ -436,6 +375,13 @@ export default function AdminGroups() {
           })}
         </div>
       )}
+
+      {/* ==================== PEXELS MODAL ==================== */}
+      <PexelsPhotoPickerModal
+        isOpen={showPexelsModal}
+        onClose={() => setShowPexelsModal(false)}
+        onSelect={handlePexelsSelect}
+      />
     </div>
   );
 }
