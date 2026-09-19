@@ -31,7 +31,7 @@ export default function AdminGroups() {
   const [search, setSearch] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  /* ---------- Filter ---------- */
+  /* ============ FILTER ============ */
   const filteredGroups = useMemo(() => {
     if (!groups) return [];
     const q = search.trim().toLowerCase();
@@ -43,7 +43,7 @@ export default function AdminGroups() {
     );
   }, [groups, search]);
 
-  /* ---------- Reset ---------- */
+  /* ============ RESET FORM ============ */
   const resetForm = () => {
     setName('');
     setDescription('');
@@ -52,7 +52,7 @@ export default function AdminGroups() {
     setFormError(null);
   };
 
-  /* ---------- Pexels select ---------- */
+  /* ============ PEXELS SELECT ============ */
   const handlePexelsSelect = (url: string) => {
     setPosterUrl(url);
     hapticNotify('success');
@@ -64,7 +64,7 @@ export default function AdminGroups() {
     setPosterUrl('');
   };
 
-  /* ---------- Create ---------- */
+  /* ============ CREATE ============ */
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -104,7 +104,7 @@ export default function AdminGroups() {
     );
   };
 
-  /* ---------- Delete ---------- */
+  /* ============ DELETE ============ */
   const handleDelete = async (e: React.MouseEvent, group: any) => {
     e.stopPropagation();
     haptic('medium');
@@ -193,7 +193,7 @@ export default function AdminGroups() {
               />
             </div>
 
-            {/* Poster */}
+            {/* Poster — Pexels orqali */}
             <div className="space-y-1.5">
               <label className="text-xs text-ink-muted font-medium">
                 Poster (ixtiyoriy)
@@ -209,9 +209,7 @@ export default function AdminGroups() {
                   className="w-full bg-surface rounded-2xl px-4 py-6 outline-none border border-dashed border-white/10 text-ink-muted hover:border-gold/50 active:scale-[0.99] transition-all min-h-[120px] flex flex-col items-center justify-center gap-2"
                 >
                   <span className="text-3xl">🔍</span>
-                  <span className="text-xs font-medium">
-                    Rasm qidirish
-                  </span>
+                  <span className="text-xs font-medium">Rasm qidirish</span>
                   <span className="text-[10px]">
                     Pexels'dan bepul rasmlar
                   </span>
@@ -229,6 +227,16 @@ export default function AdminGroups() {
                     className="absolute top-2 right-2 bg-red-500/90 text-white text-xs w-8 h-8 rounded-full flex items-center justify-center active:scale-[0.95]"
                   >
                     ✕
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      haptic('light');
+                      setShowPexelsModal(true);
+                    }}
+                    className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-[10px] px-3 py-1.5 rounded-xl font-semibold active:scale-[0.95]"
+                  >
+                    🔄 Almashtirish
                   </button>
                 </div>
               )}
@@ -282,7 +290,7 @@ export default function AdminGroups() {
         className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
       />
 
-      {/* ==================== LIST — 2 USTUN ==================== */}
+      {/* ==================== LIST — 2 USTUN GRID ==================== */}
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3">
           {[...Array(4)].map((_, i) => (
@@ -319,7 +327,7 @@ export default function AdminGroups() {
                 }}
                 className="bg-surface/20 hover:bg-surface/40 rounded-3xl border border-white/5 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col"
               >
-                {/* POSTER */}
+                {/* ===== POSTER ===== */}
                 <div className="relative w-full aspect-square bg-surface/50 overflow-hidden">
                   {posterFullUrl ? (
                     <img
@@ -354,7 +362,7 @@ export default function AdminGroups() {
                   </div>
                 </div>
 
-                {/* INFO */}
+                {/* ===== INFO ===== */}
                 <div className="p-3 space-y-1 flex-1 flex flex-col">
                   <h3 className="text-sm font-semibold text-ink truncate">
                     {g.name}
