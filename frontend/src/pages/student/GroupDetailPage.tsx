@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
+import { getFullUrl } from '../../hooks/useImageUpload';
 import { useTelegram } from '../../hooks/useTelegram';
 
 /* ============================================================
@@ -29,6 +30,7 @@ interface GroupDetail {
   id: string;
   name: string;
   description?: string | null;
+  posterUrl?: string | null;
   teacher?: Teacher | null;
   members?: GroupMember[];
   _count?: {
@@ -88,7 +90,7 @@ export function GroupDetailPage() {
     return (
       <div className="p-4 max-w-4xl mx-auto space-y-4 pb-24">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-40 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-56 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
         <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
       </div>
     );
@@ -99,9 +101,8 @@ export function GroupDetailPage() {
     return (
       <div className="p-4 max-w-4xl mx-auto pb-24">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-          <p className="text-sm font-semibold text-ink">
-            Guruh topilmadi
-          </p>
+          <div className="text-4xl">❌</div>
+          <p className="text-sm font-semibold text-ink">Guruh topilmadi</p>
           <p className="text-xs text-ink-muted">
             {(error as any)?.response?.data?.message ||
               (error as any)?.message ||
@@ -125,6 +126,7 @@ export function GroupDetailPage() {
   const members = group.members ?? [];
   const memberCount = group._count?.members ?? members.length;
   const assignmentCount = group._count?.assignments ?? 0;
+  const posterFullUrl = group.posterUrl ? getFullUrl(group.posterUrl) : null;
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
@@ -140,42 +142,73 @@ export function GroupDetailPage() {
         ← Orqaga
       </button>
 
-      {/* ============ HEADER ============ */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md space-y-3">
-        <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
-          {group.name}
-        </h1>
-
-        {group.description && (
-          <p className="text-xs text-ink-muted leading-relaxed">
-            {group.description}
-          </p>
+      {/* ============ POSTER HERO ============ */}
+      <div className="relative rounded-3xl overflow-hidden border border-white/5 shadow-lg">
+        {/* Poster */}
+        {posterFullUrl ? (
+          <div className="relative w-full h-56 sm:h-64">
+            <img
+              src={posterFullUrl}
+              alt={group.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          </div>
+        ) : (
+          <div className="w-full h-40 bg-gradient-to-br from-gold/20 via-gold/5 to-teal/10 flex items-center justify-center text-6xl">
+            📁
+          </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {teacherName && (
-            <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-              👤 {teacherName}
-            </span>
+        {/* Title overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
+          <h1 className="font-display text-2xl sm:text-3xl text-white break-words drop-shadow-lg">
+            {group.name}
+          </h1>
+          {group.description && (
+            <p className="text-xs text-white/80 leading-relaxed line-clamp-2">
+              {group.description}
+            </p>
           )}
-          <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            👥 {memberCount} a'zo
-          </span>
-          <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            📚 {assignmentCount} material
-          </span>
+        </div>
+      </div>
+
+      {/* ============ META ============ */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+          <p className="text-[10px] text-ink-muted uppercase tracking-wider">
+            A'zolar
+          </p>
+          <p className="text-lg font-display text-gold mt-1 tabular-nums">
+            {memberCount}
+          </p>
+        </div>
+        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+          <p className="text-[10px] text-ink-muted uppercase tracking-wider">
+            Materiallar
+          </p>
+          <p className="text-lg font-display text-teal mt-1 tabular-nums">
+            {assignmentCount}
+          </p>
+        </div>
+        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+          <p className="text-[10px] text-ink-muted uppercase tracking-wider">
+            Ustoz
+          </p>
+          <p className="text-xs font-medium text-ink mt-1.5 truncate">
+            {teacherName || '—'}
+          </p>
         </div>
       </div>
 
       {/* ============ MEMBERS ============ */}
       <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-ink">
-            Guruh a'zolari
+          <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+            <span>👥</span>
+            <span>Guruh a'zolari</span>
           </h2>
-          <span className="text-xs text-ink-muted">
-            {memberCount} ta
-          </span>
+          <span className="text-xs text-ink-muted">{memberCount} ta</span>
         </div>
 
         {members.length === 0 ? (
@@ -197,9 +230,9 @@ export function GroupDetailPage() {
               return (
                 <div
                   key={m.id}
-                  className="flex items-center gap-3 p-2.5 bg-surface/30 rounded-2xl"
+                  className="flex items-center gap-3 p-2.5 bg-surface/30 rounded-2xl hover:bg-surface/50 transition-colors"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-gold/10 text-gold flex items-center justify-center font-display text-sm shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold/20 to-teal/20 text-gold flex items-center justify-center font-display text-sm shrink-0">
                     {initial}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -225,13 +258,15 @@ export function GroupDetailPage() {
         )}
       </section>
 
-      {/* ============ PLACEHOLDER: Materials + Tests ============ */}
+      {/* ============ MATERIALS PLACEHOLDER ============ */}
       <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
-        <h2 className="text-sm font-semibold text-ink">
-          Materiallar va testlar
+        <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+          <span>📚</span>
+          <span>Materiallar va testlar</span>
         </h2>
 
         <div className="text-center py-8 bg-surface/30 rounded-2xl border border-white/5">
+          <div className="text-3xl mb-2">📚</div>
           <p className="text-xs text-ink-muted">
             Materiallar va testlar tez orada qo'shiladi
           </p>

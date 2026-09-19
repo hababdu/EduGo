@@ -2,10 +2,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTelegram } from '../../hooks/useTelegram';
+import { getFullUrl } from '../../hooks/useImageUpload';
 import {
   useTeacherGroup,
   useTeacherAssignments,
-  type AssignmentItem,
 } from '../../hooks/useTeacherAssignments';
 
 /* ============================================================
@@ -87,7 +87,7 @@ export function TeacherGroupDetail() {
     return (
       <div className="p-4 max-w-4xl mx-auto space-y-4 pb-32">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-40 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-56 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
         <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
       </div>
     );
@@ -98,6 +98,7 @@ export function TeacherGroupDetail() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+          <div className="text-4xl">❌</div>
           <p className="text-sm font-semibold text-ink">Guruh topilmadi</p>
           <p className="text-xs text-ink-muted">
             {(groupError as any)?.response?.data?.message ||
@@ -121,46 +122,56 @@ export function TeacherGroupDetail() {
 
   const members = group.members ?? [];
   const materialsCount = assignments?.length ?? 0;
+  const posterFullUrl = (group as any).posterUrl
+    ? getFullUrl((group as any).posterUrl)
+    : null;
 
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto pb-32 space-y-5">
-      {/* ============ HEADER ============ */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md space-y-3">
-        <button
-          type="button"
-          onClick={() => {
-            haptic('light');
-            navigate('/teacher/groups');
-          }}
-          className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
-        >
-          ← Orqaga
-        </button>
+      {/* ============ BACK ============ */}
+      <button
+        type="button"
+        onClick={() => {
+          haptic('light');
+          navigate('/teacher/groups');
+        }}
+        className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
+      >
+        ← Orqaga
+      </button>
 
-        <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
-          {group.name}
-        </h1>
-
-        {group.description && (
-          <p className="text-xs text-ink-muted">{group.description}</p>
+      {/* ============ POSTER HERO ============ */}
+      <div className="relative rounded-3xl overflow-hidden border border-white/5 shadow-lg">
+        {posterFullUrl ? (
+          <div className="relative w-full h-56 sm:h-64">
+            <img
+              src={posterFullUrl}
+              alt={group.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          </div>
+        ) : (
+          <div className="w-full h-40 bg-gradient-to-br from-gold/20 via-gold/5 to-teal/10 flex items-center justify-center text-6xl">
+            📁
+          </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            👥 {groupStats.studentsCount} ta talaba
-          </span>
-          <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            ✅ {groupStats.activeCount} ta faol
-          </span>
-          <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-            📚 {materialsCount} ta material
-          </span>
+        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
+          <h1 className="font-display text-2xl sm:text-3xl text-white break-words drop-shadow-lg">
+            {group.name}
+          </h1>
+          {group.description && (
+            <p className="text-xs text-white/80 leading-relaxed line-clamp-2">
+              {group.description}
+            </p>
+          )}
         </div>
       </div>
 
       {/* ============ STATS ============ */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-gradient-to-br from-gold/10 to-surface/20 p-4 rounded-3xl border border-white/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             O'rtacha ball
           </span>
@@ -168,7 +179,7 @@ export function TeacherGroupDetail() {
             {groupStats.avg}
           </p>
         </div>
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-gradient-to-br from-teal/10 to-surface/20 p-4 rounded-3xl border border-white/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             Jami ball
           </span>
@@ -219,7 +230,7 @@ export function TeacherGroupDetail() {
         </button>
       </div>
 
-      {/* ============ TAB: STUDENTS (READ-ONLY) ============ */}
+      {/* ============ TAB: STUDENTS ============ */}
       {activeTab === 'students' && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-ink-muted">
@@ -228,6 +239,7 @@ export function TeacherGroupDetail() {
 
           {members.length === 0 ? (
             <div className="text-center py-12 bg-surface/20 rounded-3xl border border-white/5">
+              <div className="text-4xl mb-2">👥</div>
               <p className="text-xs text-ink-muted">
                 Bu guruhda hozircha talabalar yo'q.
               </p>
@@ -236,13 +248,10 @@ export function TeacherGroupDetail() {
             <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
               {members.map((m: any) => {
                 const s = m.student || {};
-                const firstName = s.firstName || '';
-                const lastName = s.lastName || '';
                 const fullName =
-                  `${firstName} ${lastName}`.trim() ||
+                  `${s.firstName || ''} ${s.lastName || ''}`.trim() ||
                   s.username ||
                   "Noma'lum talaba";
-
                 const initial = fullName[0]?.toUpperCase() || 'T';
                 const status = s.status || 'ACTIVE';
                 const statusColor =
@@ -258,12 +267,14 @@ export function TeacherGroupDetail() {
                     onClick={() => {
                       haptic('light');
                       navigate(
-                        `/teacher/groups/${groupId}/students/${s.id || m.studentId}`,
+                        `/teacher/groups/${groupId}/students/${
+                          s.id || m.studentId
+                        }`,
                       );
                     }}
                     className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors cursor-pointer"
                   >
-                    <div className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gold/20 to-teal/20 text-gold flex items-center justify-center font-display text-base shrink-0">
                       {initial}
                     </div>
 
@@ -283,7 +294,9 @@ export function TeacherGroupDetail() {
                         </span>
                       </div>
                       <p className="text-xs text-ink-muted truncate">
-                        {s.username ? `@${s.username}` : `ID: ${s.id || m.studentId}`}
+                        {s.username
+                          ? `@${s.username}`
+                          : `ID: ${s.id || m.studentId}`}
                         {s.studentProfile && (
                           <>
                             {' · '}
@@ -335,6 +348,7 @@ export function TeacherGroupDetail() {
             </div>
           ) : !assignments || assignments.length === 0 ? (
             <div className="text-center py-12 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+              <div className="text-4xl mb-2">📚</div>
               <p className="text-sm font-semibold text-ink">Materiallar yo'q</p>
               <p className="text-xs text-ink-muted">
                 Bu guruhga hali material biriktirilmagan
