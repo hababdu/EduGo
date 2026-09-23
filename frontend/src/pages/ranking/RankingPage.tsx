@@ -51,7 +51,6 @@ export function RankingPage() {
                     {entry.firstName}
                     {isSelf && <span className="text-xs text-gold ml-1.5">(siz)</span>}
                   </p>
-                  {entry.username && <p className="text-xs text-ink-muted">@{entry.username}</p>}
                 </div>
                 <span className="text-sm font-semibold tabular-nums">{entry.totalScore}</span>
               </div>
