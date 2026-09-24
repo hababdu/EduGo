@@ -47,6 +47,126 @@ const EMPTY_QUESTION: QuestionDraft = {
 };
 
 /* ============================================================
+   GROQ SOZLAMALARI
+   ============================================================ */
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
+const GROQ_MODEL = 'openai/gpt-oss-20b';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+/* ============================================================
+   AI GENERATSIYA FUNKSIYASI
+   ============================================================ */
+async function generateQuestionsWithAI(params: {
+  topic: string;
+  count: number;
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'MIXED';
+}): Promise<QuestionDraft[]> {
+  if (!GROQ_API_KEY) {
+    throw new Error('Groq API key kiritilmagan!');
+  }
+
+  const difficultyText =
+    params.difficulty === 'MIXED'
+      ? "oson, o'rta va qiyin aralash"
+      : params.difficulty === 'EASY'
+        ? 'oson'
+        : params.difficulty === 'MEDIUM'
+          ? "o'rta"
+          : 'qiyin';
+
+  const systemPrompt = `Sen o'zbek tilida test savollari tuzuvchi professional AI yordamchisan.
+Faqat toza JSON formatida javob ber. Hech qanday qo'shimcha matn, izoh yoki markdown yozma.
+Javob faqat JSON massiv bo'lsin.
+
+Har bir savol quyidagi struktura bo'yicha bo'lsin:
+{
+  "text": "savol matni",
+  "difficulty": "EASY" | "MEDIUM" | "HARD",
+  "points": 1,
+  "options": ["variant1", "variant2", "variant3", "variant4"],
+  "correctAnswerIndex": 0
+}
+
+Qoidalar:
+- Har bir savolda aniq 4 ta variant bo'lsin
+- To'g'ri javob indeksi 0 dan 3 gacha
+- Variantlar aniq, bir-biriga o'xshash bo'lmasin
+- Savollar mavzuga mos va o'zbek tilida bo'lsin
+- points qiymati 1 bo'lsin`;
+
+  const userPrompt = `Mavzu: "${params.topic}"
+Savollar soni: ${params.count}
+Qiyinlik darajasi: ${difficultyText}
+
+${params.count} ta test savolini JSON massiv ko'rinishida qaytar.`;
+
+  const response = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 4096,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `Xatolik: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const content = data.choices?.[0]?.message?.content?.trim();
+
+  if (!content) throw new Error('AI javob bermadi');
+
+  let parsed: any;
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    // Ba'zan model ```json ... ``` bilan o'rab beradi
+    const match = content.match(/\[[\s\S]*\]/);
+    if (match) {
+      parsed = JSON.parse(match[0]);
+    } else {
+      throw new Error('JSON formatida javob kelmadi');
+    }
+  }
+
+  const rawQuestions: any[] = Array.isArray(parsed)
+    ? parsed
+    : parsed.questions || parsed.data || [];
+
+  return rawQuestions
+    .map((q) => {
+      const options = Array.isArray(q.options)
+        ? q.options.map((o: any) => String(o).trim()).filter(Boolean)
+        : ['', ''];
+
+      return {
+        text: String(q.text || '').trim(),
+        difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty)
+          ? q.difficulty
+          : 'MEDIUM') as Difficulty,
+        points: Number(q.points) || 1,
+        options: options.length >= 2 ? options : ['', ''],
+        correctAnswerIndex: Math.max(
+          0,
+          Math.min(Number(q.correctAnswerIndex) || 0, options.length - 1),
+        ),
+      };
+    })
+    .filter((q) => q.text && q.options.length >= 2);
+}
+
+/* ============================================================
    HOOKS
    ============================================================ */
 function useTests() {
@@ -118,6 +238,14 @@ export function AdminTests() {
     { ...EMPTY_QUESTION },
   ]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+
+  /* ---------- AI state ---------- */
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiCount, setAiCount] = useState(5);
+  const [aiDifficulty, setAiDifficulty] = useState<
+    'EASY' | 'MEDIUM' | 'HARD' | 'MIXED'
+  >('MIXED');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   /* ---------- Filter ---------- */
   const filteredTests = useMemo<TestItem[]>(() => {
@@ -215,6 +343,45 @@ export function AdminTests() {
     });
   };
 
+  /* ---------- AI generatsiya ---------- */
+  const handleGenerateQuestions = async () => {
+    if (!aiTopic.trim()) {
+      hapticNotify('error');
+      toast('error', 'Mavzuni kiriting!');
+      return;
+    }
+
+    if (aiCount < 1 || aiCount > 20) {
+      hapticNotify('error');
+      toast('error', 'Savollar soni 1 dan 20 gacha bo‘lishi kerak!');
+      return;
+    }
+
+    setIsGenerating(true);
+    haptic('light');
+
+    try {
+      const generated = await generateQuestionsWithAI({
+        topic: aiTopic.trim(),
+        count: aiCount,
+        difficulty: aiDifficulty,
+      });
+
+      if (generated.length === 0) {
+        throw new Error('Hech qanday savol generatsiya qilinmadi');
+      }
+
+      setQuestions(generated);
+      hapticNotify('success');
+      toast('success', `${generated.length} ta savol muvaffaqiyatli yaratildi!`);
+    } catch (err: any) {
+      hapticNotify('error');
+      toast('error', err?.message || 'Generatsiya qilishda xatolik');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const resetForm = () => {
     setTitle('');
     setDescription('');
@@ -224,6 +391,9 @@ export function AdminTests() {
     setRandomAnswerOrder(false);
     setQuestions([{ ...EMPTY_QUESTION }]);
     setSelectedGroupIds([]);
+    setAiTopic('');
+    setAiCount(5);
+    setAiDifficulty('MIXED');
   };
 
   /* ---------- Submit ---------- */
@@ -267,7 +437,10 @@ export function AdminTests() {
       {
         onSuccess: () => {
           hapticNotify('success');
-          toast('success', 'Test muvaffaqiyatli yaratildi va guruhga biriktirildi!');
+          toast(
+            'success',
+            'Test muvaffaqiyatli yaratildi va guruhga biriktirildi!',
+          );
           setShowForm(false);
           resetForm();
         },
@@ -305,7 +478,7 @@ export function AdminTests() {
       handleSubmit,
       {
         loading: createTest.isPending,
-        disabled: createTest.isPending,
+        disabled: createTest.isPending || isGenerating,
       },
     );
     return () => {
@@ -315,6 +488,7 @@ export function AdminTests() {
   }, [
     showForm,
     createTest.isPending,
+    isGenerating,
     handleSubmit,
     showMainButton,
     hideMainButton,
@@ -376,8 +550,6 @@ export function AdminTests() {
               />
             </Field>
 
-            {/* ❌ FAN ID OLIB TASHLANDI */}
-
             <Field label="Tavsif (ixtiyoriy)">
               <textarea
                 value={description}
@@ -389,7 +561,7 @@ export function AdminTests() {
             </Field>
           </div>
 
-          {/* 👇 GURUHLARNI TANLASH */}
+          {/* GURUHLARNI TANLASH */}
           <div className="space-y-3 pt-4 border-t border-white/5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-semibold text-ink">
@@ -492,6 +664,75 @@ export function AdminTests() {
             />
           </div>
 
+          {/* ===== AI GENERATSIYA BLOKI ===== */}
+          <div className="space-y-3 pt-4 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
+              🤖 AI bilan savol yaratish
+            </h3>
+
+            <Field label="Mavzu / fan nomi">
+              <input
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="Masalan: Algebra — kvadrat tenglamalar"
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+                disabled={isGenerating}
+              />
+            </Field>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Savollar soni">
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={aiCount}
+                  onChange={(e) => setAiCount(Number(e.target.value))}
+                  className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+                  disabled={isGenerating}
+                />
+              </Field>
+
+              <Field label="Qiyinlik">
+                <select
+                  value={aiDifficulty}
+                  onChange={(e) =>
+                    setAiDifficulty(
+                      e.target.value as 'EASY' | 'MEDIUM' | 'HARD' | 'MIXED',
+                    )
+                  }
+                  className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
+                  disabled={isGenerating}
+                >
+                  <option value="MIXED">Aralash</option>
+                  <option value="EASY">Oson</option>
+                  <option value="MEDIUM">O'rta</option>
+                  <option value="HARD">Qiyin</option>
+                </select>
+              </Field>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGenerateQuestions}
+              disabled={isGenerating || !aiTopic.trim()}
+              className="w-full text-sm bg-gold/20 text-gold border border-gold/30 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+                  Generatsiya qilinmoqda...
+                </>
+              ) : (
+                '✨ Savollarni generatsiya qilish'
+              )}
+            </button>
+
+            <p className="text-[10px] text-ink-muted text-center">
+              Generatsiya qilingan savollarni keyin tahrirlashingiz mumkin
+            </p>
+          </div>
+
           {/* Savollar */}
           <div className="space-y-4 pt-4 border-t border-white/5">
             <div className="flex items-center justify-between">
@@ -501,7 +742,8 @@ export function AdminTests() {
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform"
+                disabled={isGenerating}
+                className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
               >
                 + Savol
               </button>
