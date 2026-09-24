@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 
@@ -6,147 +6,241 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  timestamp: string;
+  timestamp: Date;
 }
+
+// ========== GROQ SOZLAMALARI ==========
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
+const GROQ_MODEL = 'openai/gpt-oss-20b';
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 export function AdminQuestions() {
   const { haptic, hapticNotify } = useTelegram();
-  const [prompt, setPrompt] = useState('');
-  const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: '1',
+      id: 'welcome',
       role: 'assistant',
-      content: "Assalomu alaykum! Men EduGo AI yordamchisiman. Sizga test savollarini generatsiya qilish, o'quv materiallarini tayyorlash yoki tahlil qilishda yordam berishga tayyorman.",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      content:
+        "Assalomu alaykum! 👋 Men Groq asosidagi AI yordamchingizman. Savollaringizni bering!",
+      timestamp: new Date(),
     },
   ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Avtomatik pastga scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   const handleSend = useCallback(async () => {
-    if (!prompt.trim() || loading) return;
+    const text = input.trim();
+    if (!text || isLoading) return;
 
-    haptic('medium');
-    const userText = prompt.trim();
-    setPrompt('');
+    if (!GROQ_API_KEY) {
+      toast('error', 'Groq API key kiritilmagan!');
+      return;
+    }
 
-    const newUserMessage: Message = {
+    haptic('light');
+
+    const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: userText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      content: text,
+      timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, newUserMessage]);
-    setLoading(true);
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
 
     try {
-      // Bu yerda kelgusida AI backend API ga so'rov ulanadi
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const history = [...messages, userMessage]
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+      const response = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                "Sen foydali, do'stona va aniq javob beradigan AI yordamchisan. Javoblarni o'zbek tilida ber. Qisqa va tushunarli bo'lishga harakat qil.",
+            },
+            ...history,
+          ],
+          temperature: 0.7,
+          max_tokens: 1024,
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData?.error?.message || `Xatolik: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const reply =
+        data.choices?.[0]?.message?.content?.trim() ||
+        "Kechirasiz, javob ololmadim.";
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `"${userText}" bo'yicha so'rovingiz qabul qilindi. AI integratsiyasi orqali tez orada to'liq javob qaytarish imkoniyati ishga tushadi!`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        content: reply,
+        timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
       hapticNotify('success');
-    } catch (err) {
+    } catch (err: any) {
+      console.error(err);
       hapticNotify('error');
-      toast('error', 'AI bilan bog\'lanishda xatolik yuz berdi');
+      toast('error', err?.message || 'AI bilan bog‘lanishda xatolik');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
-  }, [prompt, loading, haptic, hapticNotify]);
+  }, [input, isLoading, messages, haptic, hapticNotify]);
 
-  const quickPrompts = [
-    "🧪 Kimyo fanidan 5 ta test tuzish",
-    "📐 Matematika bo'yicha qiyin masalalar",
-    "📝 O'quvchilar uchun e'lon matni",
-  ];
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const handleClear = () => {
+    haptic('medium');
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: "Chat tozalandi. Yangi savol berishingiz mumkin! ✨",
+        timestamp: new Date(),
+      },
+    ]);
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px';
+  };
 
   return (
-    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-4 pb-32 flex flex-col h-[calc(100vh-70px)]">
+    <div className="flex flex-col h-[calc(100dvh-80px)] max-w-3xl mx-auto">
       {/* Header */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md shrink-0">
-        <h1 className="font-display text-xl sm:text-2xl text-ink">
-          EduGo AI Assistant 🤖
-        </h1>
-        <p className="text-xs text-ink-muted mt-1">
-          Sun'iy intellekt yordamida tezkor kontent yaratish va boshqarish
-        </p>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-surface/30 backdrop-blur-md sticky top-0 z-10">
+        <div>
+          <h1 className="font-display text-lg text-ink">AI Yordamchi</h1>
+          <p className="text-[11px] text-ink-muted">Groq · Llama 3.1 8B</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="text-xs text-ink-muted hover:text-gold px-3 py-1.5 rounded-xl bg-white/5 active:scale-95 transition"
+        >
+          Tozalash
+        </button>
       </div>
 
-      {/* Quick Prompts */}
-      <div className="flex gap-2 overflow-x-auto pb-1 shrink-0 scrollbar-none">
-        {quickPrompts.map((qp, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => {
-              haptic('light');
-              setPrompt(qp);
-            }}
-            className="shrink-0 bg-surface/30 hover:bg-surface/50 text-ink text-xs px-3.5 py-2 rounded-2xl border border-white/5 transition-colors"
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            {qp}
-          </button>
-        ))}
-      </div>
-
-      {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-        {messages.map((msg) => {
-          const isUser = msg.role === 'user';
-          return (
             <div
-              key={msg.id}
-              className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+              className={`max-w-[85%] rounded-3xl px-4 py-3 text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-gold text-base rounded-br-lg'
+                  : 'bg-surface/40 border border-white/10 text-ink rounded-bl-lg'
+              }`}
             >
-              <div
-                className={`max-w-[85%] p-4 rounded-3xl text-sm leading-relaxed ${
-                  isUser
-                    ? 'bg-gold text-base rounded-br-sm'
-                    : 'bg-surface/30 text-ink border border-white/5 rounded-bl-sm backdrop-blur-md'
+              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+              <p
+                className={`text-[10px] mt-1.5 ${
+                  msg.role === 'user' ? 'text-base/60' : 'text-ink-muted'
                 }`}
               >
-                <p>{msg.content}</p>
-                <span className={`text-[10px] mt-1.5 block opacity-60 ${isUser ? 'text-right' : 'text-left'}`}>
-                  {msg.timestamp}
-                </span>
-              </div>
+                {msg.timestamp.toLocaleTimeString('uz-UZ', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
             </div>
-          );
-        })}
+          </div>
+        ))}
 
-        {loading && (
-          <div className="flex items-start">
-            <div className="bg-surface/30 p-4 rounded-3xl rounded-bl-sm border border-white/5 backdrop-blur-md animate-pulse">
-              <p className="text-xs text-ink-muted">AI o'ylamoqda...</p>
+        {/* Typing indicator */}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-surface/40 border border-white/10 rounded-3xl rounded-bl-lg px-5 py-3.5">
+              <div className="flex gap-1.5">
+                <span className="w-2 h-2 bg-ink-muted rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-2 h-2 bg-ink-muted rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-2 h-2 bg-ink-muted rounded-full animate-bounce [animation-delay:300ms]" />
+              </div>
             </div>
           </div>
         )}
+
+        <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Box */}
-      <div className="flex gap-2 bg-surface/20 p-2 rounded-3xl border border-white/5 backdrop-blur-md shrink-0">
-        <input
-          type="text"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="AI ga savol bering yoki vazifa yozing..."
-          className="flex-1 bg-transparent px-4 py-2.5 text-sm outline-none text-ink placeholder:text-ink-faint"
-        />
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={loading || !prompt.trim()}
-          className="bg-gold text-base px-5 py-2.5 rounded-2xl font-semibold text-xs active:scale-[0.98] transition-transform disabled:opacity-50"
-        >
-          Yuborish
-        </button>
+      {/* Input area */}
+      <div className="px-4 pb-4 pt-2 border-t border-white/5 bg-surface/20 backdrop-blur-md">
+        <div className="flex items-end gap-2 bg-surface/40 border border-white/10 rounded-3xl px-3 py-2">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
+            placeholder="Savolingizni yozing..."
+            rows={1}
+            disabled={isLoading}
+            className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted outline-none resize-none max-h-[140px] py-2.5 px-1 leading-relaxed disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="shrink-0 w-11 h-11 rounded-2xl bg-gold text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40 disabled:active:scale-100 shadow-lg shadow-gold/20"
+          >
+            {isLoading ? (
+              <span className="w-5 h-5 border-2 border-base/30 border-t-base rounded-full animate-spin" />
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-5 h-5"
+              >
+                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+              </svg>
+            )}
+          </button>
+        </div>
+        <p className="text-[10px] text-ink-muted text-center mt-2">
+          Enter — yuborish · Shift+Enter — yangi qator
+        </p>
       </div>
     </div>
   );
