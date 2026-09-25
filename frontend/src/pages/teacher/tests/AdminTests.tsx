@@ -1,15 +1,18 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusBadge } from '../../../components/admin/content/StatusBadge';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import { apiFetch } from '../../../lib/api-client';
+import { generateQuestions } from '../../../lib/ai-service';
+import { useAI } from '../../../hooks/useAI';
 
 /* ============================================================
    TYPES
    ============================================================ */
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
+type DifficultyInput = Difficulty | 'MIXED';
 
 interface QuestionDraft {
   text: string;
@@ -45,126 +48,6 @@ const EMPTY_QUESTION: QuestionDraft = {
   options: ['', ''],
   correctAnswerIndex: 0,
 };
-
-/* ============================================================
-   GROQ SOZLAMALARI
-   ============================================================ */
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY || '';
-const GROQ_MODEL = 'openai/gpt-oss-20b';
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
-/* ============================================================
-   AI GENERATSIYA FUNKSIYASI
-   ============================================================ */
-async function generateQuestionsWithAI(params: {
-  topic: string;
-  count: number;
-  difficulty: 'EASY' | 'MEDIUM' | 'HARD' | 'MIXED';
-}): Promise<QuestionDraft[]> {
-  if (!GROQ_API_KEY) {
-    throw new Error('Groq API key kiritilmagan!');
-  }
-
-  const difficultyText =
-    params.difficulty === 'MIXED'
-      ? "oson, o'rta va qiyin aralash"
-      : params.difficulty === 'EASY'
-        ? 'oson'
-        : params.difficulty === 'MEDIUM'
-          ? "o'rta"
-          : 'qiyin';
-
-  const systemPrompt = `Sen o'zbek tilida test savollari tuzuvchi professional AI yordamchisan.
-Faqat toza JSON formatida javob ber. Hech qanday qo'shimcha matn, izoh yoki markdown yozma.
-Javob faqat JSON massiv bo'lsin.
-
-Har bir savol quyidagi struktura bo'yicha bo'lsin:
-{
-  "text": "savol matni",
-  "difficulty": "EASY" | "MEDIUM" | "HARD",
-  "points": 1,
-  "options": ["variant1", "variant2", "variant3", "variant4"],
-  "correctAnswerIndex": 0
-}
-
-Qoidalar:
-- Har bir savolda aniq 4 ta variant bo'lsin
-- To'g'ri javob indeksi 0 dan 3 gacha
-- Variantlar aniq, bir-biriga o'xshash bo'lmasin
-- Savollar mavzuga mos va o'zbek tilida bo'lsin
-- points qiymati 1 bo'lsin`;
-
-  const userPrompt = `Mavzu: "${params.topic}"
-Savollar soni: ${params.count}
-Qiyinlik darajasi: ${difficultyText}
-
-${params.count} ta test savolini JSON massiv ko'rinishida qaytar.`;
-
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: GROQ_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 4096,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Xatolik: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content?.trim();
-
-  if (!content) throw new Error('AI javob bermadi');
-
-  let parsed: any;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    // Ba'zan model ```json ... ``` bilan o'rab beradi
-    const match = content.match(/\[[\s\S]*\]/);
-    if (match) {
-      parsed = JSON.parse(match[0]);
-    } else {
-      throw new Error('JSON formatida javob kelmadi');
-    }
-  }
-
-  const rawQuestions: any[] = Array.isArray(parsed)
-    ? parsed
-    : parsed.questions || parsed.data || [];
-
-  return rawQuestions
-    .map((q) => {
-      const options = Array.isArray(q.options)
-        ? q.options.map((o: any) => String(o).trim()).filter(Boolean)
-        : ['', ''];
-
-      return {
-        text: String(q.text || '').trim(),
-        difficulty: (['EASY', 'MEDIUM', 'HARD'].includes(q.difficulty)
-          ? q.difficulty
-          : 'MEDIUM') as Difficulty,
-        points: Number(q.points) || 1,
-        options: options.length >= 2 ? options : ['', ''],
-        correctAnswerIndex: Math.max(
-          0,
-          Math.min(Number(q.correctAnswerIndex) || 0, options.length - 1),
-        ),
-      };
-    })
-    .filter((q) => q.text && q.options.length >= 2);
-}
 
 /* ============================================================
    HOOKS
@@ -242,10 +125,10 @@ export function AdminTests() {
   /* ---------- AI state ---------- */
   const [aiTopic, setAiTopic] = useState('');
   const [aiCount, setAiCount] = useState(5);
-  const [aiDifficulty, setAiDifficulty] = useState<
-    'EASY' | 'MEDIUM' | 'HARD' | 'MIXED'
-  >('MIXED');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiDifficulty, setAiDifficulty] =
+    useState<DifficultyInput>('MIXED');
+
+  const generateAI = useAI(generateQuestions);
 
   /* ---------- Filter ---------- */
   const filteredTests = useMemo<TestItem[]>(() => {
@@ -353,33 +236,32 @@ export function AdminTests() {
 
     if (aiCount < 1 || aiCount > 20) {
       hapticNotify('error');
-      toast('error', 'Savollar soni 1 dan 20 gacha bo‘lishi kerak!');
+      toast('error', "Savollar soni 1 dan 20 gacha bo'lishi kerak!");
       return;
     }
 
-    setIsGenerating(true);
     haptic('light');
 
-    try {
-      const generated = await generateQuestionsWithAI({
-        topic: aiTopic.trim(),
-        count: aiCount,
-        difficulty: aiDifficulty,
-      });
+    const generated = await generateAI.run({
+      topic: aiTopic.trim(),
+      count: aiCount,
+      difficulty: aiDifficulty,
+    });
 
-      if (generated.length === 0) {
-        throw new Error('Hech qanday savol generatsiya qilinmadi');
-      }
-
-      setQuestions(generated);
-      hapticNotify('success');
-      toast('success', `${generated.length} ta savol muvaffaqiyatli yaratildi!`);
-    } catch (err: any) {
+    if (!generated) {
       hapticNotify('error');
-      toast('error', err?.message || 'Generatsiya qilishda xatolik');
-    } finally {
-      setIsGenerating(false);
+      return;
     }
+
+    if (generated.length === 0) {
+      hapticNotify('error');
+      toast('error', 'Hech qanday savol generatsiya qilinmadi');
+      return;
+    }
+
+    setQuestions(generated);
+    hapticNotify('success');
+    toast('success', `${generated.length} ta savol muvaffaqiyatli yaratildi!`);
   };
 
   const resetForm = () => {
@@ -439,7 +321,7 @@ export function AdminTests() {
           hapticNotify('success');
           toast(
             'success',
-            'Test muvaffaqiyatli yaratildi va guruhga biriktirildi!',
+            "Test muvaffaqiyatli yaratildi va guruhga biriktirildi!",
           );
           setShowForm(false);
           resetForm();
@@ -478,7 +360,7 @@ export function AdminTests() {
       handleSubmit,
       {
         loading: createTest.isPending,
-        disabled: createTest.isPending || isGenerating,
+        disabled: createTest.isPending || generateAI.isLoading,
       },
     );
     return () => {
@@ -488,7 +370,7 @@ export function AdminTests() {
   }, [
     showForm,
     createTest.isPending,
-    isGenerating,
+    generateAI.isLoading,
     handleSubmit,
     showMainButton,
     hideMainButton,
@@ -676,7 +558,7 @@ export function AdminTests() {
                 onChange={(e) => setAiTopic(e.target.value)}
                 placeholder="Masalan: Algebra — kvadrat tenglamalar"
                 className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                disabled={isGenerating}
+                disabled={generateAI.isLoading}
               />
             </Field>
 
@@ -689,7 +571,7 @@ export function AdminTests() {
                   value={aiCount}
                   onChange={(e) => setAiCount(Number(e.target.value))}
                   className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                  disabled={isGenerating}
+                  disabled={generateAI.isLoading}
                 />
               </Field>
 
@@ -697,12 +579,10 @@ export function AdminTests() {
                 <select
                   value={aiDifficulty}
                   onChange={(e) =>
-                    setAiDifficulty(
-                      e.target.value as 'EASY' | 'MEDIUM' | 'HARD' | 'MIXED',
-                    )
+                    setAiDifficulty(e.target.value as DifficultyInput)
                   }
                   className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
-                  disabled={isGenerating}
+                  disabled={generateAI.isLoading}
                 >
                   <option value="MIXED">Aralash</option>
                   <option value="EASY">Oson</option>
@@ -715,10 +595,10 @@ export function AdminTests() {
             <button
               type="button"
               onClick={handleGenerateQuestions}
-              disabled={isGenerating || !aiTopic.trim()}
+              disabled={generateAI.isLoading || !aiTopic.trim()}
               className="w-full text-sm bg-gold/20 text-gold border border-gold/30 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
             >
-              {isGenerating ? (
+              {generateAI.isLoading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
                   Generatsiya qilinmoqda...
@@ -742,7 +622,7 @@ export function AdminTests() {
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                disabled={isGenerating}
+                disabled={generateAI.isLoading}
                 className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
               >
                 + Savol
@@ -907,8 +787,8 @@ export function AdminTests() {
       {hasActiveFilters && (
         <div className="flex items-center justify-between bg-surface/20 px-4 py-3 rounded-2xl border border-white/5">
           <span className="text-xs text-ink-muted">
-            Topildi: <strong className="text-ink">{filteredTests.length}</strong>{' '}
-            ta
+            Topildi:{' '}
+            <strong className="text-ink">{filteredTests.length}</strong> ta
           </span>
           <button
             type="button"
