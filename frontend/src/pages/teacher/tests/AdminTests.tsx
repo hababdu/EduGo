@@ -5,14 +5,13 @@ import { StatusBadge } from '../../../components/admin/content/StatusBadge';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import { apiFetch } from '../../../lib/api-client';
-import { generateQuestions } from '../../../lib/ai-service';
-import { useAI } from '../../../hooks/useAI';
+import type { GeneratedQuestion } from '../../../lib/ai-service';
+import { AIQuestionGenerator } from '../../../components/ai/AIQuestionGenerator';
 
 /* ============================================================
    TYPES
    ============================================================ */
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
-type DifficultyInput = Difficulty | 'MIXED';
 
 interface QuestionDraft {
   text: string;
@@ -122,13 +121,8 @@ export function AdminTests() {
   ]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
-  /* ---------- AI state ---------- */
-  const [aiTopic, setAiTopic] = useState('');
-  const [aiCount, setAiCount] = useState(5);
-  const [aiDifficulty, setAiDifficulty] =
-    useState<DifficultyInput>('MIXED');
-
-  const generateAI = useAI(generateQuestions);
+  /* ---------- AI modal ---------- */
+  const [showAIModal, setShowAIModal] = useState(false);
 
   /* ---------- Filter ---------- */
   const filteredTests = useMemo<TestItem[]>(() => {
@@ -226,42 +220,15 @@ export function AdminTests() {
     });
   };
 
-  /* ---------- AI generatsiya ---------- */
-  const handleGenerateQuestions = async () => {
-    if (!aiTopic.trim()) {
-      hapticNotify('error');
-      toast('error', 'Mavzuni kiriting!');
-      return;
-    }
-
-    if (aiCount < 1 || aiCount > 20) {
-      hapticNotify('error');
-      toast('error', "Savollar soni 1 dan 20 gacha bo'lishi kerak!");
-      return;
-    }
-
-    haptic('light');
-
-    const generated = await generateAI.run({
-      topic: aiTopic.trim(),
-      count: aiCount,
-      difficulty: aiDifficulty,
+  /* ---------- AI modal natijasini qabul qilish ---------- */
+  const handleAIAccept = (generated: GeneratedQuestion[]) => {
+    setQuestions((prev) => {
+      // Bo'sh, hali to'ldirilmagan qoralama savollarni tashlab, AI savollarini qo'shamiz
+      const nonEmpty = prev.filter((q) => q.text.trim() !== '');
+      return [...nonEmpty, ...generated];
     });
-
-    if (!generated) {
-      hapticNotify('error');
-      return;
-    }
-
-    if (generated.length === 0) {
-      hapticNotify('error');
-      toast('error', 'Hech qanday savol generatsiya qilinmadi');
-      return;
-    }
-
-    setQuestions(generated);
     hapticNotify('success');
-    toast('success', `${generated.length} ta savol muvaffaqiyatli yaratildi!`);
+    toast('success', `${generated.length} ta savol testga qo'shildi!`);
   };
 
   const resetForm = () => {
@@ -273,9 +240,6 @@ export function AdminTests() {
     setRandomAnswerOrder(false);
     setQuestions([{ ...EMPTY_QUESTION }]);
     setSelectedGroupIds([]);
-    setAiTopic('');
-    setAiCount(5);
-    setAiDifficulty('MIXED');
   };
 
   /* ---------- Submit ---------- */
@@ -360,7 +324,7 @@ export function AdminTests() {
       handleSubmit,
       {
         loading: createTest.isPending,
-        disabled: createTest.isPending || generateAI.isLoading,
+        disabled: createTest.isPending,
       },
     );
     return () => {
@@ -370,7 +334,6 @@ export function AdminTests() {
   }, [
     showForm,
     createTest.isPending,
-    generateAI.isLoading,
     handleSubmit,
     showMainButton,
     hideMainButton,
@@ -546,71 +509,18 @@ export function AdminTests() {
             />
           </div>
 
-          {/* ===== AI GENERATSIYA BLOKI ===== */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-              🤖 AI bilan savol yaratish
-            </h3>
-
-            <Field label="Mavzu / fan nomi">
-              <input
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="Masalan: Algebra — kvadrat tenglamalar"
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                disabled={generateAI.isLoading}
-              />
-            </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Savollar soni">
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={aiCount}
-                  onChange={(e) => setAiCount(Number(e.target.value))}
-                  className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                  disabled={generateAI.isLoading}
-                />
-              </Field>
-
-              <Field label="Qiyinlik">
-                <select
-                  value={aiDifficulty}
-                  onChange={(e) =>
-                    setAiDifficulty(e.target.value as DifficultyInput)
-                  }
-                  className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
-                  disabled={generateAI.isLoading}
-                >
-                  <option value="MIXED">Aralash</option>
-                  <option value="EASY">Oson</option>
-                  <option value="MEDIUM">O'rta</option>
-                  <option value="HARD">Qiyin</option>
-                </select>
-              </Field>
-            </div>
-
+          {/* ===== AI GENERATSIYA — modal ochuvchi tugma ===== */}
+          <div className="pt-4 border-t border-white/5">
             <button
               type="button"
-              onClick={handleGenerateQuestions}
-              disabled={generateAI.isLoading || !aiTopic.trim()}
-              className="w-full text-sm bg-gold/20 text-gold border border-gold/30 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+              onClick={() => {
+                haptic('light');
+                setShowAIModal(true);
+              }}
+              className="w-full text-sm bg-gold/10 text-gold border border-gold/25 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
             >
-              {generateAI.isLoading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                  Generatsiya qilinmoqda...
-                </>
-              ) : (
-                '✨ Savollarni generatsiya qilish'
-              )}
+              ✨ AI bilan savol yaratish
             </button>
-
-            <p className="text-[10px] text-ink-muted text-center">
-              Generatsiya qilingan savollarni keyin tahrirlashingiz mumkin
-            </p>
           </div>
 
           {/* Savollar */}
@@ -622,8 +532,7 @@ export function AdminTests() {
               <button
                 type="button"
                 onClick={handleAddQuestion}
-                disabled={generateAI.isLoading}
-                className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
+                className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform"
               >
                 + Savol
               </button>
@@ -853,6 +762,12 @@ export function AdminTests() {
           ))}
         </div>
       )}
+
+      <AIQuestionGenerator
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        onAccept={handleAIAccept}
+      />
     </div>
   );
 }

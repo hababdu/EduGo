@@ -39,6 +39,7 @@ export interface SubmitResult {
 export function useTestSession(testId: string) {
   const [session, setSession] = useState<TestSessionData | null>(null);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
+  const [textAnswers, setTextAnswers] = useState<Record<string, string>>({});
   const [remaining, setRemaining] = useState(0);
   const [status, setStatus] = useState<'loading' | 'active' | 'submitted' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -51,10 +52,13 @@ export function useTestSession(testId: string) {
         setSession(data);
         setRemaining(data.remainingSeconds);
         const initial: Record<string, string[]> = {};
+        const initialText: Record<string, string> = {};
         data.savedAnswers?.forEach((a) => {
           initial[a.questionId] = a.selectedOptionIds;
+          if (a.textAnswer) initialText[a.questionId] = a.textAnswer;
         });
         setAnswers(initial);
+        setTextAnswers(initialText);
         setStatus('active');
       })
       .catch((err) => {
@@ -100,6 +104,21 @@ export function useTestSession(testId: string) {
     [testId],
   );
 
+  // TEXT_ANSWER turidagi savollar uchun — alohida `textAnswer` maydoni bilan
+  // yuboriladi (backend savedAnswers'da buni alohida saqlaydi)
+  const submitTextAnswer = useCallback(
+    (questionId: string, text: string) => {
+      setTextAnswers((prev) => ({ ...prev, [questionId]: text }));
+      apiFetch(`/api/v1/tests/${testId}/answer`, {
+        method: 'POST',
+        body: JSON.stringify({ questionId, textAnswer: text, selectedOptionIds: [] }),
+      }).catch(() => {
+        /* tarmoq xatosi — keyingi urinishda qayta yuboriladi, javob lokal state'da saqlangan */
+      });
+    },
+    [testId],
+  );
+
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
     submittingRef.current = true;
@@ -124,5 +143,16 @@ export function useTestSession(testId: string) {
     }
   }, [remaining, status, submit]);
 
-  return { session, answers, remaining, status, errorMessage, result, selectAnswer, submit };
+  return {
+    session,
+    answers,
+    textAnswers,
+    remaining,
+    status,
+    errorMessage,
+    result,
+    selectAnswer,
+    submitTextAnswer,
+    submit,
+  };
 }

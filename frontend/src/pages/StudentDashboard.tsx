@@ -1,4 +1,5 @@
 // src/pages/StudentDashboard.tsx
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
@@ -10,6 +11,7 @@ import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
 import { AchievementsRow } from '../components/dashboard/AchievementsRow';
 import { SubjectScoreList } from '../components/dashboard/SubjectScoreList';
+import { AITutorChat } from '../components/ai/AITutorChat';
 
 /* ============================================================
    BACKEND RESPONSE TIPI (dashboard.service.ts)
@@ -68,6 +70,7 @@ function useStudentDashboard() {
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { haptic } = useTelegram();
+  const [showTutor, setShowTutor] = useState(false);
 
   const { data, isLoading, error } = useStudentDashboard();
 
@@ -75,6 +78,14 @@ export function StudentDashboard() {
   const { data: notifications } = useNotifications();
   const unreadCount =
     notifications?.filter((n) => !n.isRead).length ?? 0;
+
+  // So'nggi natijalardan zaif mavzularni chiqarib olamiz (repetitor shularga urg'u beradi)
+  const weakTopics = useMemo(() => {
+    if (!data?.recentResults) return [];
+    return data.recentResults
+      .filter((r) => !r.passed || r.percent < 60)
+      .map((r) => r.testTitle);
+  }, [data?.recentResults]);
 
   /* ---------- Loading ---------- */
   if (isLoading) {
@@ -156,6 +167,29 @@ export function StudentDashboard() {
         unreadCount={unreadCount}
       />
 
+      {/* ============ AI REPETITOR ============ */}
+      <div className="px-5">
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            setShowTutor(true);
+          }}
+          className="w-full flex items-center gap-3 bg-gradient-to-r from-gold/15 to-gold/5 border border-gold/25 rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-transform"
+        >
+          <span className="text-2xl shrink-0">🎓</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">AI Repetitor</p>
+            <p className="text-xs text-ink-muted truncate">
+              {weakTopics.length > 0
+                ? `Savol bering yoki "${weakTopics[0]}" mavzusini birga ko'rib chiqamiz`
+                : "Har qanday savolingizga yordam beraman"}
+            </p>
+          </div>
+          <span className="text-gold text-sm shrink-0">→</span>
+        </button>
+      </div>
+
       {/* ============ STAT CHIPS — reyting, streak, fanlar ============ */}
       <StatChips
         rank={data.student.rank}
@@ -223,6 +257,13 @@ export function StudentDashboard() {
           </div>
         </section>
       )}
+
+      <AITutorChat
+        isOpen={showTutor}
+        onClose={() => setShowTutor(false)}
+        studentName={data.student.firstName}
+        weakTopics={weakTopics}
+      />
     </div>
   );
 }

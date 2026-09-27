@@ -327,7 +327,306 @@ Aynan ${params.count} ta savol qaytar.`,
 }
 
 /* ============================================================
-   3) CHAT (STREAMING)
+   3) BITTA SAVOLNI QAYTA GENERATSIYA QILISH
+   ("🔄 Qayta yaratish" tugmasi uchun — mavjud savollarga
+   o'xshamaydigan, yangi bitta savol qaytaradi)
+   ============================================================ */
+export async function generateSingleQuestion(params: {
+  topic: string;
+  difficulty: DifficultyInput;
+  avoidTexts?: string[];
+}): Promise<GeneratedQuestion> {
+  const difficultyText =
+    params.difficulty === 'MIXED'
+      ? "oson, o'rta yoki qiyin (o'zing tanla)"
+      : params.difficulty === 'EASY'
+        ? 'oson'
+        : params.difficulty === 'MEDIUM'
+          ? "o'rta"
+          : 'qiyin';
+
+  const avoidBlock =
+    params.avoidTexts && params.avoidTexts.length > 0
+      ? `\n\nBu savollarga o'xshash yoki takrorlanuvchi savol yozma, ulardan farqli va yangi bo'lsin:\n${params.avoidTexts
+          .map((t, i) => `${i + 1}. ${t}`)
+          .join('\n')}`
+      : '';
+
+  const content = await callAI({
+    systemPrompt: `Sen o'zbek tilida test savoli tuzuvchi professional AI yordamchisan.
+Faqat JSON qaytar:
+{
+  "text": "savol matni",
+  "difficulty": "EASY",
+  "points": 1,
+  "options": ["variant1", "variant2", "variant3", "variant4"],
+  "correctAnswerIndex": 0
+}
+Qoidalar:
+- Aynan 4 ta variant bo'lsin, aniq va bir-biriga o'xshamasin
+- correctAnswerIndex 0 dan 3 gacha
+- difficulty faqat "EASY" | "MEDIUM" | "HARD" bo'lsin`,
+    userPrompt: `Mavzu: "${params.topic}"\nQiyinlik: ${difficultyText}${avoidBlock}\n\nAynan 1 ta savol qaytar.`,
+    jsonMode: true,
+    temperature: 0.85,
+  });
+
+  const parsed = safeParseJSON<any>(content, /\{[\s\S]*\}/);
+
+  const options = Array.isArray(parsed.options)
+    ? parsed.options.map((o: any) => String(o).trim()).filter(Boolean)
+    : ['', '', '', ''];
+
+  const difficulty: Difficulty = ['EASY', 'MEDIUM', 'HARD'].includes(
+    parsed.difficulty,
+  )
+    ? parsed.difficulty
+    : 'MEDIUM';
+
+  return {
+    text: String(parsed.text || '').trim(),
+    difficulty,
+    points: Number(parsed.points) || 1,
+    options: options.length >= 2 ? options : ['', '', '', ''],
+    correctAnswerIndex: Math.max(
+      0,
+      Math.min(Number(parsed.correctAnswerIndex) || 0, options.length - 1),
+    ),
+  };
+}
+
+/* ============================================================
+   4) JAVOBNI AI YORDAMIDA BAHOLASH
+   (ochiq savol / insho / erkin matn javoblari uchun)
+   ============================================================ */
+export interface GradingResult {
+  score: number; // 0-100 oralig'ida foiz
+  isCorrect: boolean;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+}
+
+export async function gradeAnswer(params: {
+  question: string;
+  studentAnswer: string;
+  referenceAnswer?: string;
+}): Promise<GradingResult> {
+  const content = await callAI({
+    systemPrompt: `Sen o'zbek tilida ishlaydigan adolatli va rag'batlantiruvchi o'qituvchi-baholovchi AI'san.
+O'quvchining javobini baholaysan: mazmun, to'g'rilik va tushunish darajasiga qarab, imlo xatolariga unchalik qattiq qaramasdan.
+Faqat JSON qaytar:
+{
+  "score": 0-100 oralig'idagi son,
+  "isCorrect": true yoki false (score >= 60 bo'lsa true),
+  "feedback": "o'quvchiga qaratilgan, rag'batlantiruvchi, 2-3 gapli umumiy fikr",
+  "strengths": ["javobning kuchli tomoni", "..."],
+  "improvements": ["nimani yaxshilash kerak", "..."]
+}
+Qoidalar:
+- Har doim o'zbek tilida, iliq va hurmatli ohangda yoz
+- strengths va improvements — har biri 1-3 ta band, qisqa va aniq
+- Agar javob bo'sh yoki mavzuga aloqasiz bo'lsa, score past bo'lsin va buni feedback'da muloyimlik bilan tushuntir`,
+    userPrompt: `Savol: "${params.question}"
+${params.referenceAnswer ? `Namunaviy/kutilgan javob: "${params.referenceAnswer}"\n` : ''}
+O'quvchining javobi: "${params.studentAnswer}"`,
+    jsonMode: true,
+    temperature: 0.4,
+  });
+
+  const parsed = safeParseJSON<any>(content, /\{[\s\S]*\}/);
+
+  const score = Math.max(0, Math.min(100, Number(parsed.score) || 0));
+
+  return {
+    score,
+    isCorrect:
+      typeof parsed.isCorrect === 'boolean' ? parsed.isCorrect : score >= 60,
+    feedback: String(parsed.feedback || '').trim(),
+    strengths: Array.isArray(parsed.strengths)
+      ? parsed.strengths.map((s: any) => String(s).trim()).filter(Boolean)
+      : [],
+    improvements: Array.isArray(parsed.improvements)
+      ? parsed.improvements.map((s: any) => String(s).trim()).filter(Boolean)
+      : [],
+  };
+}
+
+/* ============================================================
+   5) SHAXSIYLASHTIRILGAN TAVSIYALAR
+   (o'quvchining test natijalari tarixiga qarab)
+   ============================================================ */
+export interface TopicRecommendation {
+  topic: string;
+  reason: string;
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+}
+
+export async function generateRecommendations(params: {
+  results: { topic: string; scorePercent: number }[];
+}): Promise<TopicRecommendation[]> {
+  const resultsText = params.results
+    .map((r) => `- ${r.topic}: ${r.scorePercent}%`)
+    .join('\n');
+
+  const content = await callAI({
+    systemPrompt: `Sen o'zbek tilida ishlaydigan ta'lim bo'yicha AI maslahatchisan.
+O'quvchining turli mavzulardagi test natijalarini ko'rib, qaysi mavzularni takrorlashi kerakligini tavsiya qilasan.
+Faqat JSON qaytar:
+{
+  "recommendations": [
+    { "topic": "mavzu nomi", "reason": "nega aynan shu mavzu (1 gap)", "priority": "HIGH" }
+  ]
+}
+Qoidalar:
+- Eng past natijali mavzularga HIGH, o'rtachalarga MEDIUM, yaxshi lekin mustahkamlash mumkin bo'lganlarga LOW ber
+- Faqat haqiqatan yordam kerak bo'lgan mavzularni qaytar (bo'sh massiv ham bo'lishi mumkin, agar hammasi a'lo bo'lsa)
+- Har bir reason qisqa, aniq va rag'batlantiruvchi bo'lsin`,
+    userPrompt: `O'quvchining mavzular bo'yicha natijalari:\n${resultsText}`,
+    jsonMode: true,
+    temperature: 0.5,
+  });
+
+  const parsed = safeParseJSON<{ recommendations?: any[] }>(
+    content,
+    /\{[\s\S]*\}/,
+  );
+
+  const list = Array.isArray(parsed.recommendations)
+    ? parsed.recommendations
+    : [];
+
+  return list
+    .map((r: any): TopicRecommendation => ({
+      topic: String(r.topic || '').trim(),
+      reason: String(r.reason || '').trim(),
+      priority: ['HIGH', 'MEDIUM', 'LOW'].includes(r.priority)
+        ? r.priority
+        : 'MEDIUM',
+    }))
+    .filter((r) => r.topic);
+}
+
+/* ============================================================
+   6) DARS REJASI GENERATSIYASI
+   (sarlavhadan tashqari — to'liq strukturaviy reja)
+   ============================================================ */
+export interface LessonStage {
+  title: string;
+  minutes: number;
+  description: string;
+}
+
+export interface LessonPlan {
+  objective: string;
+  stages: LessonStage[];
+  materials: string[];
+}
+
+export async function generateLessonPlan(params: {
+  topic: string;
+  durationMinutes: number;
+  level?: string;
+}): Promise<LessonPlan> {
+  const content = await callAI({
+    systemPrompt: `Sen o'zbek tilida ishlaydigan tajribali metodist-o'qituvchisan.
+Berilgan mavzu va davomiylik bo'yicha to'liq dars rejasini tuzasan.
+Faqat JSON qaytar:
+{
+  "objective": "darsning maqsadi (1-2 gap)",
+  "stages": [
+    { "title": "Kirish / motivatsiya", "minutes": 5, "description": "bosqichda nima qilinadi" }
+  ],
+  "materials": ["kerakli material yoki vosita"]
+}
+Qoidalar:
+- stages jami vaqti berilgan davomiylikka teng bo'lsin
+- Odatda: kirish, asosiy tushuntirish, amaliyot/mustaqil ish, mustahkamlash/yakun bosqichlari bo'lsin
+- Har bir description aniq va amalda qo'llash mumkin bo'lgan bo'lsin`,
+    userPrompt: `Mavzu: "${params.topic}"
+Davomiyligi: ${params.durationMinutes} daqiqa
+Daraja: ${params.level || 'umumiy'}`,
+    jsonMode: true,
+    temperature: 0.6,
+    maxTokens: 2048,
+  });
+
+  const parsed = safeParseJSON<any>(content, /\{[\s\S]*\}/);
+
+  const stages: LessonStage[] = Array.isArray(parsed.stages)
+    ? parsed.stages.map((s: any) => ({
+        title: String(s.title || '').trim(),
+        minutes: Number(s.minutes) || 0,
+        description: String(s.description || '').trim(),
+      }))
+    : [];
+
+  return {
+    objective: String(parsed.objective || '').trim(),
+    stages: stages.filter((s) => s.title),
+    materials: Array.isArray(parsed.materials)
+      ? parsed.materials.map((m: any) => String(m).trim()).filter(Boolean)
+      : [],
+  };
+}
+
+/* ============================================================
+   7) OTA-ONAGA / HISOBOT XABARI GENERATSIYASI
+   ============================================================ */
+export type ParentMessageTone = 'IJOBIY' | 'OGOHLANTIRISH' | 'NEYTRAL';
+
+export async function generateParentMessage(params: {
+  studentName: string;
+  context: string;
+  tone?: ParentMessageTone;
+}): Promise<string> {
+  const toneText =
+    params.tone === 'IJOBIY'
+      ? "quvonchli va maqtovga to'la"
+      : params.tone === 'OGOHLANTIRISH'
+        ? "xushmuomala, lekin jiddiylikni yetkazadigan"
+        : 'neytral va professional';
+
+  const content = await callAI({
+    systemPrompt: `Sen o'qituvchi nomidan ota-onalarga xabar yozadigan yordamchisan.
+Xabar o'zbek tilida, hurmatli va tushunarli bo'lsin. Faqat xabar matnini qaytar, JSON emas, boshqa hech narsa qo'shma.`,
+    userPrompt: `O'quvchi: ${params.studentName}
+Vaziyat: ${params.context}
+Ohang: ${toneText}
+
+Ota-onaga yuboriladigan qisqa xabar matnini yoz (3-5 gap, salomlashuv va imzo bilan tugatma — faqat asosiy matn).`,
+    temperature: 0.7,
+  });
+
+  return content.trim();
+}
+
+/* ============================================================
+   8) AI REPETITOR — tizim prompti generatori
+   (streamChatWithAI bilan birga ishlatiladi, systemPrompt sifatida)
+   ============================================================ */
+export function buildTutorSystemPrompt(params: {
+  studentName?: string;
+  weakTopics?: string[];
+}): string {
+  const nameLine = params.studentName
+    ? `O'quvchining ismi: ${params.studentName}.`
+    : '';
+
+  const weakLine =
+    params.weakTopics && params.weakTopics.length > 0
+      ? `Bu o'quvchi quyidagi mavzularda qiynalmoqda, imkon bo'lsa javoblaringda shularga urg'u ber: ${params.weakTopics.join(', ')}.`
+      : '';
+
+  return `Sen sabr-toqatli, rag'batlantiruvchi AI repetitorsan. ${nameLine}
+Vazifang — to'g'ridan-to'g'ri javobni aytib qo'ymasdan, o'quvchini fikrlashga yo'naltirish: yetakchi savollar ber, misollar bilan tushuntir, kichik qadamlarga bo'l.
+${weakLine}
+Javoblaring o'zbek tilida, qisqa va tushunarli bo'lsin. Agar o'quvchi juda qiynalsa, sekin-asta to'liqroq tushuntirishga o't.
+Hech qachon xafa qiluvchi yoki kamsituvchi ohangda yozma — doim ijobiy va qo'llab-quvvatlovchi bo'l.`;
+}
+
+/* ============================================================
+   9) CHAT (STREAMING)
    ============================================================ */
 export interface ChatMessage {
   role: 'user' | 'assistant';

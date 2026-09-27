@@ -49,6 +49,7 @@ import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import { ToastHost } from './components/ui/Toast';
+import { AIMascotProvider } from './components/ai/AIMascot';
 
 import apiClient, { setMemoryToken } from './api/client';
 
@@ -278,36 +279,38 @@ function StudentRoutes() {
 
   return (
     <>
-      <div className="min-h-screen pb-24">
-        <Routes>
-          {/* ============ ASOSIY ============ */}
-          <Route path="/" element={<StudentDashboard />} />
+      <AIMascotProvider>
+        <div className="min-h-screen pb-24">
+          <Routes>
+            {/* ============ ASOSIY ============ */}
+            <Route path="/" element={<StudentDashboard />} />
 
-          {/* ============ DARSLAR ============ */}
-          <Route path="/lessons" element={<LessonsPage />} />
-          <Route path="/lessons/:id" element={<LessonDetailPage />} />
+            {/* ============ DARSLAR ============ */}
+            <Route path="/lessons" element={<LessonsPage />} />
+            <Route path="/lessons/:id" element={<LessonDetailPage />} />
 
-          {/* ============ GURUHLAR ============ */}
-          <Route path="/groups" element={<GroupsPage />} />
-          <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+            {/* ============ GURUHLAR ============ */}
+            <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/groups/:groupId" element={<GroupDetailPage />} />
 
-          {/* ============ TESTLAR ============ */}
-          <Route path="/tests" element={<TestsPage />} />
-          <Route path="/tests/:testId" element={<TestTaking />} />
+            {/* ============ TESTLAR ============ */}
+            <Route path="/tests" element={<TestsPage />} />
+            <Route path="/tests/:testId" element={<TestTaking />} />
 
-          {/* ============ REYTING ============ */}
-          <Route path="/ranking" element={<RankingPage />} />
+            {/* ============ REYTING ============ */}
+            <Route path="/ranking" element={<RankingPage />} />
 
-          {/* ============ XABARLAR ============ */}
-          <Route path="/notifications" element={<NotificationsPage />} />
+            {/* ============ XABARLAR ============ */}
+            <Route path="/notifications" element={<NotificationsPage />} />
 
-          {/* ============ PROFIL ============ */}
-          <Route path="/profile" element={<ProfilePage />} />
+            {/* ============ PROFIL ============ */}
+            <Route path="/profile" element={<ProfilePage />} />
 
-          {/* ============ CATCH-ALL ============ */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            {/* ============ CATCH-ALL ============ */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </AIMascotProvider>
       {!hideBottomNav && <BottomNav />}
     </>
   );

@@ -8,8 +8,8 @@ import {
 } from '../../../hooks/useTeacherAssignments';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
-import { generateMaterial } from '../../../lib/ai-service';
-import { useAI } from '../../../hooks/useAI';
+import type { GeneratedMaterial } from '../../../lib/ai-service';
+import { AIMaterialGenerator } from '../../../components/ai/AIMaterialGenerator';
 
 /* ============================================================
    TYPES
@@ -97,10 +97,8 @@ export function TeacherAssignments() {
   const [selectedGroupFilter, setSelectedGroupFilter] = useState('');
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  /* ---------- AI state ---------- */
-  const [aiTopic, setAiTopic] = useState('');
-
-  const generateAI = useAI(generateMaterial);
+  /* ---------- AI modal ---------- */
+  const [showAIModal, setShowAIModal] = useState(false);
 
   const { data: groups, isLoading: groupsLoading } = useTeacherGroups();
   const { data: items, isLoading: itemsLoading } = useTeacherAssignments(
@@ -116,41 +114,22 @@ export function TeacherAssignments() {
 
   const resetForm = () => {
     setForm(EMPTY_FORM);
-    setAiTopic('');
   };
 
-  /* ---------- AI generatsiya ---------- */
-  const handleGenerateMaterial = async () => {
-    if (!aiTopic.trim()) {
-      hapticNotify('error');
-      toast('error', 'Mavzuni kiriting!');
-      return;
-    }
-
-    haptic('light');
-
-    const result = await generateAI.run({
-      topic: aiTopic.trim(),
-      category: form.assignmentCategory,
-    });
-
-    if (result) {
-      setForm((prev) => ({
-        ...prev,
-        title: result.title,
-        description: result.description,
-        contentType: 'VIDEO',
-        mediaUrl: result.youtubeSearchUrl,
-      }));
-
-      hapticNotify('success');
-      toast(
-        'success',
-        "Material generatsiya qilindi! Video qidiruv havolasi qo'yildi.",
-      );
-    } else {
-      hapticNotify('error');
-    }
+  /* ---------- AI modal natijasini qabul qilish ---------- */
+  const handleAIAccept = (result: GeneratedMaterial) => {
+    setForm((prev) => ({
+      ...prev,
+      title: result.title,
+      description: result.description,
+      contentType: 'VIDEO',
+      mediaUrl: result.youtubeSearchUrl,
+    }));
+    hapticNotify('success');
+    toast(
+      'success',
+      "Material tanlandi! Video qidiruv havolasi qo'yildi.",
+    );
   };
 
   /* ---------- Submit ---------- */
@@ -202,7 +181,7 @@ export function TeacherAssignments() {
       handleSubmit,
       {
         loading: createMutation.isPending,
-        disabled: createMutation.isPending || generateAI.isLoading,
+        disabled: createMutation.isPending,
       },
     );
 
@@ -213,7 +192,6 @@ export function TeacherAssignments() {
   }, [
     showForm,
     createMutation.isPending,
-    generateAI.isLoading,
     handleSubmit,
     showMainButton,
     hideMainButton,
@@ -312,43 +290,17 @@ export function TeacherAssignments() {
             </button>
           </div>
 
-          {/* ===== AI GENERATSIYA BLOKI ===== */}
-          <div className="space-y-3 p-4 rounded-2xl bg-gold/5 border border-gold/20">
-            <h3 className="text-sm font-semibold text-ink flex items-center gap-2">
-              🤖 AI bilan material yaratish
-            </h3>
-
-            <Field label="Mavzu">
-              <input
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="Masalan: Algebra — kvadrat tenglamalar"
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                disabled={generateAI.isLoading}
-              />
-            </Field>
-
-            <button
-              type="button"
-              onClick={handleGenerateMaterial}
-              disabled={generateAI.isLoading || !aiTopic.trim()}
-              className="w-full text-sm bg-gold/20 text-gold border border-gold/30 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
-            >
-              {generateAI.isLoading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
-                  Generatsiya qilinmoqda...
-                </>
-              ) : (
-                '✨ Sarlavha, tavsif va video qidiruv havolasini yaratish'
-              )}
-            </button>
-
-            <p className="text-[10px] text-ink-muted text-center">
-              AI sarlavha + tavsif yozadi va YouTube qidiruv havolasini qo'yadi.
-              Keyin o'zingiz eng yaxshi videoni tanlashingiz mumkin.
-            </p>
-          </div>
+          {/* ===== AI GENERATSIYA — modal ochuvchi tugma ===== */}
+          <button
+            type="button"
+            onClick={() => {
+              haptic('light');
+              setShowAIModal(true);
+            }}
+            className="w-full text-sm bg-gold/10 text-gold border border-gold/25 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+          >
+            ✨ AI bilan material yaratish
+          </button>
 
           <Field label="Material toifasi">
             <select
@@ -360,7 +312,6 @@ export function TeacherAssignments() {
                 )
               }
               className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              disabled={generateAI.isLoading}
             >
               <option value="LESSON">📖 Dars mavzusi</option>
               <option value="HOMEWORK">📝 Uy vazifasi</option>
@@ -375,7 +326,6 @@ export function TeacherAssignments() {
                 update('contentType', e.target.value as ContentType)
               }
               className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              disabled={generateAI.isLoading}
             >
               <option value="TEXT">📄 Matn</option>
               <option value="IMAGE">🖼️ Rasm</option>
@@ -389,7 +339,6 @@ export function TeacherAssignments() {
               value={form.selectedGroup}
               onChange={(e) => update('selectedGroup', e.target.value)}
               className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              disabled={generateAI.isLoading}
             >
               <option value="">Guruhni tanlang...</option>
               {(groups as Group[] | undefined)?.map((g) => (
@@ -406,7 +355,6 @@ export function TeacherAssignments() {
               onChange={(e) => update('title', e.target.value)}
               placeholder="Masalan: 3-mavzu uyga vazifa"
               className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              disabled={generateAI.isLoading}
             />
           </Field>
 
@@ -425,7 +373,6 @@ export function TeacherAssignments() {
                 onChange={(e) => update('mediaUrl', e.target.value)}
                 placeholder="https://..."
                 className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                disabled={generateAI.isLoading}
               />
               {form.contentType === 'VIDEO' &&
                 form.mediaUrl.includes('results?search_query') && (
@@ -445,7 +392,6 @@ export function TeacherAssignments() {
               placeholder="O'quvchilar bajarishi kerak bo'lgan shartlar..."
               rows={4}
               className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
-              disabled={generateAI.isLoading}
             />
           </Field>
 
@@ -591,6 +537,13 @@ export function TeacherAssignments() {
           })}
         </div>
       )}
+
+      <AIMaterialGenerator
+        isOpen={showAIModal}
+        onClose={() => setShowAIModal(false)}
+        initialCategory={form.assignmentCategory}
+        onAccept={handleAIAccept}
+      />
     </div>
   );
 }

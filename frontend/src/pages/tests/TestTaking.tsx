@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTestSession } from '../../hooks/useTestSession';
 import { haptic } from '../../lib/telegram';
+import { AIAnswerCheck } from '../../components/ai/AIAnswerCheck';
+import { useMascot } from '../../components/ai/AIMascot';
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -12,9 +14,19 @@ function formatTime(seconds: number) {
 export function TestTaking() {
   const { testId = '' } = useParams();
   const navigate = useNavigate();
-  const { session, answers, remaining, status, errorMessage, result, selectAnswer, submit } =
+  const { session, answers, textAnswers, remaining, status, errorMessage, result, selectAnswer, submitTextAnswer, submit } =
     useTestSession(testId);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [textDraft, setTextDraft] = useState('');
+
+  // Joriy savol TEXT_ANSWER bo'lsa, qoralamani saqlangan javobdan yuklaymiz
+  useEffect(() => {
+    if (!session) return;
+    const q = session.questions[currentIndex];
+    if (q && q.type === 'TEXT_ANSWER') {
+      setTextDraft(textAnswers[q.id] ?? '');
+    }
+  }, [session, currentIndex, textAnswers]);
 
   if (status === 'loading') {
     return (
@@ -81,22 +93,40 @@ export function TestTaking() {
       <div className="flex-1 px-5 py-6">
         <p className="text-lg leading-snug mb-6">{question.text}</p>
 
-        <div className="space-y-2.5">
-          {question.options.map((opt) => {
-            const isSelected = selected.includes(opt.id);
-            return (
-              <button
-                key={opt.id}
-                onClick={() => toggleOption(opt.id)}
-                className={`w-full text-left rounded-xl px-4 py-3.5 text-sm transition-colors ${
-                  isSelected ? 'bg-gold-soft border border-gold text-ink' : 'bg-surface border border-transparent'
-                }`}
-              >
-                {opt.text}
-              </button>
-            );
-          })}
-        </div>
+        {question.type === 'TEXT_ANSWER' ? (
+          <div className="space-y-3">
+            <textarea
+              value={textDraft}
+              onChange={(e) => setTextDraft(e.target.value)}
+              onBlur={() => submitTextAnswer(question.id, textDraft)}
+              placeholder="Javobingizni shu yerga yozing..."
+              rows={6}
+              className="w-full bg-surface rounded-xl px-4 py-3.5 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
+            />
+            <AIAnswerCheck question={question.text} answer={textDraft} />
+            <p className="text-[10px] text-ink-muted">
+              AI bahosi faqat sizga yordam uchun — rasmiy ball
+              o'qituvchi/tizim tomonidan qo'yiladi.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {question.options.map((opt) => {
+              const isSelected = selected.includes(opt.id);
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => toggleOption(opt.id)}
+                  className={`w-full text-left rounded-xl px-4 py-3.5 text-sm transition-colors ${
+                    isSelected ? 'bg-gold-soft border border-gold text-ink' : 'bg-surface border border-transparent'
+                  }`}
+                >
+                  {opt.text}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <footer className="sticky bottom-0 bg-base/95 backdrop-blur px-5 py-4 border-t border-white/5 flex gap-3">
@@ -137,6 +167,15 @@ function TestResultView({
   result: { score: number; maxScore: number; percent: number; passed: boolean; autoSubmitted: boolean };
   onDone: () => void;
 }) {
+  const { celebrate, comfort } = useMascot();
+
+  useEffect(() => {
+    if (result.passed) celebrate();
+    else comfort();
+    // Faqat natija birinchi ko'rsatilganda bir marta chaqiriladi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="h-screen flex items-center justify-center px-8 text-center">
       <div>
