@@ -10,34 +10,23 @@ import { MascotSVG, type MascotMood } from './MascotSVG';
 import { AITutorChat } from '../ai/AITutorChat';
 
 /* ============================================================
-   AI MASCOT — endi shunchaki dekorativ emas, haqiqiy AI
-   yordamchining "yuzi". Bosilsa — haqiqiy repetitor-chat ochiladi.
-   Real hodisalarga (test natijasi, streak, faollik) qarab AI o'zi
-   nima deyishni — hazil, maqtov yoki jiddiy tanbeh — hal qiladi.
+   AI MASCOT — Professional AI Yordamchi Ko'rinishi
    ============================================================ */
 
 const STORAGE_KEY = 'ai-mascot-enabled';
 
-// Faqat bekorchi vaqtda ko'rsatiladigan, hech qanday API chaqirmaydigan
-// arzon "jonlanish" hazillari — asosiy fikr-mulohaza har doim AI'dan keladi.
 const IDLE_JOKES = [
-  "Bugun ham bilim ovlaymizmi? 🎣",
-  "Miya mashqi vaqti keldimi? 🧠",
-  "Savolingiz bo'lsa — meni bosing, jonli gaplashamiz 🤖",
-  "5 daqiqa dam ol, keyin davom et 😉",
-  "Bugungi maqsad: kamida 1% yaxshiroq bo'lish 🚀",
+  "Salom! Bugun qaysi mavzuni muhokama qilamiz? 🤖",
+  "Yangi bilimlarni o'rganishga tayyormisiz? 🚀",
+  "Savolingiz bo'lsa, ustimga bosing — yordam beraman! 💡",
+  "Kichik tanaffusdan keyin yana davom etamiz 😉",
+  "Har kuni 1% oldinga intilamiz! 📈",
 ];
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/* ------------------------------------------------------------
-   Context — boshqa komponentlar shu orqali maskotga signal beradi:
-   celebrate/comfort — tezkor, statik reaksiya (AI javobini kutmasdan)
-   speak — AI (yoki boshqa joy) generatsiya qilgan haqiqiy gapni aytadi
-   openChat — haqiqiy repetitor-chatni ochadi, kontekst bilan
-   ------------------------------------------------------------ */
 interface OpenChatContext {
   studentName?: string;
   weakTopics?: string[];
@@ -55,7 +44,6 @@ const MascotContext = createContext<MascotContextValue | null>(null);
 export function useMascot() {
   const ctx = useContext(MascotContext);
   if (!ctx) {
-    // Provider mavjud bo'lmasa ham ilova qulamasin — bo'sh funksiyalar
     return {
       celebrate: () => {},
       comfort: () => {},
@@ -66,14 +54,9 @@ export function useMascot() {
   return ctx;
 }
 
-/* ------------------------------------------------------------
-   Asosiy komponent
-   ------------------------------------------------------------ */
 interface AIMascotProps {
   children?: React.ReactNode;
-  /** Ekranning qaysi burchagida turadi */
   corner?: 'bottom-right' | 'bottom-left';
-  /** Ikkita bekorchi hazil orasidagi eng kam/eng ko'p kutish vaqti (ms) */
   minIntervalMs?: number;
   maxIntervalMs?: number;
 }
@@ -90,6 +73,7 @@ export function AIMascotProvider({
   const [showSettings, setShowSettings] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<OpenChatContext>({});
+  
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -100,13 +84,12 @@ export function AIMascotProvider({
     if (stored === 'false') setEnabled(false);
   }, []);
 
-  const showBubble = useCallback((text: string, duration = 4200) => {
+  const showBubble = useCallback((text: string, duration = 4500) => {
     setBubble(text);
     if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
     bubbleTimer.current = setTimeout(() => setBubble(null), duration);
   }, []);
 
-  /* ---------- Tashqi komponentlar chaqiradigan funksiyalar ---------- */
   const celebrate = useCallback(() => {
     if (!enabled) return;
     setMood('happy');
@@ -137,7 +120,6 @@ export function AIMascotProvider({
     setBubble(null);
   }, []);
 
-  /* ---------- Bekorchi vaqtdagi arzon hazillar (API chaqirmaydi) ---------- */
   useEffect(() => {
     if (!enabled) return;
 
@@ -156,14 +138,13 @@ export function AIMascotProvider({
     };
   }, [enabled, minIntervalMs, maxIntervalMs, showBubble, chatOpen]);
 
-  /* ---------- Bosish = haqiqiy AI yordamchi bilan gaplashish ---------- */
   const handleTap = () => {
     if (wasLongPress.current) {
       wasLongPress.current = false;
       return;
     }
     setMood('wave');
-    setTimeout(() => setMood((m) => (m === 'wave' ? 'idle' : m)), 900);
+    setTimeout(() => setMood((m) => (m === 'wave' ? 'idle' : m)), 1000);
     openChat();
   };
 
@@ -174,6 +155,7 @@ export function AIMascotProvider({
       setShowSettings(true);
     }, 650);
   };
+  
   const handlePressEnd = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
@@ -186,7 +168,7 @@ export function AIMascotProvider({
     setBubble(null);
   };
 
-  const cornerClass = corner === 'bottom-right' ? 'right-4' : 'left-4';
+  const cornerClass = corner === 'bottom-right' ? 'right-5' : 'left-5';
 
   const contextValue: MascotContextValue = {
     celebrate,
@@ -201,56 +183,61 @@ export function AIMascotProvider({
 
       {enabled && (
         <div
-          className={`fixed bottom-24 sm:bottom-6 ${cornerClass} z-40 select-none`}
+          className={`fixed bottom-24 sm:bottom-6 ${cornerClass} z-40 select-none flex flex-col items-end`}
         >
-          {/* Gapiruvchi pufakcha — AI'ning haqiqiy fikr-mulohazasi shu yerda chiqadi */}
+          {/* Professional Chat Bubble */}
           {bubble && !chatOpen && (
-            <button
-              type="button"
-              onClick={() => openChat()}
-              className={`absolute bottom-full mb-2 ${
+            <div
+              className={`absolute bottom-full mb-3 ${
                 corner === 'bottom-right' ? 'right-0' : 'left-0'
-              } max-w-[230px] text-left bg-surface border border-white/10 text-ink text-xs rounded-2xl rounded-br-md px-3.5 py-2.5 shadow-xl animate-[mascotPop_0.25s_ease-out]`}
+              } max-w-[260px] bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 text-slate-100 text-xs rounded-2xl rounded-br-sm px-4 py-3 shadow-2xl shadow-indigo-500/10 animate-[mascotPop_0.25s_ease-out]`}
             >
-              {bubble}
-            </button>
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                AI Yordamchi
+              </div>
+              <p className="leading-relaxed">{bubble}</p>
+            </div>
           )}
 
-          {/* Sozlamalar mini-menyu (uzoq bosilganda) */}
+          {/* Settings Menu Popup */}
           {showSettings && (
             <div
-              className={`absolute bottom-full mb-2 ${
+              className={`absolute bottom-full mb-3 ${
                 corner === 'bottom-right' ? 'right-0' : 'left-0'
-              } bg-surface border border-white/10 rounded-2xl shadow-xl overflow-hidden text-xs`}
+              } bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-xs z-50`}
             >
+              <div className="px-3 py-2 bg-slate-800/60 font-medium text-slate-300 border-b border-slate-700/50">
+                AI Sozlamalari
+              </div>
               <button
                 type="button"
                 onClick={toggleEnabled}
-                className="block w-full text-left px-4 py-3 text-red-400 hover:bg-white/5 whitespace-nowrap"
+                className="w-full text-left px-4 py-2.5 text-rose-400 hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-2"
               >
-                🔕 Robotni o'chirish
+                <span>🔕</span> Robotni o'chirish
               </button>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
-                className="block w-full text-left px-4 py-3 text-ink-muted hover:bg-white/5 whitespace-nowrap border-t border-white/5"
+                className="w-full text-left px-4 py-2.5 text-slate-400 hover:bg-slate-800 transition-colors whitespace-nowrap border-t border-slate-800"
               >
                 Bekor qilish
               </button>
             </div>
           )}
 
-          {/* Robot — bosilsa haqiqiy AI chat ochiladi */}
+          {/* Mascot Trigger Button */}
           <button
             type="button"
-            aria-label="AI yordamchi bilan gaplashish"
+            aria-label="Professional AI yordamchi bilan chatni ochish"
             onClick={handleTap}
             onMouseDown={handlePressStart}
             onMouseUp={handlePressEnd}
             onMouseLeave={handlePressEnd}
             onTouchStart={handlePressStart}
             onTouchEnd={handlePressEnd}
-            className="w-16 h-16 flex items-center justify-center active:scale-90 transition-transform drop-shadow-lg"
+            className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600/20 to-purple-600/20 hover:from-indigo-600/30 hover:to-purple-600/30 flex items-center justify-center active:scale-95 transition-all duration-300 group cursor-pointer focus:outline-none"
           >
             <MascotSVG mood={mood} size={58} />
           </button>
@@ -266,7 +253,7 @@ export function AIMascotProvider({
 
       <style>{`
         @keyframes mascotPop {
-          from { opacity: 0; transform: translateY(4px) scale(0.92); }
+          from { opacity: 0; transform: translateY(6px) scale(0.94); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
