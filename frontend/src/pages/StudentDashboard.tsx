@@ -1,5 +1,5 @@
 // src/pages/StudentDashboard.tsx
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
@@ -11,7 +11,8 @@ import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
 import { AchievementsRow } from '../components/dashboard/AchievementsRow';
 import { SubjectScoreList } from '../components/dashboard/SubjectScoreList';
-import { AITutorChat } from '../components/ai/AITutorChat';
+import { useMascot } from '../components/ai/AIMascot';
+import { generateMascotLine } from '../lib/ai-service';
 
 /* ============================================================
    BACKEND RESPONSE TIPI (dashboard.service.ts)
@@ -70,7 +71,8 @@ function useStudentDashboard() {
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { haptic } = useTelegram();
-  const [showTutor, setShowTutor] = useState(false);
+  const { openChat, speak } = useMascot();
+  const hasCheckedIn = useRef(false);
 
   const { data, isLoading, error } = useStudentDashboard();
 
@@ -86,6 +88,25 @@ export function StudentDashboard() {
       .filter((r) => !r.passed || r.percent < 60)
       .map((r) => r.testTitle);
   }, [data?.recentResults]);
+
+  // Maskot bir marta, real ma'lumot kelgach, holatga mos gap aytadi —
+  // yaxshi holatda maqtaydi, xavotirli holatda (streak yo'q, ko'p yiqilish)
+  // muloyim-lekin-jiddiy eslatma beradi. Bu HAQIQIY AI chaqiruvi.
+  useEffect(() => {
+    if (!data || hasCheckedIn.current) return;
+    hasCheckedIn.current = true;
+
+    generateMascotLine({
+      event: 'DASHBOARD_CHECKIN',
+      studentName: data.student.firstName,
+      streak: data.student.streak,
+      recentFailCount: weakTopics.length,
+    })
+      .then((line) => speak(line.text, line.mood))
+      .catch(() => {
+        /* jim — bu ixtiyoriy "jonlanish", asosiy funksionallikka ta'sir qilmasin */
+      });
+  }, [data, weakTopics.length, speak]);
 
   /* ---------- Loading ---------- */
   if (isLoading) {
@@ -173,7 +194,7 @@ export function StudentDashboard() {
           type="button"
           onClick={() => {
             haptic('light');
-            setShowTutor(true);
+            openChat({ studentName: data.student.firstName, weakTopics });
           }}
           className="w-full flex items-center gap-3 bg-gradient-to-r from-gold/15 to-gold/5 border border-gold/25 rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-transform"
         >
@@ -257,13 +278,6 @@ export function StudentDashboard() {
           </div>
         </section>
       )}
-
-      <AITutorChat
-        isOpen={showTutor}
-        onClose={() => setShowTutor(false)}
-        studentName={data.student.firstName}
-        weakTopics={weakTopics}
-      />
     </div>
   );
 }

@@ -626,7 +626,76 @@ Hech qachon xafa qiluvchi yoki kamsituvchi ohangda yozma — doim ijobiy va qo'l
 }
 
 /* ============================================================
-   9) CHAT (STREAMING)
+   9) MASKOT UCHUN KONTEKSTGA MOS GAP GENERATSIYASI
+   (real natija/streak asosida — hazil, maqtov yoki tanbeh)
+   ============================================================ */
+export type MascotEvent =
+  | 'DASHBOARD_CHECKIN'
+  | 'TEST_RESULT'
+  | 'INACTIVITY';
+
+export interface MascotLine {
+  text: string;
+  mood: 'happy' | 'sad' | 'idle';
+}
+
+export async function generateMascotLine(params: {
+  event: MascotEvent;
+  studentName?: string;
+  percent?: number;
+  passed?: boolean;
+  streak?: number;
+  recentFailCount?: number;
+  daysSinceLastActivity?: number;
+}): Promise<MascotLine> {
+  const contextLines: string[] = [];
+  if (params.studentName) contextLines.push(`O'quvchi ismi: ${params.studentName}`);
+  if (params.event === 'TEST_RESULT') {
+    contextLines.push(
+      `Endigina test topshirdi: ${params.percent}% ball, ${params.passed ? "o'tdi" : "o'ta olmadi"}.`,
+    );
+  }
+  if (params.event === 'DASHBOARD_CHECKIN') {
+    contextLines.push(`Hozirgi streak (ketma-ket kunlar): ${params.streak ?? 0}.`);
+    if (params.recentFailCount) {
+      contextLines.push(
+        `So'nggi natijalarning ${params.recentFailCount} tasi past yoki o'tilmagan.`,
+      );
+    }
+  }
+  if (params.event === 'INACTIVITY') {
+    contextLines.push(
+      `${params.daysSinceLastActivity} kundan beri hech narsa qilmagan.`,
+    );
+  }
+
+  const content = await callAI({
+    systemPrompt: `Sen ta'lim ilovasidagi mitti robot-maskotsan. Xarakteringda:
+- Do'stona, hazilkash, lekin sayoz emas — haqiqiy mentordek gapirasan
+- Natija yaxshi/streak baland bo'lsa — samimiy maqtaysan, ozgina hazil bilan
+- Natija past yoki o'quvchi bo'sh kelayotgan bo'lsa — xafa qilmasdan, lekin JIDDIY va TO'G'RIDAN-TO'G'RI tanbeh berasan (masalan: "Bu safar yaxshi urinmading, biladigan narsangdan foydalanmading" kabi), quruq hazilga o'tmaysan
+- Uzoq vaqt faol bo'lmasa — sog'ingandek, lekin qat'iy eslatasan
+Faqat JSON qaytar:
+{ "text": "1 gapli, ROBOT TILIDAN, o'zbek tilida xabar", "mood": "happy" | "sad" | "idle" }
+Qoidalar:
+- text juda qisqa (maksimum 18 so'z), samimiy, ismi bo'lsa ishlat
+- mood: yaxshi holatda "happy", tanbeh/xavotir kerak bo'lsa "sad", oddiy holatda "idle"`,
+    userPrompt: contextLines.join('\n'),
+    jsonMode: true,
+    temperature: 0.8,
+    maxTokens: 200,
+  });
+
+  const parsed = safeParseJSON<any>(content, /\{[\s\S]*\}/);
+
+  return {
+    text: String(parsed.text || '').trim() || "Salom! Davom etaylikmi?",
+    mood: ['happy', 'sad', 'idle'].includes(parsed.mood) ? parsed.mood : 'idle',
+  };
+}
+
+/* ============================================================
+   10) CHAT (STREAMING)
    ============================================================ */
 export interface ChatMessage {
   role: 'user' | 'assistant';

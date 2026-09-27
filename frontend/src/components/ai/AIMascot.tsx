@@ -7,49 +7,25 @@ import React, {
   useCallback,
 } from 'react';
 import { MascotSVG, type MascotMood } from './MascotSVG';
+import { AITutorChat } from '../ai/AITutorChat';
 
 /* ============================================================
-   AI MASCOT — hazilkash mitti robot
-   Ekranda suzib yuradi, vaqti-vaqti bilan hazil qiladi.
-   Haqiqiy tugma/matnlarga tegmaydi (xavfsiz) — faqat o'zi
-   harakatlanadi va gapiradigan pufakcha ko'rsatadi.
+   AI MASCOT — endi shunchaki dekorativ emas, haqiqiy AI
+   yordamchining "yuzi". Bosilsa — haqiqiy repetitor-chat ochiladi.
+   Real hodisalarga (test natijasi, streak, faollik) qarab AI o'zi
+   nima deyishni — hazil, maqtov yoki jiddiy tanbeh — hal qiladi.
    ============================================================ */
 
 const STORAGE_KEY = 'ai-mascot-enabled';
 
+// Faqat bekorchi vaqtda ko'rsatiladigan, hech qanday API chaqirmaydigan
+// arzon "jonlanish" hazillari — asosiy fikr-mulohaza har doim AI'dan keladi.
 const IDLE_JOKES = [
   "Bugun ham bilim ovlaymizmi? 🎣",
-  "Meni ko'rmaganga olsang ham, men baribir hazil qilaman 😄",
   "Miya mashqi vaqti keldimi? 🧠",
-  "Ssst... men shunchaki suzib yuribman 🛸",
+  "Savolingiz bo'lsa — meni bosing, jonli gaplashamiz 🤖",
   "5 daqiqa dam ol, keyin davom et 😉",
-  "Sen zo'rsan, shuni bilasanmi? ✨",
-  "Robotlar ham charchaydi... deb o'ylaysanmi? 😅",
-  "Test yechish vaqti keldimi, jamoat? 📝",
   "Bugungi maqsad: kamida 1% yaxshiroq bo'lish 🚀",
-  "Meni bosib ko'r, hazil aytib beraman 🤖",
-];
-
-const TAP_JOKES = [
-  "Voy, meni ushlab oldingmi! 😳",
-  "Hazilim tugadi... hozircha 😄",
-  "Yordam kerakmi? Men shunchaki robotman, lekin urinib ko'raman 🤔",
-  "Bip-bop! Signal qabul qilindi 📡",
-  "Meni ko'chirib qo'ysang, boshqa joyga qochib ketaman 🏃",
-  "100% batareyam bor, sen-chi? 🔋",
-  "Zerikkanmisan? Keyingi savolga o'tavermaysanmi? 😏",
-];
-
-const CELEBRATE_LINES = [
-  "Zo'r! Aynan shunday! 🎉",
-  "Ha! Sen bosh musan! 🌟",
-  "Bunga qoyil qoldim! 👏",
-];
-
-const COMFORT_LINES = [
-  "Hechqisi yo'q, keyingisida chiqadi 💪",
-  "Xato — bu o'rganishning bir qismi 🌱",
-  "Yana urinib ko'r, sen uddalaysan! 🙂",
 ];
 
 function pick<T>(arr: T[]): T {
@@ -57,13 +33,21 @@ function pick<T>(arr: T[]): T {
 }
 
 /* ------------------------------------------------------------
-   Context — boshqa komponentlar (masalan test natijasi) shu
-   orqali maskotga "xursand bo'l" yoki "yupat" deb signal beradi
+   Context — boshqa komponentlar shu orqali maskotga signal beradi:
+   celebrate/comfort — tezkor, statik reaksiya (AI javobini kutmasdan)
+   speak — AI (yoki boshqa joy) generatsiya qilgan haqiqiy gapni aytadi
+   openChat — haqiqiy repetitor-chatni ochadi, kontekst bilan
    ------------------------------------------------------------ */
+interface OpenChatContext {
+  studentName?: string;
+  weakTopics?: string[];
+}
+
 interface MascotContextValue {
   celebrate: () => void;
   comfort: () => void;
-  say: (text: string) => void;
+  speak: (text: string, mood?: MascotMood) => void;
+  openChat: (ctx?: OpenChatContext) => void;
 }
 
 const MascotContext = createContext<MascotContextValue | null>(null);
@@ -72,7 +56,12 @@ export function useMascot() {
   const ctx = useContext(MascotContext);
   if (!ctx) {
     // Provider mavjud bo'lmasa ham ilova qulamasin — bo'sh funksiyalar
-    return { celebrate: () => {}, comfort: () => {}, say: () => {} };
+    return {
+      celebrate: () => {},
+      comfort: () => {},
+      speak: () => {},
+      openChat: () => {},
+    };
   }
   return ctx;
 }
@@ -84,7 +73,7 @@ interface AIMascotProps {
   children?: React.ReactNode;
   /** Ekranning qaysi burchagida turadi */
   corner?: 'bottom-right' | 'bottom-left';
-  /** Ikkita hazil orasidagi eng kam/eng ko'p kutish vaqti (ms) */
+  /** Ikkita bekorchi hazil orasidagi eng kam/eng ko'p kutish vaqti (ms) */
   minIntervalMs?: number;
   maxIntervalMs?: number;
 }
@@ -92,23 +81,26 @@ interface AIMascotProps {
 export function AIMascotProvider({
   children,
   corner = 'bottom-right',
-  minIntervalMs = 25_000,
-  maxIntervalMs = 55_000,
+  minIntervalMs = 40_000,
+  maxIntervalMs = 90_000,
 }: AIMascotProps) {
   const [enabled, setEnabled] = useState(true);
   const [bubble, setBubble] = useState<string | null>(null);
   const [mood, setMood] = useState<MascotMood>('idle');
   const [showSettings, setShowSettings] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatContext, setChatContext] = useState<OpenChatContext>({});
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress = useRef(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === 'false') setEnabled(false);
   }, []);
 
-  const showBubble = useCallback((text: string, duration = 3800) => {
+  const showBubble = useCallback((text: string, duration = 4200) => {
     setBubble(text);
     if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
     bubbleTimer.current = setTimeout(() => setBubble(null), duration);
@@ -118,26 +110,34 @@ export function AIMascotProvider({
   const celebrate = useCallback(() => {
     if (!enabled) return;
     setMood('happy');
-    showBubble(pick(CELEBRATE_LINES), 2600);
-    setTimeout(() => setMood('idle'), 3000);
-  }, [enabled, showBubble]);
+    setTimeout(() => setMood((m) => (m === 'happy' ? 'idle' : m)), 3000);
+  }, [enabled]);
 
   const comfort = useCallback(() => {
     if (!enabled) return;
     setMood('sad');
-    showBubble(pick(COMFORT_LINES), 3200);
-    setTimeout(() => setMood('idle'), 3400);
-  }, [enabled, showBubble]);
+    setTimeout(() => setMood((m) => (m === 'sad' ? 'idle' : m)), 3400);
+  }, [enabled]);
 
-  const say = useCallback(
-    (text: string) => {
+  const speak = useCallback(
+    (text: string, nextMood?: MascotMood) => {
       if (!enabled) return;
       showBubble(text);
+      if (nextMood) {
+        setMood(nextMood);
+        setTimeout(() => setMood((m) => (m === nextMood ? 'idle' : m)), 4000);
+      }
     },
     [enabled, showBubble],
   );
 
-  /* ---------- Tasodifiy "bekorchi" hazillar ---------- */
+  const openChat = useCallback((ctx?: OpenChatContext) => {
+    if (ctx) setChatContext(ctx);
+    setChatOpen(true);
+    setBubble(null);
+  }, []);
+
+  /* ---------- Bekorchi vaqtdagi arzon hazillar (API chaqirmaydi) ---------- */
   useEffect(() => {
     if (!enabled) return;
 
@@ -145,7 +145,7 @@ export function AIMascotProvider({
       const delay =
         minIntervalMs + Math.random() * (maxIntervalMs - minIntervalMs);
       idleTimer.current = setTimeout(() => {
-        showBubble(pick(IDLE_JOKES));
+        if (!chatOpen) showBubble(pick(IDLE_JOKES));
         scheduleNext();
       }, delay);
     };
@@ -154,16 +154,25 @@ export function AIMascotProvider({
     return () => {
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [enabled, minIntervalMs, maxIntervalMs, showBubble]);
+  }, [enabled, minIntervalMs, maxIntervalMs, showBubble, chatOpen]);
 
+  /* ---------- Bosish = haqiqiy AI yordamchi bilan gaplashish ---------- */
   const handleTap = () => {
-    showBubble(pick(TAP_JOKES), 2600);
+    if (wasLongPress.current) {
+      wasLongPress.current = false;
+      return;
+    }
     setMood('wave');
-    setTimeout(() => setMood('idle'), 1400);
+    setTimeout(() => setMood((m) => (m === 'wave' ? 'idle' : m)), 900);
+    openChat();
   };
 
   const handlePressStart = () => {
-    longPressTimer.current = setTimeout(() => setShowSettings(true), 650);
+    wasLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      wasLongPress.current = true;
+      setShowSettings(true);
+    }, 650);
   };
   const handlePressEnd = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
@@ -177,10 +186,14 @@ export function AIMascotProvider({
     setBubble(null);
   };
 
-  const cornerClass =
-    corner === 'bottom-right' ? 'right-4' : 'left-4';
+  const cornerClass = corner === 'bottom-right' ? 'right-4' : 'left-4';
 
-  const contextValue: MascotContextValue = { celebrate, comfort, say };
+  const contextValue: MascotContextValue = {
+    celebrate,
+    comfort,
+    speak,
+    openChat,
+  };
 
   return (
     <MascotContext.Provider value={contextValue}>
@@ -190,15 +203,17 @@ export function AIMascotProvider({
         <div
           className={`fixed bottom-24 sm:bottom-6 ${cornerClass} z-40 select-none`}
         >
-          {/* Gapiruvchi pufakcha */}
-          {bubble && (
-            <div
+          {/* Gapiruvchi pufakcha — AI'ning haqiqiy fikr-mulohazasi shu yerda chiqadi */}
+          {bubble && !chatOpen && (
+            <button
+              type="button"
+              onClick={() => openChat()}
               className={`absolute bottom-full mb-2 ${
                 corner === 'bottom-right' ? 'right-0' : 'left-0'
-              } max-w-[220px] bg-surface border border-white/10 text-ink text-xs rounded-2xl rounded-br-md px-3.5 py-2.5 shadow-xl animate-[mascotPop_0.25s_ease-out]`}
+              } max-w-[230px] text-left bg-surface border border-white/10 text-ink text-xs rounded-2xl rounded-br-md px-3.5 py-2.5 shadow-xl animate-[mascotPop_0.25s_ease-out]`}
             >
               {bubble}
-            </div>
+            </button>
           )}
 
           {/* Sozlamalar mini-menyu (uzoq bosilganda) */}
@@ -225,10 +240,10 @@ export function AIMascotProvider({
             </div>
           )}
 
-          {/* Robot */}
+          {/* Robot — bosilsa haqiqiy AI chat ochiladi */}
           <button
             type="button"
-            aria-label="AI robot"
+            aria-label="AI yordamchi bilan gaplashish"
             onClick={handleTap}
             onMouseDown={handlePressStart}
             onMouseUp={handlePressEnd}
@@ -241,6 +256,13 @@ export function AIMascotProvider({
           </button>
         </div>
       )}
+
+      <AITutorChat
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        studentName={chatContext.studentName}
+        weakTopics={chatContext.weakTopics}
+      />
 
       <style>{`
         @keyframes mascotPop {

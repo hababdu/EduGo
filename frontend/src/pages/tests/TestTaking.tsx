@@ -4,6 +4,7 @@ import { useTestSession } from '../../hooks/useTestSession';
 import { haptic } from '../../lib/telegram';
 import { AIAnswerCheck } from '../../components/ai/AIAnswerCheck';
 import { useMascot } from '../../components/ai/AIMascot';
+import { generateMascotLine } from '../../lib/ai-service';
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);
@@ -167,11 +168,24 @@ function TestResultView({
   result: { score: number; maxScore: number; percent: number; passed: boolean; autoSubmitted: boolean };
   onDone: () => void;
 }) {
-  const { celebrate, comfort } = useMascot();
+  const { celebrate, comfort, speak } = useMascot();
 
   useEffect(() => {
+    // 1) Darhol — statik animatsiya bilan tezkor reaksiya (kutish yo'q)
     if (result.passed) celebrate();
     else comfort();
+
+    // 2) Bir necha soniyadan so'ng — HAQIQIY AI aynan shu ballga qarab
+    // yozgan, shaxsiylashtirilgan gap bilan pufakchani yangilaydi
+    generateMascotLine({
+      event: 'TEST_RESULT',
+      percent: result.percent,
+      passed: result.passed,
+    })
+      .then((line) => speak(line.text, line.mood))
+      .catch(() => {
+        /* jim — statik reaksiya allaqachon ko'rsatilgan */
+      });
     // Faqat natija birinchi ko'rsatilganda bir marta chaqiriladi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
