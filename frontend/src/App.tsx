@@ -41,7 +41,7 @@ import { AdminSubjectDetail } from './pages/teacher/content/AdminSubjectDetail';
 import { AdminSectionDetail } from './pages/teacher/content/AdminSectionDetail';
 import { AdminTopicDetail } from './pages/teacher/content/AdminTopicDetail';
 import { AdminQuestions } from './pages/teacher/questions/AdminQuestions';
-import { AdminTests } from './pages/teacher/tests/AdminTests';
+import   AdminTests  from './pages/teacher/tests/AdminTests';
 import { AdminTestDetail } from './pages/teacher/tests/AdminTestDetail';
 
 /* ============ LAYOUT ============ */

@@ -1,841 +1,372 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { StatusBadge } from '../../../components/admin/content/StatusBadge';
+// src/pages/teacher/TeacherAssignmentDetail.tsx
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  useTeacherAssignment,
+  useUpdateTeacherAssignment,
+  useDeleteTeacherAssignment,
+  useTeacherGroups,
+} from '../../../hooks/useTeacherAssignments';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
-import { apiFetch } from '../../../lib/api-client';
-import type { GeneratedQuestion } from '../../../lib/ai-service';
-import { AIQuestionGenerator } from '../../../components/ai/AIQuestionGenerator';
+import {
+  AssignmentCategory,
+  CATEGORY_META,
+  CONTENT_META,
+  ContentType,
+} from '../../../constants/assignment';
+import { PageHeader, Section, Field, Skeleton } from '../../../components/ui';
+import { Edit3, Trash2, ExternalLink, X } from '../../../design/icons';
+import { TEXT, CONTROL, PAGE } from '../../../design/tokens';
 
-/* ============================================================
-   TYPES
-   ============================================================ */
-type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';
-
-interface QuestionDraft {
-  text: string;
-  difficulty: Difficulty;
-  points: number;
-  options: string[];
-  correctAnswerIndex: number;
-}
-
-interface TestItem {
-  id: string;
+interface FormState {
   title: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  _count?: {
-    questions?: number;
-    assignments?: number;
-    attempts?: number;
-  };
+  description: string;
+  contentType: ContentType;
+  assignmentCategory: AssignmentCategory;
+  selectedGroup: string;
+  mediaUrl: string;
 }
 
-interface TeacherGroup {
-  id: string;
-  name: string;
-  _count?: {
-    members?: number;
-  };
-}
-
-const EMPTY_QUESTION: QuestionDraft = {
-  text: '',
-  difficulty: 'MEDIUM',
-  points: 1,
-  options: ['', ''],
-  correctAnswerIndex: 0,
+const EMPTY_FORM: FormState = {
+  title: '',
+  description: '',
+  contentType: 'TEXT',
+  assignmentCategory: 'LESSON',
+  selectedGroup: '',
+  mediaUrl: '',
 };
 
-/* ============================================================
-   HOOKS
-   ============================================================ */
-function useTests() {
-  return useQuery({
-    queryKey: ['tests'],
-    queryFn: () => apiFetch<TestItem[]>('/api/v1/tests'),
-    staleTime: 30_000,
-  });
-}
-
-function useTeacherGroups() {
-  return useQuery({
-    queryKey: ['teacher', 'groups'],
-    queryFn: () => apiFetch<TeacherGroup[]>('/api/v1/teacher/groups'),
-    staleTime: 60_000,
-  });
-}
-
-function useCreateTest() {
-  const qc = useQueryClient();
-  return useMutation<
-    TestItem,
-    Error,
-    {
-      title: string;
-      description?: string;
-      durationSeconds: number;
-      passingScore: number;
-      randomQuestions: boolean;
-      randomAnswerOrder: boolean;
-      questions: QuestionDraft[];
-      groupIds: string[];
-    }
-  >({
-    mutationFn: (data) =>
-      apiFetch<TestItem>('/api/v1/tests', { method: 'POST', data }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tests'] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'groups'] });
-      qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
-    },
-  });
-}
-
-/* ============================================================
-   COMPONENT
-   ============================================================ */
-export function AdminTests() {
+export function TeacherAssignmentDetail() {
+  const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { haptic, hapticNotify, showMainButton, hideMainButton } =
-    useTelegram();
+  const {
+    haptic,
+    hapticNotify,
+    showConfirm,
+    showMainButton,
+    hideMainButton,
+    showBackButton,
+    hideBackButton,
+  } = useTelegram();
 
-  const { data: tests, isLoading } = useTests();
-  const { data: teacherGroups, isLoading: groupsLoading } = useTeacherGroups();
-  const createTest = useCreateTest();
+  const { data: assignment, isLoading } = useTeacherAssignment(id);
+  const { data: groups } = useTeacherGroups();
+  const updateMutation = useUpdateTeacherAssignment(id);
+  const deleteMutation = useDeleteTeacherAssignment();
 
-  const [showForm, setShowForm] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
 
-  /* ---------- Form state ---------- */
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [durationSeconds, setDurationSeconds] = useState(1800);
-  const [passingScore, setPassingScore] = useState(50);
-  const [randomQuestions, setRandomQuestions] = useState(false);
-  const [randomAnswerOrder, setRandomAnswerOrder] = useState(false);
-  const [questions, setQuestions] = useState<QuestionDraft[]>([
-    { ...EMPTY_QUESTION },
-  ]);
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
-  /* ---------- AI modal ---------- */
-  const [showAIModal, setShowAIModal] = useState(false);
-
-  /* ---------- Filter ---------- */
-  const filteredTests = useMemo<TestItem[]>(() => {
-    if (!tests || !Array.isArray(tests)) return [];
-    const q = search.trim().toLowerCase();
-    return tests.filter((t) => {
-      const matchesSearch = !q || t.title.toLowerCase().includes(q);
-      const matchesStatus = statusFilter ? t.status === statusFilter : true;
-      return matchesSearch && matchesStatus;
+  useEffect(() => {
+    if (!assignment) return;
+    const item = assignment as any;
+    setForm({
+      title: item.title || '',
+      description: item.description || '',
+      contentType: (item.type as ContentType) || 'TEXT',
+      assignmentCategory: (item.category as AssignmentCategory) || 'LESSON',
+      selectedGroup: item.groupId || item.group || '',
+      mediaUrl: item.mediaUrl || '',
     });
-  }, [tests, search, statusFilter]);
+  }, [assignment]);
 
-  const hasActiveFilters = search.trim() !== '' || statusFilter !== '';
-
-  const handleResetFilters = () => {
-    haptic('light');
-    setSearch('');
-    setStatusFilter('');
-  };
-
-  /* ---------- Group toggle ---------- */
-  const toggleGroup = (groupId: string) => {
-    haptic('light');
-    setSelectedGroupIds((prev) =>
-      prev.includes(groupId)
-        ? prev.filter((id) => id !== groupId)
-        : [...prev, groupId],
-    );
-  };
-
-  /* ---------- Question handlers ---------- */
-  const handleAddQuestion = () => {
-    haptic('light');
-    setQuestions((prev) => [...prev, { ...EMPTY_QUESTION }]);
-  };
-
-  const handleRemoveQuestion = (index: number) => {
-    haptic('light');
-    setQuestions((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleQuestionChange = <K extends keyof QuestionDraft>(
-    index: number,
-    field: K,
-    value: QuestionDraft[K],
-  ) => {
-    setQuestions((prev) => {
-      const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
-      return updated;
+  useEffect(() => {
+    const cleanup = showBackButton(() => {
+      haptic('light');
+      navigate('/teacher/assignments');
     });
-  };
+    return () => {
+      cleanup?.();
+      hideBackButton();
+    };
+  }, [showBackButton, hideBackButton, navigate, haptic]);
 
-  const handleOptionChange = (
-    qIndex: number,
-    optIndex: number,
-    value: string,
-  ) => {
-    setQuestions((prev) => {
-      const updated = [...prev];
-      const options = [...updated[qIndex].options];
-      options[optIndex] = value;
-      updated[qIndex] = { ...updated[qIndex], options };
-      return updated;
-    });
-  };
-
-  const handleAddOption = (qIndex: number) => {
-    haptic('light');
-    setQuestions((prev) => {
-      const updated = [...prev];
-      updated[qIndex] = {
-        ...updated[qIndex],
-        options: [...updated[qIndex].options, ''],
-      };
-      return updated;
-    });
-  };
-
-  const handleRemoveOption = (qIndex: number, optIndex: number) => {
-    haptic('light');
-    setQuestions((prev) => {
-      const updated = [...prev];
-      const options = updated[qIndex].options.filter((_, i) => i !== optIndex);
-      let correctIdx = updated[qIndex].correctAnswerIndex;
-      if (optIndex === correctIdx) correctIdx = 0;
-      else if (optIndex < correctIdx) correctIdx -= 1;
-
-      updated[qIndex] = {
-        ...updated[qIndex],
-        options,
-        correctAnswerIndex: correctIdx,
-      };
-      return updated;
-    });
-  };
-
-  /* ---------- AI modal natijasini qabul qilish ---------- */
-  const handleAIAccept = (generated: GeneratedQuestion[]) => {
-    setQuestions((prev) => {
-      // Bo'sh, hali to'ldirilmagan qoralama savollarni tashlab, AI savollarini qo'shamiz
-      const nonEmpty = prev.filter((q) => q.text.trim() !== '');
-      return [...nonEmpty, ...generated];
-    });
-    hapticNotify('success');
-    toast('success', `${generated.length} ta savol testga qo'shildi!`);
-  };
-
-  const resetForm = () => {
-    setTitle('');
-    setDescription('');
-    setDurationSeconds(1800);
-    setPassingScore(50);
-    setRandomQuestions(false);
-    setRandomAnswerOrder(false);
-    setQuestions([{ ...EMPTY_QUESTION }]);
-    setSelectedGroupIds([]);
-  };
-
-  /* ---------- Submit ---------- */
-  const handleSubmit = useCallback(() => {
-    if (!title.trim()) {
+  const handleUpdate = useCallback(() => {
+    if (!form.title.trim() || !form.selectedGroup) {
       hapticNotify('error');
-      toast('error', 'Test nomini kiriting!');
+      toast('error', 'Sarlavha va guruh kerak');
       return;
     }
-    if (selectedGroupIds.length === 0) {
+    if (form.contentType !== 'TEXT' && !form.mediaUrl.trim()) {
       hapticNotify('error');
-      toast('error', 'Kamida 1 ta guruh tanlang!');
-      return;
-    }
-    const hasEmptyQuestion = questions.some((q) => !q.text.trim());
-    if (hasEmptyQuestion) {
-      hapticNotify('error');
-      toast('error', "Ba'zi savollar bo'sh!");
-      return;
-    }
-    const hasEmptyOption = questions.some((q) =>
-      q.options.some((o) => !o.trim()),
-    );
-    if (hasEmptyOption) {
-      hapticNotify('error');
-      toast('error', "Ba'zi javob variantlari bo'sh!");
+      toast('error', 'Media URL kerak');
       return;
     }
 
-    createTest.mutate(
+    updateMutation.mutate(
       {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        durationSeconds: Number(durationSeconds),
-        passingScore: Number(passingScore),
-        randomQuestions,
-        randomAnswerOrder,
-        questions,
-        groupIds: selectedGroupIds,
+        title: form.title.trim(),
+        description: form.description.trim() || undefined,
+        type: form.contentType,
+        category: form.assignmentCategory,
+        groupId: form.selectedGroup,
+        mediaUrl: form.mediaUrl.trim() || undefined,
       },
       {
         onSuccess: () => {
           hapticNotify('success');
-          toast(
-            'success',
-            "Test muvaffaqiyatli yaratildi va guruhga biriktirildi!",
-          );
-          setShowForm(false);
-          resetForm();
+          toast('success', 'Saqlandi');
+          setIsEditing(false);
         },
-        onError: (error: any) => {
+        onError: (err: any) => {
           hapticNotify('error');
-          const msg =
-            error?.response?.data?.message ||
-            error?.message ||
-            'Saqlashda xatolik!';
-          toast('error', Array.isArray(msg) ? msg[0] : msg);
+          toast('error', err?.message || 'Xatolik');
         },
       },
     );
-  }, [
-    title,
-    description,
-    durationSeconds,
-    passingScore,
-    randomQuestions,
-    randomAnswerOrder,
-    questions,
-    selectedGroupIds,
-    createTest,
-    hapticNotify,
-  ]);
+  }, [form, updateMutation, hapticNotify]);
 
-  /* ---------- Telegram MainButton ---------- */
   useEffect(() => {
-    if (!showForm) {
+    if (!isEditing) {
       hideMainButton();
       return;
     }
     const cleanup = showMainButton(
-      createTest.isPending ? 'Saqlanmoqda...' : 'TESTNI SAQLASH',
-      handleSubmit,
-      {
-        loading: createTest.isPending,
-        disabled: createTest.isPending,
-      },
+      updateMutation.isPending ? 'Saqlanmoqda...' : 'SAQLASH',
+      handleUpdate,
+      { loading: updateMutation.isPending, disabled: updateMutation.isPending },
     );
     return () => {
       cleanup?.();
       hideMainButton();
     };
   }, [
-    showForm,
-    createTest.isPending,
-    handleSubmit,
+    isEditing,
+    updateMutation.isPending,
+    handleUpdate,
     showMainButton,
     hideMainButton,
   ]);
 
-  /* ============================================================
-     RENDER
-     ============================================================ */
-  return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5 pb-32">
-      {/* HEADER */}
-      <div className="flex flex-col gap-4 bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <div>
-          <h1 className="font-display text-xl sm:text-2xl text-ink">Testlar</h1>
-          <p className="text-xs text-ink-muted mt-1">
-            {tests ? `Jami: ${tests.length} ta test` : 'Yuklanmoqda...'}
-          </p>
-        </div>
+  const handleDelete = async () => {
+    haptic('medium');
+    const ok = await showConfirm("Materialni o'chirishni tasdiqlaysizmi?");
+    if (!ok) return;
+    deleteMutation.mutate(id, {
+      onSuccess: () => {
+        hapticNotify('success');
+        toast('success', "O'chirildi");
+        navigate('/teacher/assignments');
+      },
+      onError: (err: any) => {
+        hapticNotify('error');
+        toast('error', err?.message || 'Xatolik');
+      },
+    });
+  };
 
-        <button
-          type="button"
-          onClick={() => {
-            haptic('light');
-            setShowForm((v) => !v);
-            if (!showForm) resetForm();
-          }}
-          className="w-full text-sm bg-gold text-base rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform shadow-lg shadow-gold/10"
-        >
-          {showForm ? '✕ Yopish' : '+ Yangi test yaratish'}
-        </button>
+  if (isLoading || !assignment) {
+    return (
+      <div className={PAGE}>
+        <Skeleton className="h-10 w-24" />
+        <Skeleton className="h-64" />
       </div>
+    );
+  }
 
-      {/* FORMA */}
-      {showForm && (
-        <div className="bg-surface/40 p-5 sm:p-6 rounded-3xl border border-white/10 space-y-5 backdrop-blur-xl">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3">
-            <h2 className="font-display text-base text-ink">Yangi test</h2>
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                setShowForm(false);
-                resetForm();
-              }}
-              className="text-xs text-ink-muted hover:text-ink px-3 py-2 rounded-xl bg-white/5"
-            >
-              Bekor qilish
-            </button>
-          </div>
+  const item = assignment as any;
+  const cat =
+    CATEGORY_META[item.category as AssignmentCategory] ?? CATEGORY_META.LESSON;
+  const content =
+    CONTENT_META[item.type as ContentType] ?? CONTENT_META.TEXT;
 
-          {/* Asosiy ma'lumotlar */}
-          <div className="space-y-3">
-            <Field label="Test nomi *">
-              <input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Masalan: Matematika 1-chorak testi"
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              />
-            </Field>
-
-            <Field label="Tavsif (ixtiyoriy)">
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Test haqida qisqacha..."
-                rows={2}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
-              />
-            </Field>
-          </div>
-
-          {/* GURUHLARNI TANLASH */}
-          <div className="space-y-3 pt-4 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold text-ink">
-                Qaysi guruhlarga biriktirilsin? *
-              </label>
-              <span className="text-xs text-ink-muted">
-                {selectedGroupIds.length} ta tanlangan
-              </span>
-            </div>
-
-            {groupsLoading ? (
-              <div className="space-y-2">
-                {[...Array(3)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-14 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
-                  />
-                ))}
-              </div>
-            ) : !teacherGroups || teacherGroups.length === 0 ? (
-              <div className="text-center py-6 bg-surface/30 rounded-2xl border border-white/5">
-                <p className="text-xs text-ink-muted">
-                  Sizga hali guruh biriktirilmagan
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {teacherGroups.map((g) => {
-                  const isSelected = selectedGroupIds.includes(g.id);
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => toggleGroup(g.id)}
-                      className={`w-full text-left p-3.5 rounded-2xl border transition-all active:scale-[0.99] flex items-center gap-3 ${
-                        isSelected
-                          ? 'bg-gold/10 border-gold/40'
-                          : 'bg-surface/50 border-white/5 hover:bg-white/[0.05]'
-                      }`}
-                    >
-                      <div
-                        className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                          isSelected
-                            ? 'bg-gold border-gold'
-                            : 'border-white/20'
-                        }`}
-                      >
-                        {isSelected && (
-                          <span className="text-base text-xs font-bold">✓</span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-ink truncate">
-                          {g.name}
-                        </p>
-                        {g._count?.members !== undefined && (
-                          <p className="text-xs text-ink-muted">
-                            👥 {g._count.members} ta talaba
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Sozlamalar */}
-          <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
-            <Field label="Davomiyligi (sek)">
-              <input
-                type="number"
-                value={durationSeconds}
-                onChange={(e) => setDurationSeconds(Number(e.target.value))}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              />
-            </Field>
-
-            <Field label="O'tish balli (%)">
-              <input
-                type="number"
-                value={passingScore}
-                onChange={(e) => setPassingScore(Number(e.target.value))}
-                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-              />
-            </Field>
-          </div>
-
-          <div className="space-y-3">
-            <CheckboxRow
-              checked={randomQuestions}
-              onChange={setRandomQuestions}
-              label="Savollarni qorishtirish"
-            />
-            <CheckboxRow
-              checked={randomAnswerOrder}
-              onChange={setRandomAnswerOrder}
-              label="Variantlarni qorishtirish"
-            />
-          </div>
-
-          {/* ===== AI GENERATSIYA — modal ochuvchi tugma ===== */}
-          <div className="pt-4 border-t border-white/5">
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                setShowAIModal(true);
-              }}
-              className="w-full text-sm bg-gold/10 text-gold border border-gold/25 rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-            >
-              ✨ AI bilan savol yaratish
-            </button>
-          </div>
-
-          {/* Savollar */}
-          <div className="space-y-4 pt-4 border-t border-white/5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-ink">
-                Savollar ({questions.length})
-              </h3>
+  return (
+    <div className={PAGE}>
+      <PageHeader
+        title={isEditing ? 'Tahrirlash' : item.title}
+        onBack={() => {
+          haptic('light');
+          navigate('/teacher/assignments');
+        }}
+        actions={
+          !isEditing && (
+            <>
               <button
                 type="button"
-                onClick={handleAddQuestion}
-                className="text-xs bg-gold/10 text-gold px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform"
+                onClick={() => {
+                  haptic('light');
+                  setIsEditing(true);
+                }}
+                className="p-2 rounded-xl bg-gold/10 text-gold min-h-[40px] min-w-[40px] flex items-center justify-center"
+                aria-label="Tahrirlash"
               >
-                + Savol
+                <Edit3 className="w-4 h-4" />
               </button>
-            </div>
-
-            {questions.map((q, qIndex) => (
-              <div
-                key={qIndex}
-                className="bg-surface/50 p-4 rounded-2xl border border-white/5 space-y-3"
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="p-2 rounded-xl bg-red-500/10 text-red-400 min-h-[40px] min-w-[40px] flex items-center justify-center disabled:opacity-50"
+                aria-label="O'chirish"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-ink-muted">
-                    {qIndex + 1}-savol
-                  </span>
-                  {questions.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveQuestion(qIndex)}
-                      className="text-xs text-red-400 hover:underline"
-                    >
-                      O'chirish
-                    </button>
-                  )}
-                </div>
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
+          )
+        }
+      />
 
-                <textarea
-                  value={q.text}
-                  onChange={(e) =>
-                    handleQuestionChange(qIndex, 'text', e.target.value)
-                  }
-                  placeholder="Savol matnini kiriting..."
-                  rows={2}
-                  className="w-full bg-surface rounded-xl px-3 py-2.5 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <select
-                    value={q.difficulty}
-                    onChange={(e) =>
-                      handleQuestionChange(
-                        qIndex,
-                        'difficulty',
-                        e.target.value as Difficulty,
-                      )
-                    }
-                    className="bg-surface rounded-xl px-3 py-2.5 text-xs outline-none border border-white/5 text-ink min-h-[44px]"
-                  >
-                    <option value="EASY">🟢 Oson</option>
-                    <option value="MEDIUM">🟡 O'rta</option>
-                    <option value="HARD">🔴 Qiyin</option>
-                  </select>
-
-                  <input
-                    type="number"
-                    min="1"
-                    value={q.points}
-                    onChange={(e) =>
-                      handleQuestionChange(
-                        qIndex,
-                        'points',
-                        Number(e.target.value),
-                      )
-                    }
-                    placeholder="Ball"
-                    className="bg-surface rounded-xl px-3 py-2.5 text-xs outline-none border border-white/5 text-ink min-h-[44px]"
-                  />
-                </div>
-
-                <div className="space-y-2 pt-2">
-                  <label className="text-xs text-ink-muted">
-                    Javob variantlari (radio = to'g'ri javob)
-                  </label>
-                  {q.options.map((opt, optIndex) => (
-                    <div key={optIndex} className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name={`correct-${qIndex}`}
-                        checked={q.correctAnswerIndex === optIndex}
-                        onChange={() =>
-                          handleQuestionChange(
-                            qIndex,
-                            'correctAnswerIndex',
-                            optIndex,
-                          )
-                        }
-                        className="cursor-pointer accent-gold shrink-0"
-                      />
-                      <input
-                        value={opt}
-                        onChange={(e) =>
-                          handleOptionChange(qIndex, optIndex, e.target.value)
-                        }
-                        placeholder={`${optIndex + 1}-variant`}
-                        className="flex-1 bg-surface rounded-xl px-3 py-2.5 text-xs outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-                      />
-                      {q.options.length > 2 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveOption(qIndex, optIndex)}
-                          className="text-red-400 text-xs px-2 py-2 rounded-lg bg-red-500/10 shrink-0"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => handleAddOption(qIndex)}
-                    className="text-xs text-gold hover:underline pt-1"
-                  >
-                    + Variant qo'shish
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-[10px] text-ink-muted text-center">
-            Pastdagi Telegram tugmasi orqali saqlashingiz mumkin
-          </p>
-        </div>
-      )}
-
-      {/* SEARCH + FILTER */}
-      <div className="space-y-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 Test nomi bo'yicha qidirish..."
-          className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px]"
-        />
-
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {[
-            { key: '', label: 'Barchasi' },
-            { key: 'DRAFT', label: 'Qoralama' },
-            { key: 'PUBLISHED', label: "E'lon qilingan" },
-            { key: 'ARCHIVED', label: 'Arxivlangan' },
-          ].map(({ key, label }) => (
+      {isEditing ? (
+        <div className="bg-surface/30 border border-white/10 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/5">
+            <h2 className={TEXT.h2}>Tahrirlash</h2>
             <button
-              key={key || 'all'}
               type="button"
               onClick={() => {
                 haptic('light');
-                setStatusFilter(key);
+                setIsEditing(false);
               }}
-              className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
-                statusFilter === key
-                  ? 'bg-gold text-base'
-                  : 'bg-white/5 text-ink-muted hover:bg-white/10'
-              }`}
+              className="text-xs text-ink-muted hover:text-ink inline-flex items-center gap-1"
             >
-              {label}
+              <X className="w-3 h-3" />
+              Bekor
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* ACTIVE FILTERS */}
-      {hasActiveFilters && (
-        <div className="flex items-center justify-between bg-surface/20 px-4 py-3 rounded-2xl border border-white/5">
-          <span className="text-xs text-ink-muted">
-            Topildi:{' '}
-            <strong className="text-ink">{filteredTests.length}</strong> ta
-          </span>
-          <button
-            type="button"
-            onClick={handleResetFilters}
-            className="text-xs text-gold font-semibold"
-          >
-            Tozalash
-          </button>
-        </div>
-      )}
-
-      {/* LIST */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
-            />
-          ))}
-        </div>
-      ) : filteredTests.length === 0 ? (
-        <EmptyState
-          title={hasActiveFilters ? 'Natija topilmadi' : "Hali testlar yo'q"}
-          subtitle={
-            hasActiveFilters
-              ? "Filtr yoki qidiruvni o'zgartirib ko'ring"
-              : 'Birinchi testingizni yarating'
-          }
-          ctaLabel={hasActiveFilters ? 'Filtrlarni tozalash' : '+ Test yaratish'}
-          onCta={() => {
-            haptic('light');
-            if (hasActiveFilters) handleResetFilters();
-            else setShowForm(true);
-          }}
-        />
-      ) : (
-        <div className="space-y-3">
-          {filteredTests.map((t) => (
-            <div
-              key={t.id}
-              onClick={() => {
-                haptic('light');
-                navigate(`/teacher/tests/${t.id}`);
-              }}
-              className="group bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-white/5 transition-all cursor-pointer flex items-center justify-between gap-3"
+          <Field label="Toifa">
+            <select
+              value={form.assignmentCategory}
+              onChange={(e) =>
+                update(
+                  'assignmentCategory',
+                  e.target.value as AssignmentCategory,
+                )
+              }
+              className={CONTROL.select}
             >
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-ink group-hover:text-gold transition-colors truncate">
-                  {t.title}
-                </p>
-                <p className="text-xs text-ink-muted mt-1 flex items-center gap-2 flex-wrap">
-                  <span>{t._count?.questions ?? 0} ta savol</span>
-                  <span>·</span>
-                  <span>{t._count?.assignments ?? 0} ta biriktirma</span>
-                  <span>·</span>
-                  <span>{t._count?.attempts ?? 0} ta urinish</span>
-                </p>
-              </div>
-              <StatusBadge status={t.status} />
+              <option value="LESSON">Dars mavzusi</option>
+              <option value="HOMEWORK">Uy vazifasi</option>
+              <option value="RESOURCE">Qo'shimcha resurs</option>
+            </select>
+          </Field>
+
+          <Field label="Format">
+            <select
+              value={form.contentType}
+              onChange={(e) =>
+                update('contentType', e.target.value as ContentType)
+              }
+              className={CONTROL.select}
+            >
+              <option value="TEXT">Matn</option>
+              <option value="IMAGE">Rasm</option>
+              <option value="PDF">PDF</option>
+              <option value="VIDEO">YouTube</option>
+            </select>
+          </Field>
+
+          <Field label="Guruh" required>
+            <select
+              value={form.selectedGroup}
+              onChange={(e) => update('selectedGroup', e.target.value)}
+              className={CONTROL.select}
+            >
+              <option value="">Tanlang...</option>
+              {groups?.map((g: any) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Sarlavha" required>
+            <input
+              value={form.title}
+              onChange={(e) => update('title', e.target.value)}
+              className={CONTROL.input}
+            />
+          </Field>
+
+          {form.contentType !== 'TEXT' && (
+            <Field label="Media URL">
+              <input
+                value={form.mediaUrl}
+                onChange={(e) => update('mediaUrl', e.target.value)}
+                placeholder="https://..."
+                className={CONTROL.input}
+              />
+            </Field>
+          )}
+
+          <Field label="Tavsif">
+            <textarea
+              value={form.description}
+              onChange={(e) => update('description', e.target.value)}
+              rows={4}
+              className={CONTROL.textarea}
+            />
+          </Field>
+        </div>
+      ) : (
+        <div className="bg-surface/20 border border-white/5 rounded-2xl p-5 sm:p-7 space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-semibold ${cat.cls}`}
+              >
+                <cat.Icon className="w-3.5 h-3.5" />
+                {cat.label}
+              </span>
+              <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg font-semibold bg-white/5 text-ink-muted">
+                <content.Icon className="w-3.5 h-3.5" />
+                {content.label}
+              </span>
             </div>
-          ))}
+            <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
+              {item.title}
+            </h1>
+          </div>
+
+          {item.mediaUrl && (
+            <div className="pt-2">
+              {item.type === 'VIDEO' ? (
+                <div className="aspect-video w-full overflow-hidden rounded-2xl bg-surface/50 border border-white/5">
+                  <iframe
+                    src={item.mediaUrl
+                      .replace('watch?v=', 'embed/')
+                      .replace('youtu.be/', 'youtube.com/embed/')}
+                    title="YouTube video"
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
+                </div>
+              ) : item.type === 'IMAGE' ? (
+                <div className="rounded-2xl overflow-hidden border border-white/5 max-h-96 bg-surface/30 flex items-center justify-center">
+                  <img
+                    src={item.mediaUrl}
+                    alt={item.title}
+                    className="max-h-96 object-contain"
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <a
+                  href={item.mediaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={CONTROL.buttonSubtle}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Faylni ochish
+                </a>
+              )}
+            </div>
+          )}
+
+          <Section title="Tavsif">
+            <p className="text-sm text-ink whitespace-pre-wrap leading-relaxed">
+              {item.description || '—'}
+            </p>
+          </Section>
         </div>
       )}
-
-      <AIQuestionGenerator
-        isOpen={showAIModal}
-        onClose={() => setShowAIModal(false)}
-        onAccept={handleAIAccept}
-      />
     </div>
   );
 }
 
-/* ============================================================
-   YORDAMCHI KOMPONENTLAR
-   ============================================================ */
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs text-ink-muted font-medium">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function CheckboxRow({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-}) {
-  return (
-    <label className="flex items-center gap-3 cursor-pointer p-3 rounded-2xl bg-surface/50 border border-white/5 active:scale-[0.99] transition-transform min-h-[48px]">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="cursor-pointer accent-gold w-5 h-5 shrink-0"
-      />
-      <span className="text-sm text-ink">{label}</span>
-    </label>
-  );
-}
-
-function EmptyState({
-  title,
-  subtitle,
-  ctaLabel,
-  onCta,
-}: {
-  title: string;
-  subtitle: string;
-  ctaLabel: string;
-  onCta: () => void;
-}) {
-  return (
-    <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
-      <p className="text-sm font-semibold text-ink">{title}</p>
-      <p className="text-xs text-ink-muted">{subtitle}</p>
-      <button
-        type="button"
-        onClick={onCta}
-        className="mt-2 text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
-      >
-        {ctaLabel}
-      </button>
-    </div>
-  );
-}
-
-export default AdminTests;
+export default TeacherAssignmentDetail;

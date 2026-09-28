@@ -1,3 +1,4 @@
+// src/pages/admin/AdminTopicDetail.tsx
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import {
@@ -11,25 +12,31 @@ import { PublishToggle } from '../../../components/admin/content/PublishToggle';
 import { LessonCard } from '../../../components/admin/content/LessonCard';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
+import {
+  PageHeader,
+  Section,
+  EmptyState,
+  CheckboxRow,
+  Skeleton,
+} from '../../../components/ui';
+import { BookOpen, Lock } from '../../../design/icons';
+import { PAGE_NARROW } from '../../../design/tokens';
 
 export function AdminTopicDetail() {
   const { topicId = '' } = useParams();
   const navigate = useNavigate();
-
   const { haptic, hapticNotify, showBackButton, hideBackButton } = useTelegram();
 
-  const { data: topic, isLoading: topicLoading } = useTopic(topicId);
+  const { data: topic, isLoading } = useTopic(topicId);
   const { data: lessons, isLoading: lessonsLoading } = useLessons(topicId);
   const updateTopic = useUpdateTopic(topicId, (topic?.sectionId as string) ?? '');
   const createLesson = useCreateLesson(topicId);
 
-  /* ---------- Telegram BackButton ---------- */
   useEffect(() => {
-    const handleBack = () => {
+    const cleanup = showBackButton(() => {
       haptic('light');
       navigate(-1);
-    };
-    const cleanup = showBackButton(handleBack);
+    });
     return () => {
       cleanup?.();
       hideBackButton();
@@ -47,9 +54,9 @@ export function AdminTopicDetail() {
         },
         onError: (e: any) => {
           hapticNotify('error');
-          toast('error', e?.message || 'Xatolik!');
+          toast('error', e?.message || 'Xatolik');
         },
-      }
+      },
     );
   };
 
@@ -60,33 +67,30 @@ export function AdminTopicDetail() {
       {
         onSuccess: () => {
           hapticNotify('success');
-          toast('success', 'Mavzu qoralamaga qaytarildi');
+          toast('success', 'Qoralamaga qaytarildi');
         },
         onError: (e: any) => {
           hapticNotify('error');
-          toast('error', e?.message || 'Xatolik!');
+          toast('error', e?.message || 'Xatolik');
         },
-      }
+      },
     );
   };
 
-  const handleSequentialToggle = (checked: boolean) => {
+  const handleSequential = (checked: boolean) => {
     haptic('light');
     updateTopic.mutate(
       { sequentialLocked: checked },
       {
         onSuccess: () => {
           hapticNotify('success');
-          toast(
-            'success',
-            checked ? 'Ketma-ket rejim yoqildi' : "Ketma-ket rejim o'chirildi"
-          );
+          toast('success', checked ? 'Yoqildi' : "O'chirildi");
         },
         onError: (e: any) => {
           hapticNotify('error');
-          toast('error', e?.message || 'Xatolik!');
+          toast('error', e?.message || 'Xatolik');
         },
-      }
+      },
     );
   };
 
@@ -101,98 +105,72 @@ export function AdminTopicDetail() {
         },
         onError: (e: any) => {
           hapticNotify('error');
-          toast('error', e?.message || 'Xatolik!');
+          toast('error', e?.message || 'Xatolik');
         },
-      }
+      },
     );
   };
 
-  if (topicLoading || !topic) {
+  if (isLoading || !topic) {
     return (
-      <div className="p-4 max-w-2xl mx-auto space-y-4">
-        <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-40 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+      <div className={PAGE_NARROW}>
+        <Skeleton className="h-10 w-24" />
+        <Skeleton className="h-40" />
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-6 max-w-2xl mx-auto pb-32 space-y-5">
-      {/* Header */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              haptic('light');
-              navigate(-1);
-            }}
-            className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 shrink-0 min-h-[40px]"
-          >
-            ← Orqaga
-          </button>
+    <div className={PAGE_NARROW}>
+      <PageHeader
+        title={topic.title}
+        onBack={() => {
+          haptic('light');
+          navigate(-1);
+        }}
+        actions={
           <PublishToggle
             status={topic.status}
             isPending={updateTopic.isPending}
             onPublish={handlePublish}
             onUnpublish={handleUnpublish}
           />
-        </div>
+        }
+      />
 
-        <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
-          {topic.title}
-        </h1>
+      <CheckboxRow
+        checked={!!topic.sequentialLocked}
+        onChange={handleSequential}
+        label="Ketma-ket ochilsin"
+        description="Oldingi mavzu tugatilmaguncha yopiq"
+        icon={<Lock className="w-4 h-4 text-gold" />}
+      />
 
-        {/* Sequential toggle */}
-        <label className="flex items-start gap-3 cursor-pointer p-3 rounded-2xl bg-surface/40 border border-white/5 active:scale-[0.99] transition-transform">
-          <input
-            type="checkbox"
-            checked={!!topic.sequentialLocked}
-            onChange={(e) => handleSequentialToggle(e.target.checked)}
-            className="accent-gold w-5 h-5 shrink-0 mt-0.5"
-          />
-          <div className="space-y-0.5">
-            <span className="text-sm text-ink font-medium block">
-              🔒 Ketma-ket ochilsin
-            </span>
-            <span className="text-[11px] text-ink-muted block">
-              Oldingi mavzu tugatilmaguncha yopiq
-            </span>
-          </div>
-        </label>
-      </div>
-
-      {/* Lessons */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-ink-muted">Darslar</h2>
-
+      <Section title="Darslar">
         <CreateItemForm
-          placeholder="Yangi dars nomi (masalan: Video dars 1)"
+          placeholder="Yangi dars nomi..."
           isPending={createLesson.isPending}
           onSubmit={handleCreateLesson}
         />
 
         {lessonsLoading ? (
           <div className="space-y-2">
-            {[...Array(2)].map((_, i) => (
-              <div
-                key={i}
-                className="h-20 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
-              />
+            {Array.from({ length: 2 }).map((_, i) => (
+              <Skeleton key={i} className="h-20" />
             ))}
           </div>
-        ) : lessons && lessons.length === 0 ? (
-          <div className="text-center py-10 bg-surface/20 rounded-2xl border border-white/5">
-            <p className="text-xs text-ink-muted">Hali darslar yo'q.</p>
+        ) : !lessons || lessons.length === 0 ? (
+          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+            <EmptyState icon={BookOpen} title="Darslar yo'q" />
           </div>
         ) : (
-          <div className="space-y-3">
-            {lessons?.map((l) => (
+          <div className="space-y-2">
+            {lessons.map((l) => (
               <LessonCard key={l.id} lesson={l} topicId={topicId} />
             ))}
           </div>
         )}
-      </div>
+      </Section>
     </div>
   );
 }

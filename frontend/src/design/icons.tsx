@@ -1,0 +1,83 @@
+// ============================================================
+// ICONS — emoji o'rniga lucide-react
+// ============================================================
+
+export {
+  Users,
+  BookOpen,
+  FileText,
+  Video,
+  Image,
+  FileType,
+  ClipboardList,
+  FolderOpen,
+  Plus,
+  Search,
+  X,
+  Check,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  Trash2,
+  Edit3,
+  Sparkles,
+  BarChart3,
+  Clock,
+  Target,
+  Award,
+  TrendingUp,
+  AlertTriangle,
+  Lock,
+  Unlock,
+  Send,
+  Square,
+  RotateCw,
+  GraduationCap,
+  Layers,
+  Settings,
+  Eye,
+  EyeOff,
+  Loader2,
+  Inbox,
+  Filter,
+  Rocket,
+  Save,
+  Copy,
+  ExternalLink,
+  Phone,
+  Mail,
+  Calendar,
+  Info,
+  CircleAlert,
+  CircleCheck,
+  Loader,
+  MoreVertical,
+  ArrowRight,
+  ArrowLeft,
+  RefreshCw,
+  Upload,
+  Download,
+} from 'lucide-react';
+
+import {
+  FileText,
+  Image,
+  FileType,
+  Video,
+  BookOpen,
+  ClipboardList,
+  FolderOpen,
+} from 'lucide-react';
+
+export const CONTENT_ICONS = {
+  TEXT: FileText,
+  IMAGE: Image,
+  PDF: FileType,
+  VIDEO: Video,
+} as const;
+
+export const CATEGORY_ICONS = {
+  LESSON: BookOpen,
+  HOMEWORK: ClipboardList,
+  RESOURCE: FolderOpen,
+} as const;
