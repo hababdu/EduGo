@@ -47,7 +47,7 @@ import { AdminTestDetail } from './pages/teacher/tests/AdminTestDetail';
 /* ============ LAYOUT ============ */
 import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
-import { TeacherNav } from './components/teacher/TeacherNav';
+import  TeacherNav  from './components/teacher/TeacherNav';
 import { ToastHost } from './components/ui/Toast';
 import { AIMascotProvider } from './components/ai/AIMascot';
 
