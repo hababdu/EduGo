@@ -10,7 +10,6 @@ import type { GeneratedQuestion } from '../../../lib/ai-service';
 import { AIQuestionGenerator } from '../../../components/ai/AIQuestionGenerator';
 import {
   PageHeader,
-  Section,
   CardList,
   ListRow,
   EmptyState,
@@ -66,15 +65,13 @@ const EMPTY_QUESTION: QuestionDraft = {
 };
 
 /* ============================================================
-   HOOKS — diagnostic bilan
+   HOOKS
    ============================================================ */
 function useTests() {
   return useQuery({
     queryKey: ['tests'],
     queryFn: async () => {
-      console.log('[useTests] Fetching /api/v1/tests ...');
       const result = await apiFetch<TestItem[]>('/api/v1/tests');
-      console.log('[useTests] Result:', result);
       return result;
     },
     staleTime: 30_000,
@@ -143,17 +140,6 @@ export function AdminTests() {
   ]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
-  // Diagnostika
-  useEffect(() => {
-    console.log('[AdminTests state]', {
-      tests,
-      testsLoading,
-      testsFetching,
-      testsError,
-      groupsLoading,
-      groupsError,
-    });
-  }, [tests, testsLoading, testsFetching, testsError, groupsLoading, groupsError]);
 
   const filteredTests = useMemo<TestItem[]>(() => {
     if (!tests || !Array.isArray(tests)) return [];
@@ -239,13 +225,37 @@ export function AdminTests() {
     });
   };
 
+  const handleOpenAI = () => {
+    haptic('light');
+
+    // AI orqali test yaratilganda nomi bo'sh qolmasligi uchun
+    // avtomatik boshlang'ich nom beramiz. Uni keyin o'zgartirish mumkin.
+    if (!title.trim()) {
+      setTitle('AI testi');
+    }
+
+    setShowAIModal(true);
+  };
+
   const handleAIAccept = (generated: GeneratedQuestion[]) => {
     setQuestions((prev) => {
       const nonEmpty = prev.filter((q) => q.text.trim() !== '');
       return [...nonEmpty, ...generated];
     });
+
+    if (!title.trim()) {
+      setTitle('AI testi');
+    }
+
+    if (!description.trim()) {
+      setDescription(
+        `AI yordamida yaratilgan ${generated.length} ta savolli test`,
+      );
+    }
+
     hapticNotify('success');
-    toast('success', `${generated.length} ta savol qo'shildi`);
+    toast('success', `Testga ${generated.length} ta AI savol qo'shildi`);
+    setShowAIModal(false);
   };
 
   const handleSubmit = useCallback(() => {
@@ -411,10 +421,7 @@ export function AdminTests() {
           onOptionChange={handleOptionChange}
           onAddOption={handleAddOption}
           onRemoveOption={handleRemoveOption}
-          onOpenAI={() => {
-            haptic('light');
-            setShowAIModal(true);
-          }}
+          onOpenAI={handleOpenAI}
           onCancel={() => {
             haptic('light');
             setShowForm(false);
@@ -560,6 +567,91 @@ interface TestFormProps {
   onCancel: () => void;
 }
 
+/* ============================================================
+   COLLAPSIBLE SECTION
+   ============================================================ */
+
+interface CollapsibleSectionProps {
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}
+
+function CollapsibleSection({
+  title,
+  subtitle,
+  badge,
+  defaultOpen = false,
+  children,
+  action,
+}: CollapsibleSectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-white/8 bg-surface/30">
+      <div className="flex items-center gap-2 px-3 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-0.5 text-left transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+          aria-expanded={open}
+        >
+          <span
+            className={`
+              flex h-8 w-8 shrink-0 items-center justify-center rounded-xl
+              border border-white/8 bg-white/[0.03] text-ink-muted
+              transition-transform duration-200
+              ${open ? 'rotate-0' : '-rotate-90'}
+            `}
+            aria-hidden="true"
+          >
+            <span className="text-base leading-none">⌄</span>
+          </span>
+
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <span className="text-sm font-bold text-ink">{title}</span>
+              {badge && (
+                <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold">
+                  {badge}
+                </span>
+              )}
+            </span>
+
+            {subtitle && !open && (
+              <span className="mt-0.5 block truncate text-[11px] text-ink-muted">
+                {subtitle}
+              </span>
+            )}
+          </span>
+        </button>
+
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+
+      <div
+        className={`
+          grid transition-[grid-template-rows] duration-200 ease-out
+          ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}
+        `}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-white/5 p-4">
+            {children}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================
+   TEST FORM
+   ============================================================ */
+
 function TestForm({
   title,
   setTitle,
@@ -588,45 +680,67 @@ function TestForm({
   onCancel,
 }: TestFormProps) {
   return (
-    <div className="bg-surface/30 border border-white/10 rounded-2xl p-5 space-y-5 backdrop-blur-xl">
-      <div className="flex items-center justify-between pb-3 border-b border-white/5">
-        <h2 className={TEXT.h2}>Yangi test</h2>
+    <div className="space-y-3">
+      {/* Form header */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-surface/30 px-4 py-3">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-ink">Yangi test</p>
+          <p className="text-[11px] text-ink-muted">
+            Testni bo‘limlar orqali bosqichma-bosqich to‘ldiring
+          </p>
+        </div>
+
         <button
           type="button"
           onClick={onCancel}
-          className="text-xs text-ink-muted hover:text-ink"
+          className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-ink-muted transition hover:bg-white/5 hover:text-ink"
         >
           Bekor qilish
         </button>
       </div>
 
-      <div className="space-y-3">
-        <Field label="Test nomi" required>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Masalan: Matematika 1-chorak"
-            className={CONTROL.input}
-          />
-        </Field>
-        <Field label="Tavsif">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Qisqacha..."
-            className={CONTROL.textarea}
-          />
-        </Field>
-      </div>
-
-      <Section
-        title="Guruhlar"
-        action={
-          <span className={TEXT.tiny}>
-            {selectedGroupIds.length} ta tanlangan
-          </span>
+      {/* Basic information */}
+      <CollapsibleSection
+        title="Asosiy ma'lumotlar"
+        subtitle={
+          title.trim()
+            ? `${title}${description.trim() ? ' · Tavsif mavjud' : ''}`
+            : 'Test nomi va tavsifini kiriting'
         }
+        defaultOpen
+      >
+        <div className="space-y-3">
+          <Field label="Test nomi" required>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masalan: Matematika 1-chorak"
+              className={CONTROL.input}
+            />
+          </Field>
+
+          <Field label="Tavsif">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              placeholder="Qisqacha ma'lumot..."
+              className={CONTROL.textarea}
+            />
+          </Field>
+        </div>
+      </CollapsibleSection>
+
+      {/* Groups */}
+      <CollapsibleSection
+        title="Guruhlar"
+        badge={`${selectedGroupIds.length} tanlangan`}
+        subtitle={
+          selectedGroupIds.length
+            ? `${selectedGroupIds.length} ta guruh testni ko‘radi`
+            : 'Testni qaysi guruhlarga berishni tanlang'
+        }
+        defaultOpen
       >
         {groupsLoading ? (
           <div className="space-y-2">
@@ -635,107 +749,163 @@ function TestForm({
             ))}
           </div>
         ) : !teacherGroups || teacherGroups.length === 0 ? (
-          <div className="text-center py-6 bg-surface/30 rounded-xl border border-white/5">
-            <p className={TEXT.bodySm}>Guruhlar yo'q</p>
+          <div className="rounded-xl border border-white/5 bg-surface/30 py-6 text-center">
+            <p className={TEXT.bodySm}>Guruhlar yo‘q</p>
           </div>
         ) : (
           <div className="space-y-2">
             {teacherGroups.map((g: TeacherGroup) => {
-              const sel = selectedGroupIds.includes(g.id);
+              const selected = selectedGroupIds.includes(g.id);
+
               return (
                 <button
                   key={g.id}
                   type="button"
                   onClick={() => toggleGroup(g.id)}
-                  className={`w-full text-left p-3 rounded-xl border transition flex items-center gap-3 active:scale-[0.99] ${
-                    sel
-                      ? 'bg-gold/10 border-gold/40'
-                      : 'bg-surface/40 border-white/5 hover:bg-white/[0.05]'
-                  }`}
+                  className={`
+                    w-full rounded-xl border p-3 text-left transition
+                    flex items-center gap-3 active:scale-[0.99]
+                    ${
+                      selected
+                        ? 'border-gold/40 bg-gold/10'
+                        : 'border-white/5 bg-surface/40 hover:bg-white/[0.05]'
+                    }
+                  `}
                 >
                   <div
-                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
-                      sel ? 'bg-gold border-gold' : 'border-white/20'
-                    }`}
+                    className={`
+                      flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2
+                      ${selected ? 'border-gold bg-gold' : 'border-white/20'}
+                    `}
                   >
-                    {sel && <Check className="w-3 h-3 text-base" />}
+                    {selected && <Check className="h-3 w-3 text-base" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">
                       {g.name}
                     </p>
+
                     {g._count?.members !== undefined && (
                       <p className={TEXT.tiny}>{g._count.members} talaba</p>
                     )}
                   </div>
+
+                  {selected && (
+                    <span className="text-[10px] font-bold text-gold">
+                      TANLANDI
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
         )}
-      </Section>
+      </CollapsibleSection>
 
-      <Section title="Sozlamalar">
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Davomiyligi (sek)">
-            <input
-              type="number"
-              value={durationSeconds}
-              onChange={(e) => setDurationSeconds(Number(e.target.value))}
-              className={CONTROL.input}
-            />
-          </Field>
-          <Field label="O'tish balli (%)">
-            <input
-              type="number"
-              value={passingScore}
-              onChange={(e) => setPassingScore(Number(e.target.value))}
-              className={CONTROL.input}
-            />
-          </Field>
-        </div>
-        <div className="space-y-2 mt-3">
-          <CheckboxRow
-            checked={randomQuestions}
-            onChange={setRandomQuestions}
-            label="Savollarni qorishtirish"
-          />
-          <CheckboxRow
-            checked={randomAnswerOrder}
-            onChange={setRandomAnswerOrder}
-            label="Variantlarni qorishtirish"
-          />
-        </div>
-      </Section>
-
-      <button
-        type="button"
-        onClick={onOpenAI}
-        className={CONTROL.buttonSubtle + ' w-full'}
+      {/* Settings */}
+      <CollapsibleSection
+        title="Test sozlamalari"
+        subtitle={`${Math.floor(durationSeconds / 60)} daqiqa · ${passingScore}% o'tish balli`}
+        badge={
+          randomQuestions || randomAnswerOrder
+            ? 'Qorishtirish yoqilgan'
+            : undefined
+        }
       >
-        <Sparkles className="w-4 h-4" />
-        AI bilan savol yaratish
-      </button>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Davomiyligi (sek)">
+              <input
+                type="number"
+                min="0"
+                value={durationSeconds}
+                onChange={(e) => setDurationSeconds(Number(e.target.value))}
+                className={CONTROL.input}
+              />
+            </Field>
 
-      <Section
-        title={`Savollar · ${questions.length}`}
+            <Field label="O'tish balli (%)">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={passingScore}
+                onChange={(e) => setPassingScore(Number(e.target.value))}
+                className={CONTROL.input}
+              />
+            </Field>
+          </div>
+
+          <div className="space-y-2">
+            <CheckboxRow
+              checked={randomQuestions}
+              onChange={setRandomQuestions}
+              label="Savollarni qorishtirish"
+            />
+
+            <CheckboxRow
+              checked={randomAnswerOrder}
+              onChange={setRandomAnswerOrder}
+              label="Variantlarni qorishtirish"
+            />
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Questions */}
+      <CollapsibleSection
+        title="Savollar"
+        badge={`${questions.length} ta`}
+        subtitle={
+          questions.length
+            ? `${questions.length} ta savol tayyor`
+            : 'Savollar qo‘shing'
+        }
+        defaultOpen
         action={
           <button
             type="button"
             onClick={onAddQuestion}
-            className="text-xs text-gold font-semibold inline-flex items-center gap-1"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-gold hover:bg-gold/10"
           >
-            <Plus className="w-3 h-3" /> Qo'shish
+            <Plus className="h-3.5 w-3.5" />
+            Qo‘shish
           </button>
         }
       >
         <div className="space-y-3">
+          {/* AI */}
+          <button
+            type="button"
+            onClick={onOpenAI}
+            className="group w-full rounded-2xl border border-gold/20 bg-gradient-to-r from-gold/10 via-gold/5 to-transparent p-4 text-left transition hover:border-gold/35 hover:bg-gold/10 active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/15 text-gold transition group-hover:scale-105">
+                <Sparkles className="h-5 w-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-bold text-ink">
+                  AI bilan test yaratish
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-relaxed text-ink-muted">
+                  Mavzuni ayting — AI savollar va javob variantlarini tayyorlaydi
+                </span>
+              </span>
+              <span className="text-lg text-gold transition-transform group-hover:translate-x-0.5">
+                →
+              </span>
+            </div>
+          </button>
+
           {questions.map((q, qi) => (
             <QuestionCard
               key={qi}
               index={qi}
               question={q}
               canRemove={questions.length > 1}
+              defaultOpen={qi === 0}
               onRemove={() => onRemoveQuestion(qi)}
               onChange={onQuestionChange}
               onOptionChange={onOptionChange}
@@ -744,7 +914,15 @@ function TestForm({
             />
           ))}
         </div>
-      </Section>
+      </CollapsibleSection>
+
+      {/* Bottom hint */}
+      <div className="rounded-xl border border-gold/10 bg-gold/5 px-3 py-2.5">
+        <p className="text-center text-[11px] leading-relaxed text-ink-muted">
+          Test tayyor bo‘lgach, pastdagi Telegram tugmasi orqali
+          <span className="font-semibold text-gold"> SAQLASH</span> ni bosing.
+        </p>
+      </div>
     </div>
   );
 }
@@ -752,10 +930,12 @@ function TestForm({
 /* ============================================================
    QUESTION CARD
    ============================================================ */
+
 interface QuestionCardProps {
   index: number;
   question: QuestionDraft;
   canRemove: boolean;
+  defaultOpen?: boolean;
   onRemove: () => void;
   onChange: <K extends keyof QuestionDraft>(
     index: number,
@@ -771,94 +951,194 @@ function QuestionCard({
   index,
   question,
   canRemove,
+  defaultOpen = false,
   onRemove,
   onChange,
   onOptionChange,
   onAddOption,
   onRemoveOption,
 }: QuestionCardProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const filledOptions = question.options.filter((o) => o.trim()).length;
+  const preview =
+    question.text.trim() || `Savol ${index + 1} — hali to‘ldirilmagan`;
+
   return (
-    <div className="bg-surface/40 border border-white/5 rounded-2xl p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <span className={TEXT.label}>Savol {index + 1}</span>
+    <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface/40">
+      {/* Question header */}
+      <div className="flex items-center gap-2 px-3 py-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+          aria-expanded={open}
+        >
+          <span
+            className={`
+              flex h-8 w-8 shrink-0 items-center justify-center rounded-xl
+              text-xs font-black
+              ${
+                open
+                  ? 'bg-gold text-black'
+                  : 'border border-white/10 bg-white/[0.03] text-ink-muted'
+              }
+            `}
+          >
+            {index + 1}
+          </span>
+
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-ink">
+              {preview}
+            </span>
+
+            {!open && (
+              <span className="mt-0.5 block text-[10px] text-ink-muted">
+                {question.difficulty === 'EASY'
+                  ? 'Oson'
+                  : question.difficulty === 'HARD'
+                    ? 'Qiyin'
+                    : "O'rta"}{' '}
+                · {question.points} ball · {filledOptions} variant
+              </span>
+            )}
+          </span>
+
+          <span
+            className={`shrink-0 text-ink-muted transition-transform ${
+              open ? 'rotate-0' : '-rotate-90'
+            }`}
+          >
+            ⌄
+          </span>
+        </button>
+
         {canRemove && (
           <button
             type="button"
             onClick={onRemove}
-            className="text-red-400 hover:text-red-300 p-1"
-            aria-label="O'chirish"
+            className="shrink-0 rounded-xl p-2 text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
+            aria-label="Savolni o‘chirish"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <textarea
-        value={question.text}
-        onChange={(e) => onChange(index, 'text', e.target.value)}
-        placeholder="Savol matni..."
-        rows={2}
-        className={CONTROL.textarea}
-      />
-
-      <div className="grid grid-cols-2 gap-2">
-        <select
-          value={question.difficulty}
-          onChange={(e) =>
-            onChange(index, 'difficulty', e.target.value as Difficulty)
-          }
-          className={CONTROL.select}
-        >
-          <option value="EASY">Oson</option>
-          <option value="MEDIUM">O'rta</option>
-          <option value="HARD">Qiyin</option>
-        </select>
-        <input
-          type="number"
-          min="1"
-          value={question.points}
-          onChange={(e) => onChange(index, 'points', Number(e.target.value))}
-          placeholder="Ball"
-          className={CONTROL.input}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <label className={TEXT.tiny}>Variantlar (radio = to'g'ri javob)</label>
-        {question.options.map((opt: string, oi: number) => (
-          <div key={oi} className="flex items-center gap-2">
-            <input
-              type="radio"
-              name={`correct-${index}`}
-              checked={question.correctAnswerIndex === oi}
-              onChange={() => onChange(index, 'correctAnswerIndex', oi)}
-              className="cursor-pointer accent-gold shrink-0 w-4 h-4"
+      {/* Question body */}
+      <div
+        className={`
+          grid transition-[grid-template-rows] duration-200 ease-out
+          ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}
+        `}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="space-y-3 border-t border-white/5 p-4">
+            <textarea
+              value={question.text}
+              onChange={(e) => onChange(index, 'text', e.target.value)}
+              placeholder="Savol matni..."
+              rows={3}
+              className={CONTROL.textarea}
             />
-            <input
-              value={opt}
-              onChange={(e) => onOptionChange(index, oi, e.target.value)}
-              placeholder={`Variant ${oi + 1}`}
-              className={CONTROL.input + ' flex-1'}
-            />
-            {question.options.length > 2 && (
+
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                value={question.difficulty}
+                onChange={(e) =>
+                  onChange(
+                    index,
+                    'difficulty',
+                    e.target.value as Difficulty,
+                  )
+                }
+                className={CONTROL.select}
+              >
+                <option value="EASY">Oson</option>
+                <option value="MEDIUM">O'rta</option>
+                <option value="HARD">Qiyin</option>
+              </select>
+
+              <input
+                type="number"
+                min="1"
+                value={question.points}
+                onChange={(e) =>
+                  onChange(index, 'points', Number(e.target.value))
+                }
+                placeholder="Ball"
+                className={CONTROL.input}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <label className={TEXT.tiny}>
+                  Variantlar
+                </label>
+
+                <span className="text-[10px] text-ink-muted">
+                  Radio = to'g'ri javob
+                </span>
+              </div>
+
+              {question.options.map((opt: string, oi: number) => (
+                <div
+                  key={oi}
+                  className={`
+                    flex items-center gap-2 rounded-xl border p-1.5
+                    ${
+                      question.correctAnswerIndex === oi
+                        ? 'border-gold/30 bg-gold/5'
+                        : 'border-white/5 bg-white/[0.02]'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name={`correct-${index}`}
+                    checked={question.correctAnswerIndex === oi}
+                    onChange={() =>
+                      onChange(index, 'correctAnswerIndex', oi)
+                    }
+                    className="h-4 w-4 shrink-0 cursor-pointer accent-gold"
+                    aria-label={`Variant ${oi + 1} to'g'ri javob`}
+                  />
+
+                  <input
+                    value={opt}
+                    onChange={(e) =>
+                      onOptionChange(index, oi, e.target.value)
+                    }
+                    placeholder={`Variant ${oi + 1}`}
+                    className={CONTROL.input + ' flex-1 border-0 bg-transparent'}
+                  />
+
+                  {question.options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveOption(index, oi)}
+                      className="shrink-0 rounded-lg bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/15"
+                      aria-label={`Variant ${oi + 1} ni o‘chirish`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+
               <button
                 type="button"
-                onClick={() => onRemoveOption(index, oi)}
-                className="text-red-400 p-1.5 rounded-lg bg-red-500/10 shrink-0"
-                aria-label="O'chirish"
+                onClick={() => onAddOption(index)}
+                className="inline-flex items-center gap-1 rounded-lg px-1 py-1 text-xs font-semibold text-gold hover:bg-gold/10"
               >
-                <X className="w-3.5 h-3.5" />
+                <Plus className="h-3 w-3" />
+                Variant qo'shish
               </button>
-            )}
+            </div>
           </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => onAddOption(index)}
-          className="text-xs text-gold font-semibold inline-flex items-center gap-1 mt-1"
-        >
-          <Plus className="w-3 h-3" /> Variant
-        </button>
+        </div>
       </div>
     </div>
   );
