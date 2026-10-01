@@ -31,10 +31,10 @@ import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail';
 
 /* ============ TEACHER ============ */
-import { TeacherOverview } from './pages/teacher/TeacherOverview';
+import  TeacherOverview  from './pages/teacher/TeacherOverview';
 import { TeacherGroups } from './pages/teacher/TeacherGroups';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
-import { TeacherStudentDetail } from './pages/teacher/TeacherStudentDetail';
+import  TeacherStudentDetail from './pages/teacher/TeacherStudentDetail';
 import { TeacherAssignments } from './pages/teacher/content/TeacherAssignments';
 import { TeacherAssignmentDetail } from './pages/teacher/content/TeacherAssignmentDetail';
 import { AdminSubjectDetail } from './pages/teacher/content/AdminSubjectDetail';

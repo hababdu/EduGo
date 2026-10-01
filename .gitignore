@@ -1,0 +1,10 @@
+# Barcha papkalardagi node_modules ni e'tiborsiz qoldirish
+**/node_modules/
+node_modules/
+
+# Mac uchun keraksiz fayllar
+.DS_Store
+
+# Muhit o'zgaruvchilari
+.env
+**/env
