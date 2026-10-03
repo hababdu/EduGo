@@ -1,5 +1,6 @@
 import { useLiveRanking } from '../../hooks/useLiveRanking';
 import { useAuthStore } from '../../store/auth.store';
+import { Podium } from '../../components/dashboard/Podium';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -35,8 +36,10 @@ export function RankingPage() {
           ))}
         </div>
       ) : (
+        <>
+        <Podium entries={top} currentUserId={currentUserId} />
         <div className="divide-y divide-white/5">
-          {top.map((entry) => {
+          {top.slice(top.length >= 3 ? 3 : 0).map((entry) => {
             const isSelf = entry.studentId === currentUserId;
             return (
               <div
@@ -57,6 +60,7 @@ export function RankingPage() {
             );
           })}
         </div>
+        </>
       )}
     </div>
   );

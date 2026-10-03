@@ -7,6 +7,47 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   /* ============================================================
+     FAOLLIK MATRITSASI — kunlar kesimida (Toshkent vaqti, UTC+5)
+     ============================================================ */
+  static readonly ACTIVITY_TZ_OFFSET_HOURS = 5;
+  static readonly ACTIVITY_MAX_DAYS = 120;
+
+  /** Faqat TOKEN'dagi o'quvchining o'z faolligi. Bo'sh kunlar ham 0 bilan qaytadi. */
+  async getMyActivity(userId: string, daysRaw?: number, now: Date = new Date()) {
+    const n = Number.isFinite(daysRaw) ? Math.trunc(daysRaw as number) : 84;
+    const days = Math.min(DashboardService.ACTIVITY_MAX_DAYS, Math.max(7, n));
+    const offsetMs = DashboardService.ACTIVITY_TZ_OFFSET_HOURS * 3_600_000;
+
+    // Toshkent "bugun" yarim kechasi (UTC ms), keyin (days-1) kun orqaga
+    const localNow = new Date(now.getTime() + offsetMs);
+    const todayStartLocal = Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate());
+    const startLocal = todayStartLocal - (days - 1) * 86_400_000;
+    const since = new Date(startLocal - offsetMs);
+
+    const rows = await this.prisma.xpTransaction.findMany({
+      where: { studentId: userId, createdAt: { gte: since } },
+      select: { createdAt: true, amount: true },
+    });
+
+    const map = new Map<string, { xp: number; count: number }>();
+    for (const r of rows) {
+      const key = new Date(r.createdAt.getTime() + offsetMs).toISOString().slice(0, 10);
+      const cur = map.get(key) ?? { xp: 0, count: 0 };
+      cur.xp += Math.max(0, r.amount);
+      cur.count += 1;
+      map.set(key, cur);
+    }
+
+    const out: { date: string; xp: number; count: number }[] = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startLocal + i * 86_400_000).toISOString().slice(0, 10);
+      const v = map.get(date) ?? { xp: 0, count: 0 };
+      out.push({ date, xp: v.xp, count: v.count });
+    }
+    return { days: out, activeDays: out.filter((d) => d.count > 0).length };
+  }
+
+  /* ============================================================
      STUDENT DASHBOARD
      ============================================================ */
   async getStudentDashboard(userId: string) {

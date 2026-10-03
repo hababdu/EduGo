@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
+import { ActivityMatrix, ActivityDay } from '../../components/dashboard/ActivityMatrix';
 
 interface UserProfileResponse {
   id: string;
@@ -30,10 +31,19 @@ function useProfile() {
   });
 }
 
+function useActivity() {
+  return useQuery({
+    queryKey: ['student', 'activity', 84],
+    queryFn: () => apiFetch<{ days: ActivityDay[]; activeDays: number }>('/api/v1/dashboard/activity?days=84'),
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function ProfilePage() {
   const navigate = useNavigate();
   const { haptic, user: tgUser } = useTelegram();
   const { data, isLoading, error } = useProfile();
+  const { data: activity } = useActivity();
 
   if (isLoading) {
     return (
@@ -144,6 +154,8 @@ export function ProfilePage() {
           </p>
         </div>
       </div>
+
+      {activity && <ActivityMatrix days={activity.days} activeDays={activity.activeDays} />}
 
       {/* Actions */}
       <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
