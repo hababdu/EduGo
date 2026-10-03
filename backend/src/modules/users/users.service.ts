@@ -1,6 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+
+export const ASSIGNABLE_ROLES = ['STUDENT', 'TEACHER', 'ADMIN', 'SUPER_ADMIN'] as const;
+const ADMIN_TIER: string[] = ['ADMIN', 'SUPER_ADMIN'];
 
 @Injectable()
 export class UsersService {
@@ -67,26 +70,48 @@ export class UsersService {
   }
 
   /**
-   * Foydalanuvchi rolini yangilash (ADMIN, TEACHER, USER/STUDENT)
+   * Foydalanuvchi rolini o'zgartirish. Qoidalar (avval umuman yo'q edi — har qanday ADMIN istalgan odamni SUPER_ADMIN qila olardi):
+   *  • rol faqat ma'lum qiymatlardan biri bo'lishi shart (aks holda 400, oldin 500 edi)
+   *  • hech kim O'Z rolini o'zgartira olmaydi
+   *  • ADMIN/SUPER_ADMIN darajasiga tegishli har qanday o'zgarishni (berish yoki olish) faqat SUPER_ADMIN qiladi;
+   *    oddiy ADMIN faqat STUDENT <-> TEACHER ni boshqaradi
+   *  • har bir o'zgarish audit jurnaliga yoziladi
    */
-  async updateRole(userId: string, role: any) {
-    const user = await this.prisma.user.findUnique({ 
-      where: { id: userId } 
-    });
-    
+  async updateRole(userId: string, role: unknown, actor: CurrentUserPayload) {
+    if (typeof role !== 'string' || !(ASSIGNABLE_ROLES as readonly string[]).includes(role)) {
+      throw new BadRequestException("Noto'g'ri rol");
+    }
+    if (userId === actor.id) {
+      throw new ForbiddenException("O'z rolingizni o'zgartira olmaysiz");
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.deletedAt) {
       throw new NotFoundException('Foydalanuvchi topilmadi');
     }
 
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { role: role },
-      select: {
-        id: true,
-        telegramId: true,
-        role: true,
-        firstName: true,
-      }
+    const touchesAdminTier = ADMIN_TIER.includes(user.role as string) || ADMIN_TIER.includes(role);
+    if (touchesAdminTier && actor.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException("ADMIN va SUPER_ADMIN rollarini faqat super administrator boshqara oladi");
+    }
+
+    const select = { id: true, telegramId: true, role: true, firstName: true } as const;
+    if (user.role === role) {
+      return this.prisma.user.findUnique({ where: { id: userId }, select }); // o'zgarish yo'q — yozuv ham yo'q
+    }
+
+    const updated = await this.prisma.user.update({ where: { id: userId }, data: { role: role as any }, select });
+
+    await this.prisma.adminActionLog.create({
+      data: {
+        actorId: actor.id,
+        action: 'ROLE_CHANGE',
+        targetType: 'User',
+        targetId: userId,
+        oldValue: { role: user.role } as any,
+        newValue: { role } as any,
+      },
     });
+    return updated;
   }
 }
