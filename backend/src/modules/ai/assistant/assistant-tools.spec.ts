@@ -9,7 +9,7 @@ const teacher = { id: 'teacher-A-id', telegramId: '2', role: 'TEACHER', status: 
 const admin = { id: 'admin-1-id', telegramId: '3', role: 'ADMIN', status: 'ACTIVE' } as any;
 
 export function makeRegistry(over: Record<string, any> = {}) {
-  const m = { dashboard: {}, tests: {}, ranking: {}, streak: {}, challenges: {}, data: {}, groups: {}, teacher: {}, analytics: {}, overview: {}, students: {}, ...over };
+  const m: any = { dashboard: {}, tests: {}, ranking: {}, streak: {}, challenges: {}, data: {}, groups: {}, teacher: {}, analytics: {}, overview: {}, students: {}, ...over };
   return new AssistantToolRegistry(m.dashboard, m.tests, m.ranking, m.streak, m.challenges, m.data, m.groups, m.teacher, m.analytics, m.overview, m.students);
 }
 const parse = (o: { ok: boolean; content: string }) => JSON.parse(o.content);
