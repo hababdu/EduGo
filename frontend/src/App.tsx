@@ -1,4 +1,5 @@
 // src/App.tsx
+import { AppBackground } from './components/layout/AppBackground';
 import {
   BrowserRouter,
   Routes,
@@ -158,6 +159,7 @@ export function App() {
 
   return (
     <BrowserRouter>
+      <AppBackground />
       <ToastHost />
       {isAdmin && <AdminRoutes />}
       {isTeacher && <TeacherRoutes />}

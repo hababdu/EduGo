@@ -6,6 +6,8 @@ import { apiFetch } from '../lib/api-client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useNotifications } from '../hooks/useNotifications';
 import { ScoreHero } from '../components/dashboard/ScoreHero';
+import { BackdropImage } from '../components/ui/BackdropImage';
+import { IMAGES } from '../design/images';
 import { StatChips } from '../components/dashboard/StatChips';
 import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
@@ -179,14 +181,16 @@ export function StudentDashboard() {
   return (
     <div className="pb-24 space-y-6">
       {/* ============ HERO — ball, level, unread count ============ */}
-      <ScoreHero
-        firstName={data.student.firstName}
-        totalScore={data.stats.totalScore}
-        level={data.stats.level}
-        xpIntoLevel={data.stats.xpIntoLevel}
-        xpForNextLevel={data.stats.xpForNextLevel}
-        unreadCount={unreadCount}
-      />
+      <BackdropImage src={IMAGES.hero} opacity={0.45} blur={5}>
+        <ScoreHero
+          firstName={data.student.firstName}
+          totalScore={data.stats.totalScore}
+          level={data.stats.level}
+          xpIntoLevel={data.stats.xpIntoLevel}
+          xpForNextLevel={data.stats.xpForNextLevel}
+          unreadCount={unreadCount}
+        />
+      </BackdropImage>
 
       {/* ============ AI REPETITOR ============ */}
       <div className="px-5">

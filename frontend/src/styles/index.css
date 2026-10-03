@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -77,3 +77,30 @@ body {
 }
 .animate-in.fade-in { animation: fade-in 0.2s ease-out; }
 .animate-in.slide-in-from-top { animation: slide-in-from-top 0.25s ease-out; }
+
+/* ============================================================
+   Fon effektlari (sof CSS — qo'shimcha rasm yuklanmaydi)
+   ============================================================ */
+@layer utilities {
+  /* Yumshoq "aurora": oltin va teal yorug'lik dog'lari */
+  .bg-aurora {
+    background-image:
+      radial-gradient(60% 45% at 85% -5%, rgb(255 176 32 / 0.14), transparent 70%),
+      radial-gradient(55% 40% at 0% 25%, rgb(52 208 160 / 0.10), transparent 70%),
+      radial-gradient(50% 40% at 100% 80%, rgb(56 189 248 / 0.08), transparent 70%);
+    background-repeat: no-repeat;
+  }
+
+  /* Nozik nuqtali to'r (kartalar orqasi uchun) */
+  .bg-dots {
+    background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  /* Shisha ko'rinish (navigatsiya, panel) */
+  .glass {
+    background-color: rgb(18 22 42 / 0.72);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+}

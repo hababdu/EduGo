@@ -1,39 +1,41 @@
 import { NavLink } from 'react-router-dom';
+import { Home, BookOpen, ClipboardList, Users, User } from 'lucide-react';
 import { haptic } from '../../lib/telegram';
 
 const items = [
-  { to: '/', icon: '🏠', label: 'Bosh sahifa' },
-  { to: '/lessons', icon: '📚', label: 'Darslar' },
-  { to: '/tests', icon: '📝', label: 'Testlar' },
-  { to: '/groups', icon: '👥', label: 'Guruhlar' },      // 👈 BU YERGA
-  { to: '/profile', icon: '👤', label: 'Profil' },
+  { to: '/', Icon: Home, label: 'Bosh sahifa', end: true },
+  { to: '/lessons', Icon: BookOpen, label: 'Darslar', end: false },
+  { to: '/tests', Icon: ClipboardList, label: 'Testlar', end: false },
+  { to: '/groups', Icon: Users, label: 'Guruhlar', end: false },
+  { to: '/profile', Icon: User, label: 'Profil', end: false },
 ];
-const hideBottomNav =
-    (location.pathname.startsWith('/tests/') &&
-      location.pathname !== '/tests') ||
-    location.pathname.startsWith('/lessons/') ||    // 👈 YANGI
-    location.pathname.startsWith('/groups/');        // 👈 YANGI
+
 export function BottomNav() {
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 bg-surface border-t border-white/5 flex justify-around"
+      aria-label="Asosiy navigatsiya"
+      className="glass fixed bottom-0 inset-x-0 z-30 border-t border-white/5 flex justify-around"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      {items.map((item) => (
+      {items.map(({ to, Icon, label, end }) => (
         <NavLink
-          key={item.to}
-          to={item.to}
+          key={to}
+          to={to}
+          end={end}
           onClick={() => haptic('light')}
           className={({ isActive }) =>
-            `flex flex-col items-center gap-0.5 py-2.5 px-3 text-xs ${
-              isActive ? 'text-gold' : 'text-ink-faint'
+            `relative flex flex-col items-center gap-0.5 py-2.5 px-3 text-[11px] font-semibold transition-colors ${
+              isActive ? 'text-gold' : 'text-ink-faint hover:text-ink-muted'
             }`
           }
         >
-          <span className="text-lg" aria-hidden="true">
-            {item.icon}
-          </span>
-          {item.label}
+          {({ isActive }) => (
+            <>
+              {isActive && <span aria-hidden="true" className="absolute top-0 h-0.5 w-8 rounded-full bg-gold" />}
+              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.4 : 2} aria-hidden="true" />
+              {label}
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
