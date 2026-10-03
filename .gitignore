@@ -1,0 +1,10 @@
+# Build natijalari va bog'liqliklar — repoga kirmasin
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Sirlar
+.env
+.env.local
+!.env.example
+!.env.ai.example
