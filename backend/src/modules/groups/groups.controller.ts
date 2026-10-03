@@ -3,6 +3,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GroupsService } from './groups.service';
+import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/v1/groups')
@@ -28,10 +29,21 @@ export class GroupsController {
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
   async create(
-    @Body() body: { name: string; description?: string },
+    @Body() body: CreateGroupDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.groupsService.createGroup(body, user);
+  }
+
+  /** Guruhni tahrirlash. O'qituvchi faqat o'z guruhini va o'qituvchini O'ZGARTIRA OLMAYDI (faqat admin). */
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateGroupDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.updateGroup(id, body, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')

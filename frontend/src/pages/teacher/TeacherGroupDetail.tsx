@@ -28,6 +28,11 @@ import {
   Plus,
 } from '../../design/icons';
 import { TEXT, CONTROL, PAGE } from '../../design/tokens';
+import { CapacityBar } from '../../components/group/CapacityBar';
+import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
+import { GroupSettingsForm } from '../../components/group/GroupSettingsForm';
+import { AttendancePanel } from '../../components/group/AttendancePanel';
+
 
 /* ============================================================
    META
@@ -68,7 +73,7 @@ export function TeacherGroupDetail() {
     error: assignmentsError,
   } = useTeacherAssignments(groupId);
 
-  const [tab, setTab] = useState<'students' | 'materials'>('students');
+  const [tab, setTab] = useState<'students' | 'materials' | 'attendance'>('students');
 
   useEffect(() => {
     const cleanup = showBackButton(() => {
@@ -191,6 +196,21 @@ export function TeacherGroupDetail() {
         </div>
       </div>
 
+      {/* Sig'im, Telegram havola, sozlamalar */}
+      <div className="space-y-3">
+        <div className="flex items-end justify-between gap-3">
+          <CapacityBar count={members.length} max={group.maxCapacity} className="flex-1" />
+          <TelegramLinkButton url={group.telegramChatUrl} />
+        </div>
+        <GroupSettingsForm
+          key={`${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}`}
+          groupId={groupId}
+          maxCapacity={group.maxCapacity}
+          telegramChatUrl={group.telegramChatUrl}
+          memberCount={members.length}
+        />
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-1.5">
         <button
@@ -221,7 +241,23 @@ export function TeacherGroupDetail() {
           Materiallar
           <span className="opacity-70">· {materialsCount}</span>
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            setTab('attendance');
+          }}
+          className={`${CONTROL.chip} flex-1 flex items-center justify-center gap-1.5 ${
+            tab === 'attendance' ? CONTROL.chipActive : CONTROL.chipInactive
+          }`}
+        >
+          <ClipboardList className="w-3.5 h-3.5" />
+          Davomat
+        </button>
       </div>
+
+      {/* Tab: Attendance */}
+      {tab === 'attendance' && <AttendancePanel groupId={groupId} />}
 
       {/* Tab: Students */}
       {tab === 'students' &&

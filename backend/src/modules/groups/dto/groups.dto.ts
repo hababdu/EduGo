@@ -1,10 +1,18 @@
 // src/modules/groups/dto/groups.dto.ts
 import {
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
+  Max,
   MaxLength,
+  Min,
 } from 'class-validator';
+
+/** Faqat Telegram havolalari (javascript:, data: va h.k. o'tmasligi uchun qat'iy) */
+export const TELEGRAM_URL_REGEX = /^https:\/\/(t\.me|telegram\.me)\/[A-Za-z0-9_+\/-]{3,100}$/;
+export const GROUP_MAX_CAPACITY = 500;
 
 /* ============================================================
    CREATE GROUP
@@ -28,6 +36,17 @@ export class CreateGroupDto {
   @IsOptional()
   @IsString()
   teacherId?: string;
+
+  @IsOptional()
+  @IsInt({ message: "Sig'im butun son bo'lsin" })
+  @Min(1, { message: "Sig'im kamida 1 bo'lsin" })
+  @Max(GROUP_MAX_CAPACITY, { message: `Sig'im ${GROUP_MAX_CAPACITY} dan oshmasin` })
+  maxCapacity?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(TELEGRAM_URL_REGEX, { message: "Havola https://t.me/... ko'rinishida bo'lsin" })
+  telegramChatUrl?: string | null;
 }
 
 /* ============================================================
@@ -52,6 +71,17 @@ export class UpdateGroupDto {
   @IsOptional()
   @IsString()
   teacherId?: string | null;
+
+  @IsOptional()
+  @IsInt({ message: "Sig'im butun son bo'lsin" })
+  @Min(1, { message: "Sig'im kamida 1 bo'lsin" })
+  @Max(GROUP_MAX_CAPACITY, { message: `Sig'im ${GROUP_MAX_CAPACITY} dan oshmasin` })
+  maxCapacity?: number | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(TELEGRAM_URL_REGEX, { message: "Havola https://t.me/... ko'rinishida bo'lsin" })
+  telegramChatUrl?: string | null;
 }
 
 /* ============================================================

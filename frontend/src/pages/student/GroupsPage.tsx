@@ -21,6 +21,7 @@ interface StudentGroup {
   name: string;
   description?: string | null;
   posterUrl?: string | null;
+  maxCapacity?: number | null;
   teacher?: Teacher | null;
   _count?: {
     members?: number;
@@ -205,7 +206,7 @@ export function GroupsPage() {
                   {/* Members badge */}
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium flex items-center gap-1">
                     <span>👥</span>
-                    <span>{membersCount}</span>
+                    <span>{membersCount}{g.maxCapacity ? ` / ${g.maxCapacity}` : ''}</span>
                   </div>
                 </div>
 

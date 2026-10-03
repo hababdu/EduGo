@@ -358,7 +358,7 @@ export default function AdminGroups() {
 
                   {/* Members */}
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium">
-                    👥 {membersCount}
+                    👥 {membersCount}{g.maxCapacity ? ` / ${g.maxCapacity}` : ''}
                   </div>
                 </div>
 

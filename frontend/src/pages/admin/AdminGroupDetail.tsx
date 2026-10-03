@@ -14,6 +14,11 @@ import {
 import { useAdminStudents } from '../../hooks/useAdmin';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
+import { CapacityBar } from '../../components/group/CapacityBar';
+import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
+import { GroupSettingsForm } from '../../components/group/GroupSettingsForm';
+import { AttendancePanel } from '../../components/group/AttendancePanel';
+
 
 /* ============================================================
    COMPONENT
@@ -271,8 +276,22 @@ export function AdminGroupDetail() {
               </span>
             )}
           </div>
+
+          <CapacityBar
+            count={Array.isArray(groupStudents) ? groupStudents.length : 0}
+            max={group.maxCapacity}
+          />
+          <TelegramLinkButton url={group.telegramChatUrl} />
         </div>
       </div>
+
+      <GroupSettingsForm
+        key={`${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}`}
+        groupId={id}
+        maxCapacity={group.maxCapacity}
+        telegramChatUrl={group.telegramChatUrl}
+        memberCount={Array.isArray(groupStudents) ? groupStudents.length : 0}
+      />
 
       {/* ============ TEACHER ASSIGN ============ */}
       <form
@@ -365,6 +384,12 @@ export function AdminGroupDetail() {
           </button>
         </div>
       </form>
+
+      {/* ============ DAVOMAT ============ */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-ink">📋 Davomat</h3>
+        <AttendancePanel groupId={id} />
+      </div>
 
       {/* ============ STUDENTS LIST ============ */}
       <div className="space-y-3">

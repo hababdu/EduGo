@@ -19,6 +19,7 @@ interface TeacherGroup {
   name: string;
   description?: string | null;
   posterUrl?: string | null;
+  maxCapacity?: number | null;
   _count?: { members?: number; assignments?: number };
 }
 
@@ -149,7 +150,7 @@ function GroupCard({ group, onClick }: { group: TeacherGroup; onClick: () => voi
         <div className="flex items-center gap-3 text-[11px] text-ink-muted mt-auto">
           <span className="flex items-center gap-1">
             <Users className="w-3 h-3" />
-            {members}
+            {members}{group.maxCapacity ? ` / ${group.maxCapacity}` : ''}
           </span>
           <span className="flex items-center gap-1">
             <FileText className="w-3 h-3" />

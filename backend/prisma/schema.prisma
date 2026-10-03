@@ -62,6 +62,8 @@ model User {
   createdCourses       Course[]             @relation("CourseCreatedBy")
   taughtGroups         Group[]              @relation("GroupTeacher")
   assistantGroups      Group[]              @relation("GroupAssistant")
+  attendanceRecords    AttendanceRecord[]   @relation("AttendanceStudent")
+  attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
   createdTests         Test[]               @relation("TestCreatedBy")
   createdQuestions     Question[]           @relation("QuestionCreatedBy")
   assignedTests        TestAssignment[]     @relation("AssignedBy")
@@ -107,6 +109,10 @@ model Group {
   createdAt   DateTime @default(now())   // 👈 BO'LISHI SHART
   deletedAt   DateTime?
 
+  // Guruh sig'imi (null = cheklanmagan) va guruhning Telegram chati/boti havolasi (https://t.me/...)
+  maxCapacity     Int?
+  telegramChatUrl String?
+
   teacher   User? @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
   assistant User? @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
 
@@ -114,6 +120,7 @@ model Group {
   testAssignments    TestAssignment[]
   assignments        Assignment[]
   teacherAssignments TeacherAssignment[]
+  attendance         AttendanceRecord[]
 
   @@index([teacherId])
   @@index([assistantId])
@@ -133,6 +140,36 @@ model GroupMember {
 
   @@unique([groupId, studentId])
   @@index([studentId])
+}
+
+// ------------------------------------------------------------
+// 2b. DAVOMAT — guruh, o'quvchi va kun bo'yicha bitta yozuv
+// ------------------------------------------------------------
+
+enum AttendanceStatus {
+  PRESENT // kelgan
+  ABSENT // kelmagan
+  EXCUSED // sababli
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  groupId    String
+  studentId  String
+  date       DateTime         @db.Date // faqat sana (Toshkent kuni)
+  status     AttendanceStatus
+  note       String?
+  markedById String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student  User  @relation("AttendanceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User  @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([groupId, studentId, date])
+  @@index([groupId, date])
+  @@index([studentId, date])
 }
 
 // ------------------------------------------------------------

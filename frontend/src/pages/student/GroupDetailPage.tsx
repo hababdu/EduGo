@@ -1,4 +1,7 @@
 // src/pages/student/GroupDetailPage.tsx
+import { CapacityBar } from '../../components/group/CapacityBar';
+import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
+import { MyAttendanceCard } from '../../components/group/MyAttendanceCard';
 import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -31,6 +34,8 @@ interface GroupDetail {
   name: string;
   description?: string | null;
   posterUrl?: string | null;
+  maxCapacity?: number | null;
+  telegramChatUrl?: string | null;
   teacher?: Teacher | null;
   members?: GroupMember[];
   _count?: {
@@ -200,6 +205,15 @@ export function GroupDetailPage() {
           </p>
         </div>
       </div>
+
+      {/* ============ SIG'IM, TELEGRAM, DAVOMAT ============ */}
+      {(group.maxCapacity || group.telegramChatUrl) && (
+        <div className="flex items-end justify-between gap-3">
+          <CapacityBar count={memberCount} max={group.maxCapacity} className="flex-1" />
+          <TelegramLinkButton url={group.telegramChatUrl} />
+        </div>
+      )}
+      <MyAttendanceCard groupId={group.id} />
 
       {/* ============ MEMBERS ============ */}
       <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
