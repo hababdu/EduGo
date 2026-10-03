@@ -13,7 +13,7 @@ import { AdminStudentsService } from '../../../admin/students/admin-students.ser
 import { AssignTestDto } from '../../../tests/management/dto/test.dto';
 import { TestManagementService } from '../../../tests/management/test-management.service';
 import { AssistantDataService } from '../assistant-data.service';
-import { defineWriteTool, effectiveRole } from '../assistant.types';
+import { AssistantWriteTool, defineWriteTool, effectiveRole } from '../assistant.types';
 import { reader, ToolInputError } from '../tool-input';
 
 export interface WriteToolDeps {
@@ -26,7 +26,7 @@ export const MAX_SCORE_ADJUST = 500;
 
 const fullName = (u: { firstName: string; lastName?: string | null }) => [u.firstName, u.lastName].filter(Boolean).join(' ');
 
-export function writeTools(d: WriteToolDeps) {
+export function writeTools(d: WriteToolDeps): AssistantWriteTool[] {
   /** publish() servisida egasini tekshirish YO'Q — o'qituvchi faqat O'Z testini e'lon qila oladi (admin — hammasini). */
   async function loadPublishable(user: CurrentUserPayload, testId: string) {
     const test = await d.data.testBrief(testId);
