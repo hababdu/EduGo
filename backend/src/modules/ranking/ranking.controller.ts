@@ -1,10 +1,14 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { RankingService } from './ranking.service';
+import { GroupsService } from '../groups/groups.service';
 
 @Controller('api/v1/ranking')
 export class RankingController {
-  constructor(private readonly rankingService: RankingService) {}
+  constructor(
+    private readonly rankingService: RankingService,
+    private readonly groups: GroupsService,
+  ) {}
 
   @Get('global')
   async getGlobal(@Query('limit') limit: string, @CurrentUser() user: CurrentUserPayload) {
@@ -16,7 +20,8 @@ export class RankingController {
   }
 
   @Get('group/:groupId')
-  async getGroup(@Param('groupId') groupId: string) {
+  async getGroup(@Param('groupId') groupId: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.groups.findOneOrThrow(groupId, user);
     const top = await this.rankingService.getGroupRanking(groupId);
     return { top };
   }

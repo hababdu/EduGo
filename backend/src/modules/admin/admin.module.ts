@@ -8,6 +8,6 @@ import { AuditService } from './audit/audit.service';
 @Module({
   controllers: [OverviewController, AdminStudentsController],
   providers: [OverviewService, AdminStudentsService, AuditService],
-  exports: [AuditService],
+  exports: [AuditService, OverviewService, AdminStudentsService],
 })
 export class AdminModule {}

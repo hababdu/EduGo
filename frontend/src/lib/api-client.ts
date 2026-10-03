@@ -62,12 +62,14 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'body'> {
 }
 
 /* ============================================================
-   apiFetch
+   apiFetchRaw — autentifikatsiya + 401 -> refresh -> qayta urinish,
+   lekin javobni PARSE QILMAYDI va xatoni tashlamaydi (Response qaytaradi).
+   Streaming (SSE) uchun kerak; oddiy so'rovlar uchun apiFetch ishlating.
    ============================================================ */
-export async function apiFetch<T = unknown>(
+export async function apiFetchRaw(
   path: string,
   options: ApiFetchOptions = {},
-): Promise<T> {
+): Promise<Response> {
   const { data, headers, ...rest } = options;
 
   const doFetch = async (): Promise<Response> => {
@@ -105,13 +107,27 @@ export async function apiFetch<T = unknown>(
     res = await doFetch();
   }
 
+  return res;
+}
+
+/** Xato javobidan (JSON) xabarni ajratib, ApiError tashlaydi. */
+export async function throwApiError(res: Response): Promise<never> {
+  const errorBody = await res.json().catch(() => ({}));
+  const msg = (errorBody as any).message ?? "So'rovda xatolik yuz berdi";
+  throw new ApiError(res.status, Array.isArray(msg) ? msg[0] : msg);
+}
+
+/* ============================================================
+   apiFetch
+   ============================================================ */
+export async function apiFetch<T = unknown>(
+  path: string,
+  options: ApiFetchOptions = {},
+): Promise<T> {
+  const res = await apiFetchRaw(path, options);
+
   // Xato
-  if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    const msg =
-      (errorBody as any).message ?? "So'rovda xatolik yuz berdi";
-    throw new ApiError(res.status, Array.isArray(msg) ? msg[0] : msg);
-  }
+  if (!res.ok) await throwApiError(res);
 
   // Bo'sh response
   const text = await res.text();

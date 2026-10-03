@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @Controller('api/v1/users')
 export class UsersController {
@@ -38,13 +39,13 @@ export class UsersController {
   @Patch(':id/role')
   async updateUserRole(
     @Param('id') id: string,
-    @Body('role') role: string,
+    @Body() dto: UpdateUserRoleDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
       throw new ForbiddenException('Bu amalni bajarish uchun admin huquqi talab etiladi');
     }
-    return this.usersService.updateRole(id, role);
+    return this.usersService.updateRole(id, dto.role, user);
   }
 
   /**

@@ -1,5 +1,5 @@
 // src/modules/content/courses/courses.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
@@ -70,6 +70,7 @@ export class CoursesService {
       mediaUrl?: string;
     },
     actorId: string,
+    actorRole?: string,
   ) {
     const rawDto = dto as any;
 
@@ -117,12 +118,16 @@ export class CoursesService {
       mediaUrl?: string;
     },
     actorId: string,
+    actorRole?: string,
   ) {
     const rawDto = dto as any;
 
     const existing = await this.prisma.course.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
+    }
+    if (actorRole === 'TEACHER' && existing.createdById !== actorId) {
+      throw new ForbiddenException('Bu kurs sizga tegishli emas');
     }
 
     // description JSON birlashtirish
@@ -202,10 +207,13 @@ export class CoursesService {
   /* ============================================================
      DELETE — soft
      ============================================================ */
-  async remove(id: string, actorId: string) {
+  async remove(id: string, actorId: string, actorRole?: string) {
     const existing = await this.prisma.course.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
+    }
+    if (actorRole === 'TEACHER' && existing.createdById !== actorId) {
+      throw new ForbiddenException('Bu kurs sizga tegishli emas');
     }
 
     await this.prisma.course.update({

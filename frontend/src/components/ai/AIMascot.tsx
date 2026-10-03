@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from 'react';
 import { MascotSVG, type MascotMood } from './MascotSVG';
-import { AITutorChat } from '../ai/AITutorChat';
+import { StudentChatHub } from '../assistant/StudentChatHub';
 
 /* ============================================================
    AI MASCOT — Professional AI Yordamchi Ko'rinishi
@@ -447,7 +447,7 @@ export function AIMascotProvider({
         </>
       )}
 
-      <AITutorChat
+      <StudentChatHub
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         studentName={chatContext.studentName}

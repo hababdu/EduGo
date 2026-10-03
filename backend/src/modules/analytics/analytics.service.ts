@@ -1,14 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** 51-band — TEST ANALYTICS */
-  async getTestAnalytics(testId: string) {
+  /**
+   * Testni topadi va so'rovchi uni ko'rishga haqli ekanini tekshiradi:
+   * ADMIN/SUPER_ADMIN — hamma test, TEACHER — faqat o'zi yaratgan test
+   * (TestManagementService.getDetail bilan bir xil qoida).
+   */
+  private async loadViewableTest(testId: string, requester: CurrentUserPayload) {
     const test = await this.prisma.test.findUnique({ where: { id: testId } });
     if (!test) throw new NotFoundException('Test topilmadi');
+    if (requester.role === 'TEACHER' && test.createdById !== requester.id) {
+      throw new ForbiddenException('Bu test sizga tegishli emas');
+    }
+    return test;
+  }
+
+  /** 51-band — TEST ANALYTICS */
+  async getTestAnalytics(testId: string, requester: CurrentUserPayload) {
+    const test = await this.loadViewableTest(testId, requester);
 
     const attempts = await this.prisma.testAttempt.findMany({ where: { testId } });
 
@@ -47,7 +61,8 @@ export class AnalyticsService {
    * Testdagi har bir savol uchun to'g'ri/xato foizi — "eng qiyin savol"ni
    * aniqlash uchun ishlatiladi.
    */
-  async getQuestionAnalyticsForTest(testId: string) {
+  async getQuestionAnalyticsForTest(testId: string, requester: CurrentUserPayload) {
+    await this.loadViewableTest(testId, requester);
     const testQuestions = await this.prisma.testQuestion.findMany({
       where: { testId },
       include: { question: { select: { id: true, text: true } } },

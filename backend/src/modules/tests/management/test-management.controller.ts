@@ -53,7 +53,7 @@ export class TestManagementController {
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Patch(':id/publish')
   publish(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.service.publish(id, user.id);
+    return this.service.publish(id, user.id, user.role);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
@@ -63,7 +63,7 @@ export class TestManagementController {
     @Body() dto: AssignTestDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.service.assign(id, dto, user.id);
+    return this.service.assign(id, dto, user.id, user.role);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')

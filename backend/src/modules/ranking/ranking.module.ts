@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { RankingController } from './ranking.controller';
 import { RankingService } from './ranking.service';
+import { GroupsModule } from '../groups/groups.module';
 import { RankingGateway } from './ranking.gateway';
 
 @Module({
-  imports: [AuthModule], // JwtService uchun (gateway'da token tekshirish)
+  imports: [AuthModule, GroupsModule], // JwtService uchun (gateway'da token tekshirish)
   controllers: [RankingController],
   providers: [RankingService, RankingGateway],
   exports: [RankingService],

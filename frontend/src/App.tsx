@@ -50,6 +50,7 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import { ToastHost } from './components/ui/Toast';
 import { AIMascotProvider } from './components/ai/AIMascot';
+import { AssistantLauncher } from './components/assistant/AssistantLauncher';
 
 import apiClient, { setMemoryToken } from './api/client';
 
@@ -186,6 +187,7 @@ function AdminRoutes() {
         </Routes>
       </div>
       <AdminNav />
+      <AssistantLauncher />
     </>
   );
 }
@@ -260,6 +262,7 @@ function TeacherRoutes() {
         </Routes>
       </div>
       {!hideBottomNav && <TeacherNav />}
+      <AssistantLauncher />
     </>
   );
 }
