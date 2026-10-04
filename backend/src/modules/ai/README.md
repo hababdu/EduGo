@@ -3,7 +3,7 @@
 Loyihadagi **barcha** AI chaqiruvlari shu modul orqali o'tadi. API kalitlari faqat serverda turadi.
 
 ```
-HTTP ─▶ AiFeaturesController ─▶ AiFeaturesService ─▶ AiService ─▶ AnthropicProvider | GroqProvider
+HTTP ─▶ AiFeaturesController ─▶ AiFeaturesService ─▶ AiService ─▶ AnthropicProvider | GroqProvider | GeminiProvider
          (rol, DTO, throttle)    (prompt, anti-cheat)  (limit, zaxira, hisob)   (provayder formati)
 ```
 

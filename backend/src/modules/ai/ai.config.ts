@@ -3,12 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiProviderName, AiTier } from './ai.types';
 
-const PROVIDERS: AiProviderName[] = ['anthropic', 'groq'];
+const PROVIDERS: AiProviderName[] = ['anthropic', 'groq', 'gemini'];
 
 const DEFAULT_MODELS: Record<AiProviderName, Record<AiTier, string>> = {
   anthropic: { fast: 'claude-haiku-4-5-20251001', smart: 'claude-sonnet-5-5' },
   // Hozirgi frontend ishlatib kelgan model (VITE_GROQ_MODEL standarti) bilan bir xil
   groq: { fast: 'openai/gpt-oss-20b', smart: 'openai/gpt-oss-20b' },
+  gemini: { fast: 'gemini-2.5-flash-lite', smart: 'gemini-2.5-flash' },
 };
 
 // Kunlik token chegarasi (kirish + chiqish). 0 = cheklanmagan.

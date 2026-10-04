@@ -13,6 +13,7 @@ import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { AiUsageService } from './ai-usage.service';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { GeminiProvider } from './providers/gemini.provider';
 import { GroqProvider } from './providers/groq.provider';
 import { AiAccessService } from './features/ai-access.service';
 import { AiFeaturesController } from './features/ai-features.controller';
@@ -41,6 +42,7 @@ import { AssistantToolRegistry } from './assistant/assistant-tool.registry';
     AiUsageService,
     AnthropicProvider,
     GroqProvider,
+    GeminiProvider,
     AiService,
     AiAccessService,
     AiFeaturesService,

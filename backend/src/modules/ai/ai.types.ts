@@ -4,7 +4,7 @@
 // Butun loyiha (yordamchi, tool'lar, generatsiya) FAQAT shu tiplar bilan ishlaydi;
 // provayderga xos format o'zgarishlari providers/ ichida qoladi.
 
-export type AiProviderName = 'anthropic' | 'groq';
+export type AiProviderName = 'anthropic' | 'groq' | 'gemini';
 
 /** fast — oddiy/arzon vazifalar; smart — murakkab fikrlash va tool use. */
 export type AiTier = 'fast' | 'smart';

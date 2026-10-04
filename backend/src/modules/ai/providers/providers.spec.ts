@@ -3,6 +3,7 @@ import { AiConfig } from '../ai.config';
 import { AiProviderError, AiRequest } from '../ai.types';
 import { AnthropicProvider, toAnthropicMessages } from './anthropic.provider';
 import { GroqProvider, toOpenAiMessages } from './groq.provider';
+import { GeminiProvider } from './gemini.provider';
 
 const makeCfg = (env: Record<string, string> = {}) => {
   const cs = { get: (k: string) => env[k] } as unknown as ConfigService;
@@ -195,5 +196,56 @@ describe('GroqProvider', () => {
     const done = events[events.length - 1].response;
     expect(done.text).toBe('Ha');
     expect(done.usage.inputTokens).toBeGreaterThan(0);
+  });
+});
+
+describe('GeminiProvider', () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  it('kalit GEMINI_API_KEY dan olinadi; Groq kaliti hisobga olinmaydi', () => {
+    expect(new GeminiProvider(makeCfg({ GROQ_API_KEY: 'gsk' }).cs, makeCfg({}).ai).isConfigured()).toBe(false);
+    expect(new GeminiProvider(makeCfg({ GEMINI_API_KEY: 'k' }).cs, makeCfg({}).ai).isConfigured()).toBe(true);
+  });
+
+  it("rasmiy Gemini OpenAI-mos manziliga Bearer kalit bilan so'rov yuboradi", async () => {
+    const { cs, ai } = makeCfg({ GEMINI_API_KEY: 'gem-key' });
+    const fetchMock = jest.fn().mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: 'Salom' } }], usage: { prompt_tokens: 4, completion_tokens: 2 } }), { status: 200 }),
+    );
+    global.fetch = fetchMock as any;
+    const res = await new GeminiProvider(cs, ai).complete({ messages: [{ role: 'user', content: 'x' }] }, 'gemini-2.5-flash');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions');
+    expect(init.headers.authorization).toBe('Bearer gem-key');
+    expect(JSON.parse(init.body).model).toBe('gemini-2.5-flash');
+    expect(res.text).toBe('Salom');
+    expect(res.stopReason).toBe('end');
+  });
+
+  it("stream: bir xil index bilan kelgan parallel tool chaqiruvlarini aralashtirmaydi", async () => {
+    const { cs, ai } = makeCfg({ GEMINI_API_KEY: 'k' });
+    const payload = sse([
+      [undefined, { choices: [{ delta: { tool_calls: [{ index: 0, id: '', function: { name: 'a', arguments: '{"x":1}' } }] } }] }],
+      [undefined, { choices: [{ delta: { tool_calls: [{ index: 0, id: '', function: { name: 'b', arguments: '{"y":2}' } }] }, finish_reason: 'tool_calls' }] }],
+      [undefined, '[DONE]'],
+    ]);
+    global.fetch = jest.fn().mockResolvedValue(new Response(payload, { status: 200 })) as any;
+    const events: any[] = [];
+    for await (const ev of new GeminiProvider(cs, ai).stream({ messages: [{ role: 'user', content: 's' }] }, 'm')) events.push(ev);
+    const calls = events.filter((e) => e.type === 'tool_use').map((e) => e.call);
+    expect(calls.map((c) => [c.name, c.input])).toEqual([['a', { x: 1 }], ['b', { y: 2 }]]);
+    expect(new Set(calls.map((c) => c.id)).size).toBe(2);
+  });
+});
+
+describe('AiConfig: gemini', () => {
+  it('AI_PROVIDER=gemini qabul qilinadi va standart modellar bor', () => {
+    const { ai } = makeCfg({ AI_PROVIDER: 'gemini', AI_FALLBACK_PROVIDER: 'groq' });
+    expect(ai.primary).toBe('gemini');
+    expect(ai.fallback).toBe('groq');
+    expect(ai.model('gemini', 'smart')).toMatch(/^gemini-/);
   });
 });

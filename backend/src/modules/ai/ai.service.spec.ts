@@ -16,7 +16,7 @@ const okResponse = (text: string): AiResponse => ({
   model: 'm',
 });
 
-function fakeProvider(name: 'anthropic' | 'groq', opts: { configured?: boolean; complete?: () => Promise<AiResponse>; stream?: () => AsyncGenerator<AiStreamEvent> }): AiProvider {
+function fakeProvider(name: 'anthropic' | 'groq' | 'gemini', opts: { configured?: boolean; complete?: () => Promise<AiResponse>; stream?: () => AsyncGenerator<AiStreamEvent> }): AiProvider {
   return {
     name,
     isConfigured: () => opts.configured ?? true,
@@ -34,7 +34,7 @@ function build(env: Record<string, string>, a: AiProvider, g: AiProvider, prisma
     },
   };
   const usage = new AiUsageService(prisma, cfg);
-  const svc = new AiService(cfg, usage, a as any, g as any);
+  const svc = new AiService(cfg, usage, a as any, g as any, fakeProvider('gemini', { configured: false }) as any);
   return { svc, prisma };
 }
 

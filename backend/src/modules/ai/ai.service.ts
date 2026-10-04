@@ -26,6 +26,7 @@ import {
   AiTier,
 } from './ai.types';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { GeminiProvider } from './providers/gemini.provider';
 import { GroqProvider } from './providers/groq.provider';
 
 @Injectable()
@@ -38,8 +39,9 @@ export class AiService {
     private readonly usage: AiUsageService,
     anthropic: AnthropicProvider,
     groq: GroqProvider,
+    gemini: GeminiProvider,
   ) {
-    this.providers = { anthropic, groq };
+    this.providers = { anthropic, groq, gemini };
   }
 
   /** Sozlangan provayderlar, urinish tartibida: [asosiy, zaxira]. */
@@ -56,6 +58,7 @@ export class AiService {
       configured: {
         anthropic: this.providers.anthropic.isConfigured(),
         groq: this.providers.groq.isConfigured(),
+        gemini: this.providers.gemini.isConfigured(),
       },
       models: {
         anthropic: {
@@ -65,6 +68,10 @@ export class AiService {
         groq: {
           fast: this.cfg.model('groq', 'fast'),
           smart: this.cfg.model('groq', 'smart'),
+        },
+        gemini: {
+          fast: this.cfg.model('gemini', 'fast'),
+          smart: this.cfg.model('gemini', 'smart'),
         },
       },
       active: this.providerChain().map((p) => p.name),

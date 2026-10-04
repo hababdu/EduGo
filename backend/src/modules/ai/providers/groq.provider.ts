@@ -9,6 +9,7 @@ import { estimateTokens } from '../ai.util';
 import {
   AiContentBlock,
   AiProvider,
+  AiProviderName,
   AiRequest,
   AiResponse,
   AiStopReason,
@@ -78,26 +79,29 @@ function safeParse(json: string): Record<string, unknown> {
   }
 }
 
-@Injectable()
-export class GroqProvider implements AiProvider {
-  readonly name = 'groq' as const;
+/** OpenAI-mos /chat/completions provayderlari uchun umumiy asos (Groq, Gemini). */
+export abstract class OpenAiCompatProvider implements AiProvider {
+  abstract readonly name: AiProviderName;
 
   constructor(
-    private readonly env: ConfigService,
-    private readonly cfg: AiConfig,
+    protected readonly env: ConfigService,
+    protected readonly cfg: AiConfig,
+    private readonly keyVar: string,
+    private readonly baseUrlVar: string,
+    private readonly defaultBase: string,
   ) {}
 
   isConfigured(): boolean {
-    return !!this.env.get<string>('GROQ_API_KEY');
+    return !!this.env.get<string>(this.keyVar);
   }
 
   private url(): string {
-    const base = this.env.get<string>('GROQ_BASE_URL') || 'https://api.groq.com/openai/v1';
+    const base = this.env.get<string>(this.baseUrlVar) || this.defaultBase;
     return `${base.replace(/\/+$/, '')}/chat/completions`;
   }
 
   private headers(): Record<string, string> {
-    return { authorization: `Bearer ${this.env.get<string>('GROQ_API_KEY') ?? ''}` };
+    return { authorization: `Bearer ${this.env.get<string>(this.keyVar) ?? ''}` };
   }
 
   private body(req: AiRequest, model: string, stream: boolean) {
@@ -213,7 +217,14 @@ export class GroqProvider implements AiProvider {
         }
 
         for (const tc of delta.tool_calls ?? []) {
-          const i = tc.index ?? 0;
+          let i = tc.index ?? 0;
+          // Ba'zi provayderlar (Gemini) parallel chaqiruvlarni bir xil index bilan yuboradi:
+          // OpenAI'da nom faqat chaqiruvning birinchi bo'lagida keladi, shuning uchun
+          // band slotda yangi nom/id kelsa — bu yangi chaqiruv.
+          const existing = calls.get(i);
+          if (existing && ((tc.function?.name && existing.name) || (tc.id && existing.id && tc.id !== existing.id))) {
+            i = Math.max(...calls.keys()) + 1;
+          }
           const cur = calls.get(i) ?? { id: '', name: '', args: '' };
           if (tc.id) cur.id = tc.id;
           if (tc.function?.name) cur.name = tc.function.name;
@@ -253,5 +264,14 @@ export class GroqProvider implements AiProvider {
     } finally {
       release();
     }
+  }
+}
+
+@Injectable()
+export class GroqProvider extends OpenAiCompatProvider {
+  readonly name = 'groq' as const;
+
+  constructor(env: ConfigService, cfg: AiConfig) {
+    super(env, cfg, 'GROQ_API_KEY', 'GROQ_BASE_URL', 'https://api.groq.com/openai/v1');
   }
 }

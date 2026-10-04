@@ -12,6 +12,7 @@ import { AiService } from '../ai.service';
 import { AiUsageService } from '../ai-usage.service';
 import { AiAccessService } from '../features/ai-access.service';
 import { AnthropicProvider } from '../providers/anthropic.provider';
+import { GeminiProvider } from '../providers/gemini.provider';
 import { GroqProvider } from '../providers/groq.provider';
 import { AuditService } from '../../admin/audit/audit.service';
 import { AssistantActionService } from './assistant-action.service';
@@ -128,7 +129,7 @@ describe("Yordamchi zanjiri (soxta provayder serverlari bilan)", () => {
       providers: [
         { provide: ConfigService, useValue: { get: (k: string) => env[k] } },
         { provide: PrismaService, useValue: prisma },
-        AiConfig, AiUsageService, AnthropicProvider, GroqProvider, AiService, AiAccessService, AssistantService, AssistantActionService,
+        AiConfig, AiUsageService, AnthropicProvider, GroqProvider, GeminiProvider, AiService, AiAccessService, AssistantService, AssistantActionService,
         { provide: AuditService, useValue: audit },
         {
           provide: AssistantToolRegistry,

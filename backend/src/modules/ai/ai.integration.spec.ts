@@ -13,6 +13,7 @@ import { AiAccessService } from './features/ai-access.service';
 import { AiFeaturesController } from './features/ai-features.controller';
 import { AiFeaturesService } from './features/ai-features.service';
 import { AnthropicProvider } from './providers/anthropic.provider';
+import { GeminiProvider } from './providers/gemini.provider';
 import { GroqProvider } from './providers/groq.provider';
 
 @Injectable()
@@ -85,7 +86,7 @@ describe('AI zanjiri (soxta provayder serverlari bilan)', () => {
       providers: [
         { provide: ConfigService, useValue: { get: (k: string) => env[k] } },
         { provide: PrismaService, useValue: prisma },
-        AiConfig, AiUsageService, AnthropicProvider, GroqProvider, AiService, AiAccessService, AiFeaturesService,
+        AiConfig, AiUsageService, AnthropicProvider, GroqProvider, GeminiProvider, AiService, AiAccessService, AiFeaturesService,
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
       ],
