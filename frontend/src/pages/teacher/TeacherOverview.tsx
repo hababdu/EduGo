@@ -4,15 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
-import {
-  PageHeader,
-  StatCard,
-  Section,
-  CardList,
-  ListRow,
-  EmptyState,
-  Skeleton,
-} from '../../components/ui';
+import { ListRow, EmptyState, Skeleton, CardList } from '../../components/ui';
+import { StaffHero, Panel, PanelLink, KpiCard, MiniBars, Avatar } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 import {
   Users,
   FileText,
@@ -21,6 +15,8 @@ import {
   Search,
   X,
   RotateCw,
+  Plus,
+  Trophy,
 } from '../../design/icons';
 import { TEXT, CONTROL, ICON, PAGE_WIDE } from '../../design/tokens';
 
@@ -98,111 +94,87 @@ export function TeacherOverview() {
     );
   }
 
+  const name = user?.first_name;
+  const days = (data.charts.dailyActivity ?? []).map((d) => {
+    const dt = new Date(d.date);
+    return { label: `${dt.getDate()}/${dt.getMonth() + 1}`, value: d.count, title: `${d.date}: ${d.count} ta faol, o'rtacha ${d.avgPercent}%` };
+  });
+
   return (
     <div className={PAGE_WIDE}>
-      {/* Header */}
-      <PageHeader
-        title={user?.first_name ? `Salom, ${user.first_name}` : 'Ish maydonim'}
-        subtitle="O'qituvchi paneli"
+      <StaffHero
+        accent="gold"
+        image={IMAGES.sciencePhysics}
+        eyebrow="O'qituvchi paneli"
+        title={name ? `Salom, ${name}!` : 'Ish maydonim'}
+        subtitle="Guruhlaringiz, testlar va talabalar natijalarini bir joyda kuzating."
+        actions={
+          <>
+            <button type="button" onClick={() => { haptic('light'); navigate('/teacher/tests'); }} className={CONTROL.buttonPrimary}>
+              <Plus className={ICON.sm} /> Test
+            </button>
+            <button type="button" onClick={() => { haptic('light'); navigate('/teacher/groups'); }} className={CONTROL.buttonGhost}>
+              Guruhlar
+            </button>
+          </>
+        }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard
-          label="Guruhlar"
-          value={data.groupsCount}
-          icon={FolderOpen}
-          accent="gold"
-          onClick={() => {
-            haptic('light');
-            setGroupsModal(true);
-          }}
-        />
-        <StatCard label="Talabalar" value={data.studentsCount} icon={Users} accent="teal" />
-        <StatCard label="Testlar" value={data.assignedTestsCount} icon={FileText} accent="gold" />
-        <StatCard
-          label="O'rtacha"
-          value={`${data.averageScore}%`}
-          icon={BarChart3}
-          accent="teal"
-        />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard label="Guruhlar" value={data.groupsCount} icon={FolderOpen} accent="gold" hint="barchasini ko'rish" onClick={() => { haptic('light'); setGroupsModal(true); }} />
+        <KpiCard label="Talabalar" value={data.studentsCount} icon={Users} accent="teal" hint="faol tinglovchilar" />
+        <KpiCard label="Biriktirilgan testlar" value={data.assignedTestsCount} icon={FileText} accent="sky" />
+        <KpiCard label="O'rtacha natija" value={`${data.averageScore}%`} icon={BarChart3} accent="coral" hint={`${data.totalAttempts} ta urinish`} />
       </div>
 
-      {/* Chart */}
-      <Section title="Oxirgi 7 kun">
-        <div className={`${'bg-surface/20 border border-white/5'} rounded-2xl p-4`}>
-          <DailyChart data={data.charts.dailyActivity} total={data.totalAttempts} />
-        </div>
-      </Section>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <Panel title="Oxirgi 7 kun faolligi" icon={BarChart3} accent="gold" className="lg:col-span-3">
+          <MiniBars data={days} color="gold" />
+        </Panel>
 
-      {/* Top students */}
-      {data.topStudents.length > 0 && (
-        <Section title="Eng yaxshi talabalar">
-          <CardList>
-            {data.topStudents.map((s, i) => (
-              <div key={s.id} className="flex items-center gap-3 p-3.5">
-                <span
-                  className={`text-sm font-display w-7 text-center tabular-nums ${
-                    i === 0 ? 'text-gold' : 'text-ink-muted'
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink truncate">
-                    {s.firstName} {s.lastName}
-                  </p>
-                  {s.username && (
-                    <p className="text-[11px] text-ink-muted truncate">@{s.username}</p>
-                  )}
-                </div>
-                <span className="text-sm font-semibold text-gold tabular-nums shrink-0">
-                  {s.totalScore}
-                </span>
-              </div>
-            ))}
-          </CardList>
-        </Section>
-      )}
+        <Panel title="Eng yaxshi talabalar" icon={Trophy} accent="gold" className="lg:col-span-2" flush>
+          {data.topStudents.length === 0 ? (
+            <p className="px-5 pb-5 text-xs text-ink-muted">Hozircha ma'lumot yo'q</p>
+          ) : (
+            <ul className="divide-y divide-white/5">
+              {data.topStudents.map((s, i) => (
+                <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
+                  <span className={`w-5 text-center font-display text-sm tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-muted'}`}>{i + 1}</span>
+                  <Avatar name={`${s.firstName} ${s.lastName ?? ''}`} size="sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{s.firstName} {s.lastName}</p>
+                    <p className="text-[11px] text-ink-muted">{s.level}-daraja</p>
+                  </div>
+                  <span className="shrink-0 text-sm font-semibold tabular-nums text-gold">{s.totalScore}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
 
-      {/* Recent */}
-      <Section
-        title="So'nggi testlar"
-        action={
-          data.recentAssignments.length > 3 && (
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                navigate('/teacher/tests');
-              }}
-              className="text-[11px] text-gold font-medium"
-            >
-              Barchasi
-            </button>
-          )
-        }
+      <Panel
+        title="So'nggi biriktirilgan testlar"
+        icon={FileText}
+        accent="sky"
+        flush
+        action={data.recentAssignments.length > 3 ? <PanelLink onClick={() => { haptic('light'); navigate('/teacher/tests'); }}>Barchasi</PanelLink> : undefined}
       >
         {data.recentAssignments.length === 0 ? (
-          <CardList>
-            <EmptyState icon={FileText} title="Hali test biriktirilmagan" />
-          </CardList>
+          <EmptyState icon={FileText} title="Hali test biriktirilmagan" />
         ) : (
-          <CardList>
+          <div className="divide-y divide-white/5">
             {data.recentAssignments.slice(0, 3).map((a) => (
               <ListRow
                 key={a.id}
                 title={a.testTitle}
                 subtitle={a.groupName}
-                onClick={() => {
-                  haptic('light');
-                  navigate(`/teacher/tests/${a.testId}`);
-                }}
+                onClick={() => { haptic('light'); navigate(`/teacher/tests/${a.testId}`); }}
               />
             ))}
-          </CardList>
+          </div>
         )}
-      </Section>
+      </Panel>
 
       {/* Groups modal */}
       {groupsModal && (
@@ -300,89 +272,6 @@ function GroupsModal({
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-/* ============================================================
-   DAILY CHART — kutubxonasiz
-   ============================================================ */
-function DailyChart({
-  data,
-  total,
-}: {
-  data: { date: string; count: number; avgPercent: number }[];
-  total: number;
-}) {
-  if (!data || data.length === 0) {
-    return <p className="text-center py-8 text-xs text-ink-muted">Ma'lumot yo'q</p>;
-  }
-
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
-  const width = 320;
-  const height = 110;
-  const pad = { top: 8, bottom: 20, left: 8, right: 8 };
-  const cw = width - pad.left - pad.right;
-  const ch = height - pad.top - pad.bottom;
-
-  const points = data.map((d, i) => {
-    const x =
-      data.length === 1 ? pad.left + cw / 2 : pad.left + (i / (data.length - 1)) * cw;
-    const y = pad.top + ch - (d.count / maxCount) * ch;
-    return { x, y, ...d };
-  });
-
-  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${pad.top + ch} L ${
-    points[0].x
-  } ${pad.top + ch} Z`;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className={TEXT.tiny}>Faol talabalar / kun</span>
-        <span className={TEXT.tiny}>Jami: {total}</span>
-      </div>
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full h-28"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgb(212, 175, 55)" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="rgb(212, 175, 55)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={areaD} fill="url(#chartGradient)" />
-        <path
-          d={pathD}
-          fill="none"
-          stroke="rgb(212, 175, 55)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {points.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="3" fill="rgb(212, 175, 55)" />
-        ))}
-        {points.map((p, i) => {
-          const d = new Date(p.date);
-          return (
-            <text
-              key={i}
-              x={p.x}
-              y={height - 4}
-              textAnchor="middle"
-              fill="currentColor"
-              className="text-ink-muted"
-              style={{ fontSize: '8px' }}
-            >
-              {d.getDate()}/{d.getMonth() + 1}
-            </text>
-          );
-        })}
-      </svg>
     </div>
   );
 }
