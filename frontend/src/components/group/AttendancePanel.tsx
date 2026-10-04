@@ -8,6 +8,7 @@ import {
   useAttendanceSummary,
   useMarkAttendance,
 } from '../../hooks/useAttendance';
+import { formatDays } from '../../hooks/useSchedule';
 
 const OPTIONS: { value: AttendanceStatus; label: string; Icon: typeof Check; on: string }[] = [
   { value: 'PRESENT', label: 'Keldi', Icon: Check, on: 'bg-teal text-base' },
@@ -82,6 +83,15 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
           </div>
         )}
       </div>
+
+      {data && data.isLessonDay === false && (
+        <p className="flex items-start gap-2 rounded-2xl border border-gold/20 bg-gold/10 p-3 text-xs text-gold" role="status">
+          <span aria-hidden="true">ⓘ</span>
+          <span>
+            Bu kun guruh jadvalida yo'q{data.lessonDays?.length ? ` (dars kunlari: ${formatDays(data.lessonDays)})` : ''}. Baribir davomat belgilash mumkin — masalan, qo'shimcha dars bo'lgan bo'lsa.
+          </span>
+        </p>
+      )}
 
       {isLoading && <div className="h-40 rounded-2xl bg-surface/30 animate-pulse border border-white/5" />}
 

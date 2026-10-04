@@ -6,9 +6,13 @@ import { apiFetch } from '../../lib/api-client';
 import { useRemoveStudentFromGroup } from '../../hooks/useGroups';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
-import { PageHeader, Section, Skeleton } from '../../components/ui';
-import { AlertTriangle, Trash2,  } from '../../design/icons';
-import { TEXT, CONTROL, PAGE_NARROW } from '../../design/tokens';
+import { Skeleton } from '../../components/ui';
+import { StaffHero, Panel, Avatar } from '../../components/staff';
+import { BackButton } from '../../components/teacher/BackButton';
+import { IMAGES } from '../../design/images';
+import { AlertTriangle, Trash2 } from '../../design/icons';
+import { User } from 'lucide-react';
+import { TEXT, CONTROL, PAGE_WIDE } from '../../design/tokens';
 
 export function TeacherStudentDetail() {
   const { groupId, studentId } = useParams<{ groupId: string; studentId: string }>();
@@ -59,77 +63,79 @@ export function TeacherStudentDetail() {
 
   if (isLoading) {
     return (
-      <div className={PAGE_NARROW}>
-        <Skeleton className="h-10 w-24" />
+      <div className={PAGE_WIDE}>
+        <Skeleton className="h-40 rounded-3xl" />
         <Skeleton className="h-40" />
       </div>
     );
   }
 
   const fullName = `${student?.firstName || ''} ${student?.lastName || ''}`.trim();
-  const initial = fullName ? fullName[0].toUpperCase() : 'T';
 
   return (
-    <div className={PAGE_NARROW}>
-      <PageHeader
-        title="Talaba profili"
-        onBack={() => {
-          haptic('light');
-          navigate(-1);
-        }}
+    <div className={PAGE_WIDE}>
+      <StaffHero
+        accent="gold"
+        image={IMAGES.hero}
+        eyebrow="Talaba profili"
+        title={fullName || "Noma'lum talaba"}
+        subtitle={`@${student?.username || 'username_yoq'}`}
+        top={
+          <BackButton
+            onClick={() => {
+              haptic('light');
+              navigate(-1);
+            }}
+          />
+        }
       />
 
-      {/* Profile */}
-      <div className="bg-surface/20 border border-white/5 rounded-2xl p-5 space-y-5">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-2xl shrink-0">
-            {initial}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <Panel title="Ma'lumotlar" icon={User} accent="teal" className="lg:col-span-3">
+          <div className="flex items-center gap-4">
+            <Avatar name={fullName || 'T'} size="lg" src={student?.avatarUrl} />
+            <div className="min-w-0">
+              <h2 className="font-display text-lg text-ink truncate">
+                {fullName || "Noma'lum talaba"}
+              </h2>
+              <p className={TEXT.bodySm}>@{student?.username || 'username_yoq'}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h2 className="font-display text-lg text-ink truncate">
-              {fullName || "Noma'lum talaba"}
-            </h2>
-            <p className={TEXT.bodySm}>@{student?.username || 'username_yoq'}</p>
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
-          <div className="bg-surface/40 rounded-xl p-3">
-            <span className={TEXT.tiny + ' block mb-1'}>Rol</span>
-            <span className="text-sm font-medium text-ink">
-              {student?.role || 'STUDENT'}
-            </span>
+          <div className="grid grid-cols-2 gap-3 pt-4 mt-4 border-t border-white/5">
+            <div className="bg-surface/50 border border-white/10 rounded-2xl p-3">
+              <span className={TEXT.tiny + ' block mb-1'}>Rol</span>
+              <span className="text-sm font-medium text-ink">
+                {student?.role || 'STUDENT'}
+              </span>
+            </div>
+            <div className="bg-surface/50 border border-white/10 rounded-2xl p-3">
+              <span className={TEXT.tiny + ' block mb-1'}>Telefon</span>
+              <span className="text-sm font-medium text-ink truncate block">
+                {student?.phone || '—'}
+              </span>
+            </div>
           </div>
-          <div className="bg-surface/40 rounded-xl p-3">
-            <span className={TEXT.tiny + ' block mb-1'}>Telefon</span>
-            <span className="text-sm font-medium text-ink truncate">
-              {student?.phone || '—'}
-            </span>
-          </div>
-        </div>
-      </div>
+        </Panel>
 
-      {/* Danger */}
-      <Section title="Xavfli zona">
-        <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+        <Panel title="Xavfli zona" icon={AlertTriangle} accent="coral" className="lg:col-span-2">
+          <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">
             <p className={TEXT.bodySm + ' leading-relaxed'}>
               Talabani guruhdan chiqarish uning darslar va vazifalarga kirishini
               yopadi.
             </p>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isPending}
+              className={CONTROL.buttonDanger + ' w-full disabled:opacity-50'}
+            >
+              <Trash2 className="w-4 h-4" />
+              {isPending ? 'Chiqarilmoqda...' : 'Guruhdan chiqarish'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={isPending}
-            className={CONTROL.buttonDanger + ' w-full disabled:opacity-50'}
-          >
-            <Trash2 className="w-4 h-4" />
-            {isPending ? 'Chiqarilmoqda...' : 'Guruhdan chiqarish'}
-          </button>
-        </div>
-      </Section>
+        </Panel>
+      </div>
     </div>
   );
 }

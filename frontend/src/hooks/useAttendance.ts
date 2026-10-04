@@ -16,6 +16,9 @@ export interface AttendanceDay {
   date: string;
   students: AttendanceDayStudent[];
   markedCount: number;
+  lessonDays?: number[];
+  /** Jadval bo'sh bo'lsa — true; aks holda shu kun guruh jadvalidami */
+  isLessonDay?: boolean;
 }
 export interface AttendanceSummary {
   groupId: string;

@@ -95,6 +95,10 @@ export function useCreateGroup() {
       description?: string;
       posterUrl?: string;
       teacherId?: string;
+      lessonDays?: number[];
+      lessonStartTime?: string | null;
+      lessonEndTime?: string | null;
+      room?: string | null;
     }) =>
       apiFetch<GroupItem>('/api/v1/groups', {
         method: 'POST',

@@ -1,4 +1,5 @@
 // src/pages/student/GroupDetailPage.tsx
+import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { CapacityBar } from '../../components/group/CapacityBar';
 import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
 import { MyAttendanceCard } from '../../components/group/MyAttendanceCard';
@@ -36,6 +37,10 @@ interface GroupDetail {
   posterUrl?: string | null;
   maxCapacity?: number | null;
   telegramChatUrl?: string | null;
+  lessonDays?: number[] | null;
+  lessonStartTime?: string | null;
+  lessonEndTime?: string | null;
+  room?: string | null;
   teacher?: Teacher | null;
   members?: GroupMember[];
   _count?: {
@@ -207,6 +212,7 @@ export function GroupDetailPage() {
       </div>
 
       {/* ============ SIG'IM, TELEGRAM, DAVOMAT ============ */}
+      <ScheduleBadge schedule={group} className="text-xs" />
       {(group.maxCapacity || group.telegramChatUrl) && (
         <div className="flex items-end justify-between gap-3">
           <CapacityBar count={memberCount} max={group.maxCapacity} className="flex-1" />

@@ -3,9 +3,10 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import { streamChatWithAI, AIServiceError } from '../../../lib/ai-service';
-import { PageHeader, Skeleton } from '../../../components/ui';
+import { StaffHero } from '../../../components/staff';
+import { IMAGES } from '../../../design/images';
 import { Send, Square, Trash2, Sparkles } from '../../../design/icons';
-import { TEXT, CONTROL, ICON, PAGE } from '../../../design/tokens';
+import { TEXT, PAGE_WIDE } from '../../../design/tokens';
 
 interface Message {
   id: string;
@@ -15,7 +16,7 @@ interface Message {
   isStreaming?: boolean;
 }
 
-const WELCOME = 'Salom! 👋 Men AI yordamchingizman. Savolingizni bering.';
+const WELCOME = 'Salom! Men AI yordamchingizman. Savolingizni bering.';
 
 export function AdminQuestions() {
   const { haptic, hapticNotify } = useTelegram();
@@ -113,7 +114,7 @@ export function AdminQuestions() {
       toast('error', msg);
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId ? { ...m, content: `❌ ${msg}`, isStreaming: false } : m,
+          m.id === assistantId ? { ...m, content: `Xatolik: ${msg}`, isStreaming: false } : m,
         ),
       );
     } finally {
@@ -148,35 +149,39 @@ export function AdminQuestions() {
     e.target.style.height = Math.min(e.target.scrollHeight, 140) + 'px';
   };
 
-  return (
-    <div className="flex flex-col h-[calc(100dvh-80px)] max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-surface/30 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gold/10 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-gold" />
-          </div>
-          <div>
-            <h1 className="font-display text-base text-ink">AI Yordamchi</h1>
-            <p className={TEXT.tiny}>
-              {isLoading ? (
-                <span className="text-gold">● Yozilmoqda...</span>
-              ) : (
-                'Groq · GPT-OSS 20B'
-              )}
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="text-xs text-ink-muted hover:text-ink px-3 py-1.5 rounded-lg bg-white/5 inline-flex items-center gap-1.5 active:scale-95 transition"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          Tozalash
-        </button>
-      </div>
+  const userCount = messages.filter((m) => m.role === 'user').length;
 
+  return (
+    <div className={PAGE_WIDE}>
+      <StaffHero
+        accent="gold"
+        image={IMAGES.mathCoding}
+        eyebrow="AI yordamchi"
+        title="Savollar va javoblar"
+        subtitle="Dars, test va savollar bo'yicha AI'dan yordam oling."
+        actions={
+          <button
+            type="button"
+            onClick={handleClear}
+            className="bg-white/5 text-ink rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-white/10 active:scale-[0.98] transition inline-flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Tozalash
+          </button>
+        }
+        footer={
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-ink-muted">
+              Savollar: <b className="text-gold tabular-nums">{userCount}</b>
+            </span>
+            <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-ink-muted">
+              {isLoading ? <span className="text-gold">Yozilmoqda...</span> : 'Groq · GPT-OSS 20B'}
+            </span>
+          </div>
+        }
+      />
+
+    <div className="flex flex-col h-[calc(100dvh-340px)] min-h-[420px] rounded-3xl border border-white/10 bg-surface/40 backdrop-blur-sm overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((msg) => (
@@ -185,7 +190,7 @@ export function AdminQuestions() {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+              className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-gold text-base rounded-br-md'
                   : 'bg-surface/40 border border-white/10 text-ink rounded-bl-md'
@@ -216,7 +221,7 @@ export function AdminQuestions() {
       </div>
 
       {/* Input */}
-      <div className="px-4 pb-4 pt-2 border-t border-white/5 bg-surface/20 backdrop-blur-md">
+      <div className="px-4 pb-4 pt-3 border-t border-white/10 bg-surface/30">
         <div className="flex items-end gap-2 bg-surface/40 border border-white/10 rounded-2xl px-3 py-2">
           <textarea
             ref={inputRef}
@@ -253,6 +258,7 @@ export function AdminQuestions() {
           Enter — yuborish · Shift+Enter — yangi qator
         </p>
       </div>
+    </div>
     </div>
   );
 }

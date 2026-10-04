@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Layers, Activity, Award, ShieldCheck } from '../../design/icons';
 import { useAdminOverview } from '../../hooks/useAdmin';
 import { IMAGES } from '../../design/images';
-import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar } from '../../components/staff';
+import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
 
@@ -77,6 +77,8 @@ export function AdminOverview() {
         <KpiCard label="Bugungi urinishlar" value={fmt(today.testAttempts)} icon={ClipboardCheck} accent="sky" hint="test topshirishlar" />
         <KpiCard label="Berilgan ball" value={fmt(totals.totalScoreIssued)} icon={Award} accent="coral" hint="jami" />
       </div>
+
+      <TodayLessons basePath="/admin/groups" />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>

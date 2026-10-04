@@ -1,4 +1,5 @@
 // src/pages/student/GroupsPage.tsx
+import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +23,10 @@ interface StudentGroup {
   description?: string | null;
   posterUrl?: string | null;
   maxCapacity?: number | null;
+  lessonDays?: number[] | null;
+  lessonStartTime?: string | null;
+  lessonEndTime?: string | null;
+  room?: string | null;
   teacher?: Teacher | null;
   _count?: {
     members?: number;
@@ -220,6 +225,7 @@ export function GroupsPage() {
                       {g.description}
                     </p>
                   )}
+                  <ScheduleBadge schedule={g} className="pt-0.5" />
                   {teacherName && (
                     <p className="text-[10px] text-ink-muted truncate mt-auto pt-1 flex items-center gap-1">
                       <span>👤</span>

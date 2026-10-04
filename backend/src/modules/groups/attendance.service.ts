@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { AttendanceStatusValue, MarkAttendanceDto } from './dto/attendance.dto';
+import { isoWeekday } from './schedule.util';
 
 const TZ_OFFSET_MS = 5 * 3_600_000; // Toshkent, UTC+5
 const DAY_MS = 86_400_000;
@@ -52,7 +53,7 @@ export class AttendanceService {
   private async loadManageableGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      select: { id: true, teacherId: true, deletedAt: true },
+      select: { id: true, teacherId: true, deletedAt: true, lessonDays: true },
     });
     if (!group || group.deletedAt) throw new NotFoundException('Guruh topilmadi');
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
@@ -66,7 +67,7 @@ export class AttendanceService {
 
   /** Bir kunlik davomat ro'yxati: guruh a'zolari va ularning belgilangan holati (belgilanmagan — null). */
   async getDay(groupId: string, dateInput: string | undefined, user: CurrentUserPayload, now: Date = new Date()) {
-    await this.loadManageableGroup(groupId, user);
+    const group = await this.loadManageableGroup(groupId, user);
     const { iso, date } = parseAttendanceDate(dateInput ?? tashkentToday(now), now);
 
     const [members, records] = await Promise.all([
@@ -92,7 +93,16 @@ export class AttendanceService {
         note: rec?.note ?? null,
       };
     });
-    return { groupId, date: iso, students, markedCount: students.filter((s: any) => s.status).length };
+    const lessonDays: number[] = (group as any).lessonDays ?? [];
+    return {
+      groupId,
+      date: iso,
+      students,
+      markedCount: students.filter((s: any) => s.status).length,
+      lessonDays,
+      // Jadval belgilanmagan bo'lsa — true (cheklov yo'q); belgilangan bo'lsa shu kun darsmi
+      isLessonDay: lessonDays.length === 0 ? true : lessonDays.includes(isoWeekday(iso)),
+    };
   }
 
   /** Bir kunlik davomatni saqlaydi (qayta yuborilsa yangilaydi). Faqat guruh a'zolari uchun. */

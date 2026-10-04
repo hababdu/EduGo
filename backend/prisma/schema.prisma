@@ -113,6 +113,12 @@ model Group {
   maxCapacity     Int?
   telegramChatUrl String?
 
+  // Dars jadvali: ISO hafta kunlari (1=Dushanba … 7=Yakshanba), vaqt "HH:mm" (Toshkent), xona
+  lessonDays      Int[]    @default([])
+  lessonStartTime String?
+  lessonEndTime   String?
+  room            String?
+
   teacher   User? @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
   assistant User? @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
 

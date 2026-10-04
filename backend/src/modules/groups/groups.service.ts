@@ -1,4 +1,5 @@
 // src/modules/groups/groups.service.ts
+import { normalizeSchedule, ScheduleInput } from './schedule.util';
 import {
   BadRequestException,
   ForbiddenException,
@@ -123,7 +124,7 @@ export class GroupsService {
       teacherId?: string;
       maxCapacity?: number | null;
       telegramChatUrl?: string | null;
-    },
+    } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
     // 1. Validatsiya
@@ -169,6 +170,7 @@ export class GroupsService {
         posterUrl: data.posterUrl?.trim() || null,   // 👈 POSTER SAQLASH
         maxCapacity: data.maxCapacity ?? null,
         telegramChatUrl: data.telegramChatUrl?.trim() || null,
+        ...normalizeSchedule(data),
         teacherId,
       },
       include: {
@@ -197,7 +199,7 @@ export class GroupsService {
       teacherId?: string | null;
       maxCapacity?: number | null;
       telegramChatUrl?: string | null;
-    },
+    } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
     const group = await this.findOneOrThrow(groupId, user);
@@ -248,6 +250,7 @@ export class GroupsService {
         ...(data.telegramChatUrl !== undefined && {
           telegramChatUrl: data.telegramChatUrl?.trim() || null,
         }),
+        ...normalizeSchedule(data, group as any),
       },
       include: {
         teacher: {

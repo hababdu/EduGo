@@ -5,4 +5,5 @@ export { Avatar } from './Avatar';
 export { MiniBars } from './MiniBars';
 export { ProgressBar } from './ProgressBar';
 export { StaffNav } from './StaffNav';
+export { TodayLessons } from './TodayLessons';
 export type { StaffNavItem } from './StaffNav';

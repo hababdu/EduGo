@@ -1,20 +1,17 @@
 // src/pages/teacher/TeacherGroupDetail.tsx
+import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTelegram } from '../../hooks/useTelegram';
 import { getFullUrl } from '../../hooks/useImageUpload';
 import {
   useTeacherGroup,
   useTeacherAssignments,
 } from '../../hooks/useTeacherAssignments';
-import {
-  PageHeader,
-  Section,
-  CardList,
-  ListRow,
-  EmptyState,
-  Skeleton,
-} from '../../components/ui';
+import { EmptyState, Skeleton } from '../../components/ui';
+import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
+import { BackButton } from '../../components/teacher/BackButton';
+import { IMAGES } from '../../design/images';
 import {
   Users,
   FileText,
@@ -27,7 +24,8 @@ import {
   FileType,
   Plus,
 } from '../../design/icons';
-import { TEXT, CONTROL, PAGE } from '../../design/tokens';
+import { BarChart3, Trophy, Settings } from 'lucide-react';
+import { TEXT, CONTROL, PAGE_WIDE } from '../../design/tokens';
 import { CapacityBar } from '../../components/group/CapacityBar';
 import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
 import { GroupSettingsForm } from '../../components/group/GroupSettingsForm';
@@ -43,7 +41,7 @@ const CATEGORY_META: Record<
 > = {
   LESSON: { label: 'Dars', cls: 'bg-gold/10 text-gold', Icon: BookOpen },
   HOMEWORK: { label: 'Uy vazifasi', cls: 'bg-coral/10 text-coral', Icon: ClipboardList },
-  RESOURCE: { label: "Qo'shimcha", cls: 'bg-sky-500/10 text-sky-400', Icon: FolderOpen },
+  RESOURCE: { label: "Qo'shimcha", cls: 'bg-sky/10 text-sky', Icon: FolderOpen },
 };
 
 const CONTENT_META: Record<string, { label: string; Icon: any }> = {
@@ -73,7 +71,10 @@ export function TeacherGroupDetail() {
     error: assignmentsError,
   } = useTeacherAssignments(groupId);
 
-  const [tab, setTab] = useState<'students' | 'materials' | 'attendance'>('students');
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState<'students' | 'materials' | 'attendance'>(
+    searchParams.get('tab') === 'attendance' ? 'attendance' : 'students',
+  );
 
   useEffect(() => {
     const cleanup = showBackButton(() => {
@@ -111,9 +112,9 @@ export function TeacherGroupDetail() {
   /* ---------- Loading ---------- */
   if (groupLoading) {
     return (
-      <div className={PAGE}>
-        <Skeleton className="h-10 w-24" />
-        <Skeleton className="h-56" />
+      <div className={PAGE_WIDE}>
+        <Skeleton className="h-44 rounded-3xl" />
+        <Skeleton className="h-24" />
         <Skeleton className="h-32" />
       </div>
     );
@@ -122,8 +123,8 @@ export function TeacherGroupDetail() {
   /* ---------- Error ---------- */
   if (groupError || !group) {
     return (
-      <div className={PAGE}>
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+      <div className={PAGE_WIDE}>
+        <div className="bg-surface/40 border border-white/10 rounded-3xl">
           <EmptyState
             icon={AlertTriangle}
             title="Guruh topilmadi"
@@ -152,67 +153,51 @@ export function TeacherGroupDetail() {
     : null;
 
   return (
-    <div className={PAGE}>
-      <PageHeader
+    <div className={PAGE_WIDE}>
+      <StaffHero
+        accent="gold"
+        image={poster || IMAGES.sciencePhysics}
+        eyebrow="Guruh"
         title={group.name}
         subtitle={group.description || undefined}
-        onBack={() => {
-          haptic('light');
-          navigate('/teacher/groups');
-        }}
+        top={
+          <BackButton
+            onClick={() => {
+              haptic('light');
+              navigate('/teacher/groups');
+            }}
+          />
+        }
       />
 
-      {/* Hero */}
-      <div className="relative rounded-2xl overflow-hidden border border-white/5">
-        {poster ? (
-          <div className="relative w-full h-48 sm:h-56">
-            <img
-              src={poster}
-              alt={group.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-          </div>
-        ) : (
-          <div className="w-full h-32 bg-gradient-to-br from-gold/15 to-teal/10 flex items-center justify-center">
-            <FolderOpen className="w-10 h-10 text-gold/40" />
-          </div>
-        )}
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-surface/20 border border-white/5 rounded-2xl p-4">
-          <span className={TEXT.label}>O'rtacha ball</span>
-          <p className="font-display text-2xl text-gold tabular-nums mt-2">
-            {stats.avg}
-          </p>
-        </div>
-        <div className="bg-surface/20 border border-white/5 rounded-2xl p-4">
-          <span className={TEXT.label}>Jami ball</span>
-          <p className="font-display text-2xl text-teal tabular-nums mt-2">
-            {stats.total}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <KpiCard label="Talabalar" value={stats.studentsCount} icon={Users} accent="gold" hint={`${stats.activeCount} ta faol`} />
+        <KpiCard label="Materiallar" value={materialsCount} icon={FileText} accent="sky" />
+        <KpiCard label="O'rtacha ball" value={stats.avg} icon={BarChart3} accent="teal" />
+        <KpiCard label="Jami ball" value={stats.total} icon={Trophy} accent="coral" />
       </div>
 
       {/* Sig'im, Telegram havola, sozlamalar */}
-      <div className="space-y-3">
+      <Panel title="Guruh sozlamalari" icon={Settings} accent="teal">
+       <div className="space-y-3">
+        <ScheduleBadge schedule={group} className="text-xs" />
         <div className="flex items-end justify-between gap-3">
           <CapacityBar count={members.length} max={group.maxCapacity} className="flex-1" />
           <TelegramLinkButton url={group.telegramChatUrl} />
         </div>
         <GroupSettingsForm
-          key={`${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}`}
+          key={`${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}|${(group.lessonDays ?? []).join('')}|${group.lessonStartTime ?? ''}|${group.lessonEndTime ?? ''}|${group.room ?? ''}`}
           groupId={groupId}
           maxCapacity={group.maxCapacity}
           telegramChatUrl={group.telegramChatUrl}
+          schedule={group}
           memberCount={members.length}
         />
-      </div>
+       </div>
+      </Panel>
 
       {/* Tabs */}
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 rounded-2xl border border-white/10 bg-surface/40 p-1.5">
         <button
           type="button"
           onClick={() => {
@@ -262,70 +247,58 @@ export function TeacherGroupDetail() {
       {/* Tab: Students */}
       {tab === 'students' &&
         (members.length === 0 ? (
-          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+          <div className="bg-surface/40 border border-white/10 rounded-3xl">
             <EmptyState icon={Users} title="Talabalar yo'q" />
           </div>
         ) : (
-          <CardList>
-            {members.map((m: any) => {
-              const s = m.student || {};
-              const name =
-                `${s.firstName || ''} ${s.lastName || ''}`.trim() ||
-                s.username ||
-                "Noma'lum";
-              const initial = name[0]?.toUpperCase() || 'T';
-              const status = s.status || 'ACTIVE';
-              const statusCls =
-                status === 'ACTIVE'
-                  ? 'bg-teal/15 text-teal'
-                  : status === 'BLOCKED'
-                  ? 'bg-red-500/15 text-red-400'
-                  : 'bg-gold/15 text-gold';
-              const statusLabel =
-                status === 'ACTIVE'
-                  ? 'Faol'
-                  : status === 'BLOCKED'
-                  ? 'Blok'
-                  : status;
-
-              return (
-                <ListRow
-                  key={m.id}
-                  leading={
-                    <div className="w-10 h-10 rounded-xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
-                      {initial}
-                    </div>
-                  }
-                  title={name}
-                  subtitle={
-                    s.username ? `@${s.username}` : `ID: ${s.id || m.studentId}`
-                  }
-                  trailing={
-                    <div className="flex items-center gap-2 shrink-0">
+          <Panel title="Talabalar" icon={Users} accent="gold" flush>
+            <ul className="divide-y divide-white/5">
+              {members.map((m: any) => {
+                const s = m.student || {};
+                const name =
+                  `${s.firstName || ''} ${s.lastName || ''}`.trim() ||
+                  s.username ||
+                  "Noma'lum";
+                const status = s.status || 'ACTIVE';
+                const statusLabel =
+                  status === 'ACTIVE' ? 'Faol' : status === 'BLOCKED' ? 'Blok' : status;
+                const statusCls =
+                  status === 'ACTIVE'
+                    ? 'bg-teal/15 text-teal'
+                    : status === 'BLOCKED'
+                    ? 'bg-coral/15 text-coral'
+                    : 'bg-gold/15 text-gold';
+                return (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        haptic('light');
+                        navigate(`/teacher/groups/${groupId}/students/${s.id || m.studentId}`);
+                      }}
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-white/5 active:bg-white/10 transition"
+                    >
+                      <Avatar name={name} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink">{name}</p>
+                        <p className="truncate text-[11px] text-ink-muted">
+                          {s.username ? `@${s.username}` : `ID: ${s.id || m.studentId}`}
+                        </p>
+                      </div>
                       {s.studentProfile && (
-                        <span className="text-xs font-semibold text-gold tabular-nums">
+                        <span className="text-xs font-semibold text-gold tabular-nums shrink-0">
                           {s.studentProfile.totalScore}
                         </span>
                       )}
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded-md font-semibold ${statusCls}`}
-                      >
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold shrink-0 ${statusCls}`}>
                         {statusLabel}
                       </span>
-                    </div>
-                  }
-                  onClick={() => {
-                    haptic('light');
-                    navigate(
-                      `/teacher/groups/${groupId}/students/${
-                        s.id || m.studentId
-                      }`,
-                    );
-                  }}
-                />
-              );
-            })}
-          </CardList>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </Panel>
         ))}
 
       {/* Tab: Materials */}
@@ -337,8 +310,8 @@ export function TeacherGroupDetail() {
             ))}
           </div>
         ) : assignmentsError ? (
-          <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-red-400">
+          <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4">
+            <p className="text-sm font-semibold text-coral">
               Yuklashda xatolik
             </p>
             <p className={TEXT.tiny + ' mt-1'}>
@@ -346,7 +319,7 @@ export function TeacherGroupDetail() {
             </p>
           </div>
         ) : !assignments || assignments.length === 0 ? (
-          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+          <div className="bg-surface/40 border border-white/10 rounded-3xl">
             <EmptyState
               icon={FileText}
               title="Materiallar yo'q"
@@ -362,7 +335,7 @@ export function TeacherGroupDetail() {
             />
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {assignments.map((a) => {
               const cat = CATEGORY_META[a.category] ?? CATEGORY_META.LESSON;
               const content = CONTENT_META[a.type] ?? CONTENT_META.TEXT;
@@ -374,7 +347,7 @@ export function TeacherGroupDetail() {
                     haptic('light');
                     navigate(`/teacher/assignments/${a.id}`);
                   }}
-                  className="w-full text-left bg-surface/20 hover:bg-surface/30 border border-white/5 rounded-2xl p-3.5 active:scale-[0.99] transition"
+                  className="w-full text-left bg-surface/50 hover:bg-surface/70 border border-white/10 rounded-2xl p-4 active:scale-[0.99] transition"
                 >
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <span

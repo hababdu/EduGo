@@ -3,16 +3,26 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GroupsService } from './groups.service';
+import { ScheduleService } from './schedule.service';
 import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/v1/groups')
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(
+    private readonly groupsService: GroupsService,
+    private readonly scheduleService: ScheduleService,
+  ) {}
 
   @Get()
   async findAll(@CurrentUser() user: CurrentUserPayload) {
     return this.groupsService.findAllForUser(user);
+  }
+
+  /** Bugungi darslar (Toshkent vaqti bilan). ':id' dan OLDIN turishi shart. */
+  @Get('schedule/today')
+  async todayLessons(@CurrentUser() user: CurrentUserPayload) {
+    return this.scheduleService.today(user);
   }
 
   @Get(':id')

@@ -1,5 +1,8 @@
 // src/modules/groups/dto/groups.dto.ts
 import {
+  ArrayMaxSize,
+  ArrayUnique,
+  IsArray,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -13,11 +16,40 @@ import {
 /** Faqat Telegram havolalari (javascript:, data: va h.k. o'tmasligi uchun qat'iy) */
 export const TELEGRAM_URL_REGEX = /^https:\/\/(t\.me|telegram\.me)\/[A-Za-z0-9_+\/-]{3,100}$/;
 export const GROUP_MAX_CAPACITY = 500;
+export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Dars jadvali maydonlari (create/update uchun umumiy) */
+export class ScheduleFields {
+  /** ISO hafta kunlari: 1=Dushanba … 7=Yakshanba */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(7)
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(1, { each: true, message: "Hafta kuni 1 (Dushanba) dan 7 (Yakshanba) gacha bo'lsin" })
+  @Max(7, { each: true, message: "Hafta kuni 1 (Dushanba) dan 7 (Yakshanba) gacha bo'lsin" })
+  lessonDays?: number[];
+
+  @IsOptional()
+  @IsString()
+  @Matches(TIME_REGEX, { message: "Boshlanish vaqti HH:mm ko'rinishida bo'lsin" })
+  lessonStartTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @Matches(TIME_REGEX, { message: "Tugash vaqti HH:mm ko'rinishida bo'lsin" })
+  lessonEndTime?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60, { message: 'Xona nomi 60 ta belgidan oshmasin' })
+  room?: string | null;
+}
 
 /* ============================================================
    CREATE GROUP
    ============================================================ */
-export class CreateGroupDto {
+export class CreateGroupDto extends ScheduleFields {
   @IsString()
   @IsNotEmpty({ message: 'Guruh nomi kiritilishi shart' })
   @MaxLength(100, { message: 'Guruh nomi 100 ta belgidan oshmasin' })
@@ -52,7 +84,7 @@ export class CreateGroupDto {
 /* ============================================================
    UPDATE GROUP
    ============================================================ */
-export class UpdateGroupDto {
+export class UpdateGroupDto extends ScheduleFields {
   @IsOptional()
   @IsString()
   @MaxLength(100)
