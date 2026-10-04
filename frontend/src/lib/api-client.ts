@@ -1,7 +1,7 @@
 // src/lib/api-client.ts
 import { useAuthStore } from '../store/auth.store';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { API_URL } from './config';
 
 export class ApiError extends Error {
   constructor(

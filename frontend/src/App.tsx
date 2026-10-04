@@ -53,7 +53,7 @@ import { ToastHost } from './components/ui/Toast';
 import { AIMascotProvider } from './components/ai/AIMascot';
 import { AssistantLauncher } from './components/assistant/AssistantLauncher';
 
-import apiClient, { setMemoryToken } from './api/client';
+import { API_URL } from './lib/config';
 
 /* ============================================================
    APP
@@ -78,35 +78,32 @@ export function App() {
 
         const initData = tg?.initData || '';
 
-        const response = await apiClient.post('/api/v1/auth/telegram', {
-          initData,
+        const res = await fetch(`${API_URL}/api/v1/auth/telegram`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(initData ? { 'X-Telegram-Init-Data': initData } : {}),
+          },
+          credentials: 'include',
+          body: JSON.stringify({ initData }),
         });
+        if (!res.ok) throw new Error(`Auth ${res.status}`);
+        const data = await res.json();
 
         // Backend'dan barcha ma'lumotlarni olish
         const accessToken =
-          response.data.accessToken || response.data.token;
-        const refreshToken = response.data.refreshToken || '';
-        const serverUser = response.data.user;
+          data.accessToken || data.token;
+        const refreshToken = data.refreshToken || '';
+        const serverUser = data.user;
 
         if (accessToken) {
-          // ✅ 1. Axios instance uchun
-          setMemoryToken(accessToken);
-
-          // ✅ 2. Zustand store uchun (apiFetch shundan foydalanadi)
+          // Zustand store (apiFetch shundan foydalanadi)
           useAuthStore.getState().setSession({
             accessToken,
             refreshToken,
             user: serverUser || useAuthStore.getState().user!,
           });
 
-          // 🔍 Debug (keyin olib tashlang)
-          console.log('[AUTH] Token saved:', {
-            memory: accessToken.slice(0, 20) + '...',
-            zustand:
-              useAuthStore.getState().accessToken?.slice(0, 20) + '...',
-            user: serverUser?.firstName || 'unknown',
-            role: serverUser?.role || 'unknown',
-          });
         }
       } catch (err) {
         console.error("Avtorizatsiyadan o'tishda xatolik:", err);

@@ -8,3 +8,6 @@ dist/
 .env.local
 !.env.example
 !.env.ai.example
+
+# macOS
+.DS_Store

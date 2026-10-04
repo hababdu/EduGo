@@ -83,3 +83,25 @@ Shuning uchun:
 3. Telegram'da botga `/start` yozing — klaviatura chiqishi kerak
 4. "📚 Darsni boshlash"ni bosing — Mini App ochilishi, "Yuklanmoqda..." dan keyin dashboard ko'rinishi kerak
 5. Agar xato chiqsa — backend logini oching, aynan shu payt qaysi so'rov kelganini va qanday xato qaytganini ko'ring
+
+
+## 4. AI sozlamalari (backend → Environment)
+
+| O'zgaruvchi | Izoh |
+|---|---|
+| `AI_PROVIDER` | `anthropic` \| `groq` \| `gemini` |
+| `AI_FALLBACK_PROVIDER` | ixtiyoriy zaxira (asosiydan farqli) |
+| `ANTHROPIC_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` | faqat tanlangan provayder(lar) uchun |
+
+Kalitlar FAQAT backendda saqlanadi. `VITE_*` o'zgaruvchilariga hech qachon AI kaliti qo'ymang
+(frontend bundle'i hammaga ochiq). Batafsil: `backend/.env.ai.example`.
+
+## 5. Sirlar gigienasi
+
+- `.env`, `node_modules/`, `dist/` gitga kirmaydi (`.gitignore`). Hujjatdagi qiymatlar uchun `*.env.example` ishlating.
+- Git tarixida avval commit qilingan sirlar (`backend/.env`, `backend/set-admin.js`) tarixdan o'chmaydi —
+  ularni **almashtiring (rotate)**: `BOT_TOKEN` (BotFather → /revoke), `JWT_SECRET`, `BOT_INTERNAL_SECRET`,
+  Postgres paroli (Render → Database → Reset), eski Groq kaliti, chatga tashlangan Google kaliti.
+- `BOT_TOKEN`/`BOT_INTERNAL_SECRET` backend va bot servislarida BIR XIL bo'lishi kerak — almashtirgach ikkalasini ham yangilang.
+- `JWT_SECRET` almashsa, hamma foydalanuvchi qayta kirishi kerak (bu normal).
+- Bir martalik admin tayinlash: `DATABASE_URL=... node backend/set-admin.js <telegramId>`.
