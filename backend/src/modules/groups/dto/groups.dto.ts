@@ -16,6 +16,7 @@ import {
 /** Faqat Telegram havolalari (javascript:, data: va h.k. o'tmasligi uchun qat'iy) */
 export const TELEGRAM_URL_REGEX = /^https:\/\/(t\.me|telegram\.me)\/[A-Za-z0-9_+\/-]{3,100}$/;
 export const GROUP_MAX_CAPACITY = 500;
+export const MAX_MONEY = 100_000_000; // so'm
 export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 /** Dars jadvali maydonlari (create/update uchun umumiy) */
@@ -44,6 +45,12 @@ export class ScheduleFields {
   @IsString()
   @MaxLength(60, { message: 'Xona nomi 60 ta belgidan oshmasin' })
   room?: string | null;
+
+  @IsOptional()
+  @IsInt({ message: "Oylik to'lov butun son bo'lsin (so'm)" })
+  @Min(0, { message: "Oylik to'lov manfiy bo'lmasin" })
+  @Max(MAX_MONEY, { message: `Oylik to'lov ${MAX_MONEY} dan oshmasin` })
+  monthlyFee?: number | null;
 }
 
 /* ============================================================

@@ -124,6 +124,7 @@ export class GroupsService {
       teacherId?: string;
       maxCapacity?: number | null;
       telegramChatUrl?: string | null;
+      monthlyFee?: number | null;
     } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
@@ -171,6 +172,8 @@ export class GroupsService {
         maxCapacity: data.maxCapacity ?? null,
         telegramChatUrl: data.telegramChatUrl?.trim() || null,
         ...normalizeSchedule(data),
+        // To'lov summasini faqat admin belgilaydi (o'qituvchi yuborgan bo'lsa ham e'tiborga olinmaydi)
+        monthlyFee: user.role === 'TEACHER' ? null : data.monthlyFee ?? null,
         teacherId,
       },
       include: {
@@ -199,6 +202,7 @@ export class GroupsService {
       teacherId?: string | null;
       maxCapacity?: number | null;
       telegramChatUrl?: string | null;
+      monthlyFee?: number | null;
     } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
@@ -208,6 +212,9 @@ export class GroupsService {
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
     if (data.teacherId !== undefined && !isAdmin) {
       throw new ForbiddenException("O'qituvchini faqat administrator o'zgartira oladi");
+    }
+    if (data.monthlyFee !== undefined && !isAdmin) {
+      throw new ForbiddenException("Oylik to'lov summasini faqat administrator o'zgartira oladi");
     }
 
     // Sig'imni a'zolar sonidan kamaytirib bo'lmaydi
@@ -251,6 +258,7 @@ export class GroupsService {
           telegramChatUrl: data.telegramChatUrl?.trim() || null,
         }),
         ...normalizeSchedule(data, group as any),
+        ...(data.monthlyFee !== undefined && { monthlyFee: data.monthlyFee }),
       },
       include: {
         teacher: {

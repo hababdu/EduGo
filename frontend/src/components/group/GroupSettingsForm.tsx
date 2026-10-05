@@ -11,13 +11,17 @@ interface Props {
   telegramChatUrl?: string | null;
   memberCount: number;
   schedule?: GroupSchedule;
+  /** Faqat administrator: oylik to'lov summasini tahrirlash */
+  canEditFee?: boolean;
+  monthlyFee?: number | null;
 }
 
 /** Guruh dars jadvali, sig'imi va Telegram havolasini tahrirlash (o'qituvchi — o'z guruhi, admin — hammasi) */
-export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, memberCount, schedule = {} }: Props) {
+export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, memberCount, schedule = {}, canEditFee = false, monthlyFee }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [cap, setCap] = useState(maxCapacity ? String(maxCapacity) : '');
+  const [fee, setFee] = useState(monthlyFee != null ? String(monthlyFee) : '');
   const [url, setUrl] = useState(telegramChatUrl ?? '');
   const [sched, setSched] = useState<ScheduleValue>(toScheduleValue(schedule));
   const [localErr, setLocalErr] = useState<string | null>(null);
@@ -32,6 +36,7 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
       qc.invalidateQueries({ queryKey: ['groups'] });
       qc.invalidateQueries({ queryKey: ['admin'] });
       qc.invalidateQueries({ queryKey: ['attendance'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
     },
   });
 
@@ -44,6 +49,10 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
     if (capNum !== null && capNum < memberCount) {
       return setLocalErr(`Guruhda hozir ${memberCount} ta a'zo bor, sig'im bundan kam bo'lmasin`);
     }
+    const feeNum = fee.trim() === '' ? null : Number(fee);
+    if (canEditFee && feeNum !== null && (!Number.isInteger(feeNum) || feeNum < 0 || feeNum > 100_000_000)) {
+      return setLocalErr("Oylik to'lov 0 dan 100 000 000 gacha butun son bo'lsin (bo'sh — belgilanmagan)");
+    }
     const link = url.trim();
     if (link !== '' && !isTelegramUrl(link)) {
       return setLocalErr("Havola https://t.me/... ko'rinishida bo'lsin");
@@ -51,7 +60,7 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
     const schedErr = validateSchedule(sched);
     if (schedErr) return setLocalErr(schedErr);
     setLocalErr(null);
-    save.mutate({ maxCapacity: capNum, telegramChatUrl: link === '' ? null : link, ...scheduleBody(sched) });
+    save.mutate({ maxCapacity: capNum, telegramChatUrl: link === '' ? null : link, ...scheduleBody(sched), ...(canEditFee ? { monthlyFee: feeNum } : {}) });
   };
 
   const input =
@@ -81,6 +90,18 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
               className={input}
             />
           </label>
+          {canEditFee && (
+            <label className="block text-xs text-ink-muted space-y-1">
+              Oylik to'lov (so'm)
+              <input
+                inputMode="numeric"
+                value={fee}
+                onChange={(e) => setFee(e.target.value.replace(/[^\d]/g, ''))}
+                placeholder="Belgilanmagan"
+                className={input}
+              />
+            </label>
+          )}
           <label className="block text-xs text-ink-muted space-y-1">
             Telegram guruh / bot havolasi
             <input

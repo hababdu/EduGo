@@ -64,6 +64,8 @@ model User {
   assistantGroups      Group[]              @relation("GroupAssistant")
   attendanceRecords    AttendanceRecord[]   @relation("AttendanceStudent")
   attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
+  payments             Payment[]            @relation("PaymentStudent")
+  paymentsMarked       Payment[]            @relation("PaymentMarker")
   createdTests         Test[]               @relation("TestCreatedBy")
   createdQuestions     Question[]           @relation("QuestionCreatedBy")
   assignedTests        TestAssignment[]     @relation("AssignedBy")
@@ -119,6 +121,9 @@ model Group {
   lessonEndTime   String?
   room            String?
 
+  // Oylik to'lov (so'm). null = belgilanmagan
+  monthlyFee      Int?
+
   teacher   User? @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
   assistant User? @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
 
@@ -127,6 +132,7 @@ model Group {
   assignments        Assignment[]
   teacherAssignments TeacherAssignment[]
   attendance         AttendanceRecord[]
+  payments           Payment[]
 
   @@index([teacherId])
   @@index([assistantId])
@@ -176,6 +182,34 @@ model AttendanceRecord {
   @@unique([groupId, studentId, date])
   @@index([groupId, date])
   @@index([studentId, date])
+}
+
+enum PaymentStatus {
+  PAID // to'lagan
+  WAIVED // imtiyoz / ozod qilingan
+}
+
+/// Oylik to'lov belgisi. Yozuv yo'q = to'lamagan (qarzdor).
+model Payment {
+  id         String        @id @default(cuid())
+  groupId    String
+  studentId  String
+  month      String // "YYYY-MM" (Toshkent oyi)
+  status     PaymentStatus
+  amount     Int           @default(0)
+  note       String?
+  paidAt     DateTime      @default(now())
+  markedById String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student  User  @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User  @relation("PaymentMarker", fields: [markedById], references: [id])
+
+  @@unique([groupId, studentId, month])
+  @@index([groupId, month])
+  @@index([studentId])
 }
 
 // ------------------------------------------------------------

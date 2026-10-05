@@ -36,7 +36,13 @@ export function KpiCard({ label, value, icon: Icon, accent = 'gold', hint, onCli
           <Icon className="h-4 w-4" aria-hidden="true" />
         </span>
       </div>
-      <div className={`mt-2 font-display text-2xl sm:text-3xl font-bold tabular-nums ${VALUE_CLS[accent]}`}>{value}</div>
+      <div
+        className={`mt-2 font-display font-bold tabular-nums ${
+          String(value).length > 8 ? 'text-lg sm:text-2xl' : 'text-2xl sm:text-3xl'
+        } ${VALUE_CLS[accent]}`}
+      >
+        {value}
+      </div>
       {hint && <div className="mt-0.5 text-[11px] text-ink-muted">{hint}</div>}
     </Wrapper>
   );

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Layers, Activity, Award, ShieldCheck } from '../../design/icons';
+import { Wallet, Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Layers, Activity, Award, ShieldCheck } from '../../design/icons';
 import { useAdminOverview } from '../../hooks/useAdmin';
 import { IMAGES } from '../../design/images';
 import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
@@ -39,6 +39,7 @@ export function AdminOverview() {
     { label: 'Foydalanuvchilar va rollar', hint: "Rol berish, bloklash", icon: Users, to: '/admin/users' },
     { label: 'Studentlar', hint: "Qidirish va natijalari", icon: GraduationCap, to: '/admin/students' },
     { label: 'Guruhlar', hint: "Sig'im, davomat, o'qituvchi", icon: FolderOpen, to: '/admin/groups' },
+    { label: "To'lovlar", hint: "Kim to'lagan, qarzdorlar", icon: Wallet, to: '/admin/payments' },
   ];
 
   return (
@@ -106,7 +107,7 @@ export function AdminOverview() {
       </div>
 
       <Panel title="Tezkor o'tish" icon={FolderOpen} accent="sky" flush>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-white/5">
           {shortcuts.map(({ label, hint, icon: Icon, to }) => (
             <button
               key={to}

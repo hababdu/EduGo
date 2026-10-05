@@ -23,7 +23,7 @@ import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
 import { EmptyState, Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
-import { ArrowLeft, Users, Calendar, GraduationCap, Plus, X, ClipboardCheck, ShieldCheck } from '../../design/icons';
+import { ArrowLeft, Users, Calendar, GraduationCap, Plus, X, ClipboardCheck, ShieldCheck, Wallet } from '../../design/icons';
 
 
 /* ============================================================
@@ -256,6 +256,13 @@ export function AdminGroupDetail() {
             <ScheduleBadge schedule={group} className="text-xs" />
             <CapacityBar count={memberCount} max={group.maxCapacity} />
             <TelegramLinkButton url={group.telegramChatUrl} />
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/payments/${id}`)}
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-gold/20 bg-gold/10 px-4 text-xs font-semibold text-gold transition active:scale-95"
+            >
+              <Wallet className="h-4 w-4" aria-hidden="true" /> To'lovlar
+            </button>
           </div>
         }
       />
@@ -273,11 +280,13 @@ export function AdminGroupDetail() {
       </div>
 
       <GroupSettingsForm
-        key={`${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}|${(group.lessonDays ?? []).join('')}|${group.lessonStartTime ?? ''}|${group.lessonEndTime ?? ''}|${group.room ?? ''}`}
+        key={`${group.monthlyFee ?? ''}|${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}|${(group.lessonDays ?? []).join('')}|${group.lessonStartTime ?? ''}|${group.lessonEndTime ?? ''}|${group.room ?? ''}`}
         groupId={id}
         maxCapacity={group.maxCapacity}
         telegramChatUrl={group.telegramChatUrl}
         schedule={group}
+        canEditFee
+        monthlyFee={group.monthlyFee}
         memberCount={memberCount}
       />
 

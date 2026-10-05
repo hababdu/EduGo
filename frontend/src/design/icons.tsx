@@ -63,6 +63,7 @@ export {
   ShieldCheck,
   Flame,
   CalendarCheck,
+  Wallet,
 } from 'lucide-react';
 
 import {

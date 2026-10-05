@@ -1,4 +1,5 @@
 // src/pages/student/GroupDetailPage.tsx
+import { MyPaymentsCard } from '../../components/group/MyPaymentsCard';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { CapacityBar } from '../../components/group/CapacityBar';
 import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
@@ -220,6 +221,7 @@ export function GroupDetailPage() {
         </div>
       )}
       <MyAttendanceCard groupId={group.id} />
+      <MyPaymentsCard groupId={group.id} />
 
       {/* ============ MEMBERS ============ */}
       <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
