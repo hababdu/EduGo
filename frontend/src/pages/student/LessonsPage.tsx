@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 
 /* ============================================================
    TYPES
@@ -213,14 +215,17 @@ export function LessonsPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
       {/* ============ HEADER ============ */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <h1 className="font-display text-xl sm:text-2xl text-ink">Darslar</h1>
-        <p className="text-xs text-ink-muted mt-1">
-          {items
+      <StaffHero
+        eyebrow="MATERIALLAR"
+        title="Darslar"
+        subtitle={
+          items
             ? `${items.length} ta material · ${groups.length} ta guruh`
-            : 'Yuklanmoqda...'}
-        </p>
-      </div>
+            : 'Yuklanmoqda...'
+        }
+        image={IMAGES.ieltsLanguage}
+        accent="teal"
+      />
 
       {/* ============ EMPTY ============ */}
       {hasNoItems ? (

@@ -1,4 +1,6 @@
 // src/pages/teacher/TeacherAssignments.tsx
+import { StaffHero } from '../../../components/staff';
+import { IMAGES } from '../../../design/images';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -12,7 +14,6 @@ import { toast } from '../../../components/ui/Toast';
 import type { GeneratedMaterial } from '../../../lib/ai-service';
 import { AIMaterialGenerator } from '../../../components/ai/AIMaterialGenerator';
 import {
-  PageHeader,
   Section,
   CardList,
   EmptyState,
@@ -207,9 +208,12 @@ export function TeacherAssignments() {
 
   return (
     <div className={PAGE}>
-      <PageHeader
+      <StaffHero
+        eyebrow="MATERIALLAR"
         title="Materiallar"
         subtitle="Darslar, uy vazifalari, resurslar"
+        image={IMAGES.ieltsLanguage}
+        accent="teal"
         actions={
           <button
             type="button"
