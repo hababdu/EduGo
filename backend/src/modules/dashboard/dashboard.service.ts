@@ -165,13 +165,20 @@ export class DashboardService {
     if (groupIds.length === 0) return [];
 
     // 2. Faqat shu guruhlarga tegishli materiallar
-    return this.prisma.teacherAssignment.findMany({
+    const items = await this.prisma.teacherAssignment.findMany({
       where: {
         groupId: { in: groupIds },
         deletedAt: null,
+        status: 'PUBLISHED',
       },
       orderBy: { createdAt: 'desc' },
       include: {
+        views: { where: { studentId }, select: { id: true } },
+        files: {
+          orderBy: { order: 'asc' },
+          select: { id: true, kind: true, fileName: true, mimeType: true, sizeBytes: true, order: true },
+        },
+
         group: { select: { id: true, name: true } },
         teacher: {
           select: {
@@ -184,6 +191,7 @@ export class DashboardService {
         tests: { orderBy: { order: 'asc' } },
       },
     });
+    return items.map(({ views, ...a }) => ({ ...a, viewed: views.length > 0, files: a.files.map(withPreview) }));
   }
 
   /* ============================================================
@@ -201,8 +209,14 @@ export class DashboardService {
         id: assignmentId,
         groupId: { in: groupIds },
         deletedAt: null,
+        status: 'PUBLISHED',
       },
       include: {
+        files: {
+          orderBy: { order: 'asc' },
+          select: { id: true, kind: true, fileName: true, mimeType: true, sizeBytes: true, order: true },
+        },
+
         group: { select: { id: true, name: true } },
         teacher: {
           select: {
@@ -220,6 +234,18 @@ export class DashboardService {
       throw new NotFoundException('Material topilmadi');
     }
 
-    return item;
+    // Ko'rilganlik: birinchi marta ochilgan vaqt saqlanadi, keyingilarida faqat oxirgi vaqt yangilanadi
+    await this.prisma.materialView.upsert({
+      where: { assignmentId_studentId: { assignmentId, studentId } },
+      create: { assignmentId, studentId },
+      update: { lastViewedAt: new Date() },
+    });
+
+    return { ...item, files: item.files.map(withPreview) };
   }
+}
+
+const INLINE_LIMIT = 20 * 1024 * 1024;
+function withPreview<T extends { sizeBytes: number }>(f: T) {
+  return { ...f, previewable: f.sizeBytes <= INLINE_LIMIT };
 }

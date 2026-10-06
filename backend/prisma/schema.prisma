@@ -225,9 +225,17 @@ model TeacherAssignment {
   mediaUrl    String?
   groupId     String
   teacherId   String // 👈 YANGI — majburiy
+  /// DRAFT — faqat o'qituvchi ko'radi; PUBLISHED — guruh o'quvchilariga ko'rinadi
+  status      ContentStatus      @default(PUBLISHED)
+  publishedAt DateTime?
+  /// Topshirish/ko'rish muddati (ixtiyoriy)
+  dueAt       DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   deletedAt   DateTime?
+
+  files MaterialFile[]
+  views MaterialView[]
 
   group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher User  @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
@@ -244,6 +252,40 @@ enum ContentType {
   IMAGE
   PDF
   VIDEO
+  FILE
+}
+
+/// Materialga biriktirilgan fayl. Fayl Telegram'dagi maxfiy kanalda saqlanadi (tgFileId orqali).
+model MaterialFile {
+  id           String             @id @default(cuid())
+  assignmentId String?
+  assignment   TeacherAssignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  uploaderId   String
+  /// IMAGE | PDF | VIDEO | FILE
+  kind         ContentType
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  tgFileId     String
+  tgMessageId  Int?
+  order        Int                @default(0)
+  createdAt    DateTime           @default(now())
+
+  @@index([assignmentId, order])
+  @@index([uploaderId, assignmentId])
+}
+
+/// O'quvchi materialni birinchi/oxirgi marta ochgan vaqt (ko'rilganlik statistikasi uchun)
+model MaterialView {
+  id            String            @id @default(cuid())
+  assignmentId  String
+  assignment    TeacherAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId     String
+  firstViewedAt DateTime          @default(now())
+  lastViewedAt  DateTime          @default(now())
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
 }
 
 enum AssignmentCategory {

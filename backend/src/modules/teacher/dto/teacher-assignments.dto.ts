@@ -5,6 +5,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsISO8601,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -14,7 +15,8 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-const CONTENT_TYPES = ['TEXT', 'IMAGE', 'PDF', 'VIDEO'] as const;
+const CONTENT_TYPES = ['TEXT', 'IMAGE', 'PDF', 'VIDEO', 'FILE'] as const;
+const STATUSES = ['DRAFT', 'PUBLISHED'] as const;
 const CATEGORIES = ['LESSON', 'HOMEWORK', 'RESOURCE'] as const;
 
 export class AssignmentTestDto {
@@ -57,9 +59,34 @@ export class CreateAssignmentDto {
   @MaxLength(1000)
   mediaUrl?: string;
 
+  /** Bitta guruh (eski mijozlar uchun) — yoki groupIds */
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  groupId: string;
+  groupId?: string;
+
+  /** Bir nechta guruhga bir vaqtda biriktirish */
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  groupIds?: string[];
+
+  /** Oldindan yuklangan fayllar (POST /api/v1/materials/files) */
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  fileIds?: string[];
+
+  @IsOptional()
+  @IsIn(STATUSES)
+  status?: (typeof STATUSES)[number];
+
+  @IsOptional()
+  @IsISO8601()
+  dueAt?: string;
 
   @IsOptional()
   @IsArray()
@@ -105,4 +132,19 @@ export class UpdateAssignmentDto {
   @ValidateNested({ each: true })
   @Type(() => AssignmentTestDto)
   tests?: AssignmentTestDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  fileIds?: string[];
+
+  @IsOptional()
+  @IsIn(STATUSES)
+  status?: (typeof STATUSES)[number];
+
+  /** null/bo'sh = muddatni olib tashlash */
+  @IsOptional()
+  @IsISO8601()
+  dueAt?: string | null;
 }

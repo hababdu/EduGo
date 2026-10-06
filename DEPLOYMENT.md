@@ -105,3 +105,16 @@ Kalitlar FAQAT backendda saqlanadi. `VITE_*` o'zgaruvchilariga hech qachon AI ka
 - `BOT_TOKEN`/`BOT_INTERNAL_SECRET` backend va bot servislarida BIR XIL bo'lishi kerak — almashtirgach ikkalasini ham yangilang.
 - `JWT_SECRET` almashsa, hamma foydalanuvchi qayta kirishi kerak (bu normal).
 - Bir martalik admin tayinlash: `DATABASE_URL=... node backend/set-admin.js <telegramId>`.
+
+## Material fayllari (Telegram orqali saqlash)
+
+O'qituvchi yuklagan fayllar (PDF, rasm, video, hujjat) Telegram'dagi **maxfiy kanalda** saqlanadi.
+
+1. Telegram'da yangi **private kanal** yarating (nomi ixtiyoriy, masalan "EduGo fayllar").
+2. Botni kanalga **administrator** qilib qo'shing (xabar yuborish huquqi bilan).
+3. Kanal ID'sini oling: kanalga biror xabar yozib, uni @JsonDumpBot'ga forward qiling → `forward_from_chat.id` (`-100…` bilan boshlanadi).
+4. Backend servisiga env qo'shing: `TELEGRAM_STORAGE_CHAT_ID=-100xxxxxxxxxx` (`BOT_TOKEN` allaqachon bor).
+
+Cheklovlar (Telegram Bot API): yuklash ≤ 45 MB; ilova ichida ko'rish ≤ 20 MB. 20 MB dan katta fayl o'quvchining Telegram chatiga bot orqali yuboriladi
+(o'quvchi botga kamida bir marta /start yuborgan bo'lishi kerak). Uzun videolar uchun YouTube havolasi tavsiya etiladi.
+Env berilmasa, fayl yuklash "sozlanmagan" xabarini beradi, havola (URL) bilan materiallar ishlayveradi.

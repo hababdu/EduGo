@@ -4,11 +4,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
+import { MaterialFiles } from '../../components/materials/MaterialFiles';
+import type { MaterialFileDto } from '../../lib/material-files';
+import { isHttpUrl, youtubeEmbed } from '../../lib/safe-url';
 
 /* ============================================================
    TYPES
    ============================================================ */
-type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
 type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
 interface AssignmentTest {
@@ -26,6 +29,8 @@ interface AssignmentItem {
   type: ContentType;
   category: AssignmentCategory;
   mediaUrl?: string | null;
+  dueAt?: string | null;
+  files?: MaterialFileDto[];
   groupId: string;
   createdAt?: string;
   group?: { id: string; name: string } | null;
@@ -55,6 +60,7 @@ const CONTENT_META: Record<ContentType, { label: string; emoji: string }> = {
   IMAGE: { label: 'Rasm', emoji: '🖼️' },
   PDF: { label: 'PDF fayl', emoji: '📑' },
   VIDEO: { label: 'Video', emoji: '📹' },
+  FILE: { label: 'Hujjat', emoji: '📎' },
 };
 
 /* ============================================================
@@ -180,15 +186,31 @@ export function LessonDetailPage() {
         )}
       </div>
 
-      {/* ============ MEDIA ============ */}
-      {item.mediaUrl && (
+      {/* ============ MUDDAT ============ */}
+      {item.dueAt && (
+        <div className="flex items-center gap-2 rounded-2xl border border-gold/20 bg-gold/10 px-4 py-3 text-sm text-gold">
+          <span aria-hidden="true">⏰</span>
+          <span className="font-semibold">Muddat: {new Date(item.dueAt).toLocaleDateString('uz-UZ')}</span>
+        </div>
+      )}
+
+      {/* ============ FAYLLAR (Telegramda saqlangan) ============ */}
+      {item.files && item.files.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            Fayllar ({item.files.length})
+          </h3>
+          <MaterialFiles files={item.files} />
+        </div>
+      )}
+
+      {/* ============ HAVOLA ============ */}
+      {isHttpUrl(item.mediaUrl) && (
         <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
-          {item.type === 'VIDEO' ? (
+          {item.type === 'VIDEO' && youtubeEmbed(item.mediaUrl) ? (
             <div className="aspect-video w-full overflow-hidden rounded-2xl bg-surface/50 border border-white/5">
               <iframe
-                src={item.mediaUrl
-                  .replace('watch?v=', 'embed/')
-                  .replace('youtu.be/', 'youtube.com/embed/')}
+                src={youtubeEmbed(item.mediaUrl)!}
                 title="Video"
                 className="w-full h-full"
                 allowFullScreen
@@ -201,6 +223,7 @@ export function LessonDetailPage() {
                 alt={item.title}
                 className="max-h-96 object-contain"
                 loading="lazy"
+                referrerPolicy="no-referrer"
               />
             </div>
           ) : (
@@ -210,7 +233,7 @@ export function LessonDetailPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gold/10 text-gold text-sm font-semibold active:scale-[0.98] transition-transform"
             >
-              🔗 {item.type === 'PDF' ? 'PDF faylni ochish' : 'Faylni ochish'} →
+              🔗 {item.type === 'PDF' ? 'PDF faylni ochish' : 'Havolani ochish'} →
             </a>
           )}
         </div>
@@ -263,7 +286,7 @@ export function LessonDetailPage() {
       )}
 
       {/* ============ EMPTY CONTENT ============ */}
-      {!item.mediaUrl && !item.description && (!item.tests || item.tests.length === 0) && (
+      {!item.mediaUrl && !(item.files && item.files.length > 0) && !item.description && (!item.tests || item.tests.length === 0) && (
         <div className="bg-surface/20 p-5 rounded-3xl border border-white/5">
           <div className="text-center py-8 space-y-2">
             <div className="text-3xl">📄</div>

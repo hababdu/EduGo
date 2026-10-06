@@ -2,7 +2,7 @@
 import { BookOpen, ClipboardList, FolderOpen, FileText, Image as ImageIcon, FileType, Video } from 'lucide-react';
 
 export type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
-export type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+export type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
 
 export const CATEGORY_META: Record<
   AssignmentCategory,
@@ -35,5 +35,6 @@ export const CONTENT_META: Record<
   TEXT: { label: 'Matn', short: 'Matn', Icon: FileText },
   IMAGE: { label: 'Rasm', short: 'Rasm', Icon: ImageIcon },
   PDF: { label: 'PDF fayl', short: 'PDF', Icon: FileType },
-  VIDEO: { label: 'YouTube video', short: 'Video', Icon: Video },
+  VIDEO: { label: 'Video', short: 'Video', Icon: Video },
+  FILE: { label: 'Hujjat', short: 'Hujjat', Icon: FileText },
 };

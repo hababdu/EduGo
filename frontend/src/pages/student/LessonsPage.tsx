@@ -10,7 +10,7 @@ import { IMAGES } from '../../design/images';
 /* ============================================================
    TYPES
    ============================================================ */
-type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
 type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
 interface AssignmentTest {
@@ -28,6 +28,9 @@ interface AssignmentItem {
   type: ContentType;
   category: AssignmentCategory;
   mediaUrl?: string | null;
+  dueAt?: string | null;
+  viewed?: boolean;
+  files?: { id: string }[];
   groupId: string;
   createdAt: string;
   group?: { id: string; name: string } | null;
@@ -69,6 +72,7 @@ const CONTENT_META: Record<ContentType, { label: string; emoji: string }> = {
   IMAGE: { label: 'Rasm', emoji: '🖼️' },
   PDF: { label: 'PDF fayl', emoji: '📑' },
   VIDEO: { label: 'Video', emoji: '📹' },
+  FILE: { label: 'Hujjat', emoji: '📎' },
 };
 
 /* ============================================================
@@ -406,6 +410,21 @@ export function LessonsPage() {
                               {item.tests && item.tests.length > 0 && (
                                 <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-gold/10 text-gold">
                                   🧠 {item.tests.length} ta test
+                                </span>
+                              )}
+                              {!!item.files?.length && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-sky/10 text-sky">
+                                  📎 {item.files.length} ta fayl
+                                </span>
+                              )}
+                              {item.dueAt && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-coral/10 text-coral">
+                                  ⏰ {new Date(item.dueAt).toLocaleDateString('uz-UZ')}
+                                </span>
+                              )}
+                              {item.viewed === false && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-teal/15 text-teal">
+                                  YANGI
                                 </span>
                               )}
                             </div>
