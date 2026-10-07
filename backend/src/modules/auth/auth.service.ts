@@ -52,17 +52,24 @@ export class AuthService {
     });
 
     if (!user) {
-      user = await this.prisma.user.create({
-        data: {
-          telegramId,
-          firstName: tgUser.first_name,
-          lastName: tgUser.last_name,
-          username: tgUser.username,
-          profilePhotoUrl: tgUser.photo_url,
-          role: 'STUDENT', // yangi userlar har doim STUDENT sifatida boshlanadi
-          studentProfile: { create: {} },
-        },
-      });
+      try {
+        user = await this.prisma.user.create({
+          data: {
+            telegramId,
+            firstName: tgUser.first_name,
+            lastName: tgUser.last_name,
+            username: tgUser.username,
+            profilePhotoUrl: tgUser.photo_url,
+            role: 'STUDENT', // yangi userlar har doim STUDENT sifatida boshlanadi
+            studentProfile: { create: {} },
+          },
+        });
+      } catch (e: any) {
+        // Mini App bir vaqtda bir nechta login yuborganda parallel so'rov foydalanuvchini allaqachon yaratgan bo'lishi mumkin (P2002)
+        if (e?.code !== 'P2002') throw e;
+        user = await this.prisma.user.findUnique({ where: { telegramId } });
+        if (!user) throw e;
+      }
     } else {
       if (user.status === 'BLOCKED') {
         throw new UnauthorizedException(
