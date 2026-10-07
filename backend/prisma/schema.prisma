@@ -53,6 +53,8 @@ model User {
   achievements         StudentAchievement[]
   testAttempts         TestAttempt[]
   notifications        Notification[]
+  aiUsages             AiUsage[]
+  assistantActions     AssistantAction[]
   adminActionLogs      AdminActionLog[]     @relation("AuditActor")
   activityLogs         ActivityLog[]
   streak               Streak?
@@ -60,6 +62,10 @@ model User {
   createdCourses       Course[]             @relation("CourseCreatedBy")
   taughtGroups         Group[]              @relation("GroupTeacher")
   assistantGroups      Group[]              @relation("GroupAssistant")
+  attendanceRecords    AttendanceRecord[]   @relation("AttendanceStudent")
+  attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
+  payments             Payment[]            @relation("PaymentStudent")
+  paymentsMarked       Payment[]            @relation("PaymentMarker")
   createdTests         Test[]               @relation("TestCreatedBy")
   createdQuestions     Question[]           @relation("QuestionCreatedBy")
   assignedTests        TestAssignment[]     @relation("AssignedBy")
@@ -105,6 +111,19 @@ model Group {
   createdAt   DateTime @default(now())   // 👈 BO'LISHI SHART
   deletedAt   DateTime?
 
+  // Guruh sig'imi (null = cheklanmagan) va guruhning Telegram chati/boti havolasi (https://t.me/...)
+  maxCapacity     Int?
+  telegramChatUrl String?
+
+  // Dars jadvali: ISO hafta kunlari (1=Dushanba … 7=Yakshanba), vaqt "HH:mm" (Toshkent), xona
+  lessonDays      Int[]    @default([])
+  lessonStartTime String?
+  lessonEndTime   String?
+  room            String?
+
+  // Oylik to'lov (so'm). null = belgilanmagan
+  monthlyFee      Int?
+
   teacher   User? @relation("GroupTeacher", fields: [teacherId], references: [id], onDelete: SetNull)
   assistant User? @relation("GroupAssistant", fields: [assistantId], references: [id], onDelete: SetNull)
 
@@ -112,6 +131,8 @@ model Group {
   testAssignments    TestAssignment[]
   assignments        Assignment[]
   teacherAssignments TeacherAssignment[]
+  attendance         AttendanceRecord[]
+  payments           Payment[]
 
   @@index([teacherId])
   @@index([assistantId])
@@ -134,6 +155,64 @@ model GroupMember {
 }
 
 // ------------------------------------------------------------
+// 2b. DAVOMAT — guruh, o'quvchi va kun bo'yicha bitta yozuv
+// ------------------------------------------------------------
+
+enum AttendanceStatus {
+  PRESENT // kelgan
+  ABSENT // kelmagan
+  EXCUSED // sababli
+}
+
+model AttendanceRecord {
+  id         String           @id @default(cuid())
+  groupId    String
+  studentId  String
+  date       DateTime         @db.Date // faqat sana (Toshkent kuni)
+  status     AttendanceStatus
+  note       String?
+  markedById String
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student  User  @relation("AttendanceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User  @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([groupId, studentId, date])
+  @@index([groupId, date])
+  @@index([studentId, date])
+}
+
+enum PaymentStatus {
+  PAID // to'lagan
+  WAIVED // imtiyoz / ozod qilingan
+}
+
+/// Oylik to'lov belgisi. Yozuv yo'q = to'lamagan (qarzdor).
+model Payment {
+  id         String        @id @default(cuid())
+  groupId    String
+  studentId  String
+  month      String // "YYYY-MM" (Toshkent oyi)
+  status     PaymentStatus
+  amount     Int           @default(0)
+  note       String?
+  paidAt     DateTime      @default(now())
+  markedById String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student  User  @relation("PaymentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User  @relation("PaymentMarker", fields: [markedById], references: [id])
+
+  @@unique([groupId, studentId, month])
+  @@index([groupId, month])
+  @@index([studentId])
+}
+
+// ------------------------------------------------------------
 // 3. LEARNING HIERARCHY: Course → Subject → Section → Topic → Lesson
 // ------------------------------------------------------------
 model TeacherAssignment {
@@ -146,9 +225,17 @@ model TeacherAssignment {
   mediaUrl    String?
   groupId     String
   teacherId   String // 👈 YANGI — majburiy
+  /// DRAFT — faqat o'qituvchi ko'radi; PUBLISHED — guruh o'quvchilariga ko'rinadi
+  status      ContentStatus      @default(PUBLISHED)
+  publishedAt DateTime?
+  /// Topshirish/ko'rish muddati (ixtiyoriy)
+  dueAt       DateTime?
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   deletedAt   DateTime?
+
+  files MaterialFile[]
+  views MaterialView[]
 
   group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher User  @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
@@ -165,6 +252,40 @@ enum ContentType {
   IMAGE
   PDF
   VIDEO
+  FILE
+}
+
+/// Materialga biriktirilgan fayl. Fayl Telegram'dagi maxfiy kanalda saqlanadi (tgFileId orqali).
+model MaterialFile {
+  id           String             @id @default(cuid())
+  assignmentId String?
+  assignment   TeacherAssignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  uploaderId   String
+  /// IMAGE | PDF | VIDEO | FILE
+  kind         ContentType
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  tgFileId     String
+  tgMessageId  Int?
+  order        Int                @default(0)
+  createdAt    DateTime           @default(now())
+
+  @@index([assignmentId, order])
+  @@index([uploaderId, assignmentId])
+}
+
+/// O'quvchi materialni birinchi/oxirgi marta ochgan vaqt (ko'rilganlik statistikasi uchun)
+model MaterialView {
+  id            String            @id @default(cuid())
+  assignmentId  String
+  assignment    TeacherAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId     String
+  firstViewedAt DateTime          @default(now())
+  lastViewedAt  DateTime          @default(now())
+
+  @@unique([assignmentId, studentId])
+  @@index([studentId])
 }
 
 enum AssignmentCategory {
@@ -732,4 +853,55 @@ model ActivityLog {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// ─── AI xarajat hisobi (token) ────────────────────────────────
+model AiUsage {
+  id           String   @id @default(cuid())
+  userId       String?
+  feature      String // masalan: "assistant", "generate-questions", "ping"
+  provider     String // anthropic | groq
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+// ─── AI yordamchi: tasdiqlashni kutayotgan yozuvchi amallar ──────
+// Model amalni BAJARMAYDI — faqat shu yerga PENDING taklif yozadi. Bajarish faqat
+// foydalanuvchi kartochkadagi tugmani bosganda (confirm endpointi), atomik holda.
+enum AssistantActionStatus {
+  PENDING // tasdiq kutilmoqda
+  CONFIRMED // tasdiqlandi, bajarilmoqda (qayta bosishdan himoya)
+  EXECUTED // bajarildi
+  FAILED // bajarishda xato
+  CANCELLED // foydalanuvchi bekor qildi
+  EXPIRED // muddati tugadi
+}
+
+model AssistantAction {
+  id          String                @id @default(cuid())
+  userId      String
+  tool        String
+  input       Json // tekshirilgan (parse qilingan) kirish
+  fingerprint String // tool + kirish hashi: bir xil taklif takrorlanmasligi uchun
+  summary     String // SERVER yaratgan matn (model emas)
+  details     Json // [{label, value}] kartochka qatorlari
+  risk        String // MEDIUM | HIGH
+  status      AssistantActionStatus @default(PENDING)
+  error       String?
+  expiresAt   DateTime
+  createdAt   DateTime              @default(now())
+  resolvedAt  DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, fingerprint])
+  @@index([expiresAt])
 }

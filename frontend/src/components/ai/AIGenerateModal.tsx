@@ -15,6 +15,8 @@ interface AIGenerateModalProps {
   children: React.ReactNode;
   /** Pastda doim ko'rinib turadigan tugma(lar) qatori, masalan "Generatsiya qilish" */
   footer?: React.ReactNode;
+  /** Sarlavha ostida, scroll bo'lmaydigan qator (masalan, bo'limlar almashtirgich) */
+  headerSlot?: React.ReactNode;
 }
 
 export function AIGenerateModal({
@@ -25,6 +27,7 @@ export function AIGenerateModal({
   icon = '🤖',
   children,
   footer,
+  headerSlot,
 }: AIGenerateModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +92,8 @@ export function AIGenerateModal({
             ✕
           </button>
         </div>
+
+        {headerSlot && <div className="px-5 pt-3 shrink-0">{headerSlot}</div>}
 
         {/* BODY */}
         <div ref={sheetRef} className="flex-1 overflow-y-auto px-5 py-4">

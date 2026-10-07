@@ -1,4 +1,7 @@
 // src/pages/student/GroupsPage.tsx
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
+import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -21,6 +24,11 @@ interface StudentGroup {
   name: string;
   description?: string | null;
   posterUrl?: string | null;
+  maxCapacity?: number | null;
+  lessonDays?: number[] | null;
+  lessonStartTime?: string | null;
+  lessonEndTime?: string | null;
+  room?: string | null;
   teacher?: Teacher | null;
   _count?: {
     members?: number;
@@ -110,23 +118,13 @@ export function GroupsPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
       {/* ============ HEADER ============ */}
-      <div className="bg-gradient-to-br from-gold/10 via-surface/20 to-teal/5 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gold/15 text-gold flex items-center justify-center text-2xl shrink-0">
-            👥
-          </div>
-          <div className="min-w-0">
-            <h1 className="font-display text-xl sm:text-2xl text-ink truncate">
-              Mening guruhlarim
-            </h1>
-            <p className="text-xs text-ink-muted mt-0.5">
-              {groups
-                ? `${groups.length} ta guruh`
-                : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        </div>
-      </div>
+      <StaffHero
+        eyebrow="GURUHLAR"
+        title="Mening guruhlarim"
+        subtitle={groups ? `${groups.length} ta guruh` : 'Yuklanmoqda...'}
+        image={IMAGES.hero}
+        accent="gold"
+      />
 
       {/* ============ SEARCH ============ */}
       {groups && groups.length > 3 && (
@@ -205,7 +203,7 @@ export function GroupsPage() {
                   {/* Members badge */}
                   <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-lg font-medium flex items-center gap-1">
                     <span>👥</span>
-                    <span>{membersCount}</span>
+                    <span>{membersCount}{g.maxCapacity ? ` / ${g.maxCapacity}` : ''}</span>
                   </div>
                 </div>
 
@@ -219,6 +217,7 @@ export function GroupsPage() {
                       {g.description}
                     </p>
                   )}
+                  <ScheduleBadge schedule={g} className="pt-0.5" />
                   {teacherName && (
                     <p className="text-[10px] text-ink-muted truncate mt-auto pt-1 flex items-center gap-1">
                       <span>👤</span>

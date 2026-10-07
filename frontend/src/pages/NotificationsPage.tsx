@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { Panel } from '../components/staff';
+import { Bell } from 'lucide-react';
 import { useNotifications, useMarkNotificationRead } from '../hooks/useNotifications';
 
 const TYPE_ICONS: Record<string, string> = {
@@ -29,7 +31,7 @@ export function NotificationsPage() {
   return (
     <div className="pb-24 px-5 pt-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-ink-muted" aria-label="Orqaga">
+        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted active:scale-95 transition" aria-label="Orqaga">
           ←
         </button>
         <h1 className="font-display text-2xl">Bildirishnomalar</h1>
@@ -46,12 +48,13 @@ export function NotificationsPage() {
           Hozircha bildirishnomalar yo'q.
         </p>
       ) : (
+        <Panel title="So'nggi xabarlar" icon={Bell} accent="sky" flush>
         <div className="divide-y divide-white/5">
           {notifications.map((n) => (
             <button
               key={n.id}
               onClick={() => !n.isRead && markAsRead.mutate(n.id)}
-              className="w-full text-left flex gap-3 py-3.5"
+              className={`w-full text-left flex gap-3 px-5 py-3.5 ${n.isRead ? '' : 'bg-gold/5'}`}
             >
               <span className="text-xl shrink-0" aria-hidden="true">
                 {TYPE_ICONS[n.type] ?? '🔔'}
@@ -71,6 +74,7 @@ export function NotificationsPage() {
             </button>
           ))}
         </div>
+        </Panel>
       )}
     </div>
   );

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Barcha papkalardagi node_modules ni e'tiborsiz qoldirish
 **/node_modules/
 node_modules/
@@ -8,3 +9,18 @@ node_modules/
 # Muhit o'zgaruvchilari
 .env
 **/env
+=======
+# Build natijalari va bog'liqliklar — repoga kirmasin
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Sirlar
+.env
+.env.local
+!.env.example
+!.env.ai.example
+
+# macOS
+.DS_Store
+>>>>>>> 62ed532fc7c34c590e9fc4359c1c2a48d1bf771c

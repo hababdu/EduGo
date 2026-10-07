@@ -344,8 +344,13 @@ export class TestManagementService {
   /* ============================================================
      PUBLISH
      ============================================================ */
-  async publish(testId: string, actorId: string) {
+  async publish(testId: string, actorId: string, actorRole: string) {
     const test = await this.getOrThrow(testId);
+
+    // O'qituvchi faqat O'Z testini e'lon qila oladi (admin — hammasini). Avval bu tekshiruv yo'q edi.
+    if (actorRole === 'TEACHER' && test.createdById !== actorId) {
+      throw new ForbiddenException('Bu test sizga tegishli emas');
+    }
 
     await this.prisma.test.update({
       where: { id: testId },
@@ -367,7 +372,7 @@ export class TestManagementService {
   /* ============================================================
      ASSIGN TEST
      ============================================================ */
-  async assign(testId: string, dto: AssignTestDto, actorId: string) {
+  async assign(testId: string, dto: AssignTestDto, actorId: string, actorRole: string) {
     const test = await this.getOrThrow(testId);
 
     if (test.createdById !== actorId) {
@@ -390,6 +395,24 @@ export class TestManagementService {
       if (!group) throw new NotFoundException('Guruh topilmadi');
       if (group.teacherId !== actorId) {
         throw new ForbiddenException('Bu guruh sizga tegishli emas');
+      }
+    }
+
+    if (dto.targetType === 'INDIVIDUAL' && dto.studentId) {
+      // studentId haqiqiy o'quvchi bo'lishi shart (avval umuman tekshirilmas edi)
+      const student = await this.prisma.user.findFirst({
+        where: { id: dto.studentId, role: 'STUDENT', deletedAt: null },
+        select: { id: true },
+      });
+      if (!student) throw new NotFoundException("O'quvchi topilmadi");
+
+      // O'qituvchi faqat O'Z guruhlaridagi o'quvchiga individual test biriktira oladi
+      if (actorRole === 'TEACHER') {
+        const member = await this.prisma.groupMember.findFirst({
+          where: { studentId: dto.studentId, group: { teacherId: actorId, deletedAt: null } },
+          select: { id: true },
+        });
+        if (!member) throw new ForbiddenException("Bu o'quvchi sizning guruhlaringizda emas");
       }
     }
 

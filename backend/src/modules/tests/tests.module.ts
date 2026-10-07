@@ -11,5 +11,6 @@ import { TestSessionService } from './session/test-session.service';
   imports: [AdminModule, GamificationModule, NotificationsModule],
   controllers: [TestManagementController, TestSessionController],
   providers: [TestManagementService, TestSessionService],
+  exports: [TestManagementService],
 })
 export class TestsModule {}

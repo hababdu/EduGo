@@ -1,4 +1,5 @@
 // src/modules/groups/groups.service.ts
+import { normalizeSchedule, ScheduleInput } from './schedule.util';
 import {
   BadRequestException,
   ForbiddenException,
@@ -121,7 +122,10 @@ export class GroupsService {
       description?: string;
       posterUrl?: string;
       teacherId?: string;
-    },
+      maxCapacity?: number | null;
+      telegramChatUrl?: string | null;
+      monthlyFee?: number | null;
+    } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
     // 1. Validatsiya
@@ -165,6 +169,11 @@ export class GroupsService {
         name: data.name.trim(),
         description: data.description?.trim() || null,
         posterUrl: data.posterUrl?.trim() || null,   // 👈 POSTER SAQLASH
+        maxCapacity: data.maxCapacity ?? null,
+        telegramChatUrl: data.telegramChatUrl?.trim() || null,
+        ...normalizeSchedule(data),
+        // To'lov summasini faqat admin belgilaydi (o'qituvchi yuborgan bo'lsa ham e'tiborga olinmaydi)
+        monthlyFee: user.role === 'TEACHER' ? null : data.monthlyFee ?? null,
         teacherId,
       },
       include: {
@@ -191,10 +200,30 @@ export class GroupsService {
       description?: string;
       posterUrl?: string;
       teacherId?: string | null;
-    },
+      maxCapacity?: number | null;
+      telegramChatUrl?: string | null;
+      monthlyFee?: number | null;
+    } & ScheduleInput,
     user: CurrentUserPayload,
   ) {
     const group = await this.findOneOrThrow(groupId, user);
+
+    // Guruhni boshqa o'qituvchiga topshirish — faqat admin (o'qituvchi guruhni "uzatib yubora" olmasin)
+    const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
+    if (data.teacherId !== undefined && !isAdmin) {
+      throw new ForbiddenException("O'qituvchini faqat administrator o'zgartira oladi");
+    }
+    if (data.monthlyFee !== undefined && !isAdmin) {
+      throw new ForbiddenException("Oylik to'lov summasini faqat administrator o'zgartira oladi");
+    }
+
+    // Sig'imni a'zolar sonidan kamaytirib bo'lmaydi
+    if (typeof data.maxCapacity === 'number') {
+      const count = await this.prisma.groupMember.count({ where: { groupId } });
+      if (data.maxCapacity < count) {
+        throw new BadRequestException(`Guruhda hozir ${count} ta a'zo bor, sig'im bundan kam bo'lishi mumkin emas`);
+      }
+    }
 
     // Teacher ID validatsiya (agar berilgan bo'lsa)
     if (data.teacherId) {
@@ -224,6 +253,12 @@ export class GroupsService {
         ...(data.teacherId !== undefined && {
           teacherId: data.teacherId || null,
         }),
+        ...(data.maxCapacity !== undefined && { maxCapacity: data.maxCapacity }),
+        ...(data.telegramChatUrl !== undefined && {
+          telegramChatUrl: data.telegramChatUrl?.trim() || null,
+        }),
+        ...normalizeSchedule(data, group as any),
+        ...(data.monthlyFee !== undefined && { monthlyFee: data.monthlyFee }),
       },
       include: {
         teacher: {
@@ -247,7 +282,7 @@ export class GroupsService {
     studentId: string,
     user: CurrentUserPayload,
   ) {
-    await this.findOneOrThrow(groupId, user);
+    const group = await this.findOneOrThrow(groupId, user);
 
     // Student mavjudligini tekshirish
     const student = await this.prisma.user.findFirst({
@@ -270,18 +305,25 @@ export class GroupsService {
       throw new BadRequestException("Bu talaba allaqachon guruhga qo'shilgan");
     }
 
-    return this.prisma.groupMember.create({
-      data: { groupId, studentId },
-      include: {
-        student: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            username: true,
-          },
-        },
+    const include = {
+      student: {
+        select: { id: true, firstName: true, lastName: true, username: true },
       },
+    };
+
+    // Sig'im cheklanmagan bo'lsa — oddiy qo'shish
+    if (group.maxCapacity == null) {
+      return this.prisma.groupMember.create({ data: { groupId, studentId }, include });
+    }
+
+    // Sig'im bor: guruh qatorini qulflab (bir vaqtdagi qo'shishlarni navbatga qo'yib), sanab, keyin qo'shamiz
+    return this.prisma.$transaction(async (tx) => {
+      await tx.group.update({ where: { id: groupId }, data: { maxCapacity: group.maxCapacity } });
+      const count = await tx.groupMember.count({ where: { groupId } });
+      if (count >= (group.maxCapacity as number)) {
+        throw new BadRequestException(`Guruh to'lgan (${count}/${group.maxCapacity})`);
+      }
+      return tx.groupMember.create({ data: { groupId, studentId }, include });
     });
   }
 

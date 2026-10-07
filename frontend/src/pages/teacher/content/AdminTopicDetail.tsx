@@ -8,12 +8,12 @@ import {
   useCreateLesson,
 } from '../../../hooks/useContent';
 import { CreateItemForm } from '../../../components/admin/content/CreateItemForm';
+import { ContentHero } from '../../../components/admin/content/ContentHero';
 import { PublishToggle } from '../../../components/admin/content/PublishToggle';
 import { LessonCard } from '../../../components/admin/content/LessonCard';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import {
-  PageHeader,
   Section,
   EmptyState,
   CheckboxRow,
@@ -122,7 +122,8 @@ export function AdminTopicDetail() {
 
   return (
     <div className={PAGE_NARROW}>
-      <PageHeader
+      <ContentHero
+        eyebrow="MAVZU"
         title={topic.title}
         onBack={() => {
           haptic('light');

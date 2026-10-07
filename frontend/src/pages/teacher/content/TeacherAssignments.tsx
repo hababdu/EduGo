@@ -1,23 +1,21 @@
 // src/pages/teacher/TeacherAssignments.tsx
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { StaffHero } from '../../../components/staff';
+import { IMAGES } from '../../../design/images';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   useTeacherAssignments,
   useTeacherGroups,
-  useCreateTeacherAssignment,
   useDeleteTeacherAssignment,
 } from '../../../hooks/useTeacherAssignments';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
-import type { GeneratedMaterial } from '../../../lib/ai-service';
-import { AIMaterialGenerator } from '../../../components/ai/AIMaterialGenerator';
+import { MaterialComposer } from '../../../components/materials/MaterialComposer';
 import {
-  PageHeader,
   Section,
   CardList,
   EmptyState,
   FilterBar,
-  Field,
   Skeleton,
 } from '../../../components/ui';
 import {
@@ -36,7 +34,7 @@ import {
 } from '../../../design/icons';
 import { TEXT, CONTROL, PAGE } from '../../../design/tokens';
 
-type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
 type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
 interface Assignment {
@@ -47,6 +45,11 @@ interface Assignment {
   category: AssignmentCategory;
   groupId: string;
   mediaUrl?: string;
+  status?: 'DRAFT' | 'PUBLISHED';
+  dueAt?: string | null;
+  files?: { id: string }[];
+  group?: { id: string; name: string } | null;
+  stats?: { viewed: number; total: number };
 }
 
 interface Group {
@@ -65,112 +68,23 @@ const CONTENT_META: Record<ContentType, { label: string; Icon: any }> = {
   IMAGE: { label: 'Rasm', Icon: ImageIcon },
   PDF: { label: 'PDF', Icon: FileType },
   VIDEO: { label: 'Video', Icon: Video },
-};
-
-interface FormState {
-  title: string;
-  description: string;
-  contentType: ContentType;
-  assignmentCategory: AssignmentCategory;
-  selectedGroup: string;
-  mediaUrl: string;
-}
-
-const EMPTY_FORM: FormState = {
-  title: '',
-  description: '',
-  contentType: 'TEXT',
-  assignmentCategory: 'LESSON',
-  selectedGroup: '',
-  mediaUrl: '',
+  FILE: { label: 'Hujjat', Icon: FileText },
 };
 
 export function TeacherAssignments() {
   const navigate = useNavigate();
-  const { haptic, hapticNotify, showConfirm, showMainButton, hideMainButton } = useTelegram();
+  const { haptic, hapticNotify, showConfirm } = useTelegram();
 
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<'ALL' | AssignmentCategory>('ALL');
   const [groupFilter, setGroupFilter] = useState('');
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [showAIModal, setShowAIModal] = useState(false);
 
   const { data: groups, isLoading: groupsLoading } = useTeacherGroups();
   const { data: items, isLoading: itemsLoading } = useTeacherAssignments(
     groupFilter || undefined,
   );
-  const createMutation = useCreateTeacherAssignment();
   const deleteMutation = useDeleteTeacherAssignment();
-
-  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
-    setForm((f) => ({ ...f, [key]: value }));
-
-  const resetForm = () => setForm(EMPTY_FORM);
-
-  const handleAIAccept = (result: GeneratedMaterial) => {
-    setForm((prev) => ({
-      ...prev,
-      title: result.title,
-      description: result.description,
-      contentType: 'VIDEO',
-      mediaUrl: result.youtubeSearchUrl,
-    }));
-    hapticNotify('success');
-    toast('success', 'AI material tanlandi');
-  };
-
-  const handleSubmit = useCallback(() => {
-    if (!form.title.trim() || !form.selectedGroup) {
-      hapticNotify('error');
-      toast('error', 'Sarlavha va guruhni tanlang');
-      return;
-    }
-    if (form.contentType !== 'TEXT' && !form.mediaUrl.trim()) {
-      hapticNotify('error');
-      toast('error', 'Media URL kerak');
-      return;
-    }
-
-    createMutation.mutate(
-      {
-        title: form.title.trim(),
-        description: form.description.trim() || undefined,
-        type: form.contentType,
-        category: form.assignmentCategory,
-        mediaUrl: form.mediaUrl.trim() || undefined,
-        groupId: form.selectedGroup,
-      } as any,
-      {
-        onSuccess: () => {
-          hapticNotify('success');
-          toast('success', 'Material saqlandi');
-          setShowForm(false);
-          resetForm();
-        },
-        onError: (err: any) => {
-          hapticNotify('error');
-          toast('error', err?.message || 'Xatolik');
-        },
-      },
-    );
-  }, [form, createMutation, hapticNotify]);
-
-  useEffect(() => {
-    if (!showForm) {
-      hideMainButton();
-      return;
-    }
-    const cleanup = showMainButton(
-      createMutation.isPending ? 'Saqlanmoqda...' : 'SAQLASH',
-      handleSubmit,
-      { loading: createMutation.isPending, disabled: createMutation.isPending },
-    );
-    return () => {
-      cleanup?.();
-      hideMainButton();
-    };
-  }, [showForm, createMutation.isPending, handleSubmit, showMainButton, hideMainButton]);
 
   const filteredItems = useMemo<Assignment[]>(() => {
     if (!items || !Array.isArray(items)) return [];
@@ -207,16 +121,18 @@ export function TeacherAssignments() {
 
   return (
     <div className={PAGE}>
-      <PageHeader
+      <StaffHero
+        eyebrow="MATERIALLAR"
         title="Materiallar"
         subtitle="Darslar, uy vazifalari, resurslar"
+        image={IMAGES.ieltsLanguage}
+        accent="teal"
         actions={
           <button
             type="button"
             onClick={() => {
               haptic('light');
               setShowForm((v) => !v);
-              if (!showForm) resetForm();
             }}
             className={CONTROL.buttonPrimary}
           >
@@ -227,114 +143,12 @@ export function TeacherAssignments() {
       />
 
       {showForm && (
-        <div className="bg-surface/30 border border-white/10 rounded-2xl p-5 space-y-4 backdrop-blur-xl">
-          <div className="flex items-center justify-between pb-3 border-b border-white/5">
-            <h2 className={TEXT.h2}>Yangi material</h2>
-            <button
-              type="button"
-              onClick={() => {
-                haptic('light');
-                setShowForm(false);
-                resetForm();
-              }}
-              className="text-xs text-ink-muted hover:text-ink"
-            >
-              Bekor qilish
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              haptic('light');
-              setShowAIModal(true);
-            }}
-            className={CONTROL.buttonSubtle + ' w-full'}
-          >
-            <Sparkles className="w-4 h-4" />
-            AI bilan material yaratish
-          </button>
-
-          <Field label="Toifa">
-            <select
-              value={form.assignmentCategory}
-              onChange={(e) =>
-                update('assignmentCategory', e.target.value as AssignmentCategory)
-              }
-              className={CONTROL.select}
-            >
-              <option value="LESSON">Dars mavzusi</option>
-              <option value="HOMEWORK">Uy vazifasi</option>
-              <option value="RESOURCE">Qo'shimcha resurs</option>
-            </select>
-          </Field>
-
-          <Field label="Format">
-            <select
-              value={form.contentType}
-              onChange={(e) => update('contentType', e.target.value as ContentType)}
-              className={CONTROL.select}
-            >
-              <option value="TEXT">Matn</option>
-              <option value="IMAGE">Rasm</option>
-              <option value="PDF">PDF fayl</option>
-              <option value="VIDEO">YouTube video</option>
-            </select>
-          </Field>
-
-          <Field label="Guruh" required>
-            <select
-              value={form.selectedGroup}
-              onChange={(e) => update('selectedGroup', e.target.value)}
-              className={CONTROL.select}
-            >
-              <option value="">Guruhni tanlang...</option>
-              {(groups as Group[] | undefined)?.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Sarlavha" required>
-            <input
-              value={form.title}
-              onChange={(e) => update('title', e.target.value)}
-              placeholder="Masalan: 3-mavzu uyga vazifa"
-              className={CONTROL.input}
-            />
-          </Field>
-
-          {form.contentType !== 'TEXT' && (
-            <Field
-              label={
-                form.contentType === 'VIDEO'
-                  ? 'YouTube URL'
-                  : form.contentType === 'IMAGE'
-                  ? 'Rasm URL'
-                  : 'PDF URL'
-              }
-            >
-              <input
-                value={form.mediaUrl}
-                onChange={(e) => update('mediaUrl', e.target.value)}
-                placeholder="https://..."
-                className={CONTROL.input}
-              />
-            </Field>
-          )}
-
-          <Field label="Tavsif">
-            <textarea
-              value={form.description}
-              onChange={(e) => update('description', e.target.value)}
-              rows={3}
-              placeholder="O'quvchilar uchun ko'rsatmalar..."
-              className={CONTROL.textarea}
-            />
-          </Field>
-        </div>
+        <MaterialComposer
+          groups={(groups as Group[] | undefined) ?? []}
+          defaultGroupId={groupFilter || undefined}
+          onDone={() => setShowForm(false)}
+          onCancel={() => setShowForm(false)}
+        />
       )}
 
       {/* Filters */}
@@ -435,6 +249,11 @@ export function TeacherAssignments() {
                       <content.Icon className="w-3 h-3" />
                       {content.label}
                     </span>
+                    {item.status === 'DRAFT' && (
+                      <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-md font-bold bg-coral/15 text-coral">
+                        QORALAMA
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-sm font-semibold text-ink truncate">
                     {item.title}
@@ -444,6 +263,16 @@ export function TeacherAssignments() {
                       {item.description}
                     </p>
                   )}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-ink-muted">
+                    {item.group && <span>{item.group.name}</span>}
+                    {!!item.files?.length && <span>{item.files.length} ta fayl</span>}
+                    {item.dueAt && <span>Muddat: {new Date(item.dueAt).toLocaleDateString('uz-UZ')}</span>}
+                    {item.status !== 'DRAFT' && item.stats && item.stats.total > 0 && (
+                      <span className={item.stats.viewed === item.stats.total ? 'text-teal' : ''}>
+                        Ko'rgan: {item.stats.viewed}/{item.stats.total}
+                      </span>
+                    )}
+                  </div>
                 </button>
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
@@ -474,12 +303,6 @@ export function TeacherAssignments() {
         </div>
       )}
 
-      <AIMaterialGenerator
-        isOpen={showAIModal}
-        onClose={() => setShowAIModal(false)}
-        initialCategory={form.assignmentCategory}
-        onAccept={handleAIAccept}
-      />
     </div>
   );
 }

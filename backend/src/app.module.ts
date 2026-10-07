@@ -22,9 +22,12 @@ import { AssignmentsModule } from './modules/content/assignments/assignments.mod
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { UploadModule } from './modules/upload/upload.module';
+import { MaterialsModule } from './modules/materials/materials.module';
+import { AiModule } from './modules/ai/ai.module';
 @Module({
   imports: [
     UploadModule,
+    MaterialsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     EventEmitterModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
@@ -44,6 +47,7 @@ import { UploadModule } from './modules/upload/upload.module';
     TestsModule,
     RankingModule,
     AssignmentsModule, // <-- 2. IMPORTS MASSIVIGA QO'SHISH
+    AiModule,
   ],
   providers: [
     {

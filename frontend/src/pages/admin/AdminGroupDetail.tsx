@@ -1,4 +1,5 @@
 // src/pages/admin/AdminGroupDetail.tsx
+import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +15,16 @@ import {
 import { useAdminStudents } from '../../hooks/useAdmin';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
+import { CapacityBar } from '../../components/group/CapacityBar';
+import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
+import { GroupSettingsForm } from '../../components/group/GroupSettingsForm';
+import { AttendancePanel } from '../../components/group/AttendancePanel';
+import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
+import { EmptyState, Skeleton } from '../../components/ui';
+import { IMAGES } from '../../design/images';
+import { PAGE_WIDE, CONTROL } from '../../design/tokens';
+import { ArrowLeft, Users, Calendar, GraduationCap, Plus, X, ClipboardCheck, ShieldCheck, Wallet } from '../../design/icons';
+
 
 /* ============================================================
    COMPONENT
@@ -199,10 +210,14 @@ export function AdminGroupDetail() {
   /* ---------- Loading ---------- */
   if (groupLoading || !group) {
     return (
-      <div className="p-4 max-w-2xl mx-auto space-y-4 pb-24">
-        <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-40 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
-        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+      <div className={PAGE_WIDE}>
+        <Skeleton className="h-44 rounded-3xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <Skeleton className="h-40 rounded-3xl" />
       </div>
     );
   }
@@ -212,237 +227,215 @@ export function AdminGroupDetail() {
     ? `${group.teacher.firstName || ''} ${group.teacher.lastName || ''}`.trim() ||
       group.teacher.username
     : null;
+  const memberCount = Array.isArray(groupStudents) ? groupStudents.length : 0;
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-5 pb-24">
-      {/* ============ BACK BUTTON ============ */}
-      <button
-        type="button"
-        onClick={() => {
-          haptic('light');
-          navigate('/admin/groups');
-        }}
-        className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
-      >
-        ← Orqaga
-      </button>
-
-      {/* ============ HEADER — POSTER + INFO ============ */}
-      <div className="bg-surface/20 rounded-3xl border border-white/5 overflow-hidden backdrop-blur-md">
-        {/* Poster */}
-        {posterFullUrl ? (
-          <div className="w-full h-48 bg-surface/50 overflow-hidden">
-            <img
-              src={posterFullUrl}
-              alt={group.name}
-              className="w-full h-48 object-cover"
-            />
+    <div className={PAGE_WIDE}>
+      {/* ============ HERO ============ */}
+      <StaffHero
+        accent="sky"
+        image={posterFullUrl || IMAGES.hero}
+        eyebrow="Guruh"
+        title={group.name}
+        subtitle={group.description || undefined}
+        top={
+          <button
+            type="button"
+            onClick={() => {
+              haptic('light');
+              navigate('/admin/groups');
+            }}
+            className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink bg-white/5 px-3 py-2 rounded-xl border border-white/10 min-h-[36px] transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Orqaga
+          </button>
+        }
+        footer={
+          <div className="space-y-3 pt-1">
+            <ScheduleBadge schedule={group} className="text-xs" />
+            <CapacityBar count={memberCount} max={group.maxCapacity} />
+            <TelegramLinkButton url={group.telegramChatUrl} />
+            <button
+              type="button"
+              onClick={() => navigate(`/admin/payments/${id}`)}
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-gold/20 bg-gold/10 px-4 text-xs font-semibold text-gold transition active:scale-95"
+            >
+              <Wallet className="h-4 w-4" aria-hidden="true" /> To'lovlar
+            </button>
           </div>
-        ) : (
-          <div className="w-full h-32 bg-gradient-to-br from-gold/10 to-teal/10 flex items-center justify-center text-5xl">
-            📁
-          </div>
-        )}
+        }
+      />
 
-        {/* Info */}
-        <div className="p-5 space-y-3">
-          <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
-            {group.name}
-          </h1>
-
-          {group.description && (
-            <p className="text-xs text-ink-muted leading-relaxed">
-              {group.description}
-            </p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-              👥 {Array.isArray(groupStudents) ? groupStudents.length : 0} talaba
-            </span>
-            {teacherName && (
-              <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-                👤 {teacherName}
-              </span>
-            )}
-            {group.createdAt && (
-              <span className="bg-surface/40 px-2.5 py-1.5 rounded-lg text-ink-muted">
-                📅 {new Date(group.createdAt).toLocaleDateString('uz-UZ')}
-              </span>
-            )}
-          </div>
-        </div>
+      {/* ============ KPI ============ */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <KpiCard label="Talabalar" value={memberCount} icon={Users} accent="teal" hint={group.maxCapacity ? `sig'im: ${group.maxCapacity}` : 'guruh a\'zolari'} />
+        <KpiCard label="Asosiy ustoz" value={teacherName || '—'} icon={ShieldCheck} accent="gold" hint={teacherName ? 'biriktirilgan' : 'biriktirilmagan'} />
+        <KpiCard
+          label="Yaratilgan"
+          value={group.createdAt ? new Date(group.createdAt).toLocaleDateString('uz-UZ') : '—'}
+          icon={Calendar}
+          accent="sky"
+        />
       </div>
 
-      {/* ============ TEACHER ASSIGN ============ */}
-      <form
-        onSubmit={handleAssignTeacher}
-        className="bg-surface/30 p-5 rounded-3xl border border-white/5 space-y-3"
-      >
-        <h3 className="text-sm font-semibold text-ink">
-          👤 Asosiy ustoz
-        </h3>
+      <GroupSettingsForm
+        key={`${group.monthlyFee ?? ''}|${group.maxCapacity ?? ''}|${group.telegramChatUrl ?? ''}|${(group.lessonDays ?? []).join('')}|${group.lessonStartTime ?? ''}|${group.lessonEndTime ?? ''}|${group.room ?? ''}`}
+        groupId={id}
+        maxCapacity={group.maxCapacity}
+        telegramChatUrl={group.telegramChatUrl}
+        schedule={group}
+        canEditFee
+        monthlyFee={group.monthlyFee}
+        memberCount={memberCount}
+      />
 
-        <div className="flex flex-col sm:flex-row gap-2">
-          <select
-            value={selectedTeacherId}
-            onChange={(e) => setSelectedTeacherId(e.target.value)}
-            disabled={teachersLoading}
-            className="flex-1 bg-surface text-sm rounded-2xl px-4 py-3 outline-none border border-white/5 text-ink min-h-[44px] disabled:opacity-50"
-          >
-            <option value="">Ustozni tanlang...</option>
-            {teachersLoading ? (
-              <option>Yuklanmoqda...</option>
-            ) : !teachers || teachers.length === 0 ? (
-              <option disabled>O'qituvchilar topilmadi</option>
-            ) : (
-              teachers.map((t: any) => (
-                <option key={t.id || t._id} value={t.id || t._id}>
-                  {t.firstName} {t.lastName}
-                  {t.username ? ` (@${t.username})` : ''}
-                </option>
-              ))
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* ============ TEACHER ASSIGN ============ */}
+        <form onSubmit={handleAssignTeacher}>
+          <Panel title="Asosiy ustoz" icon={ShieldCheck} accent="gold" className="h-full">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={selectedTeacherId}
+                onChange={(e) => setSelectedTeacherId(e.target.value)}
+                disabled={teachersLoading}
+                className={`${CONTROL.select} flex-1 disabled:opacity-50`}
+              >
+                <option value="">Ustozni tanlang...</option>
+                {teachersLoading ? (
+                  <option>Yuklanmoqda...</option>
+                ) : !teachers || teachers.length === 0 ? (
+                  <option disabled>O'qituvchilar topilmadi</option>
+                ) : (
+                  teachers.map((t: any) => (
+                    <option key={t.id || t._id} value={t.id || t._id}>
+                      {t.firstName} {t.lastName}
+                      {t.username ? ` (@${t.username})` : ''}
+                    </option>
+                  ))
+                )}
+              </select>
+
+              <button
+                type="submit"
+                disabled={assignTeacher.isPending}
+                className={`${CONTROL.buttonPrimary} shrink-0 disabled:opacity-50`}
+              >
+                {assignTeacher.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
+              </button>
+            </div>
+
+            {!teacherName && (
+              <p className="mt-2 text-[11px] text-ink-muted">Hozircha ustoz biriktirilmagan</p>
             )}
-          </select>
+          </Panel>
+        </form>
 
-          <button
-            type="submit"
-            disabled={assignTeacher.isPending}
-            className="bg-gold text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
-          >
-            {assignTeacher.isPending ? 'Saqlanmoqda...' : 'Saqlash'}
-          </button>
-        </div>
-
-        {!teacherName && (
-          <p className="text-[10px] text-ink-muted">
-            ℹ️ Hozircha ustoz biriktirilmagan
-          </p>
-        )}
-      </form>
-
-      {/* ============ ADD STUDENT ============ */}
-      <form
-        onSubmit={handleAddStudent}
-        className="bg-surface/30 p-5 rounded-3xl border border-white/5 space-y-3"
-      >
-        <h3 className="text-sm font-semibold text-ink">
-          ➕ Guruhga talaba qo'shish
-        </h3>
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="flex-1 bg-surface text-sm rounded-2xl px-4 py-3 outline-none border border-white/5 text-ink min-h-[44px]"
-          >
-            <option value="">Talabani tanlang...</option>
-            {availableStudents.length === 0 ? (
-              <option disabled>
-                {allStudents.length === 0
-                  ? "Talabalar ro'yxati yuklanmoqda..."
-                  : "Barcha talabalar qo'shilgan"}
-              </option>
-            ) : (
-              availableStudents.map((s: any) => {
-                const sId = s.id || s._id || s.studentId;
-                return (
-                  <option key={sId} value={sId}>
-                    {s.firstName || 'Talaba'} {s.lastName || ''}{' '}
-                    {s.username ? `(@${s.username})` : ''}
+        {/* ============ ADD STUDENT ============ */}
+        <form onSubmit={handleAddStudent}>
+          <Panel title="Guruhga talaba qo'shish" icon={Plus} accent="teal" className="h-full">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select
+                value={selectedStudentId}
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                className={`${CONTROL.select} flex-1`}
+              >
+                <option value="">Talabani tanlang...</option>
+                {availableStudents.length === 0 ? (
+                  <option disabled>
+                    {allStudents.length === 0
+                      ? "Talabalar ro'yxati yuklanmoqda..."
+                      : "Barcha talabalar qo'shilgan"}
                   </option>
-                );
-              })
-            )}
-          </select>
+                ) : (
+                  availableStudents.map((s: any) => {
+                    const sId = s.id || s._id || s.studentId;
+                    return (
+                      <option key={sId} value={sId}>
+                        {s.firstName || 'Talaba'} {s.lastName || ''}{' '}
+                        {s.username ? `(@${s.username})` : ''}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
 
-          <button
-            type="submit"
-            disabled={addStudent.isPending || !selectedStudentId}
-            className="bg-gold text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
-          >
-            {addStudent.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
-          </button>
-        </div>
-      </form>
+              <button
+                type="submit"
+                disabled={addStudent.isPending || !selectedStudentId}
+                className={`${CONTROL.buttonPrimary} shrink-0 disabled:opacity-50`}
+              >
+                {addStudent.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
+              </button>
+            </div>
+          </Panel>
+        </form>
+      </div>
+
+      {/* ============ DAVOMAT ============ */}
+      <Panel title="Davomat" icon={ClipboardCheck} accent="sky">
+        <AttendancePanel groupId={id} />
+      </Panel>
 
       {/* ============ STUDENTS LIST ============ */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-ink">
-            👥 Guruhdagi talabalar
-          </h3>
-          <span className="text-xs text-ink-muted">
-            Jami: {Array.isArray(groupStudents) ? groupStudents.length : 0} ta
+      <Panel
+        title="Guruhdagi talabalar"
+        icon={GraduationCap}
+        accent="teal"
+        flush
+        action={
+          <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ink-muted">
+            Jami: {memberCount} ta
           </span>
-        </div>
-
+        }
+      >
         {studentsLoading ? (
-          <div className="space-y-2">
+          <div className="space-y-2 px-5 pb-5">
             {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
-              />
+              <Skeleton key={i} className="h-16" />
             ))}
           </div>
         ) : !groupStudents || groupStudents.length === 0 ? (
-          <div className="text-center py-10 bg-surface/20 rounded-3xl border border-white/5">
-            <p className="text-xs text-ink-muted">
-              Bu guruhda hali talabalar mavjud emas.
-            </p>
-          </div>
+          <EmptyState icon={Users} title="Bu guruhda hali talabalar mavjud emas." />
         ) : (
-          <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-white/5">
             {groupStudents.map((m: any) => {
               const s = m?.student || m?.user || m;
               const fullName =
                 `${s?.firstName || ''} ${s?.lastName || ''}`.trim() ||
                 s?.username ||
                 "Noma'lum talaba";
-              const initial = fullName[0]?.toUpperCase() || 'T';
-              const targetId =
-                s?.id || s?._id || m?.studentId;
+              const targetId = s?.id || s?._id || m?.studentId;
 
               return (
                 <div
                   key={m.id || targetId}
-                  className="flex items-center gap-3 p-3.5 hover:bg-white/[0.02] transition-colors"
+                  className="flex items-center gap-3 bg-surface/60 p-3.5 hover:bg-surface/90 transition-colors"
                 >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-2xl bg-gold/10 text-gold flex items-center justify-center font-display text-base shrink-0">
-                    {initial}
-                  </div>
+                  <Avatar name={fullName} />
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink truncate">
-                      {fullName}
-                    </p>
+                    <p className="text-sm font-medium text-ink truncate">{fullName}</p>
                     <p className="text-xs text-ink-muted truncate">
-                      {s?.username
-                        ? `@${s.username}`
-                        : targetId
-                        ? `ID: ${targetId}`
-                        : ''}
+                      {s?.username ? `@${s.username}` : targetId ? `ID: ${targetId}` : ''}
                     </p>
                   </div>
 
-                  {/* Remove */}
                   <button
                     type="button"
                     onClick={() => handleRemoveStudent(targetId, fullName)}
                     disabled={removeStudent.isPending}
-                    className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 shrink-0"
+                    aria-label="Guruhdan chiqarish"
+                    className="flex h-9 w-9 items-center justify-center text-coral bg-coral/10 rounded-xl active:scale-[0.98] transition-transform disabled:opacity-50 shrink-0"
                   >
-                    ✕
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               );
             })}
           </div>
         )}
-      </div>
+      </Panel>
     </div>
   );
 }

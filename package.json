@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "eruda": "^3.4.3",
-    "lucide-react": "^1.48.0"
+    "lucide-react": "^1.48.0",
+    "pg": "^8.23.1"
   }
 }

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 
 type TestStatus = 'PENDING' | 'COMPLETED' | 'RETAKE_AVAILABLE';
 
@@ -69,12 +71,13 @@ export function TestsPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
       {/* Header */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <h1 className="font-display text-xl sm:text-2xl text-ink">Testlarim</h1>
-        <p className="text-xs text-ink-muted mt-1">
-          {tests ? `Jami: ${tests.length} ta test` : 'Yuklanmoqda...'}
-        </p>
-      </div>
+      <StaffHero
+        eyebrow="TESTLAR"
+        title="Testlarim"
+        subtitle={tests ? `Jami: ${tests.length} ta test` : 'Yuklanmoqda...'}
+        image={IMAGES.mathCoding}
+        accent="gold"
+      />
 
       {/* Filter chips */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
@@ -147,7 +150,7 @@ export function TestsPage() {
                     navigate(`/tests/${t.testId}/result`);
                   }
                 }}
-                className="w-full text-left bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-white/5 active:scale-[0.99] transition-all"
+                className={`w-full text-left bg-surface/40 hover:bg-surface/60 p-4 rounded-3xl border border-white/10 border-l-4 active:scale-[0.99] transition-all ${isPending ? 'border-l-gold' : isCompleted ? (t.passed ? 'border-l-teal' : 'border-l-coral') : 'border-l-sky'}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

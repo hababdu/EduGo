@@ -83,3 +83,38 @@ Shuning uchun:
 3. Telegram'da botga `/start` yozing — klaviatura chiqishi kerak
 4. "📚 Darsni boshlash"ni bosing — Mini App ochilishi, "Yuklanmoqda..." dan keyin dashboard ko'rinishi kerak
 5. Agar xato chiqsa — backend logini oching, aynan shu payt qaysi so'rov kelganini va qanday xato qaytganini ko'ring
+
+
+## 4. AI sozlamalari (backend → Environment)
+
+| O'zgaruvchi | Izoh |
+|---|---|
+| `AI_PROVIDER` | `anthropic` \| `groq` \| `gemini` |
+| `AI_FALLBACK_PROVIDER` | ixtiyoriy zaxira (asosiydan farqli) |
+| `ANTHROPIC_API_KEY` / `GROQ_API_KEY` / `GEMINI_API_KEY` | faqat tanlangan provayder(lar) uchun |
+
+Kalitlar FAQAT backendda saqlanadi. `VITE_*` o'zgaruvchilariga hech qachon AI kaliti qo'ymang
+(frontend bundle'i hammaga ochiq). Batafsil: `backend/.env.ai.example`.
+
+## 5. Sirlar gigienasi
+
+- `.env`, `node_modules/`, `dist/` gitga kirmaydi (`.gitignore`). Hujjatdagi qiymatlar uchun `*.env.example` ishlating.
+- Git tarixida avval commit qilingan sirlar (`backend/.env`, `backend/set-admin.js`) tarixdan o'chmaydi —
+  ularni **almashtiring (rotate)**: `BOT_TOKEN` (BotFather → /revoke), `JWT_SECRET`, `BOT_INTERNAL_SECRET`,
+  Postgres paroli (Render → Database → Reset), eski Groq kaliti, chatga tashlangan Google kaliti.
+- `BOT_TOKEN`/`BOT_INTERNAL_SECRET` backend va bot servislarida BIR XIL bo'lishi kerak — almashtirgach ikkalasini ham yangilang.
+- `JWT_SECRET` almashsa, hamma foydalanuvchi qayta kirishi kerak (bu normal).
+- Bir martalik admin tayinlash: `DATABASE_URL=... node backend/set-admin.js <telegramId>`.
+
+## Material fayllari (Telegram orqali saqlash)
+
+O'qituvchi yuklagan fayllar (PDF, rasm, video, hujjat) Telegram'dagi **maxfiy kanalda** saqlanadi.
+
+1. Telegram'da yangi **private kanal** yarating (nomi ixtiyoriy, masalan "EduGo fayllar").
+2. Botni kanalga **administrator** qilib qo'shing (xabar yuborish huquqi bilan).
+3. Kanal ID'sini oling: kanalga biror xabar yozib, uni @JsonDumpBot'ga forward qiling → `forward_from_chat.id` (`-100…` bilan boshlanadi).
+4. Backend servisiga env qo'shing: `TELEGRAM_STORAGE_CHAT_ID=-100xxxxxxxxxx` (`BOT_TOKEN` allaqachon bor).
+
+Cheklovlar (Telegram Bot API): yuklash ≤ 45 MB; ilova ichida ko'rish ≤ 20 MB. 20 MB dan katta fayl o'quvchining Telegram chatiga bot orqali yuboriladi
+(o'quvchi botga kamida bir marta /start yuborgan bo'lishi kerak). Uzun videolar uchun YouTube havolasi tavsiya etiladi.
+Env berilmasa, fayl yuklash "sozlanmagan" xabarini beradi, havola (URL) bilan materiallar ishlayveradi.

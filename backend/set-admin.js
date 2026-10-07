@@ -1,18 +1,33 @@
+// Bir martalik yordamchi: berilgan Telegram ID'li foydalanuvchini ADMIN qiladi.
+// Ishlatish:  DATABASE_URL="postgresql://..." node set-admin.js <telegramId>
+// Parol/ulanish satri hech qachon kodga yozilmaydi.
 const { Client } = require('pg');
 
+const url = process.env.DATABASE_URL;
+const telegramId = process.argv[2];
+
+if (!url || !/^\d{5,15}$/.test(telegramId ?? '')) {
+  console.error('Foydalanish: DATABASE_URL=... node set-admin.js <telegramId (raqam)>');
+  process.exit(1);
+}
+
 const client = new Client({
-  connectionString: 'postgresql://edugo_db_user:i18YT0d21jHaTTzif36l3bZiIlhUnajA@dpg-daem9qht0dsc73ar0pu0-a.oregon-postgres.render.com/edugo_db?sslmode=require',
-  ssl: { rejectUnauthorized: false }
+  connectionString: url,
+  ssl: { rejectUnauthorized: false },
 });
 
 async function main() {
   await client.connect();
-  const res = await client.query('UPDATE "User" SET role = \'ADMIN\' WHERE "telegramId" = \'522311795\'');
-  console.log("Muvaffaqiyatli bajarildi! Ozgargan qatorlar:", res.rowCount);
+  const res = await client.query(
+    'UPDATE "User" SET role = \'ADMIN\' WHERE "telegramId" = $1',
+    [telegramId],
+  );
+  console.log('Muvaffaqiyatli bajarildi! O\'zgargan qatorlar:', res.rowCount);
   await client.end();
 }
 
 main().catch((e) => {
-  console.error("Xatolik:", e.message);
+  console.error('Xatolik:', e.message);
   client.end();
+  process.exit(1);
 });

@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from 'react';
 import { MascotSVG, type MascotMood } from './MascotSVG';
-import { AITutorChat } from '../ai/AITutorChat';
+import { StudentChatHub } from '../assistant/StudentChatHub';
 
 /* ============================================================
    AI MASCOT — Professional AI Yordamchi Ko'rinishi
@@ -74,6 +74,48 @@ const DODGE_RADIUS = 120; // shuncha px yaqinlashsa qochadi
 const DODGE_COOLDOWN_MS = 320;
 const AUTO_ROAM_MS = 2200;
 
+/* ---------- Surib yuriladigan joylashuv ---------- */
+const POS_KEY = 'ai-mascot-pos';
+const DRAG_THRESHOLD = 6; // px — shundan kam siljish "bosish" hisoblanadi
+const BTN = 64; // launcher tugmasi o'lchami
+const EDGE = 8;
+const TOP_SAFE = 72;
+const BOTTOM_SAFE = 96; // pastki navigatsiya ostiga tushmasin
+
+function clampDock(p: { x: number; y: number }) {
+  const maxX = Math.max(EDGE, window.innerWidth - BTN - EDGE);
+  const maxY = Math.max(TOP_SAFE, window.innerHeight - BTN - BOTTOM_SAFE);
+  return {
+    x: Math.min(maxX, Math.max(EDGE, p.x)),
+    y: Math.min(maxY, Math.max(TOP_SAFE, p.y)),
+  };
+}
+
+/** Saqlangan (nisbiy) joylashuvni o'qiydi; buzuq yoki yo'q bo'lsa — null (standart burchak) */
+function loadDock(): { x: number; y: number } | null {
+  try {
+    const raw = localStorage.getItem(POS_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (typeof v?.fx !== 'number' || typeof v?.fy !== 'number') return null;
+    if (!(v.fx >= 0 && v.fx <= 1 && v.fy >= 0 && v.fy <= 1)) return null;
+    return clampDock({ x: v.fx * window.innerWidth, y: v.fy * window.innerHeight });
+  } catch {
+    return null;
+  }
+}
+
+function saveDock(p: { x: number; y: number }) {
+  try {
+    localStorage.setItem(
+      POS_KEY,
+      JSON.stringify({ fx: p.x / window.innerWidth, fy: p.y / window.innerHeight }),
+    );
+  } catch {
+    /* saqlanmasa ham ishlayveradi */
+  }
+}
+
 interface Point {
   x: number;
   y: number;
@@ -98,6 +140,13 @@ export function AIMascotProvider({
   const [catches, setCatches] = useState(0);
   const [caughtFlash, setCaughtFlash] = useState(false);
 
+  /* ---------- Surib yurish ---------- */
+  const [dock, setDock] = useState<Point | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number; active: boolean } | null>(null);
+  const wasDrag = useRef(false);
+  const holderRef = useRef<HTMLDivElement | null>(null);
+
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -107,8 +156,20 @@ export function AIMascotProvider({
   const roamTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'false') setEnabled(false);
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'false') setEnabled(false);
+    } catch {
+      /* localStorage yo'q bo'lsa — yoqilgan holat */
+    }
+    setDock(loadDock());
+  }, []);
+
+  // Ekran o'lchami o'zgarsa (burilish, klaviatura) maskot ekrandan chiqib ketmasin
+  useEffect(() => {
+    const onResize = () => setDock((d) => (d ? clampDock(d) : d));
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
   }, []);
 
   const showBubble = useCallback((text: string, duration = 4500) => {
@@ -271,6 +332,10 @@ export function AIMascotProvider({
       handleCatch();
       return;
     }
+    if (wasDrag.current) {
+      wasDrag.current = false; // surib qo'yilgandan keyingi "click" — chatni ochmasin
+      return;
+    }
     if (wasLongPress.current) {
       wasLongPress.current = false;
       return;
@@ -280,29 +345,85 @@ export function AIMascotProvider({
     openChat();
   };
 
-  const handlePressStart = () => {
+  const handlePressStart = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (gameActive) return;
     wasLongPress.current = false;
+    wasDrag.current = false;
+    const rect = holderRef.current?.getBoundingClientRect();
+    dragRef.current = {
+      sx: e.clientX,
+      sy: e.clientY,
+      ox: rect?.left ?? 0,
+      oy: rect?.top ?? 0,
+      active: false,
+    };
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ba'zi brauzerlarda mavjud emas */
+    }
     longPressTimer.current = setTimeout(() => {
+      if (dragRef.current?.active) return;
       wasLongPress.current = true;
       setShowSettings(true);
     }, 650);
   };
 
+  const handlePressMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.sx;
+    const dy = e.clientY - d.sy;
+    if (!d.active) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      d.active = true;
+      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      setShowSettings(false);
+      setBubble(null);
+      setDragging(true);
+    }
+    setDock(clampDock({ x: d.ox + dx, y: d.oy + dy }));
+  };
+
   const handlePressEnd = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (!d?.active) return;
+    // Qo'yib yuborilganda eng yaqin chetga yopishadi
+    wasDrag.current = true;
+    setDragging(false);
+    setDock((cur) => {
+      if (!cur) return cur;
+      const snapped = clampDock({
+        x: cur.x + BTN / 2 < window.innerWidth / 2 ? EDGE : window.innerWidth - BTN - EDGE,
+        y: cur.y,
+      });
+      saveDock(snapped);
+      return snapped;
+    });
   };
 
   const toggleEnabled = () => {
     const next = !enabled;
     setEnabled(next);
-    localStorage.setItem(STORAGE_KEY, String(next));
+    try {
+      localStorage.setItem(STORAGE_KEY, String(next));
+    } catch {
+      /* ixtiyoriy */
+    }
     setShowSettings(false);
     setBubble(null);
     if (gameActive) stopGame();
   };
 
   const cornerClass = corner === 'bottom-right' ? 'right-5' : 'left-5';
+
+  // Pufak va menyu tugmaning qaysi tomonida ochilishi: surilgan bo'lsa — ekran yarmiga qarab
+  const onRight = dock ? dock.x + BTN / 2 >= window.innerWidth / 2 : corner === 'bottom-right';
+  const sideClass = onRight ? 'right-0' : 'left-0';
+  const openBelow = !!dock && dock.y < 170; // yuqoriga yaqin bo'lsa, pastga ochiladi
+  const vClass = openBelow ? 'top-full mt-3' : 'bottom-full mb-3';
 
   const contextValue: MascotContextValue = {
     celebrate,
@@ -318,16 +439,26 @@ export function AIMascotProvider({
       {/* Robot yoqilgan va o'yin holatida bo'lmagan vaqtda */}
       {enabled && !gameActive && (
         <div
-          className={`fixed bottom-24 sm:bottom-6 ${cornerClass} z-40 select-none flex flex-col items-end`}
+          ref={holderRef}
+          className={`fixed z-40 select-none flex flex-col ${onRight ? 'items-end' : 'items-start'} ${
+            dock ? '' : `bottom-24 sm:bottom-6 ${cornerClass}`
+          }`}
+          style={
+            dock
+              ? {
+                  left: dock.x,
+                  top: dock.y,
+                  transition: dragging ? 'none' : 'left 0.25s ease-out, top 0.25s ease-out',
+                }
+              : undefined
+          }
         >
           {bubble && !chatOpen && (
             <div
-              className={`absolute bottom-full mb-3 ${
-                corner === 'bottom-right' ? 'right-0' : 'left-0'
-              } max-w-[260px] bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 text-slate-100 text-xs rounded-2xl rounded-br-sm px-4 py-3 shadow-2xl shadow-indigo-500/10 animate-[mascotPop_0.25s_ease-out]`}
+              className={`absolute ${vClass} ${sideClass} max-w-[260px] glass border border-gold/25 text-ink text-xs rounded-2xl rounded-br-sm px-4 py-3 shadow-2xl shadow-gold/5 animate-[mascotPop_0.25s_ease-out]`}
             >
-              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-semibold text-gold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
                 AI Yordamchi
               </div>
               <p className="leading-relaxed">{bubble}</p>
@@ -336,31 +467,29 @@ export function AIMascotProvider({
 
           {showSettings && (
             <div
-              className={`absolute bottom-full mb-3 ${
-                corner === 'bottom-right' ? 'right-0' : 'left-0'
-              } bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden text-xs z-50`}
+              className={`absolute ${vClass} ${sideClass} glass border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-xs z-50`}
             >
-              <div className="px-3 py-2 bg-slate-800/60 font-medium text-slate-300 border-b border-slate-700/50">
+              <div className="px-3 py-2 bg-white/5 font-medium text-ink-muted border-b border-white/5">
                 AI Sozlamalari
               </div>
               <button
                 type="button"
                 onClick={startGame}
-                className="w-full text-left px-4 py-2.5 text-emerald-400 hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-2 border-b border-slate-800"
+                className="w-full text-left px-4 py-2.5 text-teal hover:bg-white/5 transition-colors whitespace-nowrap flex items-center gap-2 border-b border-white/5"
               >
                 <span>🎮</span> Meni ushlab ko'ring! (o'yin)
               </button>
               <button
                 type="button"
                 onClick={toggleEnabled}
-                className="w-full text-left px-4 py-2.5 text-rose-400 hover:bg-slate-800 transition-colors whitespace-nowrap flex items-center gap-2"
+                className="w-full text-left px-4 py-2.5 text-coral hover:bg-white/5 transition-colors whitespace-nowrap flex items-center gap-2"
               >
                 <span>🔕</span> Robotni o'chirish
               </button>
               <button
                 type="button"
                 onClick={() => setShowSettings(false)}
-                className="w-full text-left px-4 py-2.5 text-slate-400 hover:bg-slate-800 transition-colors whitespace-nowrap border-t border-slate-800"
+                className="w-full text-left px-4 py-2.5 text-ink-muted hover:bg-white/5 transition-colors whitespace-nowrap border-t border-white/5"
               >
                 Bekor qilish
               </button>
@@ -371,12 +500,12 @@ export function AIMascotProvider({
             type="button"
             aria-label="Professional AI yordamchi bilan chatni ochish"
             onClick={handleTap}
-            onMouseDown={handlePressStart}
-            onMouseUp={handlePressEnd}
-            onMouseLeave={handlePressEnd}
-            onTouchStart={handlePressStart}
-            onTouchEnd={handlePressEnd}
-            className="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-600/20 to-purple-600/20 hover:from-indigo-600/30 hover:to-purple-600/30 flex items-center justify-center active:scale-95 transition-all duration-300 group cursor-pointer focus:outline-none"
+            onPointerDown={handlePressStart}
+            onPointerMove={handlePressMove}
+            onPointerUp={handlePressEnd}
+            onPointerCancel={handlePressEnd}
+            style={{ touchAction: 'none' }}
+            className="w-16 h-16 rounded-full bg-gradient-to-tr from-gold/15 to-teal/10 hover:from-gold/25 hover:to-teal/15 flex items-center justify-center active:scale-95 transition-all duration-300 group cursor-pointer focus:outline-none"
           >
             <MascotSVG mood={mood} size={58} />
           </button>
@@ -390,9 +519,9 @@ export function AIMascotProvider({
             type="button"
             onClick={toggleEnabled}
             title="AI Robotni qayta yoqish"
-            className="group flex items-center gap-2 bg-slate-900/90 hover:bg-slate-900 text-slate-200 text-xs font-medium px-3.5 py-2.5 rounded-full border border-indigo-500/30 shadow-xl backdrop-blur-md active:scale-95 transition-all duration-300"
+            className="group flex items-center gap-2 glass text-ink text-xs font-medium px-3.5 py-2.5 rounded-full border border-gold/25 shadow-xl active:scale-95 transition-all duration-300"
           >
-            <span className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+            <span className="w-6 h-6 rounded-full bg-gold/15 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
               🤖
             </span>
             <span>AI Yoqish</span>
@@ -403,19 +532,19 @@ export function AIMascotProvider({
       {/* ============ QUVLASHMACHOQ REJIMI ============ */}
       {enabled && gameActive && position && (
         <>
-          <div className="fixed top-3 inset-x-3 z-50 flex items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-2xl px-4 py-2.5 shadow-xl">
-            <div className="flex items-center gap-2 text-xs text-slate-100">
+          <div className="fixed top-3 inset-x-3 z-50 flex items-center justify-between gap-2 glass border border-gold/25 rounded-2xl px-4 py-2.5 shadow-xl">
+            <div className="flex items-center gap-2 text-xs text-ink">
               <span>🏃</span>
               <span className="font-semibold">Ushlab ko'ring!</span>
-              <span className="text-slate-400">·</span>
-              <span className="text-emerald-400 font-semibold tabular-nums">
+              <span className="text-ink-muted">·</span>
+              <span className="text-teal font-semibold tabular-nums">
                 {catches} ta ushlandi
               </span>
             </div>
             <button
               type="button"
               onClick={stopGame}
-              className="text-[11px] font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
+              className="text-[11px] font-semibold text-coral bg-coral/10 border border-coral/25 px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
             >
               ✕ To'xtatish
             </button>
@@ -423,7 +552,7 @@ export function AIMascotProvider({
 
           {caughtFlash && (
             <div className="fixed top-16 inset-x-3 z-50 flex justify-center pointer-events-none">
-              <div className="bg-emerald-500/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl animate-[mascotPop_0.2s_ease-out]">
+              <div className="bg-teal/90 text-base text-xs font-semibold px-4 py-2 rounded-full shadow-xl animate-[mascotPop_0.2s_ease-out]">
                 {pick(CATCH_LINES)}
               </div>
             </div>
@@ -447,7 +576,7 @@ export function AIMascotProvider({
         </>
       )}
 
-      <AITutorChat
+      <StudentChatHub
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         studentName={chatContext.studentName}

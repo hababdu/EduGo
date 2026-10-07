@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
+import { Roles } from '../../../common/decorators/roles.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
@@ -31,6 +32,7 @@ export class CoursesController {
     return this.coursesService.findOneFor(id, user);
   }
 
+  @Roles('TEACHER', 'ADMIN')
   @Post()
   async create(
     @Body() createCourseDto: CreateCourseDto & { type?: string; category?: string; mediaUrl?: string; groupId?: string },
@@ -40,6 +42,7 @@ export class CoursesController {
     return this.coursesService.create(createCourseDto, actorId);
   }
 
+  @Roles('TEACHER', 'ADMIN')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -47,15 +50,16 @@ export class CoursesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const actorId = user.id || user['sub'];
-    return this.coursesService.update(id, updateCourseDto, actorId);
+    return this.coursesService.update(id, updateCourseDto, actorId, user.role);
   }
 
+  @Roles('TEACHER', 'ADMIN')
   @Delete(':id')
   async remove(
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const actorId = user.id || user['sub'];
-    return this.coursesService.remove(id, actorId);
+    return this.coursesService.remove(id, actorId, user.role);
   }
 }

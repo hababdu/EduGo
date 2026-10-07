@@ -1,8 +1,13 @@
 // src/services/api-client.ts
 import fetch, { RequestInit } from 'node-fetch';
 
-const BACKEND_API_URL =
-  process.env.BACKEND_API_URL ?? 'https://edugobot.onrender.com';
+// Production'da BACKEND_API_URL majburiy (backend manzili — botning o'zi emas).
+const BACKEND_API_URL = (
+  process.env.BACKEND_API_URL ?? 'http://localhost:3000'
+).replace(/\/+$/, '');
+if (!process.env.BACKEND_API_URL && process.env.NODE_ENV === 'production') {
+  console.warn('[bot] BACKEND_API_URL o\'rnatilmagan — localhost ishlatilmoqda!');
+}
 const BOT_INTERNAL_SECRET = process.env.BOT_INTERNAL_SECRET ?? '';
 
 /* ============================================================

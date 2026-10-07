@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 
 /* ============================================================
    TYPES
    ============================================================ */
-type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
 type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
 interface AssignmentTest {
@@ -26,6 +28,9 @@ interface AssignmentItem {
   type: ContentType;
   category: AssignmentCategory;
   mediaUrl?: string | null;
+  dueAt?: string | null;
+  viewed?: boolean;
+  files?: { id: string }[];
   groupId: string;
   createdAt: string;
   group?: { id: string; name: string } | null;
@@ -67,6 +72,7 @@ const CONTENT_META: Record<ContentType, { label: string; emoji: string }> = {
   IMAGE: { label: 'Rasm', emoji: '🖼️' },
   PDF: { label: 'PDF fayl', emoji: '📑' },
   VIDEO: { label: 'Video', emoji: '📹' },
+  FILE: { label: 'Hujjat', emoji: '📎' },
 };
 
 /* ============================================================
@@ -213,14 +219,17 @@ export function LessonsPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
       {/* ============ HEADER ============ */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 backdrop-blur-md">
-        <h1 className="font-display text-xl sm:text-2xl text-ink">Darslar</h1>
-        <p className="text-xs text-ink-muted mt-1">
-          {items
+      <StaffHero
+        eyebrow="MATERIALLAR"
+        title="Darslar"
+        subtitle={
+          items
             ? `${items.length} ta material · ${groups.length} ta guruh`
-            : 'Yuklanmoqda...'}
-        </p>
-      </div>
+            : 'Yuklanmoqda...'
+        }
+        image={IMAGES.ieltsLanguage}
+        accent="teal"
+      />
 
       {/* ============ EMPTY ============ */}
       {hasNoItems ? (
@@ -401,6 +410,21 @@ export function LessonsPage() {
                               {item.tests && item.tests.length > 0 && (
                                 <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-gold/10 text-gold">
                                   🧠 {item.tests.length} ta test
+                                </span>
+                              )}
+                              {!!item.files?.length && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-sky/10 text-sky">
+                                  📎 {item.files.length} ta fayl
+                                </span>
+                              )}
+                              {item.dueAt && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-coral/10 text-coral">
+                                  ⏰ {new Date(item.dueAt).toLocaleDateString('uz-UZ')}
+                                </span>
+                              )}
+                              {item.viewed === false && (
+                                <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-teal/15 text-teal">
+                                  YANGI
                                 </span>
                               )}
                             </div>

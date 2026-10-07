@@ -7,6 +7,47 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   /* ============================================================
+     FAOLLIK MATRITSASI — kunlar kesimida (Toshkent vaqti, UTC+5)
+     ============================================================ */
+  static readonly ACTIVITY_TZ_OFFSET_HOURS = 5;
+  static readonly ACTIVITY_MAX_DAYS = 120;
+
+  /** Faqat TOKEN'dagi o'quvchining o'z faolligi. Bo'sh kunlar ham 0 bilan qaytadi. */
+  async getMyActivity(userId: string, daysRaw?: number, now: Date = new Date()) {
+    const n = Number.isFinite(daysRaw) ? Math.trunc(daysRaw as number) : 84;
+    const days = Math.min(DashboardService.ACTIVITY_MAX_DAYS, Math.max(7, n));
+    const offsetMs = DashboardService.ACTIVITY_TZ_OFFSET_HOURS * 3_600_000;
+
+    // Toshkent "bugun" yarim kechasi (UTC ms), keyin (days-1) kun orqaga
+    const localNow = new Date(now.getTime() + offsetMs);
+    const todayStartLocal = Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate());
+    const startLocal = todayStartLocal - (days - 1) * 86_400_000;
+    const since = new Date(startLocal - offsetMs);
+
+    const rows = await this.prisma.xpTransaction.findMany({
+      where: { studentId: userId, createdAt: { gte: since } },
+      select: { createdAt: true, amount: true },
+    });
+
+    const map = new Map<string, { xp: number; count: number }>();
+    for (const r of rows) {
+      const key = new Date(r.createdAt.getTime() + offsetMs).toISOString().slice(0, 10);
+      const cur = map.get(key) ?? { xp: 0, count: 0 };
+      cur.xp += Math.max(0, r.amount);
+      cur.count += 1;
+      map.set(key, cur);
+    }
+
+    const out: { date: string; xp: number; count: number }[] = [];
+    for (let i = 0; i < days; i++) {
+      const date = new Date(startLocal + i * 86_400_000).toISOString().slice(0, 10);
+      const v = map.get(date) ?? { xp: 0, count: 0 };
+      out.push({ date, xp: v.xp, count: v.count });
+    }
+    return { days: out, activeDays: out.filter((d) => d.count > 0).length };
+  }
+
+  /* ============================================================
      STUDENT DASHBOARD
      ============================================================ */
   async getStudentDashboard(userId: string) {
@@ -124,13 +165,20 @@ export class DashboardService {
     if (groupIds.length === 0) return [];
 
     // 2. Faqat shu guruhlarga tegishli materiallar
-    return this.prisma.teacherAssignment.findMany({
+    const items = await this.prisma.teacherAssignment.findMany({
       where: {
         groupId: { in: groupIds },
         deletedAt: null,
+        status: 'PUBLISHED',
       },
       orderBy: { createdAt: 'desc' },
       include: {
+        views: { where: { studentId }, select: { id: true } },
+        files: {
+          orderBy: { order: 'asc' },
+          select: { id: true, kind: true, fileName: true, mimeType: true, sizeBytes: true, order: true },
+        },
+
         group: { select: { id: true, name: true } },
         teacher: {
           select: {
@@ -143,6 +191,7 @@ export class DashboardService {
         tests: { orderBy: { order: 'asc' } },
       },
     });
+    return items.map(({ views, ...a }) => ({ ...a, viewed: views.length > 0, files: a.files.map(withPreview) }));
   }
 
   /* ============================================================
@@ -160,8 +209,14 @@ export class DashboardService {
         id: assignmentId,
         groupId: { in: groupIds },
         deletedAt: null,
+        status: 'PUBLISHED',
       },
       include: {
+        files: {
+          orderBy: { order: 'asc' },
+          select: { id: true, kind: true, fileName: true, mimeType: true, sizeBytes: true, order: true },
+        },
+
         group: { select: { id: true, name: true } },
         teacher: {
           select: {
@@ -179,6 +234,18 @@ export class DashboardService {
       throw new NotFoundException('Material topilmadi');
     }
 
-    return item;
+    // Ko'rilganlik: birinchi marta ochilgan vaqt saqlanadi, keyingilarida faqat oxirgi vaqt yangilanadi
+    await this.prisma.materialView.upsert({
+      where: { assignmentId_studentId: { assignmentId, studentId } },
+      create: { assignmentId, studentId },
+      update: { lastViewedAt: new Date() },
+    });
+
+    return { ...item, files: item.files.map(withPreview) };
   }
+}
+
+const INLINE_LIMIT = 20 * 1024 * 1024;
+function withPreview<T extends { sizeBytes: number }>(f: T) {
+  return { ...f, previewable: f.sizeBytes <= INLINE_LIMIT };
 }

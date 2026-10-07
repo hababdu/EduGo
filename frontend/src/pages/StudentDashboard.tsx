@@ -6,10 +6,13 @@ import { apiFetch } from '../lib/api-client';
 import { useTelegram } from '../hooks/useTelegram';
 import { useNotifications } from '../hooks/useNotifications';
 import { ScoreHero } from '../components/dashboard/ScoreHero';
+import { BackdropImage } from '../components/ui/BackdropImage';
+import { IMAGES } from '../design/images';
 import { StatChips } from '../components/dashboard/StatChips';
 import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
 import { AchievementsRow } from '../components/dashboard/AchievementsRow';
+import { ResultsChart } from '../components/dashboard/ResultsChart';
 import { SubjectScoreList } from '../components/dashboard/SubjectScoreList';
 import { useMascot } from '../components/ai/AIMascot';
 import { generateMascotLine } from '../lib/ai-service';
@@ -179,14 +182,16 @@ export function StudentDashboard() {
   return (
     <div className="pb-24 space-y-6">
       {/* ============ HERO — ball, level, unread count ============ */}
-      <ScoreHero
-        firstName={data.student.firstName}
-        totalScore={data.stats.totalScore}
-        level={data.stats.level}
-        xpIntoLevel={data.stats.xpIntoLevel}
-        xpForNextLevel={data.stats.xpForNextLevel}
-        unreadCount={unreadCount}
-      />
+      <BackdropImage src={IMAGES.hero} opacity={0.45} blur={5}>
+        <ScoreHero
+          firstName={data.student.firstName}
+          totalScore={data.stats.totalScore}
+          level={data.stats.level}
+          xpIntoLevel={data.stats.xpIntoLevel}
+          xpForNextLevel={data.stats.xpForNextLevel}
+          unreadCount={unreadCount}
+        />
+      </BackdropImage>
 
       {/* ============ AI REPETITOR ============ */}
       <div className="px-5">
@@ -246,38 +251,12 @@ export function StudentDashboard() {
           id: s.id,
           title: s.title,
           progressPercent: s.progressPercent,
+          posterUrl: s.posterUrl,
         }))}
       />
 
-      {/* ============ RECENT RESULTS (bonus) ============ */}
-      {data.recentResults && data.recentResults.length > 0 && (
-        <section className="px-5">
-          <h2 className="text-sm text-ink-muted mb-3">
-            So'nggi natijalar
-          </h2>
-          <div className="space-y-2">
-            {data.recentResults.slice(0, 3).map((r, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between p-3 bg-surface/20 rounded-2xl border border-white/5"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-ink truncate">
-                    {r.testTitle}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs font-semibold tabular-nums shrink-0 ${
-                    r.passed ? 'text-teal' : 'text-red-400'
-                  }`}
-                >
-                  {r.percent}%
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* ============ RECENT RESULTS ============ */}
+      <ResultsChart results={data.recentResults ?? []} />
     </div>
   );
 }

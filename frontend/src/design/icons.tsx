@@ -57,6 +57,13 @@ export {
   RefreshCw,
   Upload,
   Download,
+  Activity,
+  ClipboardCheck,
+  Trophy,
+  ShieldCheck,
+  Flame,
+  CalendarCheck,
+  Wallet,
 } from 'lucide-react';
 
 import {

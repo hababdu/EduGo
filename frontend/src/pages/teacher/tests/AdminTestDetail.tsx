@@ -12,7 +12,6 @@ import { TestAnalyticsPanel } from '../../../components/admin/tests/TestAnalytic
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import {
-  PageHeader,
   Section,
   CardList,
   EmptyState,
@@ -29,7 +28,10 @@ import {
   Search,
   Check,
 } from '../../../design/icons';
-import { TEXT, CONTROL, ICON, PAGE_NARROW } from '../../../design/tokens';
+import { StaffHero, KpiCard } from '../../../components/staff';
+import { IMAGES, subjectImage } from '../../../design/images';
+import { ChevronLeft } from 'lucide-react';
+import { TEXT, CONTROL, ICON, PAGE_WIDE } from '../../../design/tokens';
 
 type Tab = 'info' | 'assign' | 'analytics' | 'reopen';
 
@@ -107,7 +109,7 @@ export function AdminTestDetail() {
 
   if (isLoading || !test) {
     return (
-      <div className={PAGE_NARROW}>
+      <div className={PAGE_WIDE}>
         <Skeleton className="h-10 w-24" />
         <Skeleton className="h-32" />
         <Skeleton className="h-64" />
@@ -123,36 +125,48 @@ export function AdminTestDetail() {
   ];
 
   return (
-    <div className={PAGE_NARROW}>
-      <PageHeader
+    <div className={PAGE_WIDE}>
+      <StaffHero
+        accent="gold"
+        image={subjectImage(test.title) ?? IMAGES.mathCoding}
+        eyebrow="Test"
         title={test.title}
         subtitle={`${test.questions.length} savol`}
-        onBack={() => {
-          haptic('light');
-          navigate('/teacher/tests');
-        }}
-        actions={<StatusBadge status={test.status} />}
+        top={
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                haptic('light');
+                navigate('/teacher/tests');
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-3 py-1.5 text-xs font-medium text-ink hover:bg-white/10 active:scale-[0.98] transition"
+            >
+              <ChevronLeft className="w-4 h-4" /> Orqaga
+            </button>
+            <StatusBadge status={test.status} />
+          </div>
+        }
+        actions={
+          test.status === 'DRAFT' ? (
+            <button
+              type="button"
+              onClick={handlePublish}
+              disabled={publishTest.isPending}
+              className="bg-teal text-base font-semibold rounded-xl px-5 py-2.5 text-sm active:scale-[0.98] transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            >
+              <Rocket className="w-4 h-4" />
+              {publishTest.isPending ? "E'lon qilinmoqda..." : "E'lon qilish"}
+            </button>
+          ) : undefined
+        }
       />
 
-      {/* Meta */}
-      <div className="flex flex-wrap items-center gap-2">
-        <MetaChip icon={Clock} label={`${Math.round(test.durationSeconds / 60)} daq`} />
-        <MetaChip icon={Target} label={`${test.passingScore}%`} />
-        <MetaChip icon={FileText} label={`${test.questions.length} savol`} />
+      <div className="grid grid-cols-3 gap-3">
+        <KpiCard label="Davomiylik" value={`${Math.round(test.durationSeconds / 60)} daq`} icon={Clock} accent="gold" />
+        <KpiCard label="O'tish bali" value={`${test.passingScore}%`} icon={Target} accent="teal" />
+        <KpiCard label="Savollar" value={test.questions.length} icon={FileText} accent="sky" />
       </div>
-
-      {/* Publish */}
-      {test.status === 'DRAFT' && (
-        <button
-          type="button"
-          onClick={handlePublish}
-          disabled={publishTest.isPending}
-          className="w-full bg-teal text-base font-semibold rounded-xl px-5 py-3 text-sm active:scale-[0.98] transition disabled:opacity-50 inline-flex items-center justify-center gap-2"
-        >
-          <Rocket className="w-4 h-4" />
-          {publishTest.isPending ? "E'lon qilinmoqda..." : "E'lon qilish"}
-        </button>
-      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
@@ -177,7 +191,7 @@ export function AdminTestDetail() {
       </div>
 
       {/* Content */}
-      <div className="bg-surface/10 border border-white/5 rounded-2xl p-5">
+      <div className="bg-surface/40 border border-white/10 rounded-3xl p-4 sm:p-5">
         {tab === 'info' && (
           <div className="space-y-5">
             <Section
@@ -207,7 +221,7 @@ export function AdminTestDetail() {
                     return (
                       <div
                         key={tq.question.id}
-                        className="bg-surface/30 border border-white/5 rounded-xl p-3.5 space-y-2"
+                        className="bg-surface/50 border border-white/10 rounded-2xl p-3.5 space-y-2"
                       >
                         <p className="text-sm text-ink flex items-start gap-2">
                           <span className="text-ink-muted font-mono shrink-0 text-xs pt-0.5">

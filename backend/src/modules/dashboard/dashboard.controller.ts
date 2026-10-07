@@ -1,5 +1,5 @@
 // src/modules/dashboard/dashboard.controller.ts
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { DashboardService } from './dashboard.service';
 
@@ -11,6 +11,15 @@ export class DashboardController {
   @Get('me')
   async getMyDashboard(@CurrentUser() user: CurrentUserPayload) {
     return this.dashboardService.getStudentDashboard(user.id);
+  }
+
+  /** Faollik matritsasi (profil uchun): oxirgi N kun, har kun uchun XP va hodisalar soni */
+  @Get('activity')
+  async getMyActivity(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('days') days?: string,
+  ) {
+    return this.dashboardService.getMyActivity(user.id, days ? Number(days) : undefined);
   }
 
   /** Barcha materiallar — student a'zo bo'lgan guruhlarga tegishli */

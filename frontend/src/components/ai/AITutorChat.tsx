@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
 import {
   streamChatWithAI,
-  buildTutorSystemPrompt,
   AIServiceError,
   type ChatMessage,
 } from '../../lib/ai-service';
@@ -30,6 +29,8 @@ interface AITutorChatProps {
   studentName?: string;
   /** Test natijalaridan kelib chiqqan zaif mavzular — repetitor shularga urg'u beradi */
   weakTopics?: string[];
+  /** Sarlavha ostidagi qator (masalan, "Repetitor | Murabbiy" almashtirgich) */
+  headerSlot?: ReactNode;
 }
 
 export function AITutorChat({
@@ -37,6 +38,7 @@ export function AITutorChat({
   onClose,
   studentName,
   weakTopics,
+  headerSlot,
 }: AITutorChatProps) {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
@@ -97,7 +99,8 @@ export function AITutorChat({
 
       await streamChatWithAI({
         history,
-        systemPrompt: buildTutorSystemPrompt({ studentName, weakTopics }),
+        mode: 'tutor', // system prompt serverda quriladi (ism bazadan olinadi)
+        weakTopics,
         signal: controller.signal,
         onChunk: (chunk) => {
           setMessages((prev) =>
@@ -133,7 +136,7 @@ export function AITutorChat({
       setIsLoading(false);
       abortRef.current = null;
     }
-  }, [input, isLoading, messages, studentName, weakTopics]);
+  }, [input, isLoading, messages, weakTopics]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -147,6 +150,7 @@ export function AITutorChat({
       isOpen={isOpen}
       onClose={handleClose}
       icon="🎓"
+      headerSlot={headerSlot}
       title="AI Repetitor"
       subtitle={
         weakTopics && weakTopics.length > 0

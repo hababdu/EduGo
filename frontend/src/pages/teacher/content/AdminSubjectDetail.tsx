@@ -7,13 +7,13 @@ import {
   useSections,
   useCreateSection,
 } from '../../../hooks/useContent';
+import { ContentHero } from '../../../components/admin/content/ContentHero';
 import { ContentRow } from '../../../components/admin/content/ContentRow';
 import { CreateItemForm } from '../../../components/admin/content/CreateItemForm';
 import { PublishToggle } from '../../../components/admin/content/PublishToggle';
 import { useTelegram } from '../../../hooks/useTelegram';
 import { toast } from '../../../components/ui/Toast';
 import {
-  PageHeader,
   Section,
   CardList,
   EmptyState,
@@ -105,7 +105,8 @@ export function AdminSubjectDetail() {
 
   return (
     <div className={PAGE_NARROW}>
-      <PageHeader
+      <ContentHero
+        eyebrow="FAN"
         title={subject.title}
         onBack={() => {
           haptic('light');

@@ -11,7 +11,7 @@ export interface RankingEntry {
   rank: number;
 }
 
-const WS_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+import { API_URL as WS_URL } from '../lib/config';
 
 /**
  * Dastlab REST orqali yuklanadi (`GET /ranking/global`), so'ng WebSocket'ga

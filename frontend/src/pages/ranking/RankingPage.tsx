@@ -1,5 +1,8 @@
 import { useLiveRanking } from '../../hooks/useLiveRanking';
 import { useAuthStore } from '../../store/auth.store';
+import { Panel } from '../../components/staff';
+import { Trophy } from 'lucide-react';
+import { Podium } from '../../components/dashboard/Podium';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -8,7 +11,7 @@ export function RankingPage() {
   const currentUserId = useAuthStore((s) => s.user?.id);
 
   return (
-    <div className="pb-24 px-5 pt-6">
+    <div className="pb-24 px-5 pt-6 space-y-2">
       <div className="flex items-center justify-between mb-2">
         <h1 className="font-display text-2xl">Reyting</h1>
         <span
@@ -35,13 +38,16 @@ export function RankingPage() {
           ))}
         </div>
       ) : (
+        <>
+        <Podium entries={top} currentUserId={currentUserId} />
+        <Panel title="Reyting jadvali" icon={Trophy} accent="gold" flush className="mt-4">
         <div className="divide-y divide-white/5">
-          {top.map((entry) => {
+          {top.slice(top.length >= 3 ? 3 : 0).map((entry) => {
             const isSelf = entry.studentId === currentUserId;
             return (
               <div
                 key={entry.studentId}
-                className={`flex items-center gap-3 py-3 ${isSelf ? 'bg-gold-soft -mx-2 px-2 rounded-lg' : ''}`}
+                className={`flex items-center gap-3 px-5 py-3 ${isSelf ? 'bg-gold/10' : ''}`}
               >
                 <span className="w-7 text-center text-sm text-ink-muted">
                   {MEDALS[entry.rank - 1] ?? entry.rank}
@@ -57,6 +63,8 @@ export function RankingPage() {
             );
           })}
         </div>
+        </Panel>
+        </>
       )}
     </div>
   );

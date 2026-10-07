@@ -3,15 +3,26 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { GroupsService } from './groups.service';
+import { ScheduleService } from './schedule.service';
+import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('api/v1/groups')
 export class GroupsController {
-  constructor(private readonly groupsService: GroupsService) {}
+  constructor(
+    private readonly groupsService: GroupsService,
+    private readonly scheduleService: ScheduleService,
+  ) {}
 
   @Get()
   async findAll(@CurrentUser() user: CurrentUserPayload) {
     return this.groupsService.findAllForUser(user);
+  }
+
+  /** Bugungi darslar (Toshkent vaqti bilan). ':id' dan OLDIN turishi shart. */
+  @Get('schedule/today')
+  async todayLessons(@CurrentUser() user: CurrentUserPayload) {
+    return this.scheduleService.today(user);
   }
 
   @Get(':id')
@@ -28,10 +39,21 @@ export class GroupsController {
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
   async create(
-    @Body() body: { name: string; description?: string },
+    @Body() body: CreateGroupDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.groupsService.createGroup(body, user);
+  }
+
+  /** Guruhni tahrirlash. O'qituvchi faqat o'z guruhini va o'qituvchini O'ZGARTIRA OLMAYDI (faqat admin). */
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdateGroupDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.updateGroup(id, body, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')

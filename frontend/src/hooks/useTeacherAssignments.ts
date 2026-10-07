@@ -2,11 +2,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
 import { toast } from '../components/ui/Toast';
+import type { MaterialFileDto } from '../lib/material-files';
 
 /* ============================================================
    TYPES
    ============================================================ */
-export type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO';
+export type ContentType = 'TEXT' | 'IMAGE' | 'PDF' | 'VIDEO' | 'FILE';
+export type MaterialStatus = 'DRAFT' | 'PUBLISHED';
 export type AssignmentCategory = 'LESSON' | 'HOMEWORK' | 'RESOURCE';
 
 export interface AssignmentTestItem {
@@ -30,6 +32,20 @@ export interface AssignmentItem {
   updatedAt?: string;
   group?: { id: string; name: string } | null;
   tests?: AssignmentTestItem[];
+  status?: MaterialStatus;
+  publishedAt?: string | null;
+  dueAt?: string | null;
+  files?: MaterialFileDto[];
+  /** Ko'rilganlik: nechta o'quvchi ochgan / guruhda nechta o'quvchi */
+  stats?: { viewed: number; total: number };
+  /** Faqat bitta material olinganda: kim ochgan/ochmagan */
+  viewers?: {
+    studentId: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    username?: string | null;
+    viewedAt: string | null;
+  }[];
 }
 
 export interface TeacherGroup {
@@ -49,11 +65,19 @@ export interface CreateAssignmentPayload {
   type: ContentType;
   category: AssignmentCategory;
   mediaUrl?: string;
-  groupId: string;
+  /** Bir yoki bir nechta guruh */
+  groupIds: string[];
+  fileIds?: string[];
+  status?: MaterialStatus;
+  /** ISO sana */
+  dueAt?: string;
   tests?: { question: string; options: string[]; correctOption: number }[];
 }
 
 export interface UpdateAssignmentPayload {
+  fileIds?: string[];
+  status?: MaterialStatus;
+  dueAt?: string | null;
   title?: string;
   description?: string;
   type?: ContentType;
@@ -113,9 +137,9 @@ export function useTeacherAssignment(id: string) {
 export function useCreateTeacherAssignment() {
   const qc = useQueryClient();
 
-  return useMutation<AssignmentItem, Error, CreateAssignmentPayload>({
+  return useMutation<AssignmentItem[], Error, CreateAssignmentPayload>({
     mutationFn: (data) =>
-      apiFetch<AssignmentItem>('/api/v1/teacher/assignments', {
+      apiFetch<AssignmentItem[]>('/api/v1/teacher/assignments', {
         method: 'POST',
         data,
       }),
@@ -123,7 +147,7 @@ export function useCreateTeacherAssignment() {
       qc.invalidateQueries({ queryKey: ['teacher', 'assignments'] });
       qc.invalidateQueries({ queryKey: ['teacher', 'groups'] });
       qc.invalidateQueries({ queryKey: ['teacher', 'overview'] });
-      toast('success', 'Material muvaffaqiyatli saqlandi!');
+      toast('success', 'Material saqlandi!');
     },
     onError: (error: any) => {
       const msg =
