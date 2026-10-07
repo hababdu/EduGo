@@ -31,7 +31,8 @@ export function TestTaking() {
 
   if (status === 'loading') {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="h-screen flex flex-col items-center justify-center gap-3">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-gold/20 border-t-gold" aria-hidden="true" />
         <p className="text-sm text-ink-muted">Test yuklanmoqda...</p>
       </div>
     );
@@ -41,11 +42,12 @@ export function TestTaking() {
     return (
       <div className="h-screen flex items-center justify-center px-8 text-center">
         <div>
+          <p className="text-4xl mb-3" aria-hidden="true">⚠️</p>
           <p className="font-display text-xl mb-2">Testni ochib bo'lmadi</p>
           <p className="text-sm text-ink-muted mb-6">{errorMessage}</p>
           <button
             onClick={() => navigate(-1)}
-            className="rounded-full bg-gold text-base font-semibold px-5 py-2 text-sm"
+            className="rounded-2xl bg-gold text-base font-semibold px-6 py-3 text-sm active:scale-[0.98] transition"
           >
             Orqaga qaytish
           </button>
@@ -78,21 +80,36 @@ export function TestTaking() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-aurora">
       {/* Timer — doim ko'rinadigan header */}
-      <header className="sticky top-0 bg-base/95 backdrop-blur px-5 py-3 flex items-center justify-between border-b border-white/5 z-10">
-        <span className="text-xs text-ink-muted">
-          {currentIndex + 1} / {session.questions.length}
-        </span>
-        <span
-          className={`font-display text-lg tabular-nums ${isLowTime ? 'text-coral' : 'text-gold'}`}
-        >
-          ⏱ {formatTime(remaining)}
-        </span>
+      <header className="sticky top-0 bg-base/90 backdrop-blur-md border-b border-white/5 z-10">
+        <div className="px-5 py-3 flex items-center justify-between">
+          <span className="text-xs font-semibold text-ink-muted">
+            Savol <span className="text-ink">{currentIndex + 1}</span> / {session.questions.length}
+          </span>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-base tabular-nums ${
+              isLowTime ? 'bg-coral/15 text-coral animate-pulse' : 'bg-gold/10 text-gold'
+            }`}
+          >
+            ⏱ {formatTime(remaining)}
+          </span>
+        </div>
+        <div className="h-1 w-full bg-white/5" role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length} aria-valuenow={currentIndex + 1}>
+          <div
+            className="h-full bg-gold transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / session.questions.length) * 100}%` }}
+          />
+        </div>
       </header>
 
-      <div className="flex-1 px-5 py-6">
-        <p className="text-lg leading-snug mb-6">{question.text}</p>
+      <div className="flex-1 px-5 py-6 max-w-2xl w-full mx-auto">
+        <div className="rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-5 mb-5">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold mb-2">
+            {question.type === 'MULTIPLE_CHOICE' ? 'Bir nechta javob' : question.type === 'TEXT_ANSWER' ? 'Yozma javob' : 'Bitta javob'}
+          </p>
+          <p className="text-lg font-medium leading-snug text-ink">{question.text}</p>
+        </div>
 
         {question.type === 'TEXT_ANSWER' ? (
           <div className="space-y-3">
@@ -102,7 +119,7 @@ export function TestTaking() {
               onBlur={() => submitTextAnswer(question.id, textDraft)}
               placeholder="Javobingizni shu yerga yozing..."
               rows={6}
-              className="w-full bg-surface rounded-xl px-4 py-3.5 text-sm outline-none border border-white/5 text-ink resize-none focus:border-gold/50"
+              className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-white/10 text-ink resize-none focus:border-gold/60"
             />
             <AIAnswerCheck question={question.text} answer={textDraft} />
             <p className="text-[10px] text-ink-muted">
@@ -112,17 +129,28 @@ export function TestTaking() {
           </div>
         ) : (
           <div className="space-y-2.5">
-            {question.options.map((opt) => {
+            {question.options.map((opt, idx) => {
               const isSelected = selected.includes(opt.id);
               return (
                 <button
                   key={opt.id}
                   onClick={() => toggleOption(opt.id)}
-                  className={`w-full text-left rounded-xl px-4 py-3.5 text-sm transition-colors ${
-                    isSelected ? 'bg-gold-soft border border-gold text-ink' : 'bg-surface border border-transparent'
+                  aria-pressed={isSelected}
+                  className={`w-full flex items-center gap-3 text-left rounded-2xl px-4 py-3.5 text-sm transition-all active:scale-[0.99] ${
+                    isSelected
+                      ? 'bg-gold/10 border border-gold text-ink shadow-[0_0_0_1px_rgba(255,176,32,0.25)]'
+                      : 'bg-surface/60 border border-white/10 hover:border-white/20'
                   }`}
                 >
-                  {opt.text}
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                      isSelected ? 'bg-gold text-base' : 'bg-white/10 text-ink-muted'
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  <span className="flex-1">{opt.text}</span>
                 </button>
               );
             })}
@@ -130,11 +158,11 @@ export function TestTaking() {
         )}
       </div>
 
-      <footer className="sticky bottom-0 bg-base/95 backdrop-blur px-5 py-4 border-t border-white/5 flex gap-3">
+      <footer className="sticky bottom-0 bg-base/90 backdrop-blur-md px-5 py-4 border-t border-white/5 flex gap-3">
         <button
           disabled={currentIndex === 0}
           onClick={() => setCurrentIndex((i) => i - 1)}
-          className="flex-1 rounded-full bg-surface py-3 text-sm disabled:opacity-30"
+          className="flex-1 rounded-2xl bg-white/5 text-ink py-3.5 text-sm font-medium active:scale-[0.98] transition disabled:opacity-30"
         >
           Oldingi
         </button>
@@ -144,14 +172,14 @@ export function TestTaking() {
               haptic('medium');
               submit();
             }}
-            className="flex-1 rounded-full bg-gold text-base font-semibold py-3 text-sm"
+            className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
           >
             Yakunlash
           </button>
         ) : (
           <button
             onClick={() => setCurrentIndex((i) => i + 1)}
-            className="flex-1 rounded-full bg-teal text-base font-semibold py-3 text-sm"
+            className="flex-1 rounded-2xl bg-teal text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
           >
             Keyingi
           </button>
@@ -190,27 +218,47 @@ function TestResultView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const ring = result.passed ? '#34D0A0' : '#F0654B';
+  const circ = 2 * Math.PI * 54;
   return (
-    <div className="h-screen flex items-center justify-center px-8 text-center">
-      <div>
-        <p className="text-5xl mb-4" aria-hidden="true">
+    <div className="min-h-screen flex items-center justify-center px-6 text-center bg-aurora">
+      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-7">
+        <div className="relative mx-auto mb-5 h-36 w-36">
+          <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
+            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+            <circle
+              cx="60"
+              cy="60"
+              r="54"
+              fill="none"
+              stroke={ring}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={circ}
+              strokeDashoffset={circ * (1 - Math.max(0, Math.min(100, result.percent)) / 100)}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="font-display text-3xl font-extrabold text-ink">{result.percent}%</span>
+            <span className="text-xs text-ink-muted tabular-nums">
+              {result.score}/{result.maxScore}
+            </span>
+          </div>
+        </div>
+        <p className="text-4xl mb-2" aria-hidden="true">
           {result.passed ? '🎉' : '📚'}
         </p>
-        <p className="font-display text-4xl text-gold mb-1">
-          {result.score}/{result.maxScore}
-        </p>
-        <p className="text-sm text-ink-muted mb-1">{result.percent}%</p>
-        <p className={`text-sm font-medium mb-6 ${result.passed ? 'text-teal' : 'text-coral'}`}>
-          {result.passed ? 'O\'tdingiz' : 'O\'ta olmadingiz'}
+        <p className={`font-display text-xl font-bold mb-1 ${result.passed ? 'text-teal' : 'text-coral'}`}>
+          {result.passed ? "O'tdingiz!" : "O'ta olmadingiz"}
         </p>
         {result.autoSubmitted && (
-          <p className="text-xs text-ink-faint mb-6">
+          <p className="text-xs text-ink-faint mt-2">
             Vaqt tugagani sababli test avtomatik yakunlandi.
           </p>
         )}
         <button
           onClick={onDone}
-          className="rounded-full bg-gold text-base font-semibold px-6 py-2.5 text-sm"
+          className="mt-6 w-full rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
         >
           Bosh sahifaga qaytish
         </button>

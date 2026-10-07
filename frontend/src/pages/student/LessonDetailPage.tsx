@@ -1,4 +1,6 @@
 // src/pages/student/LessonDetailPage.tsx
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -147,44 +149,27 @@ export function LessonDetailPage() {
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
-      {/* ============ BACK BUTTON ============ */}
-      <button
-        type="button"
-        onClick={() => {
-          haptic('light');
-          navigate('/lessons');
-        }}
-        className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
-      >
-        ← Orqaga
-      </button>
-
-      {/* ============ HEADER ============ */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3 backdrop-blur-md">
-        <div className="flex items-center gap-2 flex-wrap">
-          {item.group && (
-            <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-teal/10 text-teal">
-              👥 {item.group.name}
-            </span>
-          )}
-          <span
-            className={`text-[10px] px-2.5 py-1 rounded-full font-semibold ${cat.badge}`}
+      {/* ============ HERO ============ */}
+      <StaffHero
+        eyebrow={`${cat.label.toUpperCase()}${item.group ? ` · ${item.group.name}` : ''}`}
+        title={item.title}
+        subtitle={[teacherName, `${content.emoji} ${content.label}`].filter(Boolean).join(' · ')}
+        image={IMAGES.ieltsLanguage}
+        accent="teal"
+        top={
+          <button
+            type="button"
+            onClick={() => {
+              haptic('light');
+              navigate('/lessons');
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+            aria-label="Orqaga"
           >
-            {cat.label}
-          </span>
-          <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-white/5 text-ink-muted">
-            {content.emoji} {content.label}
-          </span>
-        </div>
-
-        <h1 className="font-display text-xl sm:text-2xl text-ink break-words">
-          {item.title}
-        </h1>
-
-        {teacherName && (
-          <p className="text-xs text-ink-muted">👤 {teacherName}</p>
-        )}
-      </div>
+            ←
+          </button>
+        }
+      />
 
       {/* ============ MUDDAT ============ */}
       {item.dueAt && (

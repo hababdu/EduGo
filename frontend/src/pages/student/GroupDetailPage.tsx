@@ -1,4 +1,6 @@
 // src/pages/student/GroupDetailPage.tsx
+import { StaffHero } from '../../components/staff';
+import { IMAGES } from '../../design/images';
 import { MyPaymentsCard } from '../../components/group/MyPaymentsCard';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { CapacityBar } from '../../components/group/CapacityBar';
@@ -141,48 +143,27 @@ export function GroupDetailPage() {
 
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-5 pb-24">
-      {/* ============ BACK BUTTON ============ */}
-      <button
-        type="button"
-        onClick={() => {
-          haptic('light');
-          navigate('/groups');
-        }}
-        className="text-xs text-ink-muted hover:text-ink bg-surface/30 px-3 py-2 rounded-xl border border-white/5 w-fit min-h-[40px]"
-      >
-        ← Orqaga
-      </button>
-
-      {/* ============ POSTER HERO ============ */}
-      <div className="relative rounded-3xl overflow-hidden border border-white/5 shadow-lg">
-        {/* Poster */}
-        {posterFullUrl ? (
-          <div className="relative w-full h-56 sm:h-64">
-            <img
-              src={posterFullUrl}
-              alt={group.name}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-          </div>
-        ) : (
-          <div className="w-full h-40 bg-gradient-to-br from-gold/20 via-gold/5 to-teal/10 flex items-center justify-center text-6xl">
-            📁
-          </div>
-        )}
-
-        {/* Title overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 space-y-2">
-          <h1 className="font-display text-2xl sm:text-3xl text-white break-words drop-shadow-lg">
-            {group.name}
-          </h1>
-          {group.description && (
-            <p className="text-xs text-white/80 leading-relaxed line-clamp-2">
-              {group.description}
-            </p>
-          )}
-        </div>
-      </div>
+      {/* ============ HERO ============ */}
+      <StaffHero
+        eyebrow="GURUH"
+        title={group.name}
+        subtitle={group.description ?? undefined}
+        image={posterFullUrl ?? IMAGES.hero}
+        accent="gold"
+        top={
+          <button
+            type="button"
+            onClick={() => {
+              haptic('light');
+              navigate('/groups');
+            }}
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+            aria-label="Orqaga"
+          >
+            ←
+          </button>
+        }
+      />
 
       {/* ============ META ============ */}
       <div className="grid grid-cols-3 gap-2">
