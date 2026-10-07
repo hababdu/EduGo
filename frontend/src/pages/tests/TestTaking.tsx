@@ -19,6 +19,8 @@ export function TestTaking() {
     useTestSession(testId);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [textDraft, setTextDraft] = useState('');
+  const [showNav, setShowNav] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Joriy savol TEXT_ANSWER bo'lsa, qoralamani saqlangan javobdan yuklaymiz
   useEffect(() => {
@@ -62,10 +64,24 @@ export function TestTaking() {
 
   if (!session) return null;
 
+  const total = session.questions.length;
   const question = session.questions[currentIndex];
-  const isLast = currentIndex === session.questions.length - 1;
+  const isLast = currentIndex === total - 1;
   const selected = answers[question.id] ?? [];
   const isLowTime = remaining <= 30;
+
+  const isAnswered = (q: (typeof session.questions)[number]) =>
+    q.type === 'TEXT_ANSWER'
+      ? (q.id === question.id ? textDraft : textAnswers[q.id] ?? '').trim().length > 0
+      : (answers[q.id]?.length ?? 0) > 0;
+  const answeredCount = session.questions.filter(isAnswered).length;
+  const unanswered = total - answeredCount;
+
+  function goTo(i: number) {
+    if (question.type === 'TEXT_ANSWER') submitTextAnswer(question.id, textDraft);
+    setCurrentIndex(Math.max(0, Math.min(total - 1, i)));
+    setShowNav(false);
+  }
 
   function toggleOption(optionId: string) {
     haptic('light');
@@ -76,40 +92,56 @@ export function TestTaking() {
       selectAnswer(question.id, next);
     } else {
       selectAnswer(question.id, [optionId]);
+      // Bitta javobli savolda tanlagach avtomatik keyingisiga o'tamiz
+      if (!isLast) setTimeout(() => setCurrentIndex((i) => Math.min(total - 1, i + 1)), 350);
     }
   }
 
+  function finish() {
+    if (question.type === 'TEXT_ANSWER') submitTextAnswer(question.id, textDraft);
+    haptic('medium');
+    setShowConfirm(false);
+    submit();
+  }
+
+  const typeLabel =
+    question.type === 'MULTIPLE_CHOICE'
+      ? "Bir nechta to'g'ri javobni belgilang"
+      : question.type === 'TEXT_ANSWER'
+      ? 'Javobni yozing'
+      : "Bitta to'g'ri javobni tanlang";
+
   return (
     <div className="min-h-screen flex flex-col bg-aurora">
-      {/* Timer — doim ko'rinadigan header */}
       <header className="sticky top-0 bg-base/90 backdrop-blur-md border-b border-white/5 z-10">
-        <div className="px-5 py-3 flex items-center justify-between">
-          <span className="text-xs font-semibold text-ink-muted">
-            Savol <span className="text-ink">{currentIndex + 1}</span> / {session.questions.length}
-          </span>
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
+          <button
+            onClick={() => setShowNav(true)}
+            className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-ink active:scale-[0.97] transition"
+            aria-label="Savollar ro'yxatini ochish"
+          >
+            <span className="tabular-nums">{currentIndex + 1} / {total}</span>
+            <span className="text-ink-muted">· {answeredCount} javob</span>
+          </button>
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-base tabular-nums ${
               isLowTime ? 'bg-coral/15 text-coral animate-pulse' : 'bg-gold/10 text-gold'
             }`}
+            aria-live="off"
           >
             ⏱ {formatTime(remaining)}
           </span>
         </div>
-        <div className="h-1 w-full bg-white/5" role="progressbar" aria-valuemin={0} aria-valuemax={session.questions.length} aria-valuenow={currentIndex + 1}>
-          <div
-            className="h-full bg-gold transition-all duration-300"
-            style={{ width: `${((currentIndex + 1) / session.questions.length) * 100}%` }}
-          />
+        <div className="h-1 w-full bg-white/5" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answeredCount}>
+          <div className="h-full bg-teal transition-all duration-300" style={{ width: `${(answeredCount / total) * 100}%` }} />
         </div>
       </header>
 
-      <div className="flex-1 px-5 py-6 max-w-2xl w-full mx-auto">
-        <div className="rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-5 mb-5">
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gold mb-2">
-            {question.type === 'MULTIPLE_CHOICE' ? 'Bir nechta javob' : question.type === 'TEXT_ANSWER' ? 'Yozma javob' : 'Bitta javob'}
-          </p>
+      <div className="flex-1 px-4 py-5 max-w-2xl w-full mx-auto">
+        <div className="rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-5 mb-4">
           <p className="text-lg font-medium leading-snug text-ink">{question.text}</p>
         </div>
+        <p className="text-xs text-ink-muted mb-3 px-1">{typeLabel}</p>
 
         {question.type === 'TEXT_ANSWER' ? (
           <div className="space-y-3">
@@ -122,33 +154,30 @@ export function TestTaking() {
               className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-white/10 text-ink resize-none focus:border-gold/60"
             />
             <AIAnswerCheck question={question.text} answer={textDraft} />
-            <p className="text-[10px] text-ink-muted">
-              AI bahosi faqat sizga yordam uchun — rasmiy ball
-              o'qituvchi/tizim tomonidan qo'yiladi.
-            </p>
           </div>
         ) : (
           <div className="space-y-2.5">
             {question.options.map((opt, idx) => {
               const isSelected = selected.includes(opt.id);
+              const multi = question.type === 'MULTIPLE_CHOICE';
               return (
                 <button
                   key={opt.id}
                   onClick={() => toggleOption(opt.id)}
                   aria-pressed={isSelected}
-                  className={`w-full flex items-center gap-3 text-left rounded-2xl px-4 py-3.5 text-sm transition-all active:scale-[0.99] ${
+                  className={`w-full flex items-center gap-3 text-left rounded-2xl px-4 py-4 text-[15px] transition-all active:scale-[0.99] min-h-[56px] ${
                     isSelected
-                      ? 'bg-gold/10 border border-gold text-ink shadow-[0_0_0_1px_rgba(255,176,32,0.25)]'
+                      ? 'bg-gold/10 border border-gold text-ink'
                       : 'bg-surface/60 border border-white/10 hover:border-white/20'
                   }`}
                 >
                   <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                      isSelected ? 'bg-gold text-base' : 'bg-white/10 text-ink-muted'
-                    }`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold ${
+                      multi ? 'rounded-lg' : 'rounded-full'
+                    } ${isSelected ? 'bg-gold text-base' : 'bg-white/10 text-ink-muted'}`}
                     aria-hidden="true"
                   >
-                    {String.fromCharCode(65 + idx)}
+                    {isSelected && multi ? '✓' : String.fromCharCode(65 + idx)}
                   </span>
                   <span className="flex-1">{opt.text}</span>
                 </button>
@@ -158,33 +187,98 @@ export function TestTaking() {
         )}
       </div>
 
-      <footer className="sticky bottom-0 bg-base/90 backdrop-blur-md px-5 py-4 border-t border-white/5 flex gap-3">
+      <footer className="sticky bottom-0 bg-base/90 backdrop-blur-md px-4 py-3 border-t border-white/5 flex gap-3">
         <button
           disabled={currentIndex === 0}
-          onClick={() => setCurrentIndex((i) => i - 1)}
-          className="flex-1 rounded-2xl bg-white/5 text-ink py-3.5 text-sm font-medium active:scale-[0.98] transition disabled:opacity-30"
+          onClick={() => goTo(currentIndex - 1)}
+          className="w-24 rounded-2xl bg-white/5 text-ink py-3.5 text-sm font-medium active:scale-[0.98] transition disabled:opacity-30"
         >
-          Oldingi
+          ← Orqaga
         </button>
         {isLast ? (
           <button
-            onClick={() => {
-              haptic('medium');
-              submit();
-            }}
+            onClick={() => setShowConfirm(true)}
             className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
           >
             Yakunlash
           </button>
         ) : (
           <button
-            onClick={() => setCurrentIndex((i) => i + 1)}
+            onClick={() => goTo(currentIndex + 1)}
             className="flex-1 rounded-2xl bg-teal text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
           >
-            Keyingi
+            {isAnswered(question) ? 'Keyingi →' : "O'tkazib yuborish →"}
           </button>
         )}
       </footer>
+
+      {showNav && (
+        <div className="fixed inset-0 z-30 flex items-end bg-black/60 backdrop-blur-sm" onClick={() => setShowNav(false)}>
+          <div
+            className="w-full max-w-2xl mx-auto rounded-t-3xl bg-surface border-t border-white/10 p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-base text-ink">Savollar</h3>
+              <span className="text-xs text-ink-muted">{answeredCount}/{total} javob berilgan</span>
+            </div>
+            <div className="grid grid-cols-6 sm:grid-cols-8 gap-2">
+              {session.questions.map((q, i) => {
+                const done = isAnswered(q);
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => goTo(i)}
+                    className={`aspect-square rounded-xl text-sm font-bold tabular-nums transition ${
+                      i === currentIndex
+                        ? 'ring-2 ring-gold text-gold bg-gold/10'
+                        : done
+                        ? 'bg-teal/20 text-teal'
+                        : 'bg-white/5 text-ink-muted'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-4 text-[11px] text-ink-muted">
+              <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded bg-teal/40" /> Javob berilgan</span>
+              <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded bg-white/15" /> Javobsiz</span>
+            </div>
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="w-full rounded-2xl bg-gold text-base font-semibold py-3 text-sm active:scale-[0.98] transition"
+            >
+              Testni yakunlash
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-5">
+          <div className="w-full max-w-sm rounded-3xl bg-surface border border-white/10 p-6 space-y-4 shadow-2xl">
+            <h3 className="font-display text-lg text-ink">Testni yakunlaysizmi?</h3>
+            <p className="text-sm text-ink-muted">
+              {unanswered > 0
+                ? `${unanswered} ta savolga hali javob bermadingiz. Yakunlasangiz, ular xato hisoblanadi.`
+                : "Barcha savollarga javob berdingiz. Yakunlagandan so'ng o'zgartirib bo'lmaydi."}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 rounded-2xl bg-white/5 text-ink py-3 text-sm font-medium"
+              >
+                Davom etish
+              </button>
+              <button onClick={finish} className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3 text-sm">
+                Yakunlash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
