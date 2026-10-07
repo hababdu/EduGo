@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminStudents } from '../../hooks/useAdmin';
+import { StaffHero, Panel, Avatar } from '../../components/staff';
+import { IMAGES } from '../../design/images';
+import { Users, Search } from '../../design/icons';
 
 const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Faol',
@@ -43,135 +46,136 @@ export function AdminStudents() {
     setPage(1);
   };
 
-  return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
-      {/* Sarlavha va umumiy statistika */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl">Studentlar</h1>
-          <p className="text-xs text-ink-muted mt-1">
-            {data?.total ? `Jami: ${data.total} ta talaba` : 'Talabalar ro\'yxati va boshqaruvi'}
-          </p>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={handleResetFilters}
-            className="text-xs text-gold hover:underline bg-surface/50 px-3 py-1.5 rounded-lg border border-white/5"
-          >
-            Filtrlarni tozalash
-          </button>
-        )}
-      </div>
+  const inputCls =
+    'bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-white/10 text-ink min-h-[44px] focus:border-gold/50';
 
-      {/* Qidiruv, Status va Saralash paneli */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Ism yoki username..."
-          className="bg-surface rounded-xl px-4 py-2.5 text-sm placeholder:text-ink-faint outline-none focus-visible:ring-2 focus-visible:ring-gold border border-white/5"
-        />
+  return (
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
+      <StaffHero
+        eyebrow="ADMIN · TALABALAR"
+        title="Studentlar"
+        subtitle={data?.total ? `Jami: ${data.total} ta talaba` : "Talabalar ro'yxati va boshqaruvi"}
+        image={IMAGES.hero}
+        accent="sky"
+        actions={
+          hasActiveFilters ? (
+            <button
+              onClick={handleResetFilters}
+              className="text-xs font-semibold text-gold bg-gold/10 px-3.5 py-2 rounded-xl active:scale-[0.98] transition"
+            >
+              Filtrlarni tozalash
+            </button>
+          ) : undefined
+        }
+      />
+
+      {/* Qidiruv, status va saralash */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" aria-hidden="true" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Ism yoki username..."
+            className={`${inputCls} w-full pl-10 placeholder:text-ink-faint`}
+          />
+        </div>
         <select
           value={status}
           onChange={(e) => {
             setStatus(e.target.value);
             setPage(1);
           }}
-          className="bg-surface rounded-xl px-3 py-2.5 text-sm outline-none border border-white/5 cursor-pointer text-ink"
+          className={`${inputCls} cursor-pointer`}
         >
           <option value="">Barcha statuslar</option>
           <option value="ACTIVE">Faol</option>
           <option value="BLOCKED">Bloklangan</option>
         </select>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
-          className="bg-surface rounded-xl px-3 py-2.5 text-sm outline-none border border-white/5 cursor-pointer text-ink"
-        >
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className={`${inputCls} cursor-pointer`}>
           <option value="score_desc">Ko'p ball (yuqoriga)</option>
           <option value="score_asc">Kam ball (pastga)</option>
           <option value="level">Daraja bo'yicha</option>
         </select>
       </div>
 
-      {/* Kontent qismi */}
       {isLoading && !data ? (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-16 bg-surface/50 rounded-xl animate-pulse border border-white/5" />
+            <div key={i} className="h-[72px] bg-surface/40 rounded-2xl animate-pulse border border-white/5" />
           ))}
         </div>
       ) : sortedItems.length === 0 ? (
-        <div className="text-center py-12 bg-surface/20 rounded-2xl border border-white/5 space-y-3">
+        <div className="text-center py-12 bg-surface/30 rounded-3xl border border-white/10 space-y-3">
           <p className="text-sm text-ink-muted">Bu qidiruvga mos student topilmadi.</p>
           {hasActiveFilters && (
             <button
               onClick={handleResetFilters}
-              className="text-xs bg-gold text-base font-semibold px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
+              className="text-xs bg-gold text-base font-semibold px-4 py-2 rounded-xl active:scale-[0.98] transition"
             >
               Barcha filtrlarni olib tashlash
             </button>
           )}
         </div>
       ) : (
-        <div className="divide-y divide-white/5 bg-surface/20 rounded-2xl border border-white/5 px-4">
-          {sortedItems.map((s) => {
-            const isBlocked = s.status === 'BLOCKED';
-            return (
-              <button
-                key={s.id}
-                onClick={() => navigate(`/admin/students/${s.id}`)}
-                className="w-full flex items-center justify-between py-4 text-left hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-colors group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-surface border border-white/10 flex items-center justify-center font-display text-sm group-hover:border-gold/50 transition-colors">
-                    {s.firstName?.[0]?.toUpperCase() || 'S'}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium group-hover:text-gold transition-colors">
-                      {s.firstName} {s.lastName ?? ''}
-                    </p>
-                    <p className="text-xs text-ink-muted flex items-center gap-2 mt-0.5">
-                      <span>{s.username ? `@${s.username}` : 'username yo\'q'}</span>
-                      <span>·</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        isBlocked ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal'
-                      }`}>
+        <Panel title="Talabalar" icon={Users} accent="sky" flush>
+          <div className="divide-y divide-white/5">
+            {sortedItems.map((s, idx) => {
+              const isBlocked = s.status === 'BLOCKED';
+              const name = `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || 'Student';
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => navigate(`/admin/students/${s.id}`)}
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors group"
+                >
+                  <span className="w-5 text-center text-[11px] font-semibold text-ink-faint tabular-nums">
+                    {(page - 1) * 20 + idx + 1}
+                  </span>
+                  <Avatar name={name} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-ink truncate group-hover:text-gold transition-colors">{name}</p>
+                    <p className="text-xs text-ink-muted flex items-center gap-2 mt-0.5 min-w-0">
+                      <span className="truncate">{s.username ? `@${s.username}` : "username yo'q"}</span>
+                      <span
+                        className={`shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${
+                          isBlocked ? 'bg-coral/15 text-coral' : 'bg-teal/15 text-teal'
+                        }`}
+                      >
                         {STATUS_LABELS[s.status] || s.status}
                       </span>
                     </p>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold tabular-nums text-gold">{s.totalScore} ball</p>
-                  <p className="text-xs text-ink-muted mt-0.5">{s.level}-daraja</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold tabular-nums text-gold">{s.totalScore}</p>
+                    <p className="text-[10px] text-ink-muted mt-0.5">{s.level}-daraja</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Panel>
       )}
 
-      {/* Pagination */}
       {data && data.totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 pt-2">
+        <div className="flex justify-center items-center gap-3 pt-1">
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="text-xs px-4 py-2 rounded-xl bg-surface border border-white/5 disabled:opacity-30 hover:bg-white/5 transition-colors"
+            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-white/10 disabled:opacity-30 active:scale-[0.98] transition"
           >
             ← Oldingi
           </button>
           <span className="text-xs text-ink-muted tabular-nums">
-            Sahifa {page} / {data.totalPages}
+            {page} / {data.totalPages}
           </span>
           <button
             disabled={page >= data.totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="text-xs px-4 py-2 rounded-xl bg-surface border border-white/5 disabled:opacity-30 hover:bg-white/5 transition-colors"
+            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-white/10 disabled:opacity-30 active:scale-[0.98] transition"
           >
             Keyingi →
           </button>

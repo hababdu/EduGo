@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAdminStudentDetail, useBlockStudent, useAdjustScore } from '../../hooks/useAdmin';
+import { StaffHero, KpiCard, Avatar } from '../../components/staff';
+import { IMAGES } from '../../design/images';
+import { Trophy, TrendingUp, Flame } from '../../design/icons';
 
 export function AdminStudentDetail() {
   const { id = '' } = useParams();
@@ -85,54 +88,47 @@ export function AdminStudentDetail() {
     );
   }
 
+  const fullName = `${student.firstName ?? ''} ${student.lastName ?? ''}`.trim() || 'Talaba';
+
   return (
-    <div className="p-6 max-w-xl mx-auto space-y-8 pb-16">
-      <div>
-        <button onClick={() => navigate(-1)} className="text-sm text-ink-muted mb-4 hover:text-ink transition-colors">
-          ← Orqaga
-        </button>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl text-ink">
-              {student.firstName} {student.lastName ?? ''}
-            </h1>
-            <p className="text-sm text-ink-muted mt-1 flex items-center gap-2">
-              <span>{student.username ? `@${student.username}` : 'username yo\'q'}</span>
-              <span>·</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${isBlocked ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal'}`}>
-                {isBlocked ? 'Bloklangan' : 'Faol'}
-              </span>
-            </p>
-          </div>
-          <button
-            onClick={() => setShowBlockModal(true)}
-            disabled={blockMutation.isPending}
-            className={`text-sm px-4 py-2 rounded-full font-medium transition-all ${
-              isBlocked ? 'bg-teal text-base hover:opacity-90' : 'bg-coral/20 text-coral hover:bg-coral/30'
-            }`}
-          >
-            {isBlocked ? 'Blokdan chiqarish' : 'Bloklash'}
+    <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
+      <StaffHero
+        eyebrow="ADMIN · TALABA"
+        title={fullName}
+        subtitle={student.username ? `@${student.username}` : "username yo'q"}
+        image={IMAGES.hero}
+        accent={isBlocked ? 'gold' : 'sky'}
+        top={
+          <button onClick={() => navigate(-1)} className="text-xs text-ink-muted hover:text-ink transition-colors">
+            ← Orqaga
           </button>
-        </div>
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <Avatar name={fullName} />
+            <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${isBlocked ? 'bg-coral/20 text-coral' : 'bg-teal/20 text-teal'}`}>
+              {isBlocked ? 'Bloklangan' : 'Faol'}
+            </span>
+            <button
+              onClick={() => setShowBlockModal(true)}
+              disabled={blockMutation.isPending}
+              className={`text-xs px-4 py-2 rounded-xl font-semibold transition-all ${
+                isBlocked ? 'bg-teal text-base hover:opacity-90' : 'bg-coral/20 text-coral hover:bg-coral/30'
+              }`}
+            >
+              {isBlocked ? 'Blokdan chiqarish' : 'Bloklash'}
+            </button>
+          </div>
+        }
+      />
+
+      <div className="grid grid-cols-3 gap-3">
+        <KpiCard label="Umumiy ball" value={student.studentProfile?.totalScore ?? 0} icon={Trophy} accent="gold" />
+        <KpiCard label="Daraja" value={student.studentProfile?.level ?? 1} icon={TrendingUp} accent="sky" />
+        <KpiCard label="Streak" value={`${student.streak?.currentStreak ?? 0} kun`} icon={Flame} accent="coral" />
       </div>
 
-      <div className="grid grid-cols-3 gap-4 border-t border-b border-white/5 py-5">
-        <div className="bg-surface/50 p-3 rounded-xl border border-white/5">
-          <p className="text-xl font-semibold tabular-nums text-gold">{student.studentProfile?.totalScore ?? 0}</p>
-          <p className="text-xs text-ink-muted mt-0.5">Umumiy ball</p>
-        </div>
-        <div className="bg-surface/50 p-3 rounded-xl border border-white/5">
-          <p className="text-xl font-semibold tabular-nums text-ink">{student.studentProfile?.level ?? 1}</p>
-          <p className="text-xs text-ink-muted mt-0.5">Daraja</p>
-        </div>
-        <div className="bg-surface/50 p-3 rounded-xl border border-white/5">
-          <p className="text-xl font-semibold tabular-nums text-ink">{student.streak?.currentStreak ?? 0} kun</p>
-          <p className="text-xs text-ink-muted mt-0.5">Kunlik streak</p>
-        </div>
-      </div>
-
-      <section className="bg-surface/30 p-5 rounded-2xl border border-white/5 space-y-4">
+      <section className="bg-surface/40 p-5 rounded-3xl border border-white/10 space-y-4">
         <h2 className="text-sm font-medium text-ink">Qo'lda ball berish / ayirish</h2>
         
         <div className="flex flex-wrap gap-2">
@@ -204,7 +200,7 @@ export function AdminStudentDetail() {
             <p className="text-sm text-ink-faint">Mos keladigan test natijalari topilmadi.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5 bg-surface/20 rounded-xl px-4 border border-white/5">
+          <div className="divide-y divide-white/5 bg-surface/40 rounded-3xl px-4 border border-white/10">
             {filteredAttempts.map((a: any) => (
               <div key={a.id} className="py-3 flex items-center justify-between text-sm">
                 <div>

@@ -33,8 +33,8 @@ function useProfile() {
 
 function useActivity() {
   return useQuery({
-    queryKey: ['student', 'activity', 84],
-    queryFn: () => apiFetch<{ days: ActivityDay[]; activeDays: number }>('/api/v1/dashboard/activity?days=84'),
+    queryKey: ['student', 'activity', 120],
+    queryFn: () => apiFetch<{ days: ActivityDay[]; activeDays: number }>('/api/v1/dashboard/activity?days=120'),
     staleTime: 5 * 60_000,
   });
 }
