@@ -1,5 +1,5 @@
 // src/pages/admin/AdminTests.tsx
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { StatusBadge } from '../../../components/ui/StatusBadge';
@@ -106,7 +106,7 @@ function useCreateTest() {
    ============================================================ */
 export function AdminTests() {
   const navigate = useNavigate();
-  const { haptic, hapticNotify, showMainButton, hideMainButton } = useTelegram();
+  const { haptic, hapticNotify } = useTelegram();
 
   const {
     data: tests,
@@ -139,7 +139,7 @@ export function AdminTests() {
     { ...EMPTY_QUESTION },
   ]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
-
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const filteredTests = useMemo<TestItem[]>(() => {
     if (!tests || !Array.isArray(tests)) return [];
@@ -160,8 +160,9 @@ export function AdminTests() {
     setPassingScore(50);
     setRandomQuestions(false);
     setRandomAnswerOrder(false);
-    setQuestions([{ ...EMPTY_QUESTION }]);
+    setQuestions([{ ...EMPTY_QUESTION, options: ['', ''] }]);
     setSelectedGroupIds([]);
+    setOpenIndex(null);
   };
 
   const toggleGroup = (id: string) => {
@@ -173,7 +174,21 @@ export function AdminTests() {
 
   const handleAddQuestion = () => {
     haptic('light');
-    setQuestions((prev) => [...prev, { ...EMPTY_QUESTION }]);
+    setQuestions((prev) => {
+      setOpenIndex(prev.length);
+      return [...prev, { ...EMPTY_QUESTION, options: ['', ''] }];
+    });
+  };
+
+  const handleDuplicateQuestion = (i: number) => {
+    haptic('light');
+    setQuestions((prev) => {
+      const copy = { ...prev[i], options: [...prev[i].options] };
+      const u = [...prev];
+      u.splice(i + 1, 0, copy);
+      setOpenIndex(i + 1);
+      return u;
+    });
   };
 
   const handleRemoveQuestion = (i: number) => {
@@ -319,27 +334,6 @@ export function AdminTests() {
     hapticNotify,
   ]);
 
-  useEffect(() => {
-    if (!showForm) {
-      hideMainButton();
-      return;
-    }
-    const cleanup = showMainButton(
-      createTest.isPending ? 'Saqlanmoqda...' : 'SAQLASH',
-      handleSubmit,
-      { loading: createTest.isPending, disabled: createTest.isPending },
-    );
-    return () => {
-      cleanup?.();
-      hideMainButton();
-    };
-  }, [
-    showForm,
-    createTest.isPending,
-    handleSubmit,
-    showMainButton,
-    hideMainButton,
-  ]);
 
   /* ============================================================
      ERROR STATE — birinchi bo'lib tekshiriladi
@@ -416,6 +410,10 @@ export function AdminTests() {
           teacherGroups={teacherGroups}
           groupsLoading={groupsLoading}
           onAddQuestion={handleAddQuestion}
+          onDuplicateQuestion={handleDuplicateQuestion}
+          openIndex={openIndex}
+          onSubmit={handleSubmit}
+          submitting={createTest.isPending}
           onRemoveQuestion={handleRemoveQuestion}
           onQuestionChange={handleQuestionChange}
           onOptionChange={handleOptionChange}
@@ -554,6 +552,10 @@ interface TestFormProps {
   teacherGroups: TeacherGroup[] | undefined;
   groupsLoading: boolean;
   onAddQuestion: () => void;
+  onDuplicateQuestion: (i: number) => void;
+  openIndex: number | null;
+  onSubmit: () => void;
+  submitting: boolean;
   onRemoveQuestion: (i: number) => void;
   onQuestionChange: <K extends keyof QuestionDraft>(
     index: number,
@@ -671,6 +673,10 @@ function TestForm({
   teacherGroups,
   groupsLoading,
   onAddQuestion,
+  onDuplicateQuestion,
+  openIndex,
+  onSubmit,
+  submitting,
   onRemoveQuestion,
   onQuestionChange,
   onOptionChange,
@@ -679,6 +685,8 @@ function TestForm({
   onOpenAI,
   onCancel,
 }: TestFormProps) {
+  const totalPoints = questions.reduce((n, q) => n + (Number(q.points) || 0), 0);
+  const incomplete = questions.filter((q) => !q.text.trim() || q.options.some((o) => !o.trim())).length;
   return (
     <div className="space-y-3">
       {/* Form header */}
@@ -815,12 +823,12 @@ function TestForm({
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Davomiyligi (sek)">
+            <Field label="Davomiyligi (daqiqa)">
               <input
                 type="number"
-                min="0"
-                value={durationSeconds}
-                onChange={(e) => setDurationSeconds(Number(e.target.value))}
+                min="1"
+                value={Math.round(durationSeconds / 60)}
+                onChange={(e) => setDurationSeconds(Math.max(1, Number(e.target.value)) * 60)}
                 className={CONTROL.input}
               />
             </Field>
@@ -835,6 +843,23 @@ function TestForm({
                 className={CONTROL.input}
               />
             </Field>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[10, 20, 30, 45, 60].map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setDurationSeconds(m * 60)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition ${
+                  durationSeconds === m * 60
+                    ? 'border-gold/40 bg-gold/15 text-gold'
+                    : 'border-white/10 bg-white/5 text-ink-muted'
+                }`}
+              >
+                {m} daqiqa
+              </button>
+            ))}
           </div>
 
           <div className="space-y-2">
@@ -905,8 +930,9 @@ function TestForm({
               index={qi}
               question={q}
               canRemove={questions.length > 1}
-              defaultOpen={qi === 0}
+              defaultOpen={qi === 0 || qi === openIndex}
               onRemove={() => onRemoveQuestion(qi)}
+              onDuplicate={() => onDuplicateQuestion(qi)}
               onChange={onQuestionChange}
               onOptionChange={onOptionChange}
               onAddOption={onAddOption}
@@ -916,12 +942,25 @@ function TestForm({
         </div>
       </CollapsibleSection>
 
-      {/* Bottom hint */}
-      <div className="rounded-xl border border-gold/10 bg-gold/5 px-3 py-2.5">
-        <p className="text-center text-[11px] leading-relaxed text-ink-muted">
-          Test tayyor bo‘lgach, pastdagi Telegram tugmasi orqali
-          <span className="font-semibold text-gold"> SAQLASH</span> ni bosing.
-        </p>
+      {/* Saqlash paneli */}
+      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-base/90 p-3 backdrop-blur-md shadow-xl">
+        <div className="min-w-0 flex-1 text-[11px] text-ink-muted leading-tight">
+          <p>
+            <span className="font-bold text-ink">{questions.length}</span> savol ·{' '}
+            <span className="font-bold text-ink">{totalPoints}</span> ball
+          </p>
+          <p className={incomplete ? 'text-gold' : 'text-teal'}>
+            {incomplete ? `${incomplete} ta savol to'ldirilmagan` : "Hammasi tayyor"}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={submitting}
+          className="rounded-xl bg-gold px-6 py-3 text-sm font-bold text-black active:scale-[0.98] transition disabled:opacity-50"
+        >
+          {submitting ? 'Saqlanmoqda...' : 'Saqlash'}
+        </button>
       </div>
     </div>
   );
@@ -937,6 +976,7 @@ interface QuestionCardProps {
   canRemove: boolean;
   defaultOpen?: boolean;
   onRemove: () => void;
+  onDuplicate: () => void;
   onChange: <K extends keyof QuestionDraft>(
     index: number,
     field: K,
@@ -953,6 +993,7 @@ function QuestionCard({
   canRemove,
   defaultOpen = false,
   onRemove,
+  onDuplicate,
   onChange,
   onOptionChange,
   onAddOption,
@@ -961,11 +1002,12 @@ function QuestionCard({
   const [open, setOpen] = useState(defaultOpen);
 
   const filledOptions = question.options.filter((o) => o.trim()).length;
+  const complete = !!question.text.trim() && question.options.every((o) => o.trim());
   const preview =
     question.text.trim() || `Savol ${index + 1} — hali to‘ldirilmagan`;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/8 bg-surface/40">
+    <div className={`overflow-hidden rounded-2xl border bg-surface/40 ${complete ? 'border-white/8' : 'border-gold/25'}`}>
       {/* Question header */}
       <div className="flex items-center gap-2 px-3 py-3">
         <button
@@ -1001,6 +1043,7 @@ function QuestionCard({
                     ? 'Qiyin'
                     : "O'rta"}{' '}
                 · {question.points} ball · {filledOptions} variant
+                {!complete && <span className="text-gold"> · to'ldirilmagan</span>}
               </span>
             )}
           </span>
@@ -1012,6 +1055,15 @@ function QuestionCard({
           >
             ⌄
           </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onDuplicate}
+          className="shrink-0 rounded-xl px-2 py-2 text-[11px] font-semibold text-ink-muted transition hover:bg-white/5 hover:text-ink"
+          aria-label="Savoldan nusxa olish"
+        >
+          Nusxa
         </button>
 
         {canRemove && (
@@ -1045,6 +1097,7 @@ function QuestionCard({
 
             <div className="grid grid-cols-2 gap-2">
               <select
+                aria-label="Qiyinlik"
                 value={question.difficulty}
                 onChange={(e) =>
                   onChange(
@@ -1068,6 +1121,7 @@ function QuestionCard({
                   onChange(index, 'points', Number(e.target.value))
                 }
                 placeholder="Ball"
+                aria-label="Ball"
                 className={CONTROL.input}
               />
             </div>
@@ -1079,7 +1133,7 @@ function QuestionCard({
                 </label>
 
                 <span className="text-[10px] text-ink-muted">
-                  Radio = to'g'ri javob
+                  Harfni bosing — to'g'ri javob belgilanadi
                 </span>
               </div>
 
@@ -1090,21 +1144,22 @@ function QuestionCard({
                     flex items-center gap-2 rounded-xl border p-1.5
                     ${
                       question.correctAnswerIndex === oi
-                        ? 'border-gold/30 bg-gold/5'
+                        ? 'border-teal/40 bg-teal/5'
                         : 'border-white/5 bg-white/[0.02]'
                     }
                   `}
                 >
-                  <input
-                    type="radio"
-                    name={`correct-${index}`}
-                    checked={question.correctAnswerIndex === oi}
-                    onChange={() =>
-                      onChange(index, 'correctAnswerIndex', oi)
-                    }
-                    className="h-4 w-4 shrink-0 cursor-pointer accent-gold"
+                  <button
+                    type="button"
+                    onClick={() => onChange(index, 'correctAnswerIndex', oi)}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition ${
+                      question.correctAnswerIndex === oi ? 'bg-teal text-black' : 'bg-white/10 text-ink-muted'
+                    }`}
+                    aria-pressed={question.correctAnswerIndex === oi}
                     aria-label={`Variant ${oi + 1} to'g'ri javob`}
-                  />
+                  >
+                    {question.correctAnswerIndex === oi ? '✓' : String.fromCharCode(65 + oi)}
+                  </button>
 
                   <input
                     value={opt}
