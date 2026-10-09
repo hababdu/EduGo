@@ -593,7 +593,7 @@ function CollapsibleSection({
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/8 bg-surface/30">
+    <section className="overflow-hidden rounded-2xl bg-surface/40">
       <div className="flex items-center gap-2 px-3 py-3">
         <button
           type="button"
@@ -603,8 +603,8 @@ function CollapsibleSection({
         >
           <span
             className={`
-              flex h-8 w-8 shrink-0 items-center justify-center rounded-xl
-              border border-white/8 bg-white/[0.03] text-ink-muted
+              flex h-7 w-7 shrink-0 items-center justify-center rounded-lg
+              bg-white/5 text-ink-muted
               transition-transform duration-200
               ${open ? 'rotate-0' : '-rotate-90'}
             `}
@@ -641,7 +641,7 @@ function CollapsibleSection({
         `}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="border-t border-white/5 p-4">
+          <div className="px-4 pb-4 pt-1">
             {children}
           </div>
         </div>
@@ -688,9 +688,9 @@ function TestForm({
   const totalPoints = questions.reduce((n, q) => n + (Number(q.points) || 0), 0);
   const incomplete = questions.filter((q) => !q.text.trim() || q.options.some((o) => !o.trim())).length;
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-24">
       {/* Form header */}
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/8 bg-surface/30 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-surface/40 px-4 py-3">
         <div className="min-w-0">
           <p className="text-sm font-bold text-ink">Yangi test</p>
           <p className="text-[11px] text-ink-muted">
@@ -943,7 +943,7 @@ function TestForm({
       </CollapsibleSection>
 
       {/* Saqlash paneli */}
-      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl border border-white/10 bg-base/90 p-3 backdrop-blur-md shadow-xl">
+      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl bg-base/95 ring-1 ring-white/10 p-3 backdrop-blur-md shadow-xl">
         <div className="min-w-0 flex-1 text-[11px] text-ink-muted leading-tight">
           <p>
             <span className="font-bold text-ink">{questions.length}</span> savol ·{' '}
@@ -1007,7 +1007,7 @@ function QuestionCard({
     question.text.trim() || `Savol ${index + 1} — hali to‘ldirilmagan`;
 
   return (
-    <div className={`overflow-hidden rounded-2xl border bg-surface/40 ${complete ? 'border-white/8' : 'border-gold/25'}`}>
+    <div className={`overflow-hidden rounded-2xl bg-surface/40 ${complete ? '' : 'ring-1 ring-gold/30'}`}>
       {/* Question header */}
       <div className="flex items-center gap-2 px-3 py-3">
         <button
@@ -1086,7 +1086,7 @@ function QuestionCard({
         `}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="space-y-3 border-t border-white/5 p-4">
+          <div className="space-y-3 px-4 pb-4 pt-1">
             <textarea
               value={question.text}
               onChange={(e) => onChange(index, 'text', e.target.value)}
