@@ -46,7 +46,7 @@ export class PexelsService {
     }
 
     const url = `${this.API_URL}/search?query=${encodeURIComponent(
-      query.trim(),
+      query.trim().slice(0, 100),
     )}&per_page=${perPage}&page=${page}&orientation=landscape`;
 
     console.log(`[pexels] Searching: "${query}"`);

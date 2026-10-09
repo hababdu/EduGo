@@ -1,10 +1,10 @@
-import { IsArray, IsOptional, IsString } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class SubmitAnswerDto {
-  @IsString() questionId: string;
+  @IsString() @MaxLength(40) questionId: string;
 
-  @IsOptional() @IsArray() @IsString({ each: true })
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(40, { each: true })
   selectedOptionIds?: string[];
 
-  @IsOptional() @IsString() textAnswer?: string;
+  @IsOptional() @IsString() @MaxLength(5000) textAnswer?: string;
 }

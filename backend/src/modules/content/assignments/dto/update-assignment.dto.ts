@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, ValidateNested } from 'class-validator';
 import { AssignmentCategory, AssignmentType, TestQuestionDto } from './create-assignment.dto';
 
 /**
@@ -19,7 +19,8 @@ export class UpdateAssignmentDto {
   @IsOptional() @IsEnum(AssignmentCategory)
   category?: AssignmentCategory;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(1000)
+  @Matches(/^(https?:\/\/\S+)?$/i, { message: 'Havola faqat http(s):// bilan boshlansin' })
   mediaUrl?: string;
 
   @IsOptional() @IsString() @IsNotEmpty()

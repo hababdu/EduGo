@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { seededShuffle } from './seeded-shuffle.util';
@@ -23,6 +23,7 @@ export class TestSessionService {
   async start(testId: string, studentId: string) {
     const test = await this.getPublishedTestOrThrow(testId);
     this.assertWithinSchedule(test);
+    await this.assertAssigned(testId, studentId);
 
     // 25-band: bir marta ishlash
     const existingAttempt = await this.prisma.testAttempt.findUnique({
@@ -77,8 +78,24 @@ export class TestSessionService {
   async saveAnswer(testId: string, studentId: string, dto: SubmitAnswerDto) {
     const session = await this.getActiveSessionOrThrow(testId, studentId);
 
+    // Vaqt tugagach javob qabul qilinmaydi (server vaqti — frontend taymeriga ishonilmaydi); 3 soniya tarmoq zaxirasi
+    if (this.computeRemainingSeconds(session) <= 0 && this.elapsedOverSeconds(session) > 3) {
+      throw new ForbiddenException('⏰ Test vaqti tugagan');
+    }
+
     if (!session.selectedQuestionIds.includes(dto.questionId)) {
       throw new BadRequestException('Bu savol ushbu sessiyaga tegishli emas');
+    }
+
+    // Faqat shu savolning o'z variantlari qabul qilinadi
+    if (dto.selectedOptionIds?.length) {
+      const valid = await this.prisma.answerOption.findMany({
+        where: { questionId: dto.questionId, id: { in: dto.selectedOptionIds } },
+        select: { id: true },
+      });
+      if (valid.length !== new Set(dto.selectedOptionIds).size) {
+        throw new BadRequestException("Variant bu savolga tegishli emas");
+      }
     }
 
     return this.prisma.testAnswer.upsert({
@@ -126,12 +143,35 @@ export class TestSessionService {
   async submit(testId: string, studentId: string) {
     const session = await this.getActiveSessionOrThrow(testId, studentId);
     const test = await this.getPublishedTestOrThrow(testId);
-    return this.gradeAndFinish(session, test, false);
+    // Vaqti o'tgan bo'lsa — oddiy topshirish emas, avtomatik yakunlash (javoblar vaqt ichida saqlanganlari bilan)
+    const expired = this.computeRemainingSeconds(session) <= 0 && this.elapsedOverSeconds(session) > 3;
+    return this.gradeAndFinish(session, test, expired);
   }
 
   // ---------------------------------------------------------------
 
   private async gradeAndFinish(session: any, test: any, isAutoSubmit: boolean) {
+    // Atomik "egallash": parallel ikki submit ikki marta ball bermasligi uchun faqat bittasi o'tadi
+    const claimed = await this.prisma.testSession.updateMany({
+      where: { id: session.id, status: 'IN_PROGRESS' },
+      data: { status: isAutoSubmit ? 'EXPIRED' : 'SUBMITTED' },
+    });
+    if (claimed.count === 0) {
+      throw new ConflictException('Test allaqachon yakunlangan');
+    }
+    try {
+      return await this.gradeClaimed(session, test, isAutoSubmit);
+    } catch (e) {
+      // baholash yiqilsa — sessiyani qaytaramiz, talaba qayta urinib ko'ra olsin
+      await this.prisma.testSession.updateMany({
+        where: { id: session.id },
+        data: { status: 'IN_PROGRESS' },
+      });
+      throw e;
+    }
+  }
+
+  private async gradeClaimed(session: any, test: any, isAutoSubmit: boolean) {
     const [answers, questions] = await Promise.all([
       this.prisma.testAnswer.findMany({ where: { sessionId: session.id } }),
       this.prisma.question.findMany({
@@ -301,6 +341,34 @@ export class TestSessionService {
   private computeRemainingSeconds(session: { startedAt: Date; durationSeconds: number }): number {
     const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000;
     return Math.max(0, Math.round(session.durationSeconds - elapsed));
+  }
+
+  /** Tugash vaqtidan necha soniya o'tgani (0 dan kichik bo'lmaydi) */
+  private elapsedOverSeconds(session: { startedAt: Date; durationSeconds: number }): number {
+    const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000;
+    return Math.max(0, elapsed - session.durationSeconds);
+  }
+
+  /** Talaba bu testga haqiqatan biriktirilganmi (barcha / guruh / shaxsiy) va muddat o'tmaganmi */
+  private async assertAssigned(testId: string, studentId: string) {
+    const groupIds = (
+      await this.prisma.groupMember.findMany({ where: { studentId }, select: { groupId: true } })
+    ).map((g) => g.groupId);
+    const now = new Date();
+    const a = await this.prisma.testAssignment.findFirst({
+      where: {
+        testId,
+        status: 'ACTIVE',
+        OR: [
+          { targetType: 'ALL' },
+          { targetType: 'GROUP', groupId: { in: groupIds } },
+          { targetType: 'INDIVIDUAL', studentId },
+        ],
+        AND: [{ OR: [{ deadline: null }, { deadline: { gt: now } }] }],
+      },
+      select: { id: true },
+    });
+    if (!a) throw new ForbiddenException('Bu test sizga biriktirilmagan yoki muddati tugagan');
   }
 
   private pickRandom<T>(arr: T[], count: number): T[] {

@@ -25,7 +25,7 @@ export class QuestionsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.questionsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.questionsService.remove(id, user);
   }
 }

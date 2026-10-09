@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 /**
  * Telegram bot backend bilan foydalanuvchi tokeni orqali emas,
@@ -19,7 +20,11 @@ export class InternalAuthGuard implements CanActivate {
     const provided = request.headers['x-internal-secret'];
     const expected = this.configService.get<string>('BOT_INTERNAL_SECRET');
 
-    if (!expected || provided !== expected) {
+    const a = Buffer.from(typeof provided === 'string' ? provided : '');
+    const b = Buffer.from(expected ?? '');
+    // Doimiy vaqtli solishtirish (timing hujumidan himoya)
+    const ok = !!expected && a.length === b.length && crypto.timingSafeEqual(a, b);
+    if (!ok) {
       throw new UnauthorizedException('Ichki so\'rov kaliti noto\'g\'ri');
     }
     return true;

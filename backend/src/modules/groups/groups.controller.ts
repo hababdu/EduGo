@@ -27,7 +27,13 @@ export class GroupsController {
 
   @Get(':id')
   async findOne(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.groupsService.findOneOrThrow(id, user);
+    const group = await this.groupsService.findOneOrThrow(id, user);
+    // Talaba sinfdoshlarining ID/ro'yxatini ko'rmasligi kerak — faqat son
+    if (user.role === 'STUDENT') {
+      const { members, ...rest } = group as any;
+      return { ...rest, memberCount: members?.length ?? 0 };
+    }
+    return group;
   }
 
   @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')

@@ -71,6 +71,9 @@ export class AuthService {
         if (!user) throw e;
       }
     } else {
+      if (user.deletedAt) {
+        throw new UnauthorizedException("Akkaunt topilmadi");
+      }
       if (user.status === 'BLOCKED') {
         throw new UnauthorizedException(
           'Sizning akkauntingiz bloklangan. Administrator bilan bog\'laning.',
@@ -115,22 +118,35 @@ export class AuthService {
       where: { tokenHash },
     });
 
-    if (!stored || stored.revokedAt || stored.expiresAt < new Date()) {
+    if (!stored || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh token yaroqsiz, qayta login qiling');
+    }
+
+    // Allaqachon ishlatilgan (bekor qilingan) token qayta kelsa — o'g'irlangan bo'lishi mumkin:
+    // shu foydalanuvchining barcha faol sessiyalarini yopamiz
+    if (stored.revokedAt) {
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: stored.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
       throw new UnauthorizedException('Refresh token yaroqsiz, qayta login qiling');
     }
 
     const user = await this.prisma.user.findUnique({
       where: { id: stored.userId },
     });
-    if (!user || user.status === 'BLOCKED') {
+    if (!user || user.status === 'BLOCKED' || user.deletedAt) {
       throw new UnauthorizedException('Akkaunt topilmadi yoki bloklangan');
     }
 
-    // eski tokenni bekor qilamiz (rotation — takroriy ishlatishning oldini oladi)
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
+    // Atomik bekor qilish (rotation): parallel ikki so'rovdan faqat bittasi o'tadi
+    const claimed = await this.prisma.refreshToken.updateMany({
+      where: { id: stored.id, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+    if (claimed.count === 0) {
+      throw new UnauthorizedException('Refresh token yaroqsiz, qayta login qiling');
+    }
 
     const tokens = await this.issueTokens(user.id, user.role);
 

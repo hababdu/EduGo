@@ -13,7 +13,7 @@ export class RankingController {
   @Get('global')
   async getGlobal(@Query('limit') limit: string, @CurrentUser() user: CurrentUserPayload) {
     const [top, yourRank] = await Promise.all([
-      this.rankingService.getGlobalRanking(limit ? Number(limit) : 20),
+      this.rankingService.getGlobalRanking(Math.min(100, Math.max(1, Math.floor(Number(limit)) || 20))),
       this.rankingService.getStudentRank(user.id),
     ]);
     return { top, yourRank };

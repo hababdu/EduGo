@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsArray, ValidateNested, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsArray, ValidateNested, IsNumber, Matches, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum AssignmentType {
@@ -46,6 +46,8 @@ export class CreateAssignmentDto {
 
   @IsString({ message: 'Media URL matn ko\'rinishida bo\'lishi kerak' })
   @IsOptional()
+  @MaxLength(1000)
+  @Matches(/^(https?:\/\/\S+)?$/i, { message: 'Havola faqat http(s):// bilan boshlansin' })
   mediaUrl?: string;
 
   @IsString({ message: 'Guruh ID si matn ko\'rinishida bo\'lishi kerak' })

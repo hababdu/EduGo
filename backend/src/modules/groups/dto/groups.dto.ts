@@ -70,6 +70,7 @@ export class CreateGroupDto extends ScheduleFields {
   @IsOptional()
   @IsString()
   @MaxLength(1000, { message: 'Poster URL 1000 ta belgidan oshmasin' })
+  @Matches(/^((https?:\/\/|\/uploads\/)\S+)?$/i, { message: 'Havola faqat http(s):// bilan boshlansin' })
   posterUrl?: string;
 
   @IsOptional()

@@ -379,6 +379,11 @@ export class TestManagementService {
       throw new ForbiddenException('Bu test sizga tegishli emas');
     }
 
+    // Hamma o'quvchilarga biriktirish (va ommaviy bildirishnoma) — faqat administrator
+    if (dto.targetType === 'ALL' && actorRole === 'TEACHER') {
+      throw new ForbiddenException("Testni barcha o'quvchilarga faqat administrator biriktira oladi");
+    }
+
     if (dto.targetType === 'GROUP' && !dto.groupId) {
       throw new BadRequestException('GROUP turi uchun groupId majburiy');
     }

@@ -43,6 +43,11 @@ function ensureUploadsDir(): string {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Render (va boshqa proksi) ortida haqiqiy mijoz IP'sini olish uchun. Busiz so'rov limiti (Throttler)
+  // barcha foydalanuvchilarni BITTA IP (proksi) deb sanardi: biri limitga tushsa hamma bloklanardi.
+  app.set('trust proxy', 1);
+  app.disable('x-powered-by');
+
   // ✅ Uploads papka avtomatik yaratish — ENG MUHIM QADAM
   const uploadsDir = ensureUploadsDir();
 
@@ -67,6 +72,11 @@ async function bootstrap() {
   );
 
   const allowedOrigins = buildAllowedOrigins();
+  if (allowedOrigins.length === 0 && process.env.NODE_ENV === 'production') {
+    console.warn(
+      "[main] ⚠️ WEBAPP_URL / ALLOWED_ORIGINS belgilanmagan — CORS hamma originga ochiq. Render'da WEBAPP_URL ni kiriting!",
+    );
+  }
   app.enableCors({
     origin: (origin, callback) => {
       if (

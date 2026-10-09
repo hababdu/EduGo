@@ -18,6 +18,8 @@ describe('TestSessionService — 25-band: testni bir marta ishlash qoidasi', () 
     testSession: { findUnique: jest.Mock; create: jest.Mock };
     testQuestion: { findMany: jest.Mock };
     question: { findMany: jest.Mock };
+    groupMember: { findMany: jest.Mock };
+    testAssignment: { findFirst: jest.Mock };
   };
 
   const PUBLISHED_TEST = {
@@ -38,6 +40,8 @@ describe('TestSessionService — 25-band: testni bir marta ishlash qoidasi', () 
       testSession: { findUnique: jest.fn(), create: jest.fn() },
       testQuestion: { findMany: jest.fn().mockResolvedValue([]) },
       question: { findMany: jest.fn().mockResolvedValue([]) },
+      groupMember: { findMany: jest.fn().mockResolvedValue([]) },
+      testAssignment: { findFirst: jest.fn().mockResolvedValue({ id: 'asg-1' }) },
     };
 
     const moduleRef = await Test.createTestingModule({
@@ -116,5 +120,58 @@ describe('TestSessionService — 25-band: testni bir marta ishlash qoidasi', () 
     });
 
     await expect(service.start('test-1', 'student-1')).rejects.toThrow(ForbiddenException);
+  });
+});
+
+describe('TestSessionService — xavfsizlik', () => {
+  const T = { id: 't1', status: 'PUBLISHED', deletedAt: null, startDate: null, endDate: null, durationSeconds: 600, passingScore: 50 };
+  const mk = (extra: any = {}) => {
+    const prisma: any = {
+      test: { findUnique: jest.fn().mockResolvedValue(T) },
+      testAttempt: { findUnique: jest.fn().mockResolvedValue(null) },
+      testSession: { findUnique: jest.fn(), create: jest.fn(), updateMany: jest.fn() },
+      testQuestion: { findMany: jest.fn().mockResolvedValue([]) },
+      question: { findMany: jest.fn().mockResolvedValue([]) },
+      groupMember: { findMany: jest.fn().mockResolvedValue([]) },
+      testAssignment: { findFirst: jest.fn().mockResolvedValue(null) },
+      answerOption: { findMany: jest.fn().mockResolvedValue([]) },
+      testAnswer: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn() },
+      ...extra,
+    };
+    const svc = new TestSessionService(prisma, { emit: jest.fn() } as any, {} as any, { notify: jest.fn() } as any);
+    return { svc, prisma };
+  };
+
+  it('biriktirilmagan testni boshlab bo\'lmaydi', async () => {
+    const { svc, prisma } = mk();
+    await expect(svc.start('t1', 's1')).rejects.toThrow(/biriktirilmagan/);
+    expect(prisma.testSession.create).not.toHaveBeenCalled();
+  });
+
+  it('vaqti tugagach javob saqlanmaydi', async () => {
+    const { svc, prisma } = mk();
+    prisma.testSession.findUnique.mockResolvedValue({
+      id: 'x', status: 'IN_PROGRESS', startedAt: new Date(Date.now() - 700_000), durationSeconds: 600, selectedQuestionIds: ['q1'],
+    });
+    await expect(svc.saveAnswer('t1', 's1', { questionId: 'q1', selectedOptionIds: ['o1'] })).rejects.toThrow(/vaqti tugagan/);
+    expect(prisma.testAnswer.upsert).not.toHaveBeenCalled();
+  });
+
+  it("boshqa savolning variantini yuborib bo'lmaydi", async () => {
+    const { svc, prisma } = mk();
+    prisma.testSession.findUnique.mockResolvedValue({
+      id: 'x', status: 'IN_PROGRESS', startedAt: new Date(), durationSeconds: 600, selectedQuestionIds: ['q1'],
+    });
+    prisma.answerOption.findMany.mockResolvedValue([]);
+    await expect(svc.saveAnswer('t1', 's1', { questionId: 'q1', selectedOptionIds: ['alien'] })).rejects.toThrow(/tegishli emas/);
+  });
+
+  it("parallel ikkinchi submit — 409, ball ikki marta berilmaydi", async () => {
+    const { svc, prisma } = mk();
+    prisma.testSession.findUnique.mockResolvedValue({
+      id: 'x', status: 'IN_PROGRESS', startedAt: new Date(), durationSeconds: 600, selectedQuestionIds: [], studentId: 's1',
+    });
+    prisma.testSession.updateMany.mockResolvedValue({ count: 0 });
+    await expect(svc.submit('t1', 's1')).rejects.toThrow(/allaqachon yakunlangan/);
   });
 });

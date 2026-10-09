@@ -21,8 +21,8 @@ export class UploadController {
   ) {
     return this.pexelsService.searchPhotos(
       query,
-      perPage ? Number(perPage) : 24,
-      page ? Number(page) : 1,
+      Math.min(40, Math.max(1, Math.floor(Number(perPage)) || 24)),
+      Math.min(50, Math.max(1, Math.floor(Number(page)) || 1)),
     );
   }
 }

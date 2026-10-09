@@ -35,6 +35,10 @@ export function verifyTelegramInitData(
   if (!hash) {
     throw new Error('initData ichida hash topilmadi');
   }
+  // Noto'g'ri uzunlik/belgi bo'lsa timingSafeEqual RangeError (500) tashlaydi — oldindan 401 qilamiz
+  if (!/^[0-9a-f]{64}$/i.test(hash)) {
+    throw new Error("initData imzosi noto'g'ri formatda");
+  }
   params.delete('hash');
 
   // 1. data_check_string: qolgan barcha field'lar alifbo tartibida, key=value, \n bilan ajratilgan
@@ -74,6 +78,9 @@ export function verifyTelegramInitData(
     throw new Error('auth_date topilmadi');
   }
   const nowSeconds = Math.floor(Date.now() / 1000);
+  if (authDate - nowSeconds > 300) {
+    throw new Error("initData vaqti noto'g'ri (kelajakda)");
+  }
   if (nowSeconds - authDate > MAX_AUTH_AGE_SECONDS) {
     throw new Error('initData muddati o\'tgan, iltimos botni qayta oching');
   }

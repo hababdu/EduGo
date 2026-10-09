@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../prisma/prisma.service';
 import { RankingService } from './ranking.service';
 
 interface ScoreChangedPayload {
@@ -50,6 +51,7 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
   constructor(
     private readonly jwtService: JwtService,
     private readonly rankingService: RankingService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /** Handshake orqali JWT tekshiriladi — anonim ulanishlarga ruxsat yo'q */
@@ -59,7 +61,14 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       if (!token) throw new Error('Token berilmagan');
 
       const payload = this.jwtService.verify(token);
-      client.data.userId = payload.sub;
+      // Bloklangan/o'chirilgan foydalanuvchi (token hali tirik bo'lsa ham) ulana olmaydi; rol bazadan olinadi
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { id: true, role: true, status: true, deletedAt: true },
+      });
+      if (!user || user.status === 'BLOCKED' || user.deletedAt) throw new Error('Foydalanuvchi yaroqsiz');
+      client.data.userId = user.id;
+      client.data.role = user.role;
 
       // Har bir user avtomatik o'z shaxsiy room'iga qo'shiladi
       await client.join(`user:${payload.sub}`);
@@ -75,17 +84,36 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   /** Frontend reyting sahifasini ochganda shu eventni yuboradi: socket.emit('join:ranking', {scope:'global'}) */
   @SubscribeMessage('join:ranking')
-  handleJoinRanking(
+  async handleJoinRanking(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { scope: 'global' | 'group' | 'subject'; id?: string },
   ) {
+    if (!client.data?.userId || !data || typeof data !== 'object') return;
+    const id = typeof data.id === 'string' && data.id.length <= 40 ? data.id : undefined;
+
     if (data.scope === 'global') {
-      client.join('ranking:global');
-    } else if (data.scope === 'group' && data.id) {
-      client.join(`ranking:group:${data.id}`);
-    } else if (data.scope === 'subject' && data.id) {
-      client.join(`ranking:subject:${data.id}`);
+      await client.join('ranking:global');
+    } else if (data.scope === 'group' && id) {
+      // Guruh reytingiga faqat shu guruh a'zosi, uning o'qituvchisi yoki admin qo'shila oladi
+      if (await this.canSeeGroup(client.data.userId, client.data.role, id)) {
+        await client.join(`ranking:group:${id}`);
+      }
+    } else if (data.scope === 'subject' && id) {
+      await client.join(`ranking:subject:${id}`);
     }
+  }
+
+  private async canSeeGroup(userId: string, role: string, groupId: string): Promise<boolean> {
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') return true;
+    const group = await this.prisma.group.findFirst({
+      where: {
+        id: groupId,
+        deletedAt: null,
+        OR: [{ teacherId: userId }, { members: { some: { studentId: userId } } }],
+      },
+      select: { id: true },
+    });
+    return !!group;
   }
 
   /**

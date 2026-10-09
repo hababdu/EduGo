@@ -10,6 +10,7 @@ import {
   IsOptional,
   IsString,
   MaxLength,
+  Matches,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -57,6 +58,7 @@ export class CreateAssignmentDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)
+  @Matches(/^(https?:\/\/\S+)?$/i, { message: 'Havola faqat http(s):// bilan boshlansin' })
   mediaUrl?: string;
 
   /** Bitta guruh (eski mijozlar uchun) — yoki groupIds */
@@ -119,6 +121,7 @@ export class UpdateAssignmentDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)
+  @Matches(/^(https?:\/\/\S+)?$/i, { message: 'Havola faqat http(s):// bilan boshlansin' })
   mediaUrl?: string;
 
   @IsOptional()

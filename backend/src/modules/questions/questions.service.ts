@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateQuestionDto, QuestionFilterDto } from './dto/question.dto';
 
@@ -66,9 +66,13 @@ export class QuestionsService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actor: { id: string; role: string }) {
     const existing = await this.prisma.question.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Savol topilmadi');
+    // O'qituvchi faqat O'Z savolini o'chira oladi (boshqalarnikini sabotaj qilib bo'lmasin); admin — hammasini
+    if (actor.role === 'TEACHER' && existing.createdById !== actor.id) {
+      throw new ForbiddenException("Bu savol sizga tegishli emas");
+    }
     // Soft delete — bu savol ishlatilgan eski testlar buzilmasligi uchun (64-band)
     await this.prisma.question.update({ where: { id }, data: { deletedAt: new Date() } });
   }

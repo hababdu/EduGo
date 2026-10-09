@@ -10,6 +10,8 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
+  MaxLength,
   ValidateNested,
   ArrayMaxSize,
 } from 'class-validator';
@@ -21,6 +23,7 @@ import { Type } from 'class-transformer';
 export class QuestionDraftDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(3000)
   text: string;
 
   @IsIn(['EASY', 'MEDIUM', 'HARD'])
@@ -29,12 +32,14 @@ export class QuestionDraftDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   points: number;
 
   @IsArray()
   @ArrayMinSize(2)
   @ArrayMaxSize(6)
   @IsString({ each: true })
+  @MaxLength(500, { each: true })
   options: string[];
 
   @Type(() => Number)
@@ -49,10 +54,12 @@ export class QuestionDraftDto {
 export class CreateTestDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   title: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   // ❌ subjectId OLIB TASHLANDI
@@ -64,11 +71,13 @@ export class CreateTestDto {
   @Type(() => Number)
   @IsInt()
   @Min(10)
+  @Max(6 * 3600)
   durationSeconds: number;
 
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   passingScore: number;
 
   @IsOptional()
@@ -82,17 +91,21 @@ export class CreateTestDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(1)
+  @Max(200)
   questionCount?: number;
 
   // 👇 Test yaratilganda biriktiriladigan guruhlar
   @IsArray()
   @ArrayMinSize(1, { message: 'Kamida 1 ta guruh tanlanishi kerak' })
+  @ArrayMaxSize(50)
   @IsString({ each: true })
   groupIds: string[];
 
   // 👇 Ixtiyoriy: bankdan savollar
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(200)
   @IsString({ each: true })
   questionIds?: string[];
 
