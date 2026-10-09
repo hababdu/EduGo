@@ -39,6 +39,9 @@ export class GenerateQuestionsDto {
 
   @IsIn(DIFF)
   difficulty: (typeof DIFF)[number];
+
+  @IsOptional() @IsString() @MaxLength(40)
+  assignmentId?: string;
 }
 
 export class GenerateSingleQuestionDto {
@@ -50,6 +53,9 @@ export class GenerateSingleQuestionDto {
 
   @IsOptional() @IsArray() @ArrayMaxSize(50) @IsString({ each: true }) @MaxLength(500, { each: true })
   avoidTexts?: string[];
+
+  @IsOptional() @IsString() @MaxLength(40)
+  assignmentId?: string;
 }
 
 export class GradeAnswerDto {

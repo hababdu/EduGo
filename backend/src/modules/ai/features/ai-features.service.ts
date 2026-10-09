@@ -1,6 +1,8 @@
 // src/modules/ai/features/ai-features.service.ts
 import { Injectable } from '@nestjs/common';
 import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
+import { UnprocessableEntityException } from '@nestjs/common';
+import { MaterialContextService } from '../../materials/material-context.service';
 import { AiConfig } from '../ai.config';
 import { AiService } from '../ai.service';
 import { AiAccessService } from './ai-access.service';
@@ -24,7 +26,20 @@ export class AiFeaturesService {
     private readonly ai: AiService,
     private readonly access: AiAccessService,
     private readonly cfg: AiConfig,
+    private readonly materialCtx: MaterialContextService,
   ) {}
+
+  /** assignmentId berilsa — material matni (+PDF/DOCX/TXT) o'qiladi; matn bo'sh bo'lsa 422. */
+  private async source(user: CurrentUserPayload, assignmentId?: string) {
+    if (!assignmentId) return undefined;
+    const ctx = await this.materialCtx.build(user, assignmentId);
+    if (ctx.text.trim().length < 80) {
+      throw new UnprocessableEntityException(
+        "Materialda AI o'qiy oladigan matn yo'q. Tavsif yozing yoki matnli PDF/DOCX/TXT biriktiring.",
+      );
+    }
+    return ctx;
+  }
 
   private json<T>(user: CurrentUserPayload, feature: string, spec: P.PromptSpec, tier: 'fast' | 'smart' = 'fast') {
     return this.ai.completeJson<T>(
@@ -48,12 +63,17 @@ export class AiFeaturesService {
   }
 
   async questions(user: CurrentUserPayload, dto: GenerateQuestionsDto) {
-    const raw = await this.json(user, 'generate-questions', P.questionsPrompt(dto));
-    return { questions: P.normalizeQuestions(raw, dto.count) };
+    const ctx = await this.source(user, dto.assignmentId);
+    const raw = await this.json(user, 'generate-questions', P.withSource(P.questionsPrompt(dto), ctx?.text), ctx ? 'smart' : 'fast');
+    return {
+      questions: P.normalizeQuestions(raw, dto.count),
+      ...(ctx ? { source: { title: ctx.title, used: ctx.used, skipped: ctx.skipped } } : {}),
+    };
   }
 
   async singleQuestion(user: CurrentUserPayload, dto: GenerateSingleQuestionDto) {
-    const raw = await this.json(user, 'generate-question', P.singleQuestionPrompt(dto));
+    const ctx = await this.source(user, dto.assignmentId);
+    const raw = await this.json(user, 'generate-question', P.withSource(P.singleQuestionPrompt(dto), ctx?.text), ctx ? 'smart' : 'fast');
     return P.normalizeSingleQuestion(raw);
   }
 

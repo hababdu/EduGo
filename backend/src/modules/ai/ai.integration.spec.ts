@@ -11,6 +11,7 @@ import { AiService } from './ai.service';
 import { AiUsageService } from './ai-usage.service';
 import { AiAccessService } from './features/ai-access.service';
 import { AiFeaturesController } from './features/ai-features.controller';
+import { MaterialContextService } from '../materials/material-context.service';
 import { AiFeaturesService } from './features/ai-features.service';
 import { AnthropicProvider } from './providers/anthropic.provider';
 import { GeminiProvider } from './providers/gemini.provider';
@@ -87,6 +88,7 @@ describe('AI zanjiri (soxta provayder serverlari bilan)', () => {
         { provide: ConfigService, useValue: { get: (k: string) => env[k] } },
         { provide: PrismaService, useValue: prisma },
         AiConfig, AiUsageService, AnthropicProvider, GroqProvider, GeminiProvider, AiService, AiAccessService, AiFeaturesService,
+        { provide: MaterialContextService, useValue: { build: jest.fn() } },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
         { provide: APP_GUARD, useClass: RolesGuard },
       ],

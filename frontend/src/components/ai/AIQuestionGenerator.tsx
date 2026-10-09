@@ -7,7 +7,9 @@ import {
   AIServiceError,
   type GeneratedQuestion,
   type Difficulty,
+  type QuestionsSource,
 } from '../../lib/ai-service';
+import { useTeacherAssignments } from '../../hooks/useTeacherAssignments';
 import { AIGenerateModal } from './AIGenerateModal';
 
 type DifficultyInput = Difficulty | 'MIXED';
@@ -41,7 +43,16 @@ export function AIQuestionGenerator({
 }: AIQuestionGeneratorProps) {
   const { haptic, hapticNotify } = useTelegram();
 
-  const [topic, setTopic] = useState('');
+  const [mode, setMode] = useState<'MATERIAL' | 'TOPIC'>('MATERIAL');
+  const [assignmentId, setAssignmentId] = useState('');
+  const [source, setSource] = useState<QuestionsSource | null>(null);
+  const { data: assignments, isLoading: assignmentsLoading } = useTeacherAssignments();
+  const selected = assignments?.find((a) => a.id === assignmentId);
+  const [topicInput, setTopicInput] = useState('');
+  // Material rejimida mavzu — material sarlavhasi; mavzu rejimida — qo'lda yozilgan
+  const topic = mode === 'MATERIAL' ? selected?.title ?? '' : topicInput;
+  const setTopic = setTopicInput;
+  const srcId = mode === 'MATERIAL' ? assignmentId : undefined;
   const [count, setCount] = useState(5);
   const [difficulty, setDifficulty] = useState<DifficultyInput>('MIXED');
 
@@ -71,7 +82,7 @@ export function AIQuestionGenerator({
   const handleGenerate = useCallback(async () => {
     if (!topic.trim()) {
       hapticNotify('error');
-      toast('error', 'Mavzuni kiriting!');
+      toast('error', mode === 'MATERIAL' ? 'Materialni tanlang!' : 'Mavzuni kiriting!');
       return;
     }
     if (count < 1 || count > 20) {
@@ -86,11 +97,14 @@ export function AIQuestionGenerator({
     setRevealedCount(0);
 
     try {
-      const generated = await generateQuestions({
+      const res = await generateQuestions({
         topic: topic.trim(),
         count,
         difficulty,
+        assignmentId: srcId,
       });
+      const generated = res.questions;
+      setSource(res.source ?? null);
 
       if (generated.length === 0) {
         hapticNotify('error');
@@ -115,17 +129,18 @@ export function AIQuestionGenerator({
     } finally {
       setIsGenerating(false);
     }
-  }, [topic, count, difficulty, haptic, hapticNotify]);
+  }, [topic, count, difficulty, srcId, mode, haptic, hapticNotify]);
 
   const handleGenerateMore = useCallback(async () => {
     if (!topic.trim()) return;
     haptic('light');
     setIsGenerating(true);
     try {
-      const more = await generateQuestions({
+      const { questions: more } = await generateQuestions({
         topic: topic.trim(),
         count: 3,
         difficulty,
+        assignmentId: srcId,
       });
       if (more.length === 0) {
         toast('error', "Qo'shimcha savol yaratilmadi");
@@ -147,7 +162,7 @@ export function AIQuestionGenerator({
     } finally {
       setIsGenerating(false);
     }
-  }, [topic, difficulty, haptic, hapticNotify]);
+  }, [topic, difficulty, srcId, haptic, hapticNotify]);
 
   const handleRegenerate = useCallback(
     async (id: string) => {
@@ -161,6 +176,7 @@ export function AIQuestionGenerator({
           topic: topic.trim(),
           difficulty,
           avoidTexts,
+          assignmentId: srcId,
         });
         setDrafts((prev) =>
           prev.map((d) =>
@@ -178,7 +194,7 @@ export function AIQuestionGenerator({
         );
       }
     },
-    [drafts, topic, difficulty, haptic, hapticNotify],
+    [drafts, topic, difficulty, srcId, haptic, hapticNotify],
   );
 
   const handleDelete = (id: string) => {
@@ -197,6 +213,7 @@ export function AIQuestionGenerator({
     onAccept(drafts.map(({ _id, _regenerating, ...q }) => q));
     setDrafts([]);
     setTopic('');
+    setSource(null);
     handleClose();
   };
 
@@ -208,7 +225,7 @@ export function AIQuestionGenerator({
       onClose={handleClose}
       icon="✨"
       title="AI bilan savol yaratish"
-      subtitle="Mavzuni yozing, AI test savollarini tayyorlaydi"
+      subtitle={mode === 'MATERIAL' ? "Material (matn va PDF) asosida savollar tuziladi" : "Mavzuni yozing, AI test savollarini tayyorlaydi"}
       footer={
         hasResults ? (
           <div className="flex gap-2">
@@ -250,19 +267,65 @@ export function AIQuestionGenerator({
     >
       {!hasResults ? (
         <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs text-ink-muted font-medium">
-              Mavzu / fan nomi
-            </label>
-            <input
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="Masalan: Algebra — kvadrat tenglamalar"
-              disabled={isGenerating}
-              autoFocus
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
-            />
+          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-surface/60 p-1 border border-white/5">
+            {([['MATERIAL', 'Material asosida'], ['TOPIC', 'Mavzu bo\'yicha']] as const).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setMode(k)}
+                disabled={isGenerating}
+                className={`rounded-xl py-2.5 text-xs font-semibold transition ${
+                  mode === k ? 'bg-gold text-base' : 'text-ink-muted'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
+
+          {mode === 'MATERIAL' ? (
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Qaysi material asosida?</label>
+              {assignmentsLoading ? (
+                <div className="h-11 rounded-2xl bg-surface/50 animate-pulse" />
+              ) : !assignments || assignments.length === 0 ? (
+                <p className="rounded-2xl border border-white/10 bg-surface/40 p-3 text-xs text-ink-muted">
+                  Hali material yo'q. Avval material yarating yoki "Mavzu bo'yicha" rejimini tanlang.
+                </p>
+              ) : (
+                <select
+                  value={assignmentId}
+                  onChange={(e) => setAssignmentId(e.target.value)}
+                  disabled={isGenerating}
+                  className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+                >
+                  <option value="">Materialni tanlang...</option>
+                  {assignments.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title}
+                      {a.group?.name ? ` · ${a.group.name}` : ''}
+                      {a.files?.length ? ` · ${a.files.length} fayl` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-[11px] text-ink-muted leading-relaxed">
+                AI materialning tavsifi va biriktirilgan PDF, DOCX, TXT fayllarini o'qiydi. Savollar faqat shu
+                ma'lumotdan tuziladi. Rasm va videolar o'qilmaydi.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs text-ink-muted font-medium">Mavzu / fan nomi</label>
+              <input
+                value={topicInput}
+                onChange={(e) => setTopicInput(e.target.value)}
+                placeholder="Masalan: Algebra — kvadrat tenglamalar"
+                disabled={isGenerating}
+                className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -313,6 +376,19 @@ export function AIQuestionGenerator({
         </div>
       ) : (
         <div className="space-y-2.5">
+          {source && (
+            <div className="rounded-2xl border border-teal/20 bg-teal/5 p-3 text-[11px] leading-relaxed text-ink-muted">
+              <p>
+                <span className="font-semibold text-teal">Manba:</span> {source.title}
+                {source.used.length > 0 && <> · o'qildi: {source.used.join(', ')}</>}
+              </p>
+              {source.skipped.length > 0 && (
+                <p className="mt-1 text-gold">
+                  O'qilmadi: {source.skipped.map((f) => `${f.name} (${f.reason})`).join('; ')}
+                </p>
+              )}
+            </div>
+          )}
           {drafts.map((q, index) => {
             const meta = DIFFICULTY_META[q.difficulty];
             const visible = index < revealedCount;

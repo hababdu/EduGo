@@ -13,7 +13,7 @@ const session = (minutesAgo: number, durationMin: number) => ({
   durationSeconds: durationMin * 60,
 });
 
-function build(opts: { sessions?: any[]; env?: Record<string, string>; jsonReply?: any; streamText?: string[] } = {}) {
+function build(opts: { material?: any; sessions?: any[]; env?: Record<string, string>; jsonReply?: any; streamText?: string[] } = {}) {
   const prisma: any = {
     testSession: { findMany: jest.fn().mockResolvedValue(opts.sessions ?? []) },
     user: { findUnique: jest.fn().mockResolvedValue({ firstName: 'Ali' }) },
@@ -27,8 +27,9 @@ function build(opts: { sessions?: any[]; env?: Record<string, string>; jsonReply
     }),
   };
   const cfg = new AiConfig({ get: (k: string) => opts.env?.[k] } as unknown as ConfigService);
-  const svc = new AiFeaturesService(ai, new AiAccessService(prisma), cfg);
-  return { svc, ai, prisma };
+  const materialCtx: any = { build: jest.fn().mockResolvedValue(opts.material ?? { title: 'T', text: '', used: [], skipped: [] }) };
+  const svc = new AiFeaturesService(ai, new AiAccessService(prisma), cfg, materialCtx);
+  return { svc, ai, prisma, materialCtx };
 }
 
 describe('AiFeaturesService — anti-cheat', () => {
@@ -107,5 +108,28 @@ describe('AiFeaturesService — funksiyalar', () => {
     })) out.push(t);
     expect(out).toEqual(['Sal', 'om']);
     expect(ai.stream.mock.calls[0][2].messages).toEqual([{ role: 'user', content: 'Savol' }]);
+  });
+});
+
+describe('AiFeaturesService — material asosida savollar', () => {
+  const dto = { topic: 'T', count: 3, difficulty: 'MIXED' as const, assignmentId: 'a1' };
+
+  it('material matni promptga <material> sifatida kiradi va manba qaytariladi', async () => {
+    const text = 'Fotosintez — o\'simliklar yorug\'likdan energiya olish jarayoni. '.repeat(5);
+    const { svc, ai } = build({
+      material: { title: 'Biologiya', text, used: ['a.pdf'], skipped: [] },
+      jsonReply: { questions: [{ text: 'q?', options: ['a', 'b'], correctAnswerIndex: 0 }] },
+    });
+    const res: any = await svc.questions(teacher, dto);
+    const call = ai.completeJson.mock.calls[0][2];
+    expect(call.messages[0].content).toContain('<material>');
+    expect(call.system).toContain('FAQAT <material>');
+    expect(res.source.used).toEqual(['a.pdf']);
+  });
+
+  it("matni yo'q material — 422, AI chaqirilmaydi", async () => {
+    const { svc, ai } = build({ material: { title: 'T', text: 'qisqa', used: [], skipped: [] } });
+    await expect(svc.questions(teacher, dto)).rejects.toThrow(/matn yo'q/);
+    expect(ai.completeJson).not.toHaveBeenCalled();
   });
 });

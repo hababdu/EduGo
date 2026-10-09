@@ -4,6 +4,7 @@ import { AdminModule } from '../admin/admin.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { DashboardModule } from '../dashboard/dashboard.module';
 import { GamificationModule } from '../gamification/gamification.module';
+import { MaterialsModule } from '../materials/materials.module';
 import { GroupsModule } from '../groups/groups.module';
 import { RankingModule } from '../ranking/ranking.module';
 import { TeacherModule } from '../teacher/teacher.module';
@@ -32,6 +33,7 @@ import { AssistantToolRegistry } from './assistant/assistant-tool.registry';
     DashboardModule,
     GamificationModule,
     GroupsModule,
+    MaterialsModule,
     RankingModule,
     TeacherModule,
     TestsModule,

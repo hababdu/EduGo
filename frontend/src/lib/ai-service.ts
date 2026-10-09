@@ -142,17 +142,25 @@ export function generateMaterial(params: {
   return post('material', { topic: params.topic, category: params.category });
 }
 
+export interface QuestionsSource {
+  title: string;
+  used: string[];
+  skipped: { name: string; reason: string }[];
+}
+
 export async function generateQuestions(params: {
   topic: string;
   count: number;
   difficulty: DifficultyInput;
-}): Promise<GeneratedQuestion[]> {
-  const res = await post<{ questions: GeneratedQuestion[] }>('questions', {
+  /** Berilsa — savollar FAQAT shu material (matn + PDF/DOCX/TXT) asosida tuziladi */
+  assignmentId?: string;
+}): Promise<{ questions: GeneratedQuestion[]; source?: QuestionsSource }> {
+  return post<{ questions: GeneratedQuestion[]; source?: QuestionsSource }>('questions', {
     topic: params.topic,
     count: params.count,
     difficulty: params.difficulty,
+    ...(params.assignmentId ? { assignmentId: params.assignmentId } : {}),
   });
-  return res.questions;
 }
 
 /** "🔄 Qayta yaratish" — mavjud savollarga o'xshamaydigan bitta yangi savol. */
@@ -160,10 +168,12 @@ export function generateSingleQuestion(params: {
   topic: string;
   difficulty: DifficultyInput;
   avoidTexts?: string[];
+  assignmentId?: string;
 }): Promise<GeneratedQuestion> {
   return post('question', {
     topic: params.topic,
     difficulty: params.difficulty,
+    ...(params.assignmentId ? { assignmentId: params.assignmentId } : {}),
     ...(params.avoidTexts?.length
       ? { avoidTexts: params.avoidTexts.slice(0, 50).map((t) => t.slice(0, 500)) }
       : {}),
