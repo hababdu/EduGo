@@ -66,5 +66,9 @@
       "**/*.(t|j)s"
     ],
     "testEnvironment": "node"
+  },
+  "overrides": {
+    "multer": "$multer",
+    "lodash": "^4.18.1"
   }
 }
