@@ -1,3 +1,4 @@
+import { toTashkentIso } from '../../lib/due';
 import { useState } from 'react';
 import { Check, Save, Rocket, Sparkles, X, Calendar } from '../../design/icons';
 import { CONTROL } from '../../design/tokens';
@@ -28,10 +29,6 @@ const LINK_TYPES: { key: Exclude<ContentType, 'TEXT' | 'FILE'>; label: string }[
   { key: 'IMAGE', label: 'Rasm' },
 ];
 
-/** Toshkent vaqti bilan kun oxiri (UTC+5) */
-function endOfDayTashkent(date: string): string {
-  return `${date}T23:59:00+05:00`;
-}
 
 interface Props {
   groups: GroupLite[];
@@ -87,7 +84,7 @@ export function MaterialComposer({ groups, defaultGroupId, onDone, onCancel }: P
         groupIds,
         fileIds: hasFiles ? files.map((f) => f.id) : undefined,
         status,
-        dueAt: due ? endOfDayTashkent(due) : undefined,
+        dueAt: due ? toTashkentIso(due) : undefined,
       },
       {
         onSuccess: (created) => {
@@ -217,7 +214,7 @@ export function MaterialComposer({ groups, defaultGroupId, onDone, onCancel }: P
       <Field label={category === 'HOMEWORK' ? 'Topshirish muddati' : 'Muddat (ixtiyoriy)'}>
         <div className="relative">
           <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-          <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={`${CONTROL.input} pl-9`} />
+          <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${CONTROL.input} pl-9`} />
         </div>
       </Field>
 

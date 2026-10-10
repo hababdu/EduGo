@@ -1,3 +1,4 @@
+import { formatDue } from '../../lib/due';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
@@ -92,7 +93,7 @@ export function HomeworkResultsPanel({ assignmentId }: { assignmentId: string })
         <div className="flex items-center justify-between gap-2 text-xs text-ink-muted">
           <span>
             {a.gradingStatus === 'RUNNING' ? '🤖 AI baholamoqda…' : a.gradingStatus === 'DONE' ? '✅ AI baholash tugagan'
-              : overdue || !a.dueAt ? '⏳ Baholash kutilmoqda' : `Muddat: ${new Date(a.dueAt!).toLocaleDateString('uz-UZ')} — tugagach AI avtomatik baholaydi`}
+              : overdue || !a.dueAt ? '⏳ Baholash kutilmoqda' : `Muddat: ${formatDue(a.dueAt!)} — tugagach AI avtomatik baholaydi`}
           </span>
           {pending && (
             <button onClick={() => grade.mutate()} disabled={grade.isPending} className="shrink-0 font-semibold text-gold bg-gold/10 px-3 py-2 rounded-xl disabled:opacity-50">

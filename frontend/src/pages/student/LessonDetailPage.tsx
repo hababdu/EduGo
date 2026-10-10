@@ -1,4 +1,5 @@
 // src/pages/student/LessonDetailPage.tsx
+import { formatDue } from '../../lib/due';
 import { StaffHero } from '../../components/staff';
 import { IMAGES } from '../../design/images';
 import { useEffect } from 'react';
@@ -176,7 +177,7 @@ export function LessonDetailPage() {
       {item.dueAt && (
         <div className="flex items-center gap-2 rounded-2xl border border-gold/20 bg-gold/10 px-4 py-3 text-sm text-gold">
           <span aria-hidden="true">⏰</span>
-          <span className="font-semibold">Muddat: {new Date(item.dueAt).toLocaleDateString('uz-UZ')}</span>
+          <span className="font-semibold">Muddat: {formatDue(item.dueAt)}</span>
         </div>
       )}
 

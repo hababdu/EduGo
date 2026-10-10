@@ -1,3 +1,4 @@
+import { formatDue } from '../../lib/due';
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
@@ -89,7 +90,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2 text-xs">
           <span className="text-ink-muted">
-            {data.assignment.dueAt ? `Muddat: ${new Date(data.assignment.dueAt).toLocaleDateString('uz-UZ')}` : 'Muddat belgilanmagan'}
+            {data.assignment.dueAt ? `Muddat: ${formatDue(data.assignment.dueAt)}` : 'Muddat belgilanmagan'}
           </span>
           {countdown && (
             <span className={`rounded-full px-2.5 py-1 font-semibold ${data.canSubmit ? 'bg-gold/15 text-gold' : 'bg-coral/15 text-coral'}`}>

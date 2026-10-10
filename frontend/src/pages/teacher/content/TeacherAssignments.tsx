@@ -1,4 +1,5 @@
 // src/pages/teacher/TeacherAssignments.tsx
+import { formatDue } from '../../../lib/due';
 import { StaffHero } from '../../../components/staff';
 import { IMAGES } from '../../../design/images';
 import { useState, useMemo } from 'react';
@@ -266,7 +267,7 @@ export function TeacherAssignments() {
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[11px] text-ink-muted">
                     {item.group && <span>{item.group.name}</span>}
                     {!!item.files?.length && <span>{item.files.length} ta fayl</span>}
-                    {item.dueAt && <span>Muddat: {new Date(item.dueAt).toLocaleDateString('uz-UZ')}</span>}
+                    {item.dueAt && <span>Muddat: {formatDue(item.dueAt)}</span>}
                     {item.status !== 'DRAFT' && item.stats && item.stats.total > 0 && (
                       <span className={item.stats.viewed === item.stats.total ? 'text-teal' : ''}>
                         Ko'rgan: {item.stats.viewed}/{item.stats.total}

@@ -19,6 +19,7 @@ import { Edit3, Trash2, ExternalLink, X, Rocket, EyeOff, Eye, Calendar, ChevronL
 import { CONTROL, PAGE } from '../../../design/tokens';
 import { IMAGES } from '../../../design/images';
 import { HomeworkResultsPanel } from '../../../components/homework/HomeworkResultsPanel';
+import { toTashkentIso, fromIsoToLocal, formatDue } from '../../../lib/due';
 import { isHttpUrl, youtubeEmbed } from '../../../lib/safe-url';
 import { deleteMaterialFile, type MaterialFileDto } from '../../../lib/material-files';
 
@@ -27,13 +28,6 @@ const CATS: { key: AssignmentCategory; label: string }[] = [
   { key: 'HOMEWORK', label: 'Uy vazifasi' },
   { key: 'RESOURCE', label: "Qo'shimcha" },
 ];
-
-function toDateInput(iso?: string | null): string {
-  if (!iso) return '';
-  // Toshkent kalendar kuni (UTC+5)
-  const d = new Date(new Date(iso).getTime() + 5 * 3600_000);
-  return d.toISOString().slice(0, 10);
-}
 
 function personName(v: { firstName?: string | null; lastName?: string | null; username?: string | null }) {
   return `${v.firstName ?? ''} ${v.lastName ?? ''}`.trim() || v.username || "Noma'lum";
@@ -71,7 +65,7 @@ export function TeacherAssignmentDetail() {
     setMediaUrl(item.mediaUrl || '');
     setMediaType(['VIDEO', 'PDF', 'IMAGE'].includes(item.type) ? item.type : 'VIDEO');
     setGroupId(item.groupId || '');
-    setDue(toDateInput(item.dueAt));
+    setDue(fromIsoToLocal(item.dueAt));
     setFiles(item.files ?? []);
   };
 
@@ -111,7 +105,7 @@ export function TeacherAssignmentDetail() {
         groupId,
         mediaUrl: mediaUrl.trim(),
         fileIds: files.map((f) => f.id),
-        dueAt: due ? `${due}T23:59:00+05:00` : null,
+        dueAt: due ? toTashkentIso(due) : null,
         ...extra,
       },
       {
@@ -265,7 +259,7 @@ export function TeacherAssignmentDetail() {
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-                <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className={`${CONTROL.input} pl-9`} />
+                <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${CONTROL.input} pl-9`} />
               </div>
               {due && (
                 <button type="button" onClick={() => setDue('')} className="rounded-xl bg-white/5 p-3 text-ink-muted" aria-label="Muddatni olib tashlash">
@@ -298,7 +292,7 @@ export function TeacherAssignmentDetail() {
         </span>
         {item.dueAt && (
           <span className="inline-flex items-center gap-1 rounded-lg bg-gold/10 px-2.5 py-1 text-xs font-semibold text-gold">
-            <Calendar className="h-3.5 w-3.5" /> {new Date(item.dueAt).toLocaleDateString('uz-UZ')} gacha
+            <Calendar className="h-3.5 w-3.5" /> {formatDue(item.dueAt)} gacha
           </span>
         )}
       </div>

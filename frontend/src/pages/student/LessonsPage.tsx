@@ -1,4 +1,5 @@
 // src/pages/student/LessonsPage.tsx
+import { formatDue } from '../../lib/due';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -419,7 +420,7 @@ export function LessonsPage() {
                               )}
                               {item.dueAt && (
                                 <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-coral/10 text-coral">
-                                  ⏰ {new Date(item.dueAt).toLocaleDateString('uz-UZ')}
+                                  ⏰ {formatDue(item.dueAt)}
                                 </span>
                               )}
                               {item.viewed === false && (
