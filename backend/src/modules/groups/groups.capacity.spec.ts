@@ -4,11 +4,11 @@ import { validate } from 'class-validator';
 import { GroupsService } from './groups.service';
 import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
-const teacher: any = { id: 'tA', role: 'TEACHER' };
-const admin: any = { id: 'adm', role: 'ADMIN' };
+const teacher: any = { id: 'tA', role: 'TEACHER', organizationId: 'o1' };
+const admin: any = { id: 'adm', role: 'ADMIN', organizationId: 'o1' };
 
 function build(opts: { maxCapacity?: number | null; members?: number } = {}) {
-  const group = { id: 'g', teacherId: 'tA', deletedAt: null, maxCapacity: opts.maxCapacity ?? null, members: [] as any[], teacher: null };
+  const group = { id: 'g', organizationId: 'o1', teacherId: 'tA', deletedAt: null, maxCapacity: opts.maxCapacity ?? null, members: [] as any[], teacher: null };
   const tx: any = {
     group: { update: jest.fn().mockResolvedValue({}) },
     groupMember: {
@@ -18,7 +18,7 @@ function build(opts: { maxCapacity?: number | null; members?: number } = {}) {
   };
   const prisma: any = {
     group: { findUnique: jest.fn().mockResolvedValue(group), update: jest.fn().mockResolvedValue({}) },
-    user: { findFirst: jest.fn().mockResolvedValue({ id: 's' }) },
+    user: { findFirst: jest.fn().mockResolvedValue({ id: 's', organizationId: 'o1' }), findUnique: jest.fn().mockResolvedValue({ id: 'tB' }) },
     groupMember: {
       findUnique: jest.fn().mockResolvedValue(null),
       count: jest.fn().mockResolvedValue(opts.members ?? 0),

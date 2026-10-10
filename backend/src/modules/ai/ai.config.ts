@@ -22,7 +22,19 @@ const DEFAULT_DAILY_LIMITS: Record<string, number> = {
 
 @Injectable()
 export class AiConfig {
+  /** Super admin paneldan o'zgartiriladigan (bazada saqlanadigan) qiymatlar — env'dan ustun */
+  private overrides: { limits?: Record<string, number>; enabled?: boolean } = {};
+
   constructor(private readonly cfg: ConfigService) {}
+
+  applyOverrides(o: { limits?: Record<string, number>; enabled?: boolean }) {
+    this.overrides = { limits: o.limits ?? {}, enabled: o.enabled };
+  }
+
+  /** AI umuman yoqilganmi (super admin o'chira oladi) */
+  get enabled(): boolean {
+    return this.overrides.enabled !== false;
+  }
 
   private num(key: string, fallback: number): number {
     const raw = this.cfg.get<string>(key);
@@ -50,6 +62,8 @@ export class AiConfig {
   }
 
   dailyTokenLimit(role: string): number {
+    const ov = this.overrides.limits?.[role];
+    if (typeof ov === 'number' && Number.isFinite(ov) && ov >= 0) return ov;
     const envVal = this.cfg.get<string>(`AI_DAILY_TOKENS_${role}`);
     if (envVal !== undefined && envVal !== '') {
       const n = Number(envVal);

@@ -311,7 +311,7 @@ describe("Yordamchi zanjiri (soxta provayder serverlari bilan)", () => {
     expect(ok.status).toBe(200);
     expect(await ok.json()).toMatchObject({ id: card.id, status: 'EXECUTED' });
     expect(services.students.adjustScore).toHaveBeenCalledTimes(1);
-    expect(services.students.adjustScore).toHaveBeenCalledWith(STUDENT_ID, { amount: -20, reason: "Nusxa ko'chirgan (AI yordamchi orqali)" }, 'u1');
+    expect(services.students.adjustScore).toHaveBeenCalledWith(STUDENT_ID, { amount: -20, reason: "Nusxa ko'chirgan (AI yordamchi orqali)" }, expect.objectContaining({ id: 'u1', role: 'ADMIN' }));
     expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ actorId: 'u1', action: 'ASSISTANT_ACTION', targetId: card.id, newValue: expect.objectContaining({ via: 'assistant', outcome: 'EXECUTED' }) }));
 
     // qayta tasdiqlash — 409, qayta bajarilmaydi

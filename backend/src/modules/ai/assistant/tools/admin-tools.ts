@@ -26,8 +26,8 @@ export function adminTools(d: AdminToolDeps) {
       inputSchema: NO_ARGS,
       roles: ['ADMIN'],
       parse: () => ({}),
-      run: async () => {
-        const o = await d.overview.getOverview();
+      run: async (user) => {
+        const o = await d.overview.getOverview(user);
         return { totals: o.totals, todayTestAttempts: o.today.testAttempts, dailyActiveUsersLast7Days: o.charts.dailyActiveUsers };
       },
     }),
@@ -56,8 +56,8 @@ export function adminTools(d: AdminToolDeps) {
           page: r.int('page', { min: 1, max: 20, def: 1 }),
         };
       },
-      run: async (_user, input) => {
-        const res = await d.students.list({ ...input, pageSize: 10 } as ListStudentsQueryDto);
+      run: async (user, input) => {
+        const res = await d.students.list({ ...input, pageSize: 10 } as ListStudentsQueryDto, user);
         return {
           total: res.total,
           page: res.page,
@@ -87,8 +87,8 @@ export function adminTools(d: AdminToolDeps) {
       },
       roles: ['ADMIN'],
       parse: (raw) => ({ studentId: reader(raw).id('studentId') }),
-      run: async (_user, { studentId }) => {
-        const u = await d.students.getDetail(studentId);
+      run: async (user, { studentId }) => {
+        const u = await d.students.getDetail(studentId, user);
         return {
           id: u.id,
           name: [u.firstName, u.lastName].filter(Boolean).join(' '),

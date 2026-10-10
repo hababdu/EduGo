@@ -1,4 +1,5 @@
 // src/modules/tests/management/test-management.service.ts
+import { createdByOrg, assertSameOrg } from '../../../common/org-scope';
 import {
   BadRequestException,
   ForbiddenException,
@@ -38,6 +39,8 @@ export class TestManagementService {
 
     if (requester.role === 'TEACHER') {
       where.createdById = requester.id;
+    } else {
+      Object.assign(where, createdByOrg(requester)); // ADMIN — faqat o'z tashkiloti testlari
     }
 
     if (filters.status) where.status = filters.status;
@@ -64,6 +67,7 @@ export class TestManagementService {
     const test = await this.prisma.test.findUnique({
       where: { id: testId },
       include: {
+        createdBy: { select: { organizationId: true } },
         questions: {
           orderBy: { order: 'asc' },
           include: {
@@ -88,8 +92,10 @@ export class TestManagementService {
     if (requester.role === 'TEACHER' && test.createdById !== requester.id) {
       throw new ForbiddenException('Bu test sizga tegishli emas');
     }
+    if (requester.role === 'ADMIN') assertSameOrg(requester, (test as any).createdBy?.organizationId);
 
-    return test;
+    const { createdBy: _cb, ...rest } = test as any;
+    return rest as typeof test;
   }
 
   /* ============================================================

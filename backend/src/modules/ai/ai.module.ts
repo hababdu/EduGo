@@ -12,6 +12,7 @@ import { TestsModule } from '../tests/tests.module';
 import { AiConfig } from './ai.config';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
+import { AiSettingsService } from './ai-settings.service';
 import { AiUsageService } from './ai-usage.service';
 import { AnthropicProvider } from './providers/anthropic.provider';
 import { GeminiProvider } from './providers/gemini.provider';
@@ -42,6 +43,7 @@ import { AssistantToolRegistry } from './assistant/assistant-tool.registry';
   providers: [
     AiConfig,
     AiUsageService,
+    AiSettingsService,
     AnthropicProvider,
     GroqProvider,
     GeminiProvider,
@@ -53,6 +55,6 @@ import { AssistantToolRegistry } from './assistant/assistant-tool.registry';
     AssistantActionService,
     AssistantService,
   ],
-  exports: [AiService],
+  exports: [AiService, AiSettingsService, AiConfig, AiUsageService],
 })
 export class AiModule {}

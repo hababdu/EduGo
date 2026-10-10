@@ -1,3 +1,4 @@
+import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { Controller, Get } from '@nestjs/common';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { OverviewService } from './overview.service';
@@ -8,7 +9,7 @@ export class OverviewController {
   constructor(private readonly overviewService: OverviewService) {}
 
   @Get()
-  getOverview() {
-    return this.overviewService.getOverview();
+  getOverview(@CurrentUser() actor: CurrentUserPayload) {
+    return this.overviewService.getOverview(actor);
   }
 }

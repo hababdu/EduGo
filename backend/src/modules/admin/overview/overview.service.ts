@@ -1,3 +1,5 @@
+import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
+import { orgWhere, createdByOrg } from '../../../common/org-scope';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 
@@ -5,7 +7,9 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export class OverviewService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOverview() {
+  async getOverview(actor: CurrentUserPayload) {
+    const org = orgWhere(actor);
+    const byCreator = createdByOrg(actor);
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -22,18 +26,18 @@ export class OverviewService {
       scoreSumAgg,
       dailyActivity,
     ] = await Promise.all([
-      this.prisma.user.count({ where: { role: 'STUDENT', deletedAt: null } }),
+      this.prisma.user.count({ where: { role: 'STUDENT', deletedAt: null, ...org } }),
       this.prisma.user.count({
-        where: { role: 'STUDENT', deletedAt: null, lastActiveAt: { gte: sevenDaysAgo } },
+        where: { role: 'STUDENT', deletedAt: null, lastActiveAt: { gte: sevenDaysAgo }, ...org },
       }),
-      this.prisma.user.count({ where: { role: 'TEACHER', deletedAt: null } }),
-      this.prisma.course.count({ where: { deletedAt: null } }),
-      this.prisma.subject.count({ where: { deletedAt: null } }),
-      this.prisma.test.count({ where: { deletedAt: null } }),
-      this.prisma.testAttempt.count(),
-      this.prisma.testAttempt.count({ where: { completedAt: { gte: todayStart } } }),
-      this.prisma.scoreTransaction.aggregate({ _sum: { amount: true } }),
-      this.getDailyActiveUsersLast7Days(),
+      this.prisma.user.count({ where: { role: 'TEACHER', deletedAt: null, ...org } }),
+      this.prisma.course.count({ where: { deletedAt: null, ...byCreator } }),
+      this.prisma.subject.count({ where: { deletedAt: null, course: byCreator } }),
+      this.prisma.test.count({ where: { deletedAt: null, ...byCreator } }),
+      this.prisma.testAttempt.count({ where: { student: org } }),
+      this.prisma.testAttempt.count({ where: { completedAt: { gte: todayStart }, student: org } }),
+      this.prisma.scoreTransaction.aggregate({ _sum: { amount: true }, where: { student: org } }),
+      this.getDailyActiveUsersLast7Days(org),
     ]);
 
     return {
@@ -57,7 +61,7 @@ export class OverviewService {
   }
 
   /** Oxirgi 7 kunlik faol foydalanuvchilar — chart uchun */
-  private async getDailyActiveUsersLast7Days() {
+  private async getDailyActiveUsersLast7Days(org: { organizationId?: string }) {
     const days: { date: string; count: number }[] = [];
 
     for (let i = 6; i >= 0; i--) {
@@ -69,7 +73,7 @@ export class OverviewService {
 
       const count = await this.prisma.activityLog.groupBy({
         by: ['userId'],
-        where: { createdAt: { gte: start, lt: end } },
+        where: { createdAt: { gte: start, lt: end }, user: org },
       });
 
       days.push({ date: start.toISOString().slice(0, 10), count: count.length });

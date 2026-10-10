@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { superAdminIds } from '../../common/super-admin.util';
 import { verifyTelegramInitData } from './utils/telegram-verify.util';
 import { AuthTokensResponse } from './dto/telegram-auth.dto';
 
@@ -25,6 +26,17 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
+
+
+  /** SUPER_ADMIN_TELEGRAM_IDS bo'yicha rolni bazada ham to'g'rilaydi (ro'yxat bo'sh bo'lsa — tegmaydi). */
+  private async syncSuperAdmin<T extends { id: string; telegramId: string; role: string }>(user: T): Promise<T> {
+    const ids = superAdminIds(this.configService.get<string>('SUPER_ADMIN_TELEGRAM_IDS'));
+    if (!ids.length) return user;
+    const want = ids.includes(user.telegramId) ? 'SUPER_ADMIN' : user.role === 'SUPER_ADMIN' ? 'ADMIN' : user.role;
+    if (want === user.role) return user;
+    await this.prisma.user.update({ where: { id: user.id }, data: { role: want as any } });
+    return { ...user, role: want };
+  }
 
   /**
    * Telegram WebApp initData orqali login/register.
@@ -92,6 +104,7 @@ export class AuthService {
       });
     }
 
+    user = await this.syncSuperAdmin(user);
     const tokens = await this.issueTokens(user.id, user.role);
 
     return {
@@ -132,7 +145,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token yaroqsiz, qayta login qiling');
     }
 
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { id: stored.userId },
     });
     if (!user || user.status === 'BLOCKED' || user.deletedAt) {
@@ -148,6 +161,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token yaroqsiz, qayta login qiling');
     }
 
+    user = await this.syncSuperAdmin(user);
     const tokens = await this.issueTokens(user.id, user.role);
 
     return {

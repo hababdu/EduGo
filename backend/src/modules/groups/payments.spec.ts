@@ -7,8 +7,8 @@ import { GroupsService } from './groups.service';
 import { MarkPaymentsDto } from './dto/payments.dto';
 import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
-const admin: any = { id: 'adm', role: 'ADMIN' };
-const teacher: any = { id: 'tA', role: 'TEACHER' };
+const admin: any = { id: 'adm', role: 'ADMIN', organizationId: 'o1' };
+const teacher: any = { id: 'tA', role: 'TEACHER', organizationId: 'o1' };
 const student: any = { id: 's1', role: 'STUDENT' };
 const NOW = new Date('2026-10-04T10:00:00Z'); // Toshkent: 2026-10-04
 
@@ -57,7 +57,7 @@ describe('DTO', () => {
 function build(opts: { fee?: number | null; members?: any[]; payments?: any[]; groups?: any[] } = {}) {
   const prisma: any = {
     group: {
-      findUnique: jest.fn().mockResolvedValue({ id: 'g', name: 'G', monthlyFee: opts.fee === undefined ? 300000 : opts.fee, deletedAt: null }),
+      findUnique: jest.fn().mockResolvedValue({ id: 'g', organizationId: 'o1', name: 'G', monthlyFee: opts.fee === undefined ? 300000 : opts.fee, deletedAt: null }),
       findMany: jest.fn().mockResolvedValue(opts.groups ?? []),
     },
     groupMember: {
@@ -195,7 +195,7 @@ describe('GroupsService: oylik to\'lovni faqat admin belgilaydi', () => {
   const mk = () => {
     const prisma: any = {
       group: {
-        findUnique: jest.fn().mockResolvedValue({ id: 'g', teacherId: 'tA', deletedAt: null, members: [], teacher: null }),
+        findUnique: jest.fn().mockResolvedValue({ id: 'g', organizationId: 'o1', teacherId: 'tA', deletedAt: null, members: [], teacher: null }),
         update: jest.fn().mockResolvedValue({}),
         create: jest.fn().mockResolvedValue({}),
       },

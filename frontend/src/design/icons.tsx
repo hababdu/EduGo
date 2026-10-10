@@ -3,6 +3,8 @@
 // ============================================================
 
 export {
+  School,
+  ScrollText,
   Volume2,
   VolumeX,
   Users,

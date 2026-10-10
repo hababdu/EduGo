@@ -1,3 +1,5 @@
+import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
+import { orgWhere, sameOrg } from '../../../common/org-scope';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -12,8 +14,8 @@ export class AdminStudentsService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async list(query: ListStudentsQueryDto) {
-    const where: any = { role: 'STUDENT', deletedAt: null };
+  async list(query: ListStudentsQueryDto, actor: CurrentUserPayload) {
+    const where: any = { role: 'STUDENT', deletedAt: null, ...orgWhere(actor) };
 
     if (query.search) {
       where.OR = [
@@ -60,7 +62,7 @@ export class AdminStudentsService {
   }
 
   /** 55-band — to'liq admin ko'rinishidagi student profili */
-  async getDetail(studentId: string) {
+  async getDetail(studentId: string, actor: CurrentUserPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: studentId },
       include: {
@@ -76,16 +78,17 @@ export class AdminStudentsService {
       },
     });
 
-    if (!user || user.role !== 'STUDENT' || user.deletedAt) {
+    if (!user || user.role !== 'STUDENT' || user.deletedAt || !sameOrg(actor, user.organizationId)) {
       throw new NotFoundException('Student topilmadi');
     }
 
     return user;
   }
 
-  async setBlocked(studentId: string, blocked: boolean, actorId: string) {
+  async setBlocked(studentId: string, blocked: boolean, actor: CurrentUserPayload) {
+    const actorId = actor.id;
     const user = await this.prisma.user.findUnique({ where: { id: studentId } });
-    if (!user || user.role !== 'STUDENT') {
+    if (!user || user.role !== 'STUDENT' || !sameOrg(actor, user.organizationId)) {
       throw new NotFoundException('Student topilmadi');
     }
 
@@ -112,15 +115,17 @@ export class AdminStudentsService {
    * Har ikkala talab bajariladi: ScoreTransaction (ledger) + AdminActionLog (audit).
    * amount=0 rad etiladi — bunday amal mantiqsiz va noaniq audit yozuvi yaratadi.
    */
-  async adjustScore(studentId: string, dto: AdjustScoreDto, actorId: string) {
+  async adjustScore(studentId: string, dto: AdjustScoreDto, actor: CurrentUserPayload) {
+    const actorId = actor.id;
     if (dto.amount === 0) {
       throw new BadRequestException('Ball miqdori 0 bo\'lishi mumkin emas');
     }
 
     const profile = await this.prisma.studentProfile.findUnique({
       where: { userId: studentId },
+      include: { user: { select: { organizationId: true } } },
     });
-    if (!profile) {
+    if (!profile || !sameOrg(actor, profile.user.organizationId)) {
       throw new NotFoundException('Student profili topilmadi');
     }
 

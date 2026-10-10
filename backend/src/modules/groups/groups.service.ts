@@ -1,4 +1,5 @@
 // src/modules/groups/groups.service.ts
+import { orgWhere, assertSameOrg } from '../../common/org-scope';
 import { normalizeSchedule, ScheduleInput } from './schedule.util';
 import {
   BadRequestException,
@@ -32,7 +33,7 @@ export class GroupsService {
     // ADMIN — barcha guruhlar
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
       return this.prisma.group.findMany({
-        where: { deletedAt: null },
+        where: { deletedAt: null, ...orgWhere(user) },
         include: baseInclude,
         orderBy: { createdAt: 'desc' },
       });
@@ -133,6 +134,12 @@ export class GroupsService {
       throw new BadRequestException('Guruh nomi kiritilishi shart');
     }
 
+    // Tashkilot: guruh yaratuvchining tashkilotiga tegishli bo'ladi
+    const organizationId = user.organizationId ?? null;
+    if (!organizationId && user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException("Siz hech qaysi tashkilotga biriktirilmagansiz");
+    }
+
     // 2. Teacher ID aniqlash
     let teacherId: string | null = null;
 
@@ -150,6 +157,7 @@ export class GroupsService {
           role: 'TEACHER',
           deletedAt: null,
           status: 'ACTIVE',
+          ...(organizationId ? { organizationId } : {}),
         },
         select: { id: true, firstName: true, lastName: true },
       });
@@ -175,6 +183,7 @@ export class GroupsService {
         // To'lov summasini faqat admin belgilaydi (o'qituvchi yuborgan bo'lsa ham e'tiborga olinmaydi)
         monthlyFee: user.role === 'TEACHER' ? null : data.monthlyFee ?? null,
         teacherId,
+        organizationId,
       },
       include: {
         teacher: {
@@ -233,6 +242,7 @@ export class GroupsService {
           role: 'TEACHER',
           deletedAt: null,
           status: 'ACTIVE',
+          organizationId: group.organizationId,
         },
       });
       if (!teacher) {
@@ -295,6 +305,11 @@ export class GroupsService {
     if (!student) {
       throw new BadRequestException('Student topilmadi');
     }
+    // Talaba bitta tashkilotga tegishli: boshqasiniki bo'lsa — qo'shib bo'lmaydi; hech kimniki bo'lmasa — shu tashkilotga biriktiriladi
+    if (student.organizationId && student.organizationId !== group.organizationId) {
+      throw new BadRequestException("Bu talaba boshqa tashkilotga tegishli");
+    }
+    const adopt = !student.organizationId && !!group.organizationId;
 
     // Allaqachon a'zo emasligini tekshirish
     const existing = await this.prisma.groupMember.findUnique({
@@ -313,7 +328,11 @@ export class GroupsService {
 
     // Sig'im cheklanmagan bo'lsa — oddiy qo'shish
     if (group.maxCapacity == null) {
-      return this.prisma.groupMember.create({ data: { groupId, studentId }, include });
+      if (!adopt) return this.prisma.groupMember.create({ data: { groupId, studentId }, include });
+      return this.prisma.$transaction(async (tx) => {
+        if (adopt) await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } });
+        return tx.groupMember.create({ data: { groupId, studentId }, include });
+      });
     }
 
     // Sig'im bor: guruh qatorini qulflab (bir vaqtdagi qo'shishlarni navbatga qo'yib), sanab, keyin qo'shamiz
@@ -323,6 +342,7 @@ export class GroupsService {
       if (count >= (group.maxCapacity as number)) {
         throw new BadRequestException(`Guruh to'lgan (${count}/${group.maxCapacity})`);
       }
+      if (adopt) await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } });
       return tx.groupMember.create({ data: { groupId, studentId }, include });
     });
   }
@@ -359,9 +379,9 @@ export class GroupsService {
     teacherId: string | null,
     user: CurrentUserPayload,
   ) {
-    await this.findOneOrThrow(groupId, user);
+    const group = await this.findOneOrThrow(groupId, user);
 
-    // Teacher ID validatsiya (agar berilgan bo'lsa)
+    // Teacher ID validatsiya (agar berilgan bo'lsa) — faqat shu tashkilot o'qituvchisi
     if (teacherId) {
       const teacher = await this.prisma.user.findFirst({
         where: {
@@ -369,6 +389,7 @@ export class GroupsService {
           role: 'TEACHER',
           deletedAt: null,
           status: 'ACTIVE',
+          organizationId: group.organizationId,
         },
       });
       if (!teacher) {
@@ -418,11 +439,12 @@ export class GroupsService {
      ACCESS
      ============================================================ */
   private assertCanAccess(
-    group: { teacherId: string | null; members: { studentId: string }[] },
+    group: { teacherId: string | null; organizationId?: string | null; members: { studentId: string }[] },
     user: CurrentUserPayload,
   ) {
-    // ADMIN — hamma narsa
+    // ADMIN — o'z tashkilotidagi hamma narsa (SUPER_ADMIN — barcha tashkilotlar)
     if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+      assertSameOrg(user, group.organizationId);
       return;
     }
 

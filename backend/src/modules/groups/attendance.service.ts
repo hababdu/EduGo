@@ -1,3 +1,4 @@
+import { assertSameOrg } from '../../common/org-scope';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -53,11 +54,13 @@ export class AttendanceService {
   private async loadManageableGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      select: { id: true, teacherId: true, deletedAt: true, lessonDays: true },
+      select: { id: true, teacherId: true, organizationId: true, deletedAt: true, lessonDays: true },
     });
     if (!group || group.deletedAt) throw new NotFoundException('Guruh topilmadi');
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
-    if (!isAdmin) {
+    if (isAdmin) {
+      assertSameOrg(user, group.organizationId);
+    } else {
       if (user.role !== 'TEACHER' || group.teacherId !== user.id) {
         throw new ForbiddenException('Bu guruh sizga biriktirilmagan');
       }

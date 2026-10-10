@@ -5,6 +5,8 @@ export interface CurrentUserPayload {
   telegramId: string;
   role: string;
   status: string;
+  /** Tashkilot (maktab/markaz). SUPER_ADMIN va hali biriktirilmaganlar uchun null */
+  organizationId?: string | null;
 }
 
 /**

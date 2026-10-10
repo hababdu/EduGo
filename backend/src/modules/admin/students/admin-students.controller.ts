@@ -10,23 +10,23 @@ export class AdminStudentsController {
   constructor(private readonly service: AdminStudentsService) {}
 
   @Get()
-  list(@Query() query: ListStudentsQueryDto) {
-    return this.service.list(query);
+  list(@Query() query: ListStudentsQueryDto, @CurrentUser() actor: CurrentUserPayload) {
+    return this.service.list(query, actor);
   }
 
   @Get(':id')
-  getDetail(@Param('id') id: string) {
-    return this.service.getDetail(id);
+  getDetail(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
+    return this.service.getDetail(id, actor);
   }
 
   @Patch(':id/block')
   block(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
-    return this.service.setBlocked(id, true, actor.id);
+    return this.service.setBlocked(id, true, actor);
   }
 
   @Patch(':id/unblock')
   unblock(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
-    return this.service.setBlocked(id, false, actor.id);
+    return this.service.setBlocked(id, false, actor);
   }
 
   @Patch(':id/score')
@@ -35,6 +35,6 @@ export class AdminStudentsController {
     @Body() dto: AdjustScoreDto,
     @CurrentUser() actor: CurrentUserPayload,
   ) {
-    return this.service.adjustScore(id, dto, actor.id);
+    return this.service.adjustScore(id, dto, actor);
   }
 }

@@ -119,7 +119,7 @@ describe('adjust_student_score (faqat admin)', () => {
     ]);
     expect(t.risk).toBe('HIGH');
     await t.execute(admin, t.parse(ok));
-    expect(students.adjustScore).toHaveBeenCalledWith(ID('s'), { amount: -20, reason: "Nusxa ko'chirgan (AI yordamchi orqali)" }, 'admin-1-id');
+    expect(students.adjustScore).toHaveBeenCalledWith(ID('s'), { amount: -20, reason: "Nusxa ko'chirgan (AI yordamchi orqali)" }, expect.objectContaining({ id: 'admin-1-id' }));
   });
 
   it(`chegaralar: nol, ±${MAX_SCORE_ADJUST} dan katta, kasr, sababsiz/juda qisqa sabab rad etiladi`, () => {
@@ -156,7 +156,7 @@ describe('set_student_blocked (faqat admin)', () => {
     expect(p.summary).toBe('Ali Valiyev ni bloklash');
     expect(p.details).toContainEqual({ label: 'Oqibat', value: 'Ilovaga kira olmaydi' });
     await t.execute(admin, { studentId: ID('s'), blocked: true });
-    expect(students.setBlocked).toHaveBeenCalledWith(ID('s'), true, 'admin-1-id');
+    expect(students.setBlocked).toHaveBeenCalledWith(ID('s'), true, expect.objectContaining({ id: 'admin-1-id' }));
 
     await expect(t.prepare(admin, { studentId: ID('s'), blocked: false })).rejects.toThrow('bloklanmagan'); // ACTIVE edi
     const blockedAlready = build({ students: { getDetail: jest.fn().mockResolvedValue({ firstName: 'A', lastName: null, status: 'BLOCKED', studentProfile: {} }) } });

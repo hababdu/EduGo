@@ -170,7 +170,7 @@ describe('Admin tool\'lari — maxfiy maydonlar chiqmaydi', () => {
   it('search_students: sahifa 10 ta bilan servisga o\'tadi', async () => {
     const students = { list: jest.fn().mockResolvedValue({ items: [], total: 0, page: 2, totalPages: 0 }) };
     await makeRegistry({ students }).execute(admin, 'search_students', { search: 'ali', status: 'ACTIVE', page: 2 });
-    expect(students.list).toHaveBeenCalledWith({ search: 'ali', status: 'ACTIVE', groupId: undefined, page: 2, pageSize: 10 });
+    expect(students.list).toHaveBeenCalledWith({ search: 'ali', status: 'ACTIVE', groupId: undefined, page: 2, pageSize: 10 }, expect.objectContaining({ role: 'ADMIN' }));
   });
 });
 

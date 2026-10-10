@@ -1,3 +1,4 @@
+import { orgWhere } from '../../common/org-scope';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -21,7 +22,7 @@ export class ScheduleService {
       where: {
         deletedAt: null,
         lessonDays: { has: weekday },
-        ...(isAdmin ? {} : isTeacher ? { teacherId: user.id } : { members: { some: { studentId: user.id } } }),
+        ...(isAdmin ? orgWhere(user) : isTeacher ? { teacherId: user.id } : { members: { some: { studentId: user.id } } }),
       },
       select: {
         id: true,

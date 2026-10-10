@@ -1,3 +1,4 @@
+import { superAdminIds } from '../../../common/super-admin.util';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -32,18 +33,33 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
+      include: { organization: { select: { status: true } } },
     });
 
     if (!user || user.status === 'BLOCKED' || user.deletedAt) {
       throw new UnauthorizedException('Foydalanuvchi topilmadi yoki bloklangan');
     }
 
+    // Super admin faqat env ro'yxatidagi Telegram ID'lar (ro'yxat bo'lmasa — bazadagi rol saqlanadi)
+    const saIds = superAdminIds(this.configService.get<string>('SUPER_ADMIN_TELEGRAM_IDS'));
+    let role = user.role as string;
+    if (saIds.length) {
+      if (saIds.includes(user.telegramId)) role = 'SUPER_ADMIN';
+      else if (role === 'SUPER_ADMIN') role = 'ADMIN';
+    }
+
+    // To'xtatilgan tashkilot foydalanuvchilari (super admindan tashqari) kira olmaydi
+    if (role !== 'SUPER_ADMIN' && user.organization?.status === 'SUSPENDED') {
+      throw new UnauthorizedException("Tashkilot faoliyati to'xtatilgan. Administratorga murojaat qiling.");
+    }
+
     // Bu obyekt @CurrentUser() decorator orqali controller'larda ishlatiladi
     return {
       id: user.id,
       telegramId: user.telegramId,
-      role: user.role,
+      role,
       status: user.status,
+      organizationId: user.organizationId,
     };
   }
 }

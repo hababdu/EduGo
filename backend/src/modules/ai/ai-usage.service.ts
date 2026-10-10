@@ -31,6 +31,9 @@ export class AiUsageService {
 
   /** Kunlik chegara oshgan bo'lsa 429 tashlaydi. Chegara 0 bo'lsa — cheklanmagan. */
   async assertQuota(user: CurrentUserPayload): Promise<void> {
+    if (!this.cfg.enabled) {
+      throw new HttpException("AI vaqtincha o'chirilgan.", HttpStatus.SERVICE_UNAVAILABLE);
+    }
     const limit = this.cfg.dailyTokenLimit(user.role);
     if (limit <= 0) return;
 

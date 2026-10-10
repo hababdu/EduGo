@@ -1,3 +1,4 @@
+import { sameOrg } from '../../common/org-scope';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -44,6 +45,10 @@ export class UsersService {
     if (!user || user.deletedAt) {
       throw new NotFoundException('Foydalanuvchi topilmadi');
     }
+    // Admin faqat o'z tashkilotidagi (yoki hali hech kimga biriktirilmagan) foydalanuvchini ko'ra oladi
+    if (isPrivileged && !isSelf && !sameOrg(requester, user.organizationId) && user.organizationId !== null) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
 
     return user;
   }
@@ -55,10 +60,23 @@ export class UsersService {
   /**
    * Barcha foydalanuvchilar ro'yxatini qaytaradi (Admin uchun)
    */
-  async findAllUsers() {
+  async findAllUsers(actor: CurrentUserPayload) {
+    // Admin: o'z tashkiloti + hali hech qaysi tashkilotga biriktirilmagan oddiy foydalanuvchilar ("yangi" havzasi).
+    // Super admin: hamma.
+    const where =
+      actor.role === 'SUPER_ADMIN'
+        ? { deletedAt: null }
+        : {
+            deletedAt: null,
+            OR: [
+              { organizationId: actor.organizationId ?? '__no_org__' },
+              { organizationId: null, role: 'STUDENT' as const },
+            ],
+          };
     return this.prisma.user.findMany({
-      where: { deletedAt: null },
+      where,
       select: {
+        organizationId: true,
         id: true,
         telegramId: true,
         firstName: true,
@@ -81,6 +99,9 @@ export class UsersService {
     if (typeof role !== 'string' || !(ASSIGNABLE_ROLES as readonly string[]).includes(role)) {
       throw new BadRequestException("Noto'g'ri rol");
     }
+    if (role === 'SUPER_ADMIN') {
+      throw new ForbiddenException('Super admin faqat server sozlamasi (SUPER_ADMIN_TELEGRAM_IDS) orqali belgilanadi');
+    }
     if (userId === actor.id) {
       throw new ForbiddenException("O'z rolingizni o'zgartira olmaysiz");
     }
@@ -88,6 +109,16 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.deletedAt) {
       throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    if (user.role === 'SUPER_ADMIN') throw new ForbiddenException("Super adminning rolini o'zgartirib bo'lmaydi");
+
+    // Admin faqat o'z tashkilotidagi yoki hali biriktirilmagan foydalanuvchini boshqaradi
+    if (actor.role !== 'SUPER_ADMIN') {
+      const mine = !!actor.organizationId && user.organizationId === actor.organizationId;
+      const pool = user.organizationId === null && user.role === 'STUDENT';
+      if (!mine && !pool) throw new NotFoundException('Foydalanuvchi topilmadi');
+      if (!actor.organizationId) throw new ForbiddenException('Siz hech qaysi tashkilotga biriktirilmagansiz');
     }
 
     const touchesAdminTier = ADMIN_TIER.includes(user.role as string) || ADMIN_TIER.includes(role);
@@ -100,7 +131,12 @@ export class UsersService {
       return this.prisma.user.findUnique({ where: { id: userId }, select }); // o'zgarish yo'q — yozuv ham yo'q
     }
 
-    const updated = await this.prisma.user.update({ where: { id: userId }, data: { role: role as any }, select });
+    // Biriktirilmagan foydalanuvchini o'qituvchi qilgan admin uni o'z tashkilotiga qo'shadi
+    const adopt = actor.role !== 'SUPER_ADMIN' && user.organizationId === null ? { organizationId: actor.organizationId } : {};
+    if (actor.role === 'SUPER_ADMIN' && role === 'ADMIN' && !user.organizationId) {
+      throw new BadRequestException('Avval foydalanuvchini tashkilotga biriktiring (Tashkilotlar bo\'limi)');
+    }
+    const updated = await this.prisma.user.update({ where: { id: userId }, data: { role: role as any, ...adopt }, select });
 
     await this.prisma.adminActionLog.create({
       data: {

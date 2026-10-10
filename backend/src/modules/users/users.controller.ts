@@ -29,7 +29,7 @@ export class UsersController {
     if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN') {
       throw new ForbiddenException('Bu amalni bajarish uchun admin huquqi talab etiladi');
     }
-    return this.usersService.findAllUsers();
+    return this.usersService.findAllUsers(user);
   }
 
   /**

@@ -47,6 +47,14 @@ import { AdminQuestions } from './pages/teacher/questions/AdminQuestions';
 import   AdminTests  from './pages/teacher/tests/AdminTests';
 import { AdminTestDetail } from './pages/teacher/tests/AdminTestDetail';
 
+/* ============ SUPER ADMIN ============ */
+import { SuperOverview } from './pages/super/SuperOverview';
+import { SuperOrgs } from './pages/super/SuperOrgs';
+import { SuperAdmins } from './pages/super/SuperAdmins';
+import { SuperAi } from './pages/super/SuperAi';
+import { SuperAudit } from './pages/super/SuperAudit';
+import { SuperNav } from './components/super/SuperNav';
+
 /* ============ LAYOUT ============ */
 import { BottomNav } from './components/layout/BottomNav';
 import { AdminNav } from './components/admin/AdminNav';
@@ -153,8 +161,8 @@ export function App() {
     );
   }
 
-  const isAdmin =
-    user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const isSuper = user?.role === 'SUPER_ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
   const isTeacher = user?.role === 'TEACHER';
 
   return (
@@ -164,10 +172,43 @@ export function App() {
       <SoundEffects />
       <NotificationSound />
       <SoundToggle floating />
+      {isSuper && <SuperRoutes />}
       {isAdmin && <AdminRoutes />}
       {isTeacher && <TeacherRoutes />}
-      {!isAdmin && !isTeacher && <StudentRoutes />}
+      {!isSuper && !isAdmin && !isTeacher && <StudentRoutes />}
     </BrowserRouter>
+  );
+}
+
+/* ============================================================
+   SUPER ADMIN ROUTES (admin sahifalari ham shu yerda — hamma maktab ma'lumoti)
+   ============================================================ */
+function SuperRoutes() {
+  return (
+    <>
+      <div className="min-h-screen pb-24">
+        <PageTransition>
+          <Routes>
+            <Route path="/super" element={<SuperOverview />} />
+            <Route path="/super/orgs" element={<SuperOrgs />} />
+            <Route path="/super/admins" element={<SuperAdmins />} />
+            <Route path="/super/ai" element={<SuperAi />} />
+            <Route path="/super/audit" element={<SuperAudit />} />
+            <Route path="/admin" element={<Navigate to="/super" replace />} />
+            <Route path="/admin/students" element={<AdminStudents />} />
+            <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
+            <Route path="/admin/users" element={<UsersAdminPage />} />
+            <Route path="/admin/groups" element={<AdminGroups />} />
+            <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
+            <Route path="/admin/payments" element={<AdminPayments />} />
+            <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
+            <Route path="*" element={<Navigate to="/super" replace />} />
+          </Routes>
+        </PageTransition>
+      </div>
+      <SuperNav />
+      <AssistantLauncher />
+    </>
   );
 }
 

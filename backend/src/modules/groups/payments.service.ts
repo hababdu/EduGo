@@ -1,3 +1,4 @@
+import { assertSameOrg, orgWhere } from '../../common/org-scope';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -50,12 +51,13 @@ export class PaymentsService {
     }
   }
 
-  private async loadGroup(groupId: string) {
+  private async loadGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      select: { id: true, name: true, monthlyFee: true, deletedAt: true },
+      select: { id: true, name: true, monthlyFee: true, deletedAt: true, organizationId: true },
     });
     if (!group || group.deletedAt) throw new NotFoundException('Guruh topilmadi');
+    assertSameOrg(user, group.organizationId);
     return group;
   }
 
@@ -63,7 +65,7 @@ export class PaymentsService {
   async groupMonth(groupId: string, monthInput: string | undefined, user: CurrentUserPayload, now: Date = new Date()) {
     this.assertAdmin(user);
     const month = parseMonth(monthInput ?? currentMonth(now), now);
-    const group = await this.loadGroup(groupId);
+    const group = await this.loadGroup(groupId, user);
 
     const [members, payments] = await Promise.all([
       this.prisma.groupMember.findMany({
@@ -112,7 +114,7 @@ export class PaymentsService {
   async markMonth(groupId: string, dto: MarkPaymentsDto, user: CurrentUserPayload, now: Date = new Date()) {
     this.assertAdmin(user);
     const month = parseMonth(dto.month, now);
-    const group = await this.loadGroup(groupId);
+    const group = await this.loadGroup(groupId, user);
 
     const ids = dto.records.map((r) => r.studentId);
     if (new Set(ids).size !== ids.length) throw new BadRequestException("Bitta o'quvchi ro'yxatda ikki marta uchrayapti");
@@ -147,7 +149,7 @@ export class PaymentsService {
     const month = parseMonth(monthInput ?? currentMonth(now), now);
 
     const groups = await this.prisma.group.findMany({
-      where: { deletedAt: null, members: { some: {} } },
+      where: { deletedAt: null, members: { some: {} }, ...orgWhere(user) },
       orderBy: { name: 'asc' },
       select: {
         id: true,

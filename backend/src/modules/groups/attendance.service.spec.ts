@@ -5,12 +5,12 @@ import { AttendanceService, parseAttendanceDate, tashkentToday } from './attenda
 const NOW = new Date('2026-10-03T20:00:00Z');
 const teacherA: any = { id: 'tA', role: 'TEACHER' };
 const teacherB: any = { id: 'tB', role: 'TEACHER' };
-const admin: any = { id: 'adm', role: 'ADMIN' };
+const admin: any = { id: 'adm', role: 'ADMIN', organizationId: 'o1' };
 const student: any = { id: 's1', role: 'STUDENT' };
 
 function build(over: any = {}) {
   const prisma: any = {
-    group: { findUnique: jest.fn().mockResolvedValue({ id: 'g', teacherId: 'tA', deletedAt: null }) },
+    group: { findUnique: jest.fn().mockResolvedValue({ id: 'g', organizationId: 'o1', teacherId: 'tA', deletedAt: null }) },
     groupMember: {
       findMany: jest.fn().mockResolvedValue([
         { studentId: 's1', student: { id: 's1', firstName: 'Ali', lastName: 'V', username: null } },
@@ -48,7 +48,7 @@ describe("egalik — o'qituvchi faqat O'Z guruhida", () => {
     await expect(svc.getDay('g', '2026-10-04', teacherA, NOW)).resolves.toBeDefined();
     const none = build({ group: { findUnique: jest.fn().mockResolvedValue(null) } });
     await expect(none.svc.getDay('g', undefined, admin, NOW)).rejects.toBeInstanceOf(NotFoundException);
-    const del = build({ group: { findUnique: jest.fn().mockResolvedValue({ id: 'g', teacherId: 'tA', deletedAt: new Date() }) } });
+    const del = build({ group: { findUnique: jest.fn().mockResolvedValue({ id: 'g', organizationId: 'o1', teacherId: 'tA', deletedAt: new Date() }) } });
     await expect(del.svc.getDay('g', undefined, admin, NOW)).rejects.toBeInstanceOf(NotFoundException);
   });
 });

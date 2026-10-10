@@ -28,8 +28,38 @@ enum AccountStatus {
   PENDING
 }
 
+/// Tashkilot (maktab / o'quv markazi). Har biri o'z admini, o'qituvchilari va o'quvchilari bilan — bir-biriga aralashmaydi.
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  status    OrgStatus @default(ACTIVE)
+  note      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  users  User[]
+  groups Group[]
+
+  @@index([status])
+}
+
+/// Global sozlamalar (kalit-qiymat), faqat super admin o'zgartiradi
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
 model User {
   id              String        @id @default(cuid())
+  /// null — hali hech qaysi tashkilotga biriktirilmagan (yoki SUPER_ADMIN)
+  organizationId  String?
+  organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   telegramId      String        @unique
   phone           String?
   username        String?
@@ -74,6 +104,7 @@ model User {
 
   @@index([telegramId])
   @@index([role])
+  @@index([organizationId])
 }
 
 model StudentProfile {
@@ -104,6 +135,8 @@ model AdminProfile {
 // ------------------------------------------------------------
 model Group {
   id          String   @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   name        String
   description String?
   posterUrl   String?              // 👈 BO'LISHI SHART
@@ -137,6 +170,7 @@ model Group {
 
   @@index([teacherId])
   @@index([assistantId])
+  @@index([organizationId])
   @@index([deletedAt, createdAt(sort: Desc)])
 }
 

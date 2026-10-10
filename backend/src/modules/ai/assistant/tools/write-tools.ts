@@ -166,8 +166,8 @@ export function writeTools(d: WriteToolDeps): AssistantWriteTool[] {
         if (amount === 0) throw new ToolInputError('"amount" nolga teng bo\'lmasligi kerak');
         return { studentId: r.id('studentId'), amount, reason: r.str('reason', { min: 5, max: 200 }) };
       },
-      prepare: async (_user, i) => {
-        const s = await d.students.getDetail(i.studentId); // mavjud bo'lmasa 404
+      prepare: async (user, i) => {
+        const s = await d.students.getDetail(i.studentId, user); // mavjud bo'lmasa 404
         const current = s.studentProfile?.totalScore;
         if (current === undefined) throw new NotFoundException('Student profili topilmadi');
         if (current + i.amount < 0) throw new BadRequestException(`Ball manfiy bo'lib qoladi (hozir ${current})`);
@@ -182,7 +182,7 @@ export function writeTools(d: WriteToolDeps): AssistantWriteTool[] {
           ],
         };
       },
-      execute: (user, i) => d.students.adjustScore(i.studentId, { amount: i.amount, reason: `${i.reason} (AI yordamchi orqali)` }, user.id),
+      execute: (user, i) => d.students.adjustScore(i.studentId, { amount: i.amount, reason: `${i.reason} (AI yordamchi orqali)` }, user),
     }),
 
     /* ───────────── Bloklash / blokdan chiqarish (faqat admin) ───────────── */
@@ -202,8 +202,8 @@ export function writeTools(d: WriteToolDeps): AssistantWriteTool[] {
         const r = reader(raw);
         return { studentId: r.id('studentId'), blocked: r.bool('blocked') };
       },
-      prepare: async (_user, i) => {
-        const s = await d.students.getDetail(i.studentId);
+      prepare: async (user, i) => {
+        const s = await d.students.getDetail(i.studentId, user);
         if (i.blocked && s.status === 'BLOCKED') throw new BadRequestException("O'quvchi allaqachon bloklangan");
         if (!i.blocked && s.status !== 'BLOCKED') throw new BadRequestException("O'quvchi bloklanmagan");
         return {
@@ -216,7 +216,7 @@ export function writeTools(d: WriteToolDeps): AssistantWriteTool[] {
           ],
         };
       },
-      execute: (user, i) => d.students.setBlocked(i.studentId, i.blocked, user.id),
+      execute: (user, i) => d.students.setBlocked(i.studentId, i.blocked, user),
     }),
   ];
 }
