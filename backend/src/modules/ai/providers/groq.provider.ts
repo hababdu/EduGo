@@ -104,10 +104,17 @@ export abstract class OpenAiCompatProvider implements AiProvider {
     return { authorization: `Bearer ${this.env.get<string>(this.keyVar) ?? ''}` };
   }
 
+  private maxTokensFor(req: AiRequest, model: string): number {
+    const base = req.maxTokens ?? this.cfg.defaultMaxTokens;
+    return /gpt-oss/i.test(model) ? Math.max(base * 2, 4096) : base;
+  }
+
   private body(req: AiRequest, model: string, stream: boolean) {
     return {
       model,
-      max_tokens: req.maxTokens ?? this.cfg.defaultMaxTokens,
+      // gpt-oss kabi reasoning modellarda "o'ylash" tokenlari ham limitga kiradi — JSON qirqilib qolmasin
+      max_tokens: this.maxTokensFor(req, model),
+      ...(/gpt-oss/i.test(model) ? { reasoning_effort: 'low' } : {}),
       messages: toOpenAiMessages(req),
       ...(req.tools?.length
         ? {

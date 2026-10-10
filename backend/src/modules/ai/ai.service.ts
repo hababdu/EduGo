@@ -163,7 +163,15 @@ export class AiService {
     ]
       .filter(Boolean)
       .join('\n\n');
-    const res = await this.complete(user, feature, { ...req, system, json: true }, tier);
+    let res;
+    try {
+      res = await this.complete(user, feature, { ...req, system, json: true }, tier);
+    } catch (e) {
+      // Provayderning qat'iy JSON-rejimi 400 qaytarsa — oddiy rejimda qayta uriniladi, JSONni o'zimiz ajratamiz
+      if (e instanceof HttpException && e.getStatus() === HttpStatus.BAD_GATEWAY) {
+        res = await this.complete(user, feature, { ...req, system, json: false }, tier);
+      } else throw e;
+    }
     return extractJson<T>(res.text);
   }
 
