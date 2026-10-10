@@ -3,6 +3,8 @@
 // ============================================================
 
 export {
+  Volume2,
+  VolumeX,
   Users,
   BookOpen,
   FileText,

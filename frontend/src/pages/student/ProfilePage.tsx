@@ -1,4 +1,5 @@
 // src/pages/student/ProfilePage.tsx
+import { SoundToggle } from '../../components/layout/Effects';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
@@ -194,6 +195,7 @@ export function ProfilePage() {
           <span className="text-ink-muted text-xs">›</span>
         </button>
       </div>
+      <SoundToggle />
     </div>
   );
 }

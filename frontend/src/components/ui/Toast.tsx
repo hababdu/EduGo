@@ -1,3 +1,4 @@
+import { playSound } from '../../lib/sound';
 import React, { useEffect, useState } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -11,6 +12,7 @@ interface ToastState {
 let pushExternal: ((t: Omit<ToastState, 'id'>) => void) | null = null;
 
 export function toast(type: ToastType, message: string) {
+  if (type !== 'info') playSound(type === 'success' ? 'success' : 'error');
   pushExternal?.({ type, message });
 }
 

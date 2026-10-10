@@ -1,3 +1,4 @@
+import { playSound } from '../../lib/sound';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTestSession } from '../../hooks/useTestSession';
@@ -57,6 +58,10 @@ export function TestTaking() {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (status === 'submitted' && result) playSound(result.passed ? 'complete' : 'error');
+  }, [status, result]);
 
   if (status === 'submitted' && result) {
     return <TestResultView result={result} onDone={() => navigate('/')} />;

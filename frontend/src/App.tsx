@@ -55,6 +55,7 @@ import { ToastHost } from './components/ui/Toast';
 import { AIMascotProvider } from './components/ai/AIMascot';
 import { AssistantLauncher } from './components/assistant/AssistantLauncher';
 
+import { SoundEffects, NotificationSound, PageTransition, SoundToggle } from './components/layout/Effects';
 import { API_URL } from './lib/config';
 
 /* ============================================================
@@ -160,6 +161,9 @@ export function App() {
     <BrowserRouter>
       <AppBackground />
       <ToastHost />
+      <SoundEffects />
+      <NotificationSound />
+      <SoundToggle floating />
       {isAdmin && <AdminRoutes />}
       {isTeacher && <TeacherRoutes />}
       {!isAdmin && !isTeacher && <StudentRoutes />}
@@ -174,6 +178,7 @@ function AdminRoutes() {
   return (
     <>
       <div className="min-h-screen pb-24">
+        <PageTransition>
         <Routes>
           <Route path="/admin" element={<AdminOverview />} />
           <Route path="/admin/students" element={<AdminStudents />} />
@@ -188,6 +193,7 @@ function AdminRoutes() {
           <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
+        </PageTransition>
       </div>
       <AdminNav />
       <AssistantLauncher />
@@ -215,6 +221,7 @@ function TeacherRoutes() {
   return (
     <>
       <div className="min-h-screen pb-24">
+        <PageTransition>
         <Routes>
           {/* ============ OVERVIEW ============ */}
           <Route path="/teacher" element={<TeacherOverview />} />
@@ -263,6 +270,7 @@ function TeacherRoutes() {
           {/* ============ CATCH-ALL ============ */}
           <Route path="*" element={<Navigate to="/teacher" replace />} />
         </Routes>
+        </PageTransition>
       </div>
       {!hideBottomNav && <TeacherNav />}
       <AssistantLauncher />
@@ -287,6 +295,7 @@ function StudentRoutes() {
     <>
       <AIMascotProvider>
         <div className="min-h-screen pb-24">
+          <PageTransition>
           <Routes>
             {/* ============ ASOSIY ============ */}
             <Route path="/" element={<StudentDashboard />} />
@@ -315,6 +324,7 @@ function StudentRoutes() {
             {/* ============ CATCH-ALL ============ */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </PageTransition>
         </div>
       </AIMascotProvider>
       {!hideBottomNav && <BottomNav />}
