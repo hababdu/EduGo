@@ -8,6 +8,7 @@ import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
 import { MaterialFiles } from '../../components/materials/MaterialFiles';
 import type { MaterialFileDto } from '../../lib/material-files';
+import { HomeworkSubmitPanel } from '../../components/homework/HomeworkSubmitPanel';
 import { isHttpUrl, youtubeEmbed } from '../../lib/safe-url';
 
 /* ============================================================
@@ -269,6 +270,8 @@ export function LessonDetailPage() {
           </div>
         </div>
       )}
+
+      {item.category === 'HOMEWORK' && <HomeworkSubmitPanel assignmentId={item.id} />}
 
       {/* ============ EMPTY CONTENT ============ */}
       {!item.mediaUrl && !(item.files && item.files.length > 0) && !item.description && (!item.tests || item.tests.length === 0) && (

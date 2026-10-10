@@ -7,6 +7,6 @@ import { TelegramStorageService } from './telegram-storage.service';
 @Module({
   controllers: [MaterialsController],
   providers: [MaterialsService, MaterialContextService, TelegramStorageService],
-  exports: [MaterialsService, MaterialContextService],
+  exports: [MaterialsService, MaterialContextService, TelegramStorageService],
 })
 export class MaterialsModule {}

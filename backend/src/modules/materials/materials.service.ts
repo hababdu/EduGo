@@ -7,6 +7,7 @@ import { TelegramStorageService } from './telegram-storage.service';
 const STAFF = ['ADMIN', 'SUPER_ADMIN'];
 /** Biriktirilmagan (yetim) fayllar soni cheklovi — Telegram xotirasini suiiste'mol qilishdan saqlaydi */
 const MAX_ORPHANS_PER_USER = 30;
+const MAX_ORPHANS_PER_STUDENT = 8;
 
 @Injectable()
 export class MaterialsService {
@@ -20,10 +21,17 @@ export class MaterialsService {
     if (!file) throw new BadRequestException('Fayl yuborilmadi');
     const v = validateUpload(file.originalname, file.mimetype, file.buffer);
 
+    const isStudent = actor.role === 'STUDENT';
+    if (isStudent) {
+      // O'quvchi faqat vazifa javobi uchun yuklaydi: video yo'q, hajm kichikroq (AI ham o'qiy olishi uchun)
+      if (v.kind === 'VIDEO') throw new BadRequestException("Vazifaga video yuklab bo'lmaydi");
+      if (file.buffer.length > MAX_INLINE_BYTES) throw new BadRequestException('Fayl 20 MB dan oshmasin');
+    }
+
     const orphans = await this.prisma.materialFile.count({
-      where: { uploaderId: actor.id, assignmentId: null },
+      where: { uploaderId: actor.id, assignmentId: null, submissionId: null },
     });
-    if (orphans >= MAX_ORPHANS_PER_USER) {
+    if (orphans >= (isStudent ? MAX_ORPHANS_PER_STUDENT : MAX_ORPHANS_PER_USER)) {
       throw new BadRequestException("Biriktirilmagan fayllar ko'p. Avval materialni saqlang yoki keraksiz fayllarni o'chiring");
     }
 
@@ -59,11 +67,20 @@ export class MaterialsService {
   private async loadAccessible(actor: CurrentUserPayload, fileId: string) {
     const file = await this.prisma.materialFile.findUnique({
       where: { id: fileId },
-      include: { assignment: { select: { id: true, teacherId: true, groupId: true, status: true, deletedAt: true } } },
+      include: {
+        assignment: { select: { id: true, teacherId: true, groupId: true, status: true, deletedAt: true } },
+        submission: { select: { studentId: true, assignment: { select: { teacherId: true } } } },
+      },
     });
     if (!file) throw new NotFoundException('Fayl topilmadi');
 
     if (STAFF.includes(actor.role)) return file;
+
+    // O'quvchi topshirig'idagi fayl: faqat o'zi, vazifa o'qituvchisi va admin ko'radi (boshqa o'quvchilar emas)
+    if (file.submission) {
+      if (file.submission.studentId === actor.id || file.submission.assignment.teacherId === actor.id) return file;
+      throw new ForbiddenException("Bu faylga ruxsat yo'q");
+    }
 
     const a = file.assignment;
     if (!a) {
@@ -105,6 +122,10 @@ export class MaterialsService {
       include: { assignment: { select: { teacherId: true } } },
     });
     if (!file) throw new NotFoundException('Fayl topilmadi');
+    // O'quvchi faqat o'zining hali biriktirilmagan faylini o'chira oladi (topshiriqdagi fayl — qayta topshirish orqali)
+    if (actor.role === 'STUDENT' && (file.submissionId || file.assignmentId || file.uploaderId !== actor.id)) {
+      throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");
+    }
     const owner = file.assignment ? file.assignment.teacherId : file.uploaderId;
     if (owner !== actor.id && !STAFF.includes(actor.role)) {
       throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");

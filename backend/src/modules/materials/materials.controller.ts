@@ -21,7 +21,7 @@ import { MaterialsService } from './materials.service';
 export class MaterialsController {
   constructor(private readonly materials: MaterialsService) {}
 
-  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STUDENT')
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('files')
   @UseInterceptors(
@@ -62,7 +62,7 @@ export class MaterialsController {
     return this.materials.sendToChat(user, id);
   }
 
-  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STUDENT')
   @Delete('files/:id')
   remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.materials.remove(user, id);

@@ -27,14 +27,15 @@ export class MaterialContextService {
     private readonly tg: TelegramStorageService,
   ) {}
 
-  async build(actor: CurrentUserPayload, assignmentId: string): Promise<MaterialContext> {
+  /** `actor = null` — tizim (AI baholash) ichki chaqiruvi: egalik tekshiruvi o'tkazib yuboriladi. */
+  async build(actor: CurrentUserPayload | null, assignmentId: string): Promise<MaterialContext> {
     const a = await this.prisma.teacherAssignment.findFirst({
       where: { id: assignmentId, deletedAt: null },
       include: { files: { orderBy: { order: 'asc' } } },
     });
     if (!a) throw new NotFoundException('Material topilmadi');
-    const staff = actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
-    if (!staff && a.teacherId !== actor.id) throw new ForbiddenException("Bu materialga ruxsat yo'q");
+    const staff = !actor || actor.role === 'ADMIN' || actor.role === 'SUPER_ADMIN';
+    if (!staff && a.teacherId !== actor!.id) throw new ForbiddenException("Bu materialga ruxsat yo'q");
 
     const parts: string[] = [];
     if (a.description?.trim()) parts.push(a.description.trim());
@@ -48,32 +49,33 @@ export class MaterialContextService {
         skipped.push({ name: f.fileName, reason: 'hajm chegarasi' });
         continue;
       }
-      const kind = this.kindOf(f.mimeType, f.fileName);
-      if (!kind) {
-        skipped.push({ name: f.fileName, reason: "matn o'qib bo'lmaydigan format" });
+      const r = await this.fileText(f);
+      if (!r.text) {
+        skipped.push({ name: f.fileName, reason: r.reason ?? "o'qib bo'lmadi" });
         continue;
       }
-      if (f.sizeBytes > MAX_INLINE_BYTES) {
-        skipped.push({ name: f.fileName, reason: 'fayl 20 MB dan katta' });
-        continue;
-      }
-      try {
-        const buf = await this.tg.download(f.tgFileId, f.sizeBytes);
-        const text = (await this.extract(kind, buf)).replace(/\s+\n/g, '\n').replace(/[ \t]{2,}/g, ' ').trim();
-        if (text.length < 40) {
-          skipped.push({ name: f.fileName, reason: "matn topilmadi (skan qilingan bo'lishi mumkin)" });
-          continue;
-        }
-        remaining = Math.min(remaining, MAX_PER_FILE_CHARS);
-        parts.push(`### Fayl: ${f.fileName}\n${text.slice(0, remaining)}`);
-        used.push(f.fileName);
-      } catch (e) {
-        this.log.warn(`Fayl o'qilmadi (${f.id}): ${(e as Error).message}`);
-        skipped.push({ name: f.fileName, reason: "o'qib bo'lmadi" });
-      }
+      remaining = Math.min(remaining, MAX_PER_FILE_CHARS);
+      parts.push(`### Fayl: ${f.fileName}\n${r.text.slice(0, remaining)}`);
+      used.push(f.fileName);
     }
 
     return { title: a.title, text: parts.join('\n\n').slice(0, MAX_CONTEXT_CHARS), used, skipped };
+  }
+
+  /** Bitta fayldan matn ajratadi (PDF/DOCX/TXT). Ajratib bo'lmasa — sababi bilan. */
+  async fileText(f: { id: string; fileName: string; mimeType: string; sizeBytes: number; tgFileId: string }): Promise<{ text?: string; reason?: string }> {
+    const kind = this.kindOf(f.mimeType, f.fileName);
+    if (!kind) return { reason: "matn o'qib bo'lmaydigan format" };
+    if (f.sizeBytes > MAX_INLINE_BYTES) return { reason: 'fayl 20 MB dan katta' };
+    try {
+      const buf = await this.tg.download(f.tgFileId, f.sizeBytes);
+      const text = (await this.extract(kind, buf)).replace(/\s+\n/g, '\n').replace(/[ \t]{2,}/g, ' ').trim();
+      if (text.length < 40) return { reason: "matn topilmadi (skan qilingan bo'lishi mumkin)" };
+      return { text };
+    } catch (e) {
+      this.log.warn(`Fayl o'qilmadi (${f.id}): ${(e as Error).message}`);
+      return { reason: "o'qib bo'lmadi" };
+    }
   }
 
   private kindOf(mime: string, name: string): 'pdf' | 'docx' | 'txt' | null {

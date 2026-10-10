@@ -24,6 +24,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { UploadModule } from './modules/upload/upload.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { AiModule } from './modules/ai/ai.module';
+import { SubmissionsModule } from './modules/submissions/submissions.module';
 @Module({
   imports: [
     UploadModule,
@@ -48,6 +49,7 @@ import { AiModule } from './modules/ai/ai.module';
     RankingModule,
     AssignmentsModule, // <-- 2. IMPORTS MASSIVIGA QO'SHISH
     AiModule,
+    SubmissionsModule,
   ],
   providers: [
     {

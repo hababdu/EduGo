@@ -18,6 +18,7 @@ import { FileUploader } from '../../../components/materials/FileUploader';
 import { Edit3, Trash2, ExternalLink, X, Rocket, EyeOff, Eye, Calendar, ChevronLeft, Save } from '../../../design/icons';
 import { CONTROL, PAGE } from '../../../design/tokens';
 import { IMAGES } from '../../../design/images';
+import { HomeworkResultsPanel } from '../../../components/homework/HomeworkResultsPanel';
 import { isHttpUrl, youtubeEmbed } from '../../../lib/safe-url';
 import { deleteMaterialFile, type MaterialFileDto } from '../../../lib/material-files';
 
@@ -347,6 +348,8 @@ export function TeacherAssignmentDetail() {
       )}
 
       {/* Ko'rilganlik */}
+      {item.category === 'HOMEWORK' && !isDraft && <HomeworkResultsPanel assignmentId={item.id} />}
+
       {!isDraft && stats && stats.total > 0 && (
         <Panel title={`Ko'rilganlik: ${stats.viewed}/${stats.total}`} icon={Eye} accent="teal">
           <ProgressBar value={Math.round((stats.viewed / stats.total) * 100)} tone="teal" />

@@ -23,7 +23,7 @@ export class AiUsageService {
 
   async usedToday(userId: string): Promise<number> {
     const agg = await this.prisma.aiUsage.aggregate({
-      where: { userId, createdAt: { gte: this.startOfToday() } },
+      where: { userId, feature: { not: 'grade-submission' }, createdAt: { gte: this.startOfToday() } },
       _sum: { inputTokens: true, outputTokens: true },
     });
     return (agg._sum.inputTokens ?? 0) + (agg._sum.outputTokens ?? 0);

@@ -59,6 +59,7 @@ model User {
   activityLogs         ActivityLog[]
   streak               Streak?
   teacherAssignments   TeacherAssignment[]  @relation("TeacherAssignments")
+  submissions          AssignmentSubmission[] @relation("SubmissionStudent")
   createdCourses       Course[]             @relation("CourseCreatedBy")
   taughtGroups         Group[]              @relation("GroupTeacher")
   assistantGroups      Group[]              @relation("GroupAssistant")
@@ -234,8 +235,15 @@ model TeacherAssignment {
   updatedAt   DateTime           @updatedAt
   deletedAt   DateTime?
 
-  files MaterialFile[]
-  views MaterialView[]
+  /// Vazifa (HOMEWORK) uchun maksimal ball; AI shu shkalada baholaydi
+  maxScore      Int                @default(100)
+  /// PENDING — muddat kutilmoqda; RUNNING — AI baholayapti; DONE — hammasi baholangan
+  gradingStatus AssignmentGrading  @default(PENDING)
+  gradedAt      DateTime?
+
+  files       MaterialFile[]
+  views       MaterialView[]
+  submissions AssignmentSubmission[]
 
   group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacher User  @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
@@ -271,8 +279,61 @@ model MaterialFile {
   order        Int                @default(0)
   createdAt    DateTime           @default(now())
 
+  /// O'quvchining topshirgan vazifasiga biriktirilgan fayl (material fayli bo'lsa — null)
+  submissionId String?
+  submission   AssignmentSubmission? @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
   @@index([assignmentId, order])
   @@index([uploaderId, assignmentId])
+}
+
+enum AssignmentGrading {
+  PENDING
+  RUNNING
+  DONE
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+  NEEDS_REVIEW
+  FAILED
+}
+
+/// O'quvchining vazifa bo'yicha topshirig'i (bitta o'quvchi — bitta vazifaga bitta topshiriq)
+model AssignmentSubmission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  assignment   TeacherAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User             @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  textAnswer   String?
+  status       SubmissionStatus @default(SUBMITTED)
+  submittedAt  DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  /// AI bahosi
+  aiScore        Int?
+  aiFeedback     String?
+  aiStrengths    String[]
+  aiImprovements String[]
+  aiModel        String?
+  gradeAttempts  Int       @default(0)
+  gradeError     String?
+  gradedAt       DateTime?
+
+  /// O'qituvchi tuzatgan baho (bo'lsa — yakuniy shu)
+  teacherScore    Int?
+  teacherFeedback String?
+  reviewedAt      DateTime?
+
+  files MaterialFile[]
+
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId, status])
+  @@index([studentId])
 }
 
 /// O'quvchi materialni birinchi/oxirgi marta ochgan vaqt (ko'rilganlik statistikasi uchun)
