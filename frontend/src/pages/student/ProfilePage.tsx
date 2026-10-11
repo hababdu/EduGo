@@ -1,4 +1,5 @@
 // src/pages/student/ProfilePage.tsx
+import { replayOnboarding } from '../../components/layout/Onboarding';
 import { SoundToggle } from '../../components/layout/Effects';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -196,6 +197,7 @@ export function ProfilePage() {
         </button>
       </div>
       <SoundToggle />
+      <button onClick={replayOnboarding} className="w-full mt-3 py-3 rounded-xl bg-white/5 text-sm text-ink-muted active:scale-[0.99] transition">Tanishuvni qayta ko'rish</button>
     </div>
   );
 }

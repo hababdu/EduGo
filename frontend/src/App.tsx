@@ -64,6 +64,7 @@ import { AIMascotProvider } from './components/ai/AIMascot';
 import { AssistantLauncher } from './components/assistant/AssistantLauncher';
 
 import { SoundEffects, NotificationSound, PageTransition, SoundToggle } from './components/layout/Effects';
+import { Onboarding } from './components/layout/Onboarding';
 import { API_URL } from './lib/config';
 
 /* ============================================================
@@ -172,6 +173,7 @@ export function App() {
       <SoundEffects />
       <NotificationSound />
       <SoundToggle floating />
+      <Onboarding />
       {isSuper && <SuperRoutes />}
       {isAdmin && <AdminRoutes />}
       {isTeacher && <TeacherRoutes />}
