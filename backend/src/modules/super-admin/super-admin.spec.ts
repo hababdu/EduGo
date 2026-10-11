@@ -35,13 +35,13 @@ describe('SuperAdminService', () => {
 
   it('adminni tayinlash: topilmasa 404, super adminni rad etadi, boshqa maktab xodimi 409', async () => {
     const a = mk(); a.prisma.user.findUnique.mockResolvedValue(null);
-    await expect(a.svc.assignAdmin(actor, 'o1', { telegramId: '111' })).rejects.toBeInstanceOf(NotFoundException);
+    await expect(a.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(NotFoundException);
     const b = mk(); b.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'SUPER_ADMIN' });
-    await expect(b.svc.assignAdmin(actor, 'o1', { telegramId: '111' })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(b.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(BadRequestException);
     const c = mk(); c.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'TEACHER', organizationId: 'other' });
-    await expect(c.svc.assignAdmin(actor, 'o1', { telegramId: '111' })).rejects.toBeInstanceOf(ConflictException);
+    await expect(c.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(ConflictException);
     const d = mk(); d.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'STUDENT', organizationId: null });
-    await d.svc.assignAdmin(actor, 'o1', { telegramId: '111' });
+    await d.svc.assignAdmin(actor, 'o1', { userId: 'user12345' });
     expect(d.prisma.user.update.mock.calls[0][0].data).toEqual({ role: 'ADMIN', organizationId: 'o1' });
   });
 

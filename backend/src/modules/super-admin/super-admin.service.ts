@@ -92,8 +92,9 @@ export class SuperAdminService {
   async assignAdmin(actor: CurrentUserPayload, orgId: string, dto: AssignAdminDto) {
     const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
     if (!org) throw new NotFoundException('Maktab topilmadi');
-    const user = await this.prisma.user.findUnique({ where: { telegramId: dto.telegramId } });
-    if (!user || user.deletedAt) throw new NotFoundException("Bunday Telegram ID li foydalanuvchi topilmadi. U avval ilovaga kirishi kerak.");
+    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    if (!user || user.deletedAt) throw new NotFoundException('Foydalanuvchi topilmadi');
+    if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo\'lmaydi');
     if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni maktabga biriktirib bo'lmaydi");
     if (user.organizationId && user.organizationId !== orgId && user.role !== 'STUDENT') {
       throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan");
@@ -109,6 +110,27 @@ export class SuperAdminService {
     await this.prisma.user.update({ where: { id: userId }, data: { role: 'TEACHER' } });
     await this.audit(actor, 'ADMIN_REMOVE', 'User', userId, { role: 'ADMIN' }, { role: 'TEACHER' });
     return { ok: true };
+  }
+
+  /** Admin qilish uchun nomzodlar: super admin va boshqa maktabga biriktirilgan xodimlar chiqmaydi */
+  async candidates(search?: string) {
+    const q = search?.trim();
+    const users = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        status: 'ACTIVE',
+        role: { in: ['STUDENT', 'TEACHER', 'ADMIN'] },
+        ...(q ? { OR: [
+          { firstName: { contains: q, mode: 'insensitive' } },
+          { lastName: { contains: q, mode: 'insensitive' } },
+          { username: { contains: q, mode: 'insensitive' } },
+        ] } : {}),
+      },
+      orderBy: [{ role: 'desc' }, { firstName: 'asc' }],
+      take: 20,
+      select: { id: true, firstName: true, lastName: true, username: true, role: true, organization: { select: { id: true, name: true } } },
+    });
+    return users.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, role: u.role, organization: u.organization }));
   }
 
   /* ───────── Adminlar ───────── */

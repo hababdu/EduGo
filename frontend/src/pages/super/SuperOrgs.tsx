@@ -5,7 +5,8 @@ import { toast } from '../../components/ui/Toast';
 import { IMAGES } from '../../design/images';
 import { CONTROL, PAGE } from '../../design/tokens';
 import { School, Plus, X } from '../../design/icons';
-import { Org, sapi, useSuperMutation, useSuperOrgs } from './superApi';
+import { Avatar } from '../../components/staff';
+import { Candidate, Org, ROLE_UZ, sapi, useCandidates, useSuperMutation, useSuperOrgs } from './superApi';
 
 function CreateOrg() {
   const [name, setName] = useState('');
@@ -27,12 +28,13 @@ function CreateOrg() {
 }
 
 function OrgCard({ org }: { org: Org }) {
-  const [tg, setTg] = useState('');
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const { data: cands, isFetching } = useCandidates(q.trim(), open);
   const assign = useSuperMutation(sapi.assignAdmin, 'Admin tayinlandi');
   const remove = useSuperMutation(sapi.removeAdmin, 'Admin olib tashlandi');
   const upd = useSuperMutation(sapi.updateOrg);
   const suspended = org.status === 'SUSPENDED';
-  const valid = /^\d{3,20}$/.test(tg.trim());
 
   return (
     <Panel title={org.name} icon={School} accent={suspended ? 'coral' : 'teal'}
@@ -58,14 +60,40 @@ function OrgCard({ org }: { org: Org }) {
               ))}
             </ul>
           )}
-          <div className="mt-2 flex gap-2">
-            <input className={`${CONTROL.input} min-w-0 flex-1`} inputMode="numeric" placeholder="Admin Telegram ID" value={tg} onChange={(e) => setTg(e.target.value.replace(/\D/g, ''))} />
-            <button type="button" disabled={!valid || assign.isPending} className={`${CONTROL.buttonSubtle} disabled:opacity-40`}
-              onClick={() => assign.mutate({ orgId: org.id, telegramId: tg.trim() }, { onSuccess: () => setTg('') })}>
-              Tayinlash
+          {!open ? (
+            <button type="button" className={`${CONTROL.buttonSubtle} mt-2 w-full`} onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" /> Admin qo'shish
             </button>
-          </div>
-          <p className="mt-1 text-[11px] text-ink-faint">Foydalanuvchi ilovaga kamida bir marta kirgan bo'lishi kerak.</p>
+          ) : (
+            <div className="mt-2 space-y-2 rounded-2xl border border-white/10 bg-surface/50 p-2.5">
+              <div className="flex items-center gap-2">
+                <input autoFocus className={`${CONTROL.input} min-w-0 flex-1`} placeholder="Foydalanuvchini qidiring (ism yoki @username)" value={q} onChange={(e) => setQ(e.target.value)} />
+                <button type="button" aria-label="Yopish" className="rounded-lg bg-white/5 p-2 text-ink-muted" onClick={() => { setOpen(false); setQ(''); }}><X className="h-4 w-4" /></button>
+              </div>
+              <ul className="max-h-64 divide-y divide-white/5 overflow-y-auto">
+                {(cands ?? []).map((c: Candidate) => {
+                  const other = !!c.organization && c.organization.id !== org.id && c.role !== 'STUDENT';
+                  const already = c.role === 'ADMIN' && c.organization?.id === org.id;
+                  return (
+                    <li key={c.id}>
+                      <button type="button" disabled={assign.isPending || other || already}
+                        onClick={() => assign.mutate({ orgId: org.id, userId: c.id }, { onSuccess: () => { setOpen(false); setQ(''); } })}
+                        className="flex w-full items-center gap-3 px-2 py-2.5 text-left disabled:opacity-40">
+                        <Avatar name={c.name} />
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-semibold text-ink">{c.name}</div>
+                          <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role]}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
+                        </div>
+                        <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : other ? 'Band' : 'Tanlash'}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+                {cands && cands.length === 0 && <li className="p-4 text-center text-xs text-ink-muted">{isFetching ? 'Qidirilmoqda…' : 'Hech kim topilmadi'}</li>}
+                {!cands && <li className="p-4 text-center text-xs text-ink-muted">Yuklanmoqda…</li>}
+              </ul>
+            </div>
+          )}
         </div>
 
         <button type="button" disabled={upd.isPending} className={suspended ? `${CONTROL.buttonSubtle} w-full` : `${CONTROL.buttonDanger} w-full`}

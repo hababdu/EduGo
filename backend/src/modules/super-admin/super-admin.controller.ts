@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { AssignAdminDto, AuditQueryDto, CreateOrgDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
+import { AssignAdminDto, AuditQueryDto, CreateOrgDto, UserSearchDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
 import { SuperAdminService } from './super-admin.service';
 
 /** Faqat SUPER_ADMIN (RolesGuard: ADMIN ham kira olmaydi). */
@@ -18,6 +18,7 @@ export class SuperAdminController {
   @Post('organizations/:id/admins') assign(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: AssignAdminDto) { return this.svc.assignAdmin(u, id, dto); }
   @Delete('organizations/:id/admins/:userId') unassign(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Param('userId') userId: string) { return this.svc.removeAdmin(u, id, userId); }
 
+  @Get('users') users(@Query() q: UserSearchDto) { return this.svc.candidates(q.search); }
   @Get('admins') admins() { return this.svc.listAdmins(); }
   @Patch('users/:id/block') block(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body('blocked', ParseBoolPipe) blocked: boolean) { return this.svc.setBlocked(u, id, blocked); }
 

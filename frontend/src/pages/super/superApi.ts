@@ -41,6 +41,14 @@ export interface SystemInfo {
 export const useSuperOverview = () => useQuery({ queryKey: ['super', 'overview'], queryFn: () => apiFetch<Overview>(`${b}/overview`) });
 export const useSuperSystem = () => useQuery({ queryKey: ['super', 'system'], queryFn: () => apiFetch<SystemInfo>(`${b}/system`), refetchInterval: 30_000 });
 export const useSuperOrgs = () => useQuery({ queryKey: ['super', 'orgs'], queryFn: () => apiFetch<Org[]>(`${b}/organizations`) });
+export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null }
+export const useCandidates = (search: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['super', 'candidates', search],
+    queryFn: () => apiFetch<Candidate[]>(`${b}/users?search=${encodeURIComponent(search)}`),
+    enabled,
+    placeholderData: (p) => p,
+  });
 export const useSuperAdmins = () => useQuery({ queryKey: ['super', 'admins'], queryFn: () => apiFetch<AdminRow[]>(`${b}/admins`) });
 export const useSuperAi = () => useQuery({ queryKey: ['super', 'ai'], queryFn: () => apiFetch<AiInfo>(`${b}/ai`) });
 export const useSuperAudit = (page: number, action: string) =>
@@ -62,7 +70,7 @@ export function useSuperMutation<V>(fn: (v: V) => Promise<unknown>, okMsg?: stri
 export const sapi = {
   createOrg: (v: { name: string; note?: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
   updateOrg: (v: { id: string; name?: string; note?: string; status?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
-  assignAdmin: (v: { orgId: string; telegramId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ telegramId: v.telegramId }) }),
+  assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   block: (v: { id: string; blocked: boolean }) => apiFetch(`${b}/users/${v.id}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: v.blocked }) }),
   saveAi: (v: { enabled?: boolean; limits?: Record<string, number> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),

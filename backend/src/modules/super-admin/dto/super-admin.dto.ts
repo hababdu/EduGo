@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import {
-  IsBoolean, IsIn, IsInt, IsNumberString, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateNested,
+  IsBoolean, IsIn, IsInt, IsNumberString, IsOptional, IsString, Max, MaxLength, Min, MinLength, ValidateNested,
 } from 'class-validator';
 
 export class CreateOrgDto {
@@ -15,8 +15,12 @@ export class UpdateOrgDto {
 }
 
 export class AssignAdminDto {
-  /** Foydalanuvchi ilovaga kamida bir marta kirgan bo'lishi kerak */
-  @Matches(/^\d{3,20}$/, { message: "Telegram ID faqat raqamlardan iborat bo'lsin" }) telegramId!: string;
+  /** Ro'yxatdan tanlangan foydalanuvchi */
+  @IsString() @MinLength(5) @MaxLength(40) userId!: string;
+}
+
+export class UserSearchDto {
+  @IsOptional() @IsString() @MaxLength(60) search?: string;
 }
 
 class LimitsDto {
