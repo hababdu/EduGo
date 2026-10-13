@@ -129,7 +129,8 @@ export class ChatMessageDto {
   @IsIn(['user', 'assistant'])
   role: 'user' | 'assistant';
 
-  @IsString() @IsNotEmpty() @MaxLength(4000)
+  // 25 000: o'quvchi chatga matnli fayl (<= 20 000 belgi) biriktira oladi
+  @IsString() @IsNotEmpty() @MaxLength(25000)
   content: string;
 }
 

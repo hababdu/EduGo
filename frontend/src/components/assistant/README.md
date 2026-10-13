@@ -9,7 +9,7 @@
 | `RichText.tsx` | Modelning markdown'ini XAVFSIZ ko'rsatadi (HTML/havola/rasm yaratilmaydi) |
 | `ConfirmationCard.tsx` | Tasdiq kartochkasi: server matni, 10 daqiqalik hisoblagich, xavfli amalda ikki bosqichli tasdiq |
 | `AssistantSheet.tsx` | Chat oynasi (`AIGenerateModal` qobig'ida) |
-| `AssistantLauncher.tsx` | O'qituvchi/admin: suzuvchi tugma (App.tsx'da marshrutlar tashqarisida: suhbat sahifalar orasida saqlanadi) |
+| (AIMascot.tsx) | Barcha rollar: tepa markazdagi AI orol; chat sahifalar orasida saqlanadi |
 | `StudentChatHub.tsx` | O'quvchi: maskot chatida "Repetitor \| Murabbiy" bo'limlari (ikkinchi suzuvchi tugma yo'q) |
 
 Tamoyillar: kartochka matnini model emas, **server** yozadi · tasdiq faqat tugma orqali (chatdagi "ha" yetmaydi) ·

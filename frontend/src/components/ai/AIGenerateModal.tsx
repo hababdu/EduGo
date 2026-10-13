@@ -17,6 +17,10 @@ interface AIGenerateModalProps {
   footer?: React.ReactNode;
   /** Sarlavha ostida, scroll bo'lmaydigan qator (masalan, bo'limlar almashtirgich) */
   headerSlot?: React.ReactNode;
+  /** 'island' — tepa markazdan (iPhone oroli ostidan) ochiladigan oyna; 'sheet' — pastdan chiqadigan */
+  variant?: 'sheet' | 'island';
+  /** Emoji o'rniga ko'rsatiladigan element (masalan, jonli robot yuzi) */
+  iconNode?: React.ReactNode;
 }
 
 export function AIGenerateModal({
@@ -28,6 +32,8 @@ export function AIGenerateModal({
   children,
   footer,
   headerSlot,
+  variant = 'sheet',
+  iconNode,
 }: AIGenerateModalProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -50,30 +56,41 @@ export function AIGenerateModal({
 
   if (!isOpen) return null;
 
+  const island = variant === 'island';
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center">
+    <div className={island ? 'fixed inset-0 z-[110]' : 'fixed inset-0 z-50 flex flex-col justify-end sm:items-center sm:justify-center'}>
       {/* BACKDROP */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[aiFadeIn_0.2s_ease-out]"
         onClick={onClose}
       />
 
-      {/* SHEET */}
+      {/* SHEET / ISLAND */}
       <div
-        className="relative w-full sm:max-w-lg sm:mx-4 max-h-[92dvh] sm:max-h-[85vh] bg-base rounded-t-[28px] sm:rounded-[28px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-[aiSlideUp_0.28s_cubic-bezier(0.32,0.72,0,1)]"
+        className={
+          island
+            ? 'island-open absolute left-1/2 -translate-x-1/2 w-[calc(100%-16px)] max-w-[440px] bg-base/95 backdrop-blur-xl rounded-[30px] border border-white/10 shadow-2xl shadow-black/60 flex flex-col overflow-hidden'
+            : 'relative w-full sm:max-w-lg sm:mx-4 max-h-[92dvh] sm:max-h-[85vh] bg-base rounded-t-[28px] sm:rounded-[28px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-[aiSlideUp_0.28s_cubic-bezier(0.32,0.72,0,1)]'
+        }
+        style={island ? { top: 'var(--island-top)', maxHeight: 'calc(100dvh - var(--island-top) - 12px)' } : undefined}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle (mobil hissi uchun) */}
-        <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-          <div className="w-9 h-1 rounded-full bg-white/15" />
-        </div>
+        {!island && (
+          <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
+            <div className="w-9 h-1 rounded-full bg-white/15" />
+          </div>
+        )}
 
         {/* HEADER */}
-        <div className="flex items-start justify-between gap-3 px-5 pt-2 pb-4 border-b border-white/5 shrink-0">
-          <div className="flex items-start gap-3 min-w-0">
-            <span className="text-2xl leading-none shrink-0 mt-0.5">
-              {icon}
-            </span>
+        <div className={`flex items-start justify-between gap-3 px-5 pb-4 border-b border-white/5 shrink-0 ${island ? 'pt-3' : 'pt-2'}`}>
+          <div className={`flex gap-3 min-w-0 ${iconNode ? 'items-center' : 'items-start'}`}>
+            {iconNode ?? (
+              <span className="text-2xl leading-none shrink-0 mt-0.5">
+                {icon}
+              </span>
+            )}
             <div className="min-w-0">
               <h2 className="font-display text-base text-ink truncate">
                 {title}

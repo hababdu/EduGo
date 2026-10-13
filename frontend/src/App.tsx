@@ -61,7 +61,6 @@ import { AdminNav } from './components/admin/AdminNav';
 import { TeacherNav } from './components/teacher/TeacherNav';
 import { ToastHost } from './components/ui/Toast';
 import { AIMascotProvider } from './components/ai/AIMascot';
-import { AssistantLauncher } from './components/assistant/AssistantLauncher';
 
 import { SoundEffects, NotificationSound, PageTransition, SoundToggle } from './components/layout/Effects';
 import { Onboarding } from './components/layout/Onboarding';
@@ -174,10 +173,12 @@ export function App() {
       <NotificationSound />
       <SoundToggle floating />
       <Onboarding />
-      {isSuper && <SuperRoutes />}
-      {isAdmin && <AdminRoutes />}
-      {isTeacher && <TeacherRoutes />}
-      {!isSuper && !isAdmin && !isTeacher && <StudentRoutes />}
+      <AIMascotProvider>
+        {isSuper && <SuperRoutes />}
+        {isAdmin && <AdminRoutes />}
+        {isTeacher && <TeacherRoutes />}
+        {!isSuper && !isAdmin && !isTeacher && <StudentRoutes />}
+      </AIMascotProvider>
     </BrowserRouter>
   );
 }
@@ -209,7 +210,6 @@ function SuperRoutes() {
         </PageTransition>
       </div>
       <SuperNav />
-      <AssistantLauncher />
     </>
   );
 }
@@ -239,7 +239,6 @@ function AdminRoutes() {
         </PageTransition>
       </div>
       <AdminNav />
-      <AssistantLauncher />
     </>
   );
 }
@@ -316,7 +315,6 @@ function TeacherRoutes() {
         </PageTransition>
       </div>
       {!hideBottomNav && <TeacherNav />}
-      <AssistantLauncher />
     </>
   );
 }
@@ -336,8 +334,7 @@ function StudentRoutes() {
 
   return (
     <>
-      <AIMascotProvider>
-        <div className="min-h-screen pb-24">
+      <div className="min-h-screen pb-24">
           <PageTransition>
           <Routes>
             {/* ============ ASOSIY ============ */}
@@ -368,8 +365,7 @@ function StudentRoutes() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </PageTransition>
-        </div>
-      </AIMascotProvider>
+      </div>
       {!hideBottomNav && <BottomNav />}
     </>
   );

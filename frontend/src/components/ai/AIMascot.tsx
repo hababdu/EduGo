@@ -1,596 +1,436 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-} from 'react';
-import { MascotSVG, type MascotMood } from './MascotSVG';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useLocation } from 'react-router-dom';
+import { type MascotMood } from './MascotSVG';
 import { StudentChatHub } from '../assistant/StudentChatHub';
+import { AssistantSheet } from '../assistant/AssistantSheet';
+import { useAssistant } from '../../hooks/useAssistant';
+import { safePage } from '../../lib/assistant-client';
+import { ChatFileError, readChatFile } from '../../lib/chat-file';
+import { haptic } from '../../lib/telegram';
+import { isSoundEnabled, playSound, setSoundEnabled } from '../../lib/sound';
+import { useAuthStore } from '../../store/auth.store';
+import { toast } from '../ui/Toast';
+import { IslandBot } from './island/IslandBot';
+import { MOOD, MOOD_SOUND, toIslandMood, type IslandMood } from './island/moods';
+import { OUTFITS, setOutfitPref, useOutfitPref } from './island/outfits';
+import {
+  MascotContext,
+  useMascot,
+  type AttachedFile,
+  type MascotContextValue,
+  type MascotReaction,
+  type OpenChatContext,
+} from './mascot-context';
+
+export { useMascot };
 
 /* ============================================================
-   AI MASCOT — Professional AI Yordamchi Ko'rinishi
-   + O'chirilganda qayta yoqish uchun kichik floating tugma
+   AI OROL — ekranning yuqori markazida "dinamik orol"dek turuvchi robot.
+   • iPhone oroli va Telegram sarlavhasi ostida turadi (--island-top, index.css)
+   • hissiyatlar: o'ylaydi, ishlaydi, xato, bayram, uyqu, jahli chiqadi, boshi aylanadi...
+   • bosilsa chat ochiladi; ushlab tursangiz menyu (kiyim, ovoz, o'chirish)
+   • fayl tashlansa robot qutiga aylanib, uni "yutadi" va savol berishga tayyor bo'ladi
    ============================================================ */
 
 const STORAGE_KEY = 'ai-mascot-enabled';
+const SLEEP_AFTER_MS = 120_000;
 
-const IDLE_JOKES = [
-  "Salom! Bugun qaysi mavzuni muhokama qilamiz? 🤖",
-  "Yangi bilimlarni o'rganishga tayyormisiz? 🚀",
-  "Savolingiz bo'lsa, ustimga bosing — yordam beraman! 💡",
-  "Kichik tanaffusdan keyin yana davom etamiz 😉",
-  "Har kuni 1% oldinga intilamiz! 📈",
-];
-
-const CATCH_LINES = [
-  "Voy, ushlab oldingiz! 🎉",
-  "Zo'r reflekslar! ✋",
-  "Bu safar qochib bo'lmadi 😄",
-];
+const IDLE_LINES: Record<'STUDENT' | 'STAFF', string[]> = {
+  STUDENT: [
+    'Savolingiz bo\'lsa, ustimga bosing 💡',
+    'Yangi mavzuni o\'rganamizmi? 🚀',
+    'Har kuni 1% oldinga 📈',
+    'Faylni shu yerga tashlang — o\'qib beraman 📦',
+  ],
+  STAFF: [
+    'Guruhlar tahlilini tayyorlab beraymi? 📊',
+    'Test savollarini AI bilan yaratish mumkin ✨',
+    'Qaysi o\'quvchilarga yordam kerakligini aytaman 🔎',
+  ],
+};
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-interface OpenChatContext {
-  studentName?: string;
-  weakTopics?: string[];
-}
+const PILL_W = 96;
+const PILL_H = 34;
+const BUBBLE_W = 300;
+const BUBBLE_H = 58;
 
-interface MascotContextValue {
-  celebrate: () => void;
-  comfort: () => void;
-  speak: (text: string, mood?: MascotMood) => void;
-  openChat: (ctx?: OpenChatContext) => void;
-}
+export function AIMascotProvider({ children }: { children?: ReactNode }) {
+  const user = useAuthStore((s) => s.user);
+  const { pathname } = useLocation();
+  const isStudent = !user || (user.role !== 'TEACHER' && user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN');
+  const staffAssistant = useAssistant({ page: safePage(pathname) });
+  const { outfit, pref } = useOutfitPref();
 
-const MascotContext = createContext<MascotContextValue | null>(null);
-
-export function useMascot() {
-  const ctx = useContext(MascotContext);
-  if (!ctx) {
-    return {
-      celebrate: () => {},
-      comfort: () => {},
-      speak: () => {},
-      openChat: () => {},
-    };
-  }
-  return ctx;
-}
-
-interface AIMascotProps {
-  children?: React.ReactNode;
-  corner?: 'bottom-right' | 'bottom-left';
-  minIntervalMs?: number;
-  maxIntervalMs?: number;
-}
-
-/* ---------- O'yin sozlamalari ---------- */
-const MASCOT_SIZE = 58;
-const DODGE_RADIUS = 120; // shuncha px yaqinlashsa qochadi
-const DODGE_COOLDOWN_MS = 320;
-const AUTO_ROAM_MS = 2200;
-
-/* ---------- Surib yuriladigan joylashuv ---------- */
-const POS_KEY = 'ai-mascot-pos';
-const DRAG_THRESHOLD = 6; // px — shundan kam siljish "bosish" hisoblanadi
-const BTN = 64; // launcher tugmasi o'lchami
-const EDGE = 8;
-const TOP_SAFE = 72;
-const BOTTOM_SAFE = 96; // pastki navigatsiya ostiga tushmasin
-
-function clampDock(p: { x: number; y: number }) {
-  const maxX = Math.max(EDGE, window.innerWidth - BTN - EDGE);
-  const maxY = Math.max(TOP_SAFE, window.innerHeight - BTN - BOTTOM_SAFE);
-  return {
-    x: Math.min(maxX, Math.max(EDGE, p.x)),
-    y: Math.min(maxY, Math.max(TOP_SAFE, p.y)),
-  };
-}
-
-/** Saqlangan (nisbiy) joylashuvni o'qiydi; buzuq yoki yo'q bo'lsa — null (standart burchak) */
-function loadDock(): { x: number; y: number } | null {
-  try {
-    const raw = localStorage.getItem(POS_KEY);
-    if (!raw) return null;
-    const v = JSON.parse(raw);
-    if (typeof v?.fx !== 'number' || typeof v?.fy !== 'number') return null;
-    if (!(v.fx >= 0 && v.fx <= 1 && v.fy >= 0 && v.fy <= 1)) return null;
-    return clampDock({ x: v.fx * window.innerWidth, y: v.fy * window.innerHeight });
-  } catch {
-    return null;
-  }
-}
-
-function saveDock(p: { x: number; y: number }) {
-  try {
-    localStorage.setItem(
-      POS_KEY,
-      JSON.stringify({ fx: p.x / window.innerWidth, fy: p.y / window.innerHeight }),
-    );
-  } catch {
-    /* saqlanmasa ham ishlayveradi */
-  }
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-export function AIMascotProvider({
-  children,
-  corner = 'bottom-right',
-  minIntervalMs = 40_000,
-  maxIntervalMs = 90_000,
-}: AIMascotProps) {
   const [enabled, setEnabled] = useState(true);
+  const [baseMood, setBaseMood] = useState<IslandMood>('idle');
+  const [flash, setFlash] = useState<IslandMood | null>(null);
   const [bubble, setBubble] = useState<string | null>(null);
-  const [mood, setMood] = useState<MascotMood>('idle');
-  const [showSettings, setShowSettings] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<OpenChatContext>({});
-
-  /* ---------- Quvlashmachoq o'yini holati ---------- */
-  const [gameActive, setGameActive] = useState(false);
-  const [position, setPosition] = useState<Point | null>(null);
-  const [catches, setCatches] = useState(0);
-  const [caughtFlash, setCaughtFlash] = useState(false);
-
-  /* ---------- Surib yurish ---------- */
-  const [dock, setDock] = useState<Point | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ sx: number; sy: number; ox: number; oy: number; active: boolean } | null>(null);
-  const wasDrag = useRef(false);
-  const holderRef = useRef<HTMLDivElement | null>(null);
 
+  const fileRef = useRef<AttachedFile | undefined>(undefined);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const wasLongPress = useRef(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const lastDodgeAt = useRef(0);
-  const roamTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const petTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressed = useRef(false);
+  const lastActive = useRef(Date.now());
+  const pokes = useRef<number[]>([]);
+  const enabledRef = useRef(true);
+  enabledRef.current = enabled;
+
+  const pending = !isStudent ? staffAssistant.pendingCount : 0;
+  const mood: IslandMood = dragging
+    ? 'box'
+    : flash ?? (!enabled ? 'sleeping' : pending > 0 && !chatOpen ? 'approval' : baseMood);
+
+  /* ---------- Ovoz: hissiyat o'zgarganda ---------- */
+  const prevMood = useRef<IslandMood>(mood);
+  useEffect(() => {
+    if (prevMood.current !== mood && enabledRef.current) {
+      const snd = MOOD_SOUND[mood];
+      if (snd) playSound(snd);
+    }
+    prevMood.current = mood;
+  }, [mood]);
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'false') setEnabled(false);
-    } catch {
-      /* localStorage yo'q bo'lsa — yoqilgan holat */
-    }
-    setDock(loadDock());
+      if (localStorage.getItem(STORAGE_KEY) === 'false') setEnabled(false);
+    } catch { /* yoqilgan holat */ }
   }, []);
 
-  // Ekran o'lchami o'zgarsa (burilish, klaviatura) maskot ekrandan chiqib ketmasin
-  useEffect(() => {
-    const onResize = () => setDock((d) => (d ? clampDock(d) : d));
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+  const doFlash = useCallback((m: IslandMood, ms = 2500) => {
+    if (!enabledRef.current) return;
+    setFlash(m);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), ms);
   }, []);
 
-  const showBubble = useCallback((text: string, duration = 4500) => {
+  const showBubble = useCallback((text: string, ms = 4500) => {
+    if (!enabledRef.current) return;
     setBubble(text);
     if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
-    bubbleTimer.current = setTimeout(() => setBubble(null), duration);
+    bubbleTimer.current = setTimeout(() => setBubble(null), ms);
   }, []);
 
-  const celebrate = useCallback(() => {
-    if (!enabled) return;
-    setMood('happy');
-    setTimeout(() => setMood((m) => (m === 'happy' ? 'idle' : m)), 3000);
-  }, [enabled]);
-
-  const comfort = useCallback(() => {
-    if (!enabled) return;
-    setMood('sad');
-    setTimeout(() => setMood((m) => (m === 'sad' ? 'idle' : m)), 3400);
-  }, [enabled]);
+  /* ---------- Ommaviy API ---------- */
+  const celebrate = useCallback(() => doFlash('proud', 3200), [doFlash]);
+  const comfort = useCallback(() => doFlash('sad', 3400), [doFlash]);
 
   const speak = useCallback(
-    (text: string, nextMood?: MascotMood) => {
-      if (!enabled) return;
+    (text: string, m?: MascotMood) => {
       showBubble(text);
-      if (nextMood) {
-        setMood(nextMood);
-        setTimeout(() => setMood((m) => (m === nextMood ? 'idle' : m)), 4000);
-      }
+      if (m) doFlash(toIslandMood(m), 3500);
     },
-    [enabled, showBubble],
+    [showBubble, doFlash],
   );
 
   const openChat = useCallback((ctx?: OpenChatContext) => {
-    if (ctx) setChatContext(ctx);
-    setChatOpen(true);
-    setBubble(null);
-  }, []);
-
-  useEffect(() => {
-    if (!enabled || gameActive) return;
-
-    const scheduleNext = () => {
-      const delay =
-        minIntervalMs + Math.random() * (maxIntervalMs - minIntervalMs);
-      idleTimer.current = setTimeout(() => {
-        if (!chatOpen) showBubble(pick(IDLE_JOKES));
-        scheduleNext();
-      }, delay);
-    };
-
-    scheduleNext();
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-    };
-  }, [enabled, gameActive, minIntervalMs, maxIntervalMs, showBubble, chatOpen]);
-
-  const randomPosition = useCallback((avoid?: Point): Point => {
-    const padX = 24;
-    const padTop = 84;
-    const padBottom = 120;
-    const maxX = Math.max(padX, window.innerWidth - MASCOT_SIZE - padX);
-    const maxY = Math.max(
-      padTop,
-      window.innerHeight - MASCOT_SIZE - padBottom,
-    );
-
-    let best: Point = { x: padX, y: padTop };
-    let bestDist = -1;
-
-    for (let i = 0; i < 6; i++) {
-      const candidate: Point = {
-        x: padX + Math.random() * (maxX - padX),
-        y: padTop + Math.random() * (maxY - padTop),
-      };
-      if (!avoid) {
-        best = candidate;
-        break;
-      }
-      const dist = Math.hypot(candidate.x - avoid.x, candidate.y - avoid.y);
-      if (dist > bestDist) {
-        bestDist = dist;
-        best = candidate;
-      }
+    if (ctx) {
+      setChatContext(ctx);
+      fileRef.current = ctx.file;
     }
-    return best;
-  }, []);
-
-  const startGame = useCallback(() => {
-    setShowSettings(false);
     setBubble(null);
-    setChatOpen(false);
-    setCatches(0);
-    setPosition(randomPosition());
-    setMood('run');
-    setGameActive(true);
-  }, [randomPosition]);
-
-  const stopGame = useCallback(() => {
-    setGameActive(false);
-    setPosition(null);
-    setMood('idle');
+    setMenuOpen(false);
+    setFlash(null);
+    setChatOpen(true);
+    playSound('pop');
   }, []);
 
-  const dodge = useCallback(
-    (from?: Point) => {
-      const now = Date.now();
-      if (now - lastDodgeAt.current < DODGE_COOLDOWN_MS) return;
-      lastDodgeAt.current = now;
-      setPosition(randomPosition(from));
-      setMood('run');
+  const react = useCallback(
+    (e: MascotReaction) => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      switch (e) {
+        case 'thinking': setFlash(null); setBaseMood('thinking'); break;
+        case 'working': setFlash(null); setBaseMood('working'); break;
+        case 'approval': setFlash(null); setBaseMood('approval'); break;
+        case 'finished': setBaseMood('idle'); doFlash('finished', 2200); break;
+        case 'error': setBaseMood('idle'); doFlash('error', 3000); break;
+        default: setFlash(null); setBaseMood('idle');
+      }
     },
-    [randomPosition],
+    [doFlash],
   );
 
-  const handleCatch = useCallback(() => {
-    setCatches((c) => c + 1);
-    setCaughtFlash(true);
-    setMood('happy');
-    setTimeout(() => setCaughtFlash(false), 900);
-    setTimeout(() => {
-      setPosition(randomPosition());
-      setMood('run');
-    }, 700);
-  }, [randomPosition]);
-
-  useEffect(() => {
-    if (!gameActive) {
-      if (roamTimer.current) clearInterval(roamTimer.current);
-      return;
+  const poke = useCallback(() => {
+    const now = Date.now();
+    pokes.current = [...pokes.current.filter((t) => now - t < 1400), now];
+    if (pokes.current.length >= 3) {
+      pokes.current = [];
+      doFlash('dizzy', 2600);
+    } else {
+      doFlash('annoyed', 1100);
     }
-    roamTimer.current = setInterval(() => {
-      setPosition((prev) => randomPosition(prev ?? undefined));
-    }, AUTO_ROAM_MS);
-    return () => {
-      if (roamTimer.current) clearInterval(roamTimer.current);
+  }, [doFlash]);
+
+  const petStart = useCallback(() => {
+    if (petTimer.current) clearTimeout(petTimer.current);
+    petTimer.current = setTimeout(() => doFlash('love', 3200), 1500);
+  }, [doFlash]);
+  const petEnd = useCallback(() => {
+    if (petTimer.current) clearTimeout(petTimer.current);
+  }, []);
+
+  const takeFile = useCallback(() => {
+    const f = fileRef.current;
+    fileRef.current = undefined;
+    return f;
+  }, []);
+
+  /* ---------- Faollik: uyqu va uyg'onish ---------- */
+  useEffect(() => {
+    const touch = () => {
+      lastActive.current = Date.now();
+      setBaseMood((m) => {
+        if (m === 'sleeping') {
+          doFlash('surprised', 900);
+          return 'idle';
+        }
+        return m;
+      });
     };
-  }, [gameActive, randomPosition]);
+    window.addEventListener('pointerdown', touch, { passive: true });
+    window.addEventListener('keydown', touch);
+    const iv = setInterval(() => {
+      if (!enabledRef.current) return;
+      if (Date.now() - lastActive.current > SLEEP_AFTER_MS) {
+        setBaseMood((m) => {
+          if (m !== 'idle') return m;
+          doFlash('yawn', 1800);
+          setTimeout(() => setBaseMood((x) => (x === 'idle' ? 'sleeping' : x)), 1800);
+          return m;
+        });
+        lastActive.current = Date.now() - SLEEP_AFTER_MS + 8_000;
+      }
+    }, 10_000);
+    return () => {
+      window.removeEventListener('pointerdown', touch);
+      window.removeEventListener('keydown', touch);
+      clearInterval(iv);
+    };
+  }, [doFlash]);
+
+  /* ---------- Birinchi salom (sessiyada bir marta) va tasodifiy gaplar ---------- */
+  useEffect(() => {
+    if (!user) return;
+    let seen = false;
+    try { seen = sessionStorage.getItem('edugo.island.greeted') === '1'; sessionStorage.setItem('edugo.island.greeted', '1'); } catch { /* ixtiyoriy */ }
+    if (seen) return;
+    const t = setTimeout(() => {
+      doFlash('wink', 2200);
+      playSound('greet');
+      showBubble(`Salom, ${user.firstName}! 👋`, 3500);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!gameActive) return;
+    if (!enabled || chatOpen) return;
+    let t: ReturnType<typeof setTimeout>;
+    const next = () => {
+      t = setTimeout(() => {
+        if (document.visibilityState === 'visible') showBubble(pick(IDLE_LINES[isStudent ? 'STUDENT' : 'STAFF']));
+        next();
+      }, 45_000 + Math.random() * 45_000);
+    };
+    next();
+    return () => clearTimeout(t);
+  }, [enabled, chatOpen, isStudent, showBubble]);
 
-    const handlePointerMove = (e: PointerEvent) => {
-      const el = buttonRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-      if (dist < DODGE_RADIUS) {
-        dodge({ x: e.clientX, y: e.clientY });
+  /* ---------- Fayl tashlash (faqat o'quvchi: repetitor fayl asosida javob beradi) ---------- */
+  useEffect(() => {
+    if (!isStudent || !enabled) return;
+    const hasFiles = (e: DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes('Files');
+    const over = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      setDragging((d) => {
+        if (!d) showBubble('Faylni tashlang 📦', 8000);
+        return true;
+      });
+    };
+    const leave = (e: DragEvent) => {
+      if (e.relatedTarget === null) setDragging(false);
+    };
+    const drop = async (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      setDragging(false);
+      const f = e.dataTransfer?.files?.[0];
+      if (!f) return;
+      try {
+        const file = await readChatFile(f);
+        playSound('gulp');
+        openChat({ ...chatContext, file });
+        doFlash('happy', 2000);
+      } catch (err) {
+        toast('error', err instanceof ChatFileError ? err.message : "Faylni o'qib bo'lmadi");
+        doFlash('error', 2000);
       }
     };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    return () => window.removeEventListener('pointermove', handlePointerMove);
-  }, [gameActive, dodge]);
-
-  const handleTap = () => {
-    if (gameActive) {
-      handleCatch();
-      return;
-    }
-    if (wasDrag.current) {
-      wasDrag.current = false; // surib qo'yilgandan keyingi "click" — chatni ochmasin
-      return;
-    }
-    if (wasLongPress.current) {
-      wasLongPress.current = false;
-      return;
-    }
-    setMood('wave');
-    setTimeout(() => setMood((m) => (m === 'wave' ? 'idle' : m)), 1000);
-    openChat();
-  };
-
-  const handlePressStart = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (gameActive) return;
-    wasLongPress.current = false;
-    wasDrag.current = false;
-    const rect = holderRef.current?.getBoundingClientRect();
-    dragRef.current = {
-      sx: e.clientX,
-      sy: e.clientY,
-      ox: rect?.left ?? 0,
-      oy: rect?.top ?? 0,
-      active: false,
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    return () => {
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('drop', drop);
     };
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* ba'zi brauzerlarda mavjud emas */
-    }
-    longPressTimer.current = setTimeout(() => {
-      if (dragRef.current?.active) return;
-      wasLongPress.current = true;
-      setShowSettings(true);
-    }, 650);
-  };
+  }, [isStudent, enabled, chatContext, openChat, doFlash, showBubble]);
 
-  const handlePressMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const dx = e.clientX - d.sx;
-    const dy = e.clientY - d.sy;
-    if (!d.active) {
-      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
-      d.active = true;
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-      setShowSettings(false);
-      setBubble(null);
-      setDragging(true);
-    }
-    setDock(clampDock({ x: d.ox + dx, y: d.oy + dy }));
+  /* ---------- Pill: bosish va ushlab turish ---------- */
+  const onPressStart = () => {
+    longPressed.current = false;
+    pressTimer.current = setTimeout(() => {
+      longPressed.current = true;
+      haptic('medium');
+      setMenuOpen(true);
+    }, 600);
   };
-
-  const handlePressEnd = () => {
-    if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    const d = dragRef.current;
-    dragRef.current = null;
-    if (!d?.active) return;
-    // Qo'yib yuborilganda eng yaqin chetga yopishadi
-    wasDrag.current = true;
-    setDragging(false);
-    setDock((cur) => {
-      if (!cur) return cur;
-      const snapped = clampDock({
-        x: cur.x + BTN / 2 < window.innerWidth / 2 ? EDGE : window.innerWidth - BTN - EDGE,
-        y: cur.y,
-      });
-      saveDock(snapped);
-      return snapped;
-    });
+  const onPressEnd = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+  };
+  const onTap = () => {
+    if (longPressed.current) { longPressed.current = false; return; }
+    haptic('light');
+    openChat();
   };
 
   const toggleEnabled = () => {
     const next = !enabled;
     setEnabled(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, String(next));
-    } catch {
-      /* ixtiyoriy */
-    }
-    setShowSettings(false);
+    try { localStorage.setItem(STORAGE_KEY, String(next)); } catch { /* ixtiyoriy */ }
+    setMenuOpen(false);
     setBubble(null);
-    if (gameActive) stopGame();
+    setFlash(null);
   };
 
-  const cornerClass = corner === 'bottom-right' ? 'right-5' : 'left-5';
-
-  // Pufak va menyu tugmaning qaysi tomonida ochilishi: surilgan bo'lsa — ekran yarmiga qarab
-  const onRight = dock ? dock.x + BTN / 2 >= window.innerWidth / 2 : corner === 'bottom-right';
-  const sideClass = onRight ? 'right-0' : 'left-0';
-  const openBelow = !!dock && dock.y < 170; // yuqoriga yaqin bo'lsa, pastga ochiladi
-  const vClass = openBelow ? 'top-full mt-3' : 'bottom-full mb-3';
-
-  const contextValue: MascotContextValue = {
-    celebrate,
-    comfort,
-    speak,
-    openChat,
+  const ctxValue: MascotContextValue = {
+    celebrate, comfort, speak, openChat, mood, react, poke, petStart, petEnd, takeFile, chatContext,
   };
+
+  const cfg = MOOD[mood];
+  const expanded = !!bubble && !chatOpen && enabled;
+  const w = expanded ? BUBBLE_W : enabled ? PILL_W : 64;
+  const h = expanded ? BUBBLE_H : enabled ? PILL_H : 28;
+  const soundOn = isSoundEnabled();
 
   return (
-    <MascotContext.Provider value={contextValue}>
+    <MascotContext.Provider value={ctxValue}>
       {children}
 
-      {/* Robot yoqilgan va o'yin holatida bo'lmagan vaqtda */}
-      {enabled && !gameActive && (
+      {!chatOpen && (
         <div
-          ref={holderRef}
-          className={`fixed z-40 select-none flex flex-col ${onRight ? 'items-end' : 'items-start'} ${
-            dock ? '' : `bottom-24 sm:bottom-6 ${cornerClass}`
-          }`}
-          style={
-            dock
-              ? {
-                  left: dock.x,
-                  top: dock.y,
-                  transition: dragging ? 'none' : 'left 0.25s ease-out, top 0.25s ease-out',
-                }
-              : undefined
-          }
+          className="fixed left-1/2 z-50 -translate-x-1/2 select-none"
+          style={{ top: 'var(--island-top)', maxWidth: 'calc(100vw - 16px)' }}
         >
-          {bubble && !chatOpen && (
-            <div
-              className={`absolute ${vClass} ${sideClass} max-w-[260px] glass border border-gold/25 text-ink text-xs rounded-2xl rounded-br-sm px-4 py-3 shadow-2xl shadow-gold/5 animate-[mascotPop_0.25s_ease-out]`}
-            >
-              <div className="flex items-center gap-1.5 mb-1 text-[10px] font-semibold text-gold uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
-                AI Yordamchi
-              </div>
-              <p className="leading-relaxed">{bubble}</p>
-            </div>
-          )}
-
-          {showSettings && (
-            <div
-              className={`absolute ${vClass} ${sideClass} glass border border-white/10 rounded-2xl shadow-2xl overflow-hidden text-xs z-50`}
-            >
-              <div className="px-3 py-2 bg-white/5 font-medium text-ink-muted border-b border-white/5">
-                AI Sozlamalari
-              </div>
-              <button
-                type="button"
-                onClick={startGame}
-                className="w-full text-left px-4 py-2.5 text-teal hover:bg-white/5 transition-colors whitespace-nowrap flex items-center gap-2 border-b border-white/5"
-              >
-                <span>🎮</span> Meni ushlab ko'ring! (o'yin)
-              </button>
-              <button
-                type="button"
-                onClick={toggleEnabled}
-                className="w-full text-left px-4 py-2.5 text-coral hover:bg-white/5 transition-colors whitespace-nowrap flex items-center gap-2"
-              >
-                <span>🔕</span> Robotni o'chirish
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSettings(false)}
-                className="w-full text-left px-4 py-2.5 text-ink-muted hover:bg-white/5 transition-colors whitespace-nowrap border-t border-white/5"
-              >
-                Bekor qilish
-              </button>
-            </div>
-          )}
-
           <button
             type="button"
-            aria-label="Professional AI yordamchi bilan chatni ochish"
-            onClick={handleTap}
-            onPointerDown={handlePressStart}
-            onPointerMove={handlePressMove}
-            onPointerUp={handlePressEnd}
-            onPointerCancel={handlePressEnd}
-            style={{ touchAction: 'none' }}
-            className="w-16 h-16 rounded-full bg-gradient-to-tr from-gold/15 to-teal/10 hover:from-gold/25 hover:to-teal/15 flex items-center justify-center active:scale-95 transition-all duration-300 group cursor-pointer focus:outline-none"
-          >
-            <MascotSVG mood={mood} size={58} />
-          </button>
-        </div>
-      )}
-
-      {/* ============ ROBOT O'CHIRILGANDA PAYDO BO'LADIGAN QAYTA YOQISH TUGMASI ============ */}
-      {!enabled && (
-        <div className={`fixed bottom-24 sm:bottom-6 ${cornerClass} z-40 select-none`}>
-          <button
-            type="button"
-            onClick={toggleEnabled}
-            title="AI Robotni qayta yoqish"
-            className="group flex items-center gap-2 glass text-ink text-xs font-medium px-3.5 py-2.5 rounded-full border border-gold/25 shadow-xl active:scale-95 transition-all duration-300"
-          >
-            <span className="w-6 h-6 rounded-full bg-gold/15 flex items-center justify-center text-gold group-hover:scale-110 transition-transform">
-              🤖
-            </span>
-            <span>AI Yoqish</span>
-          </button>
-        </div>
-      )}
-
-      {/* ============ QUVLASHMACHOQ REJIMI ============ */}
-      {enabled && gameActive && position && (
-        <>
-          <div className="fixed top-3 inset-x-3 z-50 flex items-center justify-between gap-2 glass border border-gold/25 rounded-2xl px-4 py-2.5 shadow-xl">
-            <div className="flex items-center gap-2 text-xs text-ink">
-              <span>🏃</span>
-              <span className="font-semibold">Ushlab ko'ring!</span>
-              <span className="text-ink-muted">·</span>
-              <span className="text-teal font-semibold tabular-nums">
-                {catches} ta ushlandi
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={stopGame}
-              className="text-[11px] font-semibold text-coral bg-coral/10 border border-coral/25 px-3 py-1.5 rounded-xl active:scale-95 transition-transform"
-            >
-              ✕ To'xtatish
-            </button>
-          </div>
-
-          {caughtFlash && (
-            <div className="fixed top-16 inset-x-3 z-50 flex justify-center pointer-events-none">
-              <div className="bg-teal/90 text-base text-xs font-semibold px-4 py-2 rounded-full shadow-xl animate-[mascotPop_0.2s_ease-out]">
-                {pick(CATCH_LINES)}
-              </div>
-            </div>
-          )}
-
-          <button
-            ref={buttonRef}
-            type="button"
-            aria-label="Robotni ushlash"
-            onClick={handleTap}
+            aria-label="AI yordamchini ochish"
+            data-silent
+            onClick={onTap}
+            onPointerDown={onPressStart}
+            onPointerUp={onPressEnd}
+            onPointerLeave={onPressEnd}
+            onPointerCancel={onPressEnd}
+            onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
+            className="relative flex items-center overflow-hidden bg-[#05070F] text-ink shadow-xl"
             style={{
-              position: 'fixed',
-              left: position.x,
-              top: position.y,
-              transition: 'left 0.3s ease-out, top 0.3s ease-out',
+              width: `min(${w}px, calc(100vw - 16px))`,
+              height: h,
+              borderRadius: expanded ? 29 : 999,
+              padding: expanded ? '0 14px 0 8px' : 0,
+              justifyContent: expanded ? 'flex-start' : 'center',
+              gap: 8,
+              touchAction: 'manipulation',
+              transition:
+                'width .42s cubic-bezier(.34,1.3,.64,1), height .42s cubic-bezier(.34,1.3,.64,1), border-radius .3s, box-shadow .4s',
+              boxShadow: `0 0 0 1px rgba(255,255,255,.09), 0 8px 24px -8px ${cfg.glow}${Math.round(Math.max(cfg.glowOpacity, 0.15) * 255).toString(16).padStart(2, '0')}`,
             }}
-            className="z-40 w-16 h-16 flex items-center justify-center active:scale-90 transition-transform"
           >
-            <MascotSVG mood={mood} size={MASCOT_SIZE} />
+            <IslandBot mood={mood} outfit={enabled ? outfit : 'none'} size={expanded ? 52 : enabled ? 44 : 34} style={{ flexShrink: 0, transition: 'all .3s' }} />
+            {expanded && (
+              <span className="min-w-0 text-left text-[12px] leading-snug line-clamp-2" style={{ animation: 'island-fade .3s .12s backwards' }}>
+                {bubble}
+              </span>
+            )}
+            {pending > 0 && !expanded && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[16px] h-4 px-1 rounded-full bg-coral text-white text-[10px] font-bold flex items-center justify-center">
+                {pending}
+              </span>
+            )}
           </button>
-        </>
+
+          {menuOpen && (
+            <>
+              <button type="button" aria-label="Yopish" className="fixed inset-0 z-[-1] cursor-default" onClick={() => setMenuOpen(false)} />
+              <div className="island-open absolute left-1/2 top-full mt-2 w-[280px] -translate-x-1/2 rounded-3xl glass border border-white/10 p-3 shadow-2xl text-xs">
+                <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Garderob</p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setOutfitPref('auto')}
+                    className={`rounded-xl py-2 text-center ${pref === 'auto' ? 'bg-gold text-base font-semibold' : 'bg-white/5 text-ink-muted'}`}
+                  >
+                    <span className="block text-base">✨</span>Avto
+                  </button>
+                  {OUTFITS.map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      title={o.label}
+                      onClick={() => setOutfitPref(o.id)}
+                      className={`rounded-xl py-2 text-center ${pref === o.id ? 'bg-gold text-base font-semibold' : 'bg-white/5 text-ink-muted'}`}
+                    >
+                      <span className="block text-base">{o.emoji}</span>
+                      <span className="block truncate px-0.5 text-[9px]">{o.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setSoundEnabled(!soundOn); setMenuOpen(false); }}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-ink-muted hover:bg-white/5"
+                  >
+                    {soundOn ? '🔇 Ovozni o\'chirish' : '🔊 Ovozni yoqish'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={toggleEnabled}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/5 ${enabled ? 'text-coral' : 'text-teal'}`}
+                  >
+                    {enabled ? '🔕 Robotni uxlatish' : '🤖 Robotni uyg\'otish'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       )}
 
-      <StudentChatHub
-        isOpen={chatOpen}
-        onClose={() => setChatOpen(false)}
-        studentName={chatContext.studentName}
-        weakTopics={chatContext.weakTopics}
-      />
-
-      <style>{`
-        @keyframes mascotPop {
-          from { opacity: 0; transform: translateY(6px) scale(0.94); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
+      {isStudent ? (
+        <StudentChatHub
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          studentName={chatContext.studentName ?? user?.firstName}
+          weakTopics={chatContext.weakTopics}
+        />
+      ) : (
+        <AssistantSheet
+          isOpen={chatOpen}
+          onClose={() => setChatOpen(false)}
+          role={user?.role}
+          assistant={staffAssistant}
+        />
+      )}
     </MascotContext.Provider>
   );
 }
-
-export default AIMascotProvider;

@@ -1,5 +1,8 @@
 // Ovoz effektlari: tashqi fayl yo'q — WebAudio bilan sintez qilinadi (yengil, offline ishlaydi).
-export type SoundName = 'tap' | 'success' | 'error' | 'notify' | 'nav' | 'complete';
+export type SoundName =
+  | 'tap' | 'success' | 'error' | 'notify' | 'nav' | 'complete'
+  // robot ovozlari
+  | 'think' | 'love' | 'annoyed' | 'dizzy' | 'yawn' | 'greet' | 'pop' | 'wink' | 'gulp';
 
 const KEY = 'edugo.sound';
 let ctx: AudioContext | null = null;
@@ -82,6 +85,41 @@ export function playSound(name: SoundName) {
       break;
     case 'complete':
       [523, 659, 784, 1047].forEach((f, i) => tone(c, f, i * 0.1, 0.22, 0.09, 'triangle'));
+      break;
+    case 'think':
+      tone(c, 420, 0, 0.1, 0.05, 'sine', 520);
+      tone(c, 520, 0.12, 0.12, 0.05, 'sine', 640);
+      break;
+    case 'love':
+      tone(c, 784, 0, 0.12, 0.07, 'sine');
+      tone(c, 988, 0.1, 0.12, 0.07, 'sine');
+      tone(c, 1175, 0.2, 0.26, 0.07, 'sine');
+      break;
+    case 'annoyed':
+      tone(c, 260, 0, 0.1, 0.08, 'square', 200);
+      tone(c, 230, 0.12, 0.14, 0.07, 'square', 170);
+      break;
+    case 'dizzy':
+      tone(c, 500, 0, 0.5, 0.06, 'sine', 250);
+      tone(c, 250, 0.45, 0.4, 0.06, 'sine', 480);
+      break;
+    case 'yawn':
+      tone(c, 420, 0, 0.7, 0.05, 'sine', 180);
+      break;
+    case 'greet':
+      tone(c, 660, 0, 0.1, 0.07, 'triangle');
+      tone(c, 880, 0.1, 0.1, 0.07, 'triangle');
+      tone(c, 1100, 0.2, 0.18, 0.07, 'triangle');
+      break;
+    case 'pop':
+      tone(c, 340, 0, 0.09, 0.08, 'sine', 760);
+      break;
+    case 'wink':
+      tone(c, 1200, 0, 0.07, 0.05, 'sine', 1500);
+      break;
+    case 'gulp':
+      tone(c, 300, 0, 0.12, 0.09, 'sine', 120);
+      tone(c, 220, 0.12, 0.1, 0.07, 'sine', 380);
       break;
   }
 }

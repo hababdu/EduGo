@@ -5,6 +5,7 @@ import { haptic } from '../../lib/telegram';
 import type { AssistantMessage, Part } from './assistant-state';
 import { ConfirmationCard } from './ConfirmationCard';
 import { RichText } from './RichText';
+import { LiveBot, useMascot } from '../ai/mascot-context';
 
 /* ============================================================
    AssistantSheet — AI yordamchi chat oynasi (AIGenerateModal qobig'ida).
@@ -156,6 +157,19 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
   const { messages, busy, send, stop, reset, restorePending } = assistant;
+  const { react } = useMascot();
+  const wasBusy = useRef(false);
+
+  // Robot suhbatga hissiyot bilan javob beradi: o'ylaydi → tayyor / xato
+  useEffect(() => {
+    if (busy) {
+      wasBusy.current = true;
+      react('thinking');
+    } else if (wasBusy.current) {
+      wasBusy.current = false;
+      react(messages[messages.length - 1]?.error ? 'error' : 'finished');
+    }
+  }, [busy]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ochilganda: tasdiq kutayotgan kartochkalarni tiklash
   useEffect(() => {
@@ -188,6 +202,8 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
       onClose={onClose}
       title="AI Yordamchi"
       icon="✨"
+      variant="island"
+      iconNode={<LiveBot />}
       subtitle={SUBTITLE[key]}
       headerSlot={headerSlot}
       footer={
