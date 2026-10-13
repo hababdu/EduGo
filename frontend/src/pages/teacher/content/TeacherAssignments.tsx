@@ -189,7 +189,7 @@ export function TeacherAssignments() {
           ))}
         </div>
       ) : hasNoItems ? (
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+        <div className="bg-surface/20 border border-tint/5 rounded-2xl">
           <EmptyState
             icon={FileText}
             title="Materiallar yo'q"
@@ -205,7 +205,7 @@ export function TeacherAssignments() {
           />
         </div>
       ) : hasNoResults ? (
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+        <div className="bg-surface/20 border border-tint/5 rounded-2xl">
           <EmptyState
             icon={FileText}
             title="Natija topilmadi"
@@ -229,7 +229,7 @@ export function TeacherAssignments() {
             return (
               <div
                 key={item.id}
-                className="bg-surface/20 border border-white/5 rounded-2xl p-3.5 hover:bg-surface/30 transition"
+                className="bg-surface/20 border border-tint/5 rounded-2xl p-3.5 hover:bg-surface/30 transition"
               >
                 <button
                   type="button"
@@ -246,7 +246,7 @@ export function TeacherAssignments() {
                       <cat.Icon className="w-3 h-3" />
                       {cat.label}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-white/5 text-ink-muted">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-tint/5 text-ink-muted">
                       <content.Icon className="w-3 h-3" />
                       {content.label}
                     </span>
@@ -276,7 +276,7 @@ export function TeacherAssignments() {
                   </div>
                 </button>
 
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/5">
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-tint/5">
                   <button
                     type="button"
                     onClick={() => {

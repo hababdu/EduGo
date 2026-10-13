@@ -73,7 +73,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
             min={shiftDate(today, -MAX_BACK_DAYS)}
             max={today}
             onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="bg-surface/40 border border-white/5 rounded-xl px-3 py-2 text-sm text-ink normal-case tracking-normal outline-none focus:border-gold/50 min-h-[44px]"
+            className="bg-surface/40 border border-tint/5 rounded-xl px-3 py-2 text-sm text-ink normal-case tracking-normal outline-none focus:border-gold/50 min-h-[44px]"
           />
         </label>
         {summary?.overallPercent != null && (
@@ -93,7 +93,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
         </p>
       )}
 
-      {isLoading && <div className="h-40 rounded-2xl bg-surface/30 animate-pulse border border-white/5" />}
+      {isLoading && <div className="h-40 rounded-2xl bg-surface/30 animate-pulse border border-tint/5" />}
 
       {error && (
         <p className="text-sm text-coral bg-coral/10 border border-coral/20 rounded-2xl p-3">
@@ -102,7 +102,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
       )}
 
       {data && students.length === 0 && (
-        <p className="text-sm text-ink-muted text-center py-8 bg-surface/20 border border-white/5 rounded-2xl">
+        <p className="text-sm text-ink-muted text-center py-8 bg-surface/20 border border-tint/5 rounded-2xl">
           Guruhda hali o'quvchi yo'q
         </p>
       )}
@@ -122,7 +122,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
             </button>
           </div>
 
-          <ul className="bg-surface/20 border border-white/5 rounded-2xl divide-y divide-white/5 overflow-hidden">
+          <ul className="bg-surface/20 border border-tint/5 rounded-2xl divide-y divide-tint/5 overflow-hidden">
             {students.map((s) => {
               const name = `${s.firstName} ${s.lastName ?? ''}`.trim() || s.username || "Noma'lum";
               const cur = edits[s.studentId];
@@ -143,7 +143,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
                           aria-pressed={active}
                           onClick={() => setStatus(s.studentId, value)}
                           className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition active:scale-95 ${
-                            active ? on : 'bg-white/5 text-ink-muted'
+                            active ? on : 'bg-tint/5 text-ink-muted'
                           }`}
                         >
                           <Icon className="h-3.5 w-3.5" aria-hidden="true" />

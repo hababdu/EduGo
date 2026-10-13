@@ -11,7 +11,7 @@ export function EmptyState({ icon: Icon, title, subtitle, action }: Props) {
   const ActionIcon = action?.icon;
   return (
     <div className="text-center py-12 px-6 space-y-3">
-      <div className="w-14 h-14 mx-auto rounded-2xl bg-white/5 flex items-center justify-center">
+      <div className="w-14 h-14 mx-auto rounded-2xl bg-tint/5 flex items-center justify-center">
         <Icon className="w-7 h-7 text-ink-muted" />
       </div>
       <div className="space-y-1">

@@ -1,5 +1,6 @@
 // src/pages/student/ProfilePage.tsx
 import { replayOnboarding } from '../../components/layout/Onboarding';
+import { ThemeToggle } from '../../components/layout/ThemeToggle';
 import { SoundToggle } from '../../components/layout/Effects';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -51,7 +52,7 @@ export function ProfilePage() {
     return (
       <div className="p-4 max-w-2xl mx-auto space-y-4 pb-24">
         <div className="h-40 bg-surface/30 rounded-3xl animate-pulse" />
-        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
       </div>
     );
   }
@@ -59,7 +60,7 @@ export function ProfilePage() {
   if (error || !data) {
     return (
       <div className="p-4 max-w-2xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5">
           <p className="text-sm font-semibold text-ink">Xatolik</p>
           <p className="text-xs text-ink-muted mt-2">
             {(error as any)?.message || "Server bilan bog'lanishda muammo"}
@@ -82,7 +83,7 @@ export function ProfilePage() {
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-5 pb-24">
       {/* Profile card */}
-      <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-4 backdrop-blur-md">
+      <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-4 backdrop-blur-md">
         <div className="flex items-center gap-4">
           {tgUser?.photo_url ? (
             <img
@@ -106,7 +107,7 @@ export function ProfilePage() {
         </div>
 
         {/* Level bar */}
-        <div className="pt-4 border-t border-white/5">
+        <div className="pt-4 border-t border-tint/5">
           <div className="flex items-center justify-between text-xs text-ink-muted mb-1.5">
             <span className="text-gold font-semibold">{level}-daraja</span>
             <span>{xp} XP</span>
@@ -122,7 +123,7 @@ export function ProfilePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             Umumiy ball
           </span>
@@ -130,7 +131,7 @@ export function ProfilePage() {
             {totalScore.toLocaleString('uz-UZ')}
           </p>
         </div>
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             Daraja
           </span>
@@ -138,7 +139,7 @@ export function ProfilePage() {
             {level}
           </p>
         </div>
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             🔥 Streak
           </span>
@@ -147,7 +148,7 @@ export function ProfilePage() {
             <span className="text-ink-muted text-base"> kun</span>
           </p>
         </div>
-        <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
           <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
             Eng uzun streak
           </span>
@@ -160,14 +161,14 @@ export function ProfilePage() {
       {activity && <ActivityMatrix days={activity.days} activeDays={activity.activeDays} />}
 
       {/* Actions */}
-      <div className="bg-surface/20 rounded-3xl border border-white/5 divide-y divide-white/5 overflow-hidden">
+      <div className="bg-surface/20 rounded-3xl border border-tint/5 divide-y divide-tint/5 overflow-hidden">
         <button
           type="button"
           onClick={() => {
             haptic('light');
             navigate('/ranking');
           }}
-          className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
         >
           <span className="text-sm text-ink">🏆 Reyting</span>
           <span className="text-ink-muted text-xs">›</span>
@@ -178,7 +179,7 @@ export function ProfilePage() {
             haptic('light');
             navigate('/notifications');
           }}
-          className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
         >
           <span className="text-sm text-ink">🔔 Bildirishnomalar</span>
           <span className="text-ink-muted text-xs">›</span>
@@ -190,14 +191,15 @@ export function ProfilePage() {
             const tg = (window as any).Telegram?.WebApp;
             if (tg?.close) tg.close();
           }}
-          className="w-full text-left p-4 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
         >
           <span className="text-sm text-red-400">🚪 Yopish</span>
           <span className="text-ink-muted text-xs">›</span>
         </button>
       </div>
       <SoundToggle />
-      <button onClick={replayOnboarding} className="w-full mt-3 py-3 rounded-xl bg-white/5 text-sm text-ink-muted active:scale-[0.99] transition">Tanishuvni qayta ko'rish</button>
+      <ThemeToggle className="mt-3" />
+      <button onClick={replayOnboarding} className="w-full mt-3 py-3 rounded-xl bg-tint/5 text-sm text-ink-muted active:scale-[0.99] transition">Tanishuvni qayta ko'rish</button>
     </div>
   );
 }

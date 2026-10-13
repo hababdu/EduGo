@@ -41,7 +41,7 @@ export function RankingPage() {
         <>
         <Podium entries={top} currentUserId={currentUserId} />
         <Panel title="Reyting jadvali" icon={Trophy} accent="gold" flush className="mt-4">
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-tint/5">
           {top.slice(top.length >= 3 ? 3 : 0).map((entry) => {
             const isSelf = entry.studentId === currentUserId;
             return (

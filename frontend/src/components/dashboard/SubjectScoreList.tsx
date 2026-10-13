@@ -42,11 +42,11 @@ export function SubjectScoreList({ subjects }: SubjectScoreListProps) {
             </div>
           );
           return img ? (
-            <BackdropImage key={s.id} src={img} opacity={0.36} blur={3} className="rounded-3xl border border-white/5">
+            <BackdropImage key={s.id} src={img} opacity={0.36} blur={3} className="rounded-3xl border border-tint/5">
               {body}
             </BackdropImage>
           ) : (
-            <div key={s.id} className="rounded-3xl border border-white/5 bg-surface/20">
+            <div key={s.id} className="rounded-3xl border border-tint/5 bg-surface/20">
               {body}
             </div>
           );

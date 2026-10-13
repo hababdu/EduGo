@@ -35,7 +35,7 @@ interface Props {
  */
 export function StaffHero({ eyebrow, title, subtitle, image, accent = 'gold', actions, footer, top }: Props) {
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-surface/60 shadow-xl">
+    <section className="relative overflow-hidden rounded-3xl border border-tint/10 bg-surface/60 shadow-xl">
       <BackdropImage src={image} opacity={0.42} blur={4}>
         <div className={`absolute inset-0 -z-0 bg-gradient-to-br ${GLOW[accent]} via-transparent to-transparent`} aria-hidden="true" />
         <Rings accent={accent} />

@@ -48,7 +48,7 @@ export function TestsPage() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="h-24 bg-surface/20 rounded-3xl animate-pulse border border-white/5"
+            className="h-24 bg-surface/20 rounded-3xl animate-pulse border border-tint/5"
           />
         ))}
       </div>
@@ -58,7 +58,7 @@ export function TestsPage() {
   if (error) {
     return (
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5">
           <p className="text-sm font-semibold text-ink">Xatolik</p>
           <p className="text-xs text-ink-muted mt-2">
             {(error as any)?.message || "Server bilan bog'lanishda muammo"}
@@ -97,7 +97,7 @@ export function TestsPage() {
             className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
               filter === key
                 ? 'bg-gold text-base'
-                : 'bg-white/5 text-ink-muted hover:bg-white/10'
+                : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
             }`}
           >
             {label}
@@ -107,7 +107,7 @@ export function TestsPage() {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5">
           <p className="text-sm font-semibold text-ink">
             {tests?.length === 0
               ? "Sizga hali test biriktirilmagan"
@@ -150,7 +150,7 @@ export function TestsPage() {
                     navigate(`/tests/${t.testId}/result`);
                   }
                 }}
-                className={`w-full text-left bg-surface/40 hover:bg-surface/60 p-4 rounded-3xl border border-white/10 border-l-4 active:scale-[0.99] transition-all ${isPending ? 'border-l-gold' : isCompleted ? (t.passed ? 'border-l-teal' : 'border-l-coral') : 'border-l-sky'}`}
+                className={`w-full text-left bg-surface/40 hover:bg-surface/60 p-4 rounded-3xl border border-tint/10 border-l-4 active:scale-[0.99] transition-all ${isPending ? 'border-l-gold' : isCompleted ? (t.passed ? 'border-l-teal' : 'border-l-coral') : 'border-l-sky'}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

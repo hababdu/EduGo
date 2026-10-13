@@ -138,7 +138,7 @@ export function TeacherOverview() {
           {data.topStudents.length === 0 ? (
             <p className="px-5 pb-5 text-xs text-ink-muted">Hozircha ma'lumot yo'q</p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-tint/5">
               {data.topStudents.map((s, i) => (
                 <li key={s.id} className="flex items-center gap-3 px-5 py-2.5">
                   <span className={`w-5 text-center font-display text-sm tabular-nums ${i === 0 ? 'text-gold' : 'text-ink-muted'}`}>{i + 1}</span>
@@ -165,7 +165,7 @@ export function TeacherOverview() {
         {data.recentAssignments.length === 0 ? (
           <EmptyState icon={FileText} title="Hali test biriktirilmagan" />
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-tint/5">
             {data.recentAssignments.slice(0, 3).map((a) => (
               <ListRow
                 key={a.id}
@@ -223,10 +223,10 @@ function GroupsModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface border border-white/10 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
+        className="bg-surface border border-tint/10 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
+        <div className="flex items-center justify-between p-5 border-b border-tint/5">
           <div>
             <h3 className={TEXT.h2}>Guruhlar</h3>
             <p className={TEXT.tiny}>{groups.length} ta</p>
@@ -234,7 +234,7 @@ function GroupsModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 text-ink-muted hover:text-ink min-h-[40px] min-w-[40px] flex items-center justify-center"
+            className="p-2 rounded-xl bg-tint/5 text-ink-muted hover:text-ink min-h-[40px] min-w-[40px] flex items-center justify-center"
             aria-label="Yopish"
           >
             <X className={ICON.sm} />
@@ -242,7 +242,7 @@ function GroupsModal({
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-white/5">
+        <div className="p-4 border-b border-tint/5">
           <div className="relative">
             <Search
               className={`${ICON.sm} absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted`}
@@ -261,7 +261,7 @@ function GroupsModal({
           {filtered.length === 0 ? (
             <EmptyState icon={FolderOpen} title="Guruh topilmadi" />
           ) : (
-            <div className="divide-y divide-white/5">
+            <div className="divide-y divide-tint/5">
               {filtered.map((g) => (
                 <ListRow
                   key={g.id}

@@ -24,7 +24,7 @@ const ROLE_LABEL: Record<string, string> = {
 const ROLE_BADGE: Record<string, string> = {
   ADMIN: 'bg-coral/15 text-coral',
   TEACHER: 'bg-teal/15 text-teal',
-  STUDENT: 'bg-white/5 text-ink-muted',
+  STUDENT: 'bg-tint/5 text-ink-muted',
 };
 
 type Filter = 'ALL' | 'STUDENT' | 'TEACHER' | 'ADMIN';
@@ -97,7 +97,7 @@ export default function UsersAdminPage(): JSX.Element {
     return (
       <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-3">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-16 bg-surface/50 rounded-2xl animate-pulse border border-white/5" />
+          <div key={i} className="h-16 bg-surface/50 rounded-2xl animate-pulse border border-tint/5" />
         ))}
       </div>
     );
@@ -111,7 +111,7 @@ export default function UsersAdminPage(): JSX.Element {
         <p className="text-xs text-ink-muted">Admin sifatida kirganingizni tekshiring.</p>
         <button
           onClick={fetchUsers}
-          className="px-4 py-2 bg-surface rounded-xl text-sm border border-white/10 hover:bg-white/5 text-ink"
+          className="px-4 py-2 bg-surface rounded-xl text-sm border border-tint/10 hover:bg-tint/5 text-ink"
         >
           Qayta urinish
         </button>
@@ -151,7 +151,7 @@ export default function UsersAdminPage(): JSX.Element {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Ism, username yoki Telegram ID..."
-          className="w-full bg-surface/50 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none border border-white/10 text-ink min-h-[44px] focus:border-gold/50 placeholder:text-ink-faint"
+          className="w-full bg-surface/50 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-gold/50 placeholder:text-ink-faint"
         />
       </div>
 
@@ -163,7 +163,7 @@ export default function UsersAdminPage(): JSX.Element {
             className={`shrink-0 rounded-full px-3.5 py-2 text-xs font-semibold border transition ${
               filter === c.key
                 ? 'bg-gold/15 border-gold/40 text-gold'
-                : 'bg-surface/40 border-white/10 text-ink-muted hover:text-ink'
+                : 'bg-surface/40 border-tint/10 text-ink-muted hover:text-ink'
             }`}
           >
             {c.label} <span className="opacity-70">{counts[c.key]}</span>
@@ -181,7 +181,7 @@ export default function UsersAdminPage(): JSX.Element {
         {filteredUsers.length === 0 ? (
           <p className="p-8 text-center text-ink-muted text-sm">Foydalanuvchilar topilmadi</p>
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-tint/5">
             {filteredUsers.map((u) => {
               const name = `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.username || 'Nomsiz';
               return (
@@ -202,7 +202,7 @@ export default function UsersAdminPage(): JSX.Element {
                       disabled={updatingId === u.id}
                       onChange={(e) => handleRoleChange(u.id, e.target.value)}
                       aria-label={`${name} roli`}
-                      className="bg-surface/60 text-[11px] rounded-lg px-2 py-1.5 outline-none border border-white/10 cursor-pointer text-ink disabled:opacity-50"
+                      className="bg-surface/60 text-[11px] rounded-lg px-2 py-1.5 outline-none border border-tint/10 cursor-pointer text-ink disabled:opacity-50"
                     >
                       <option value="STUDENT">Talaba</option>
                       <option value="TEACHER">O'qituvchi</option>

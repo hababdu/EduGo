@@ -142,7 +142,7 @@ export function StudentDashboard() {
           {[...Array(2)].map((_, i) => (
             <div
               key={i}
-              className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-white/5"
+              className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-tint/5"
             />
           ))}
         </div>
@@ -154,7 +154,7 @@ export function StudentDashboard() {
   if (error || !data) {
     return (
       <div className="pb-24 px-5 pt-6">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <p className="text-sm font-semibold text-ink">
             Ma'lumotlarni yuklashda xatolik
           </p>

@@ -46,7 +46,7 @@ function ToolChip({ part }: { part: Extract<Part, { kind: 'tool' }> }) {
       <span className="text-coral">✕</span>
     );
   return (
-    <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted bg-white/5 rounded-full px-2.5 py-1">
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted bg-tint/5 rounded-full px-2.5 py-1">
       {icon}
       {part.label}
       {part.status === 'running' ? '…' : ''}
@@ -84,7 +84,7 @@ function Bubble({
           switch (p.kind) {
             case 'text':
               return (
-                <div key={i} className="rounded-3xl rounded-bl-lg bg-surface/60 border border-white/10 text-ink px-4 py-2.5 text-sm leading-relaxed">
+                <div key={i} className="rounded-3xl rounded-bl-lg bg-surface/60 border border-tint/10 text-ink px-4 py-2.5 text-sm leading-relaxed">
                   <RichText text={p.text} />
                 </div>
               );
@@ -217,14 +217,14 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
             rows={1}
             maxLength={2000}
             disabled={!!disabledReason}
-            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink placeholder:text-ink-muted resize-none max-h-[100px] disabled:opacity-50"
+            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink placeholder:text-ink-muted resize-none max-h-[100px] disabled:opacity-50"
           />
           {busy ? (
             <button
               type="button"
               onClick={stop}
               aria-label="To'xtatish"
-              className="shrink-0 w-11 h-11 rounded-2xl bg-white/10 text-ink flex items-center justify-center active:scale-95 transition"
+              className="shrink-0 w-11 h-11 rounded-2xl bg-tint/10 text-ink flex items-center justify-center active:scale-95 transition"
             >
               <span className="w-3.5 h-3.5 rounded-[3px] bg-ink" />
             </button>
@@ -260,7 +260,7 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
                 type="button"
                 onClick={() => submit(s)}
                 disabled={!!disabledReason}
-                className="text-xs text-ink bg-surface border border-white/10 rounded-full px-3.5 py-2 active:scale-95 transition disabled:opacity-40"
+                className="text-xs text-ink bg-surface border border-tint/10 rounded-full px-3.5 py-2 active:scale-95 transition disabled:opacity-40"
               >
                 {s}
               </button>

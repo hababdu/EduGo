@@ -27,7 +27,7 @@ export function SuperAudit() {
         {isLoading && !data ? <div className="p-5"><Skeleton className="h-32" /></div> : !data?.items.length ? (
           <p className="p-8 text-center text-sm text-ink-muted">Yozuv yo'q</p>
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-tint/5">
             {data.items.map((r) => (
               <li key={r.id} className="space-y-1 px-5 py-3">
                 <div className="flex items-center justify-between gap-2">

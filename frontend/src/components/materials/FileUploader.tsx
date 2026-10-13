@@ -91,7 +91,7 @@ export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusy
           if (!disabled) void startUpload(Array.from(e.dataTransfer.files));
         }}
         className={`rounded-2xl border border-dashed p-4 text-center transition ${
-          dragOver ? 'border-gold bg-gold/10' : 'border-white/15 bg-surface/30'
+          dragOver ? 'border-gold bg-gold/10' : 'border-tint/15 bg-surface/30'
         }`}
       >
         <button
@@ -125,7 +125,7 @@ export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusy
       {files.map((f, i) => {
         const meta = FILE_KIND_META[f.kind];
         return (
-          <div key={f.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-surface/40 p-3">
+          <div key={f.id} className="flex items-center gap-3 rounded-2xl border border-tint/10 bg-surface/40 p-3">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.chip}`}>
               <meta.Icon className="h-5 w-5" aria-hidden="true" />
             </span>
@@ -160,7 +160,7 @@ export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusy
       })}
 
       {pending.map((p) => (
-        <div key={p.key} className="rounded-2xl border border-white/10 bg-surface/40 p-3">
+        <div key={p.key} className="rounded-2xl border border-tint/10 bg-surface/40 p-3">
           <div className="flex items-center gap-2">
             {p.error ? (
               <AlertTriangle className="h-4 w-4 shrink-0 text-coral" />
@@ -179,7 +179,7 @@ export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusy
           {p.error ? (
             <p className="mt-1 text-xs text-coral">{p.error}</p>
           ) : (
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-tint/10">
               <div className="h-full rounded-full bg-gold transition-all" style={{ width: `${p.pct}%` }} />
             </div>
           )}

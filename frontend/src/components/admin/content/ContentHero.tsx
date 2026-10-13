@@ -23,7 +23,7 @@ export function ContentHero({ eyebrow, title, onBack, actions }: Props) {
         <button
           type="button"
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tint/10 text-ink-muted hover:text-ink active:scale-95 transition"
           aria-label="Orqaga"
         >
           <ChevronLeft className="h-5 w-5" />

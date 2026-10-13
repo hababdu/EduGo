@@ -15,7 +15,7 @@ export function SuperAdmins() {
         {isLoading ? <div className="p-5"><Skeleton className="h-24" /></div> : !data?.length ? (
           <p className="p-8 text-center text-sm text-ink-muted">Adminlar yo'q</p>
         ) : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-tint/5">
             {data.map((a) => {
               const sa = a.role === 'SUPER_ADMIN';
               const blocked = a.status === 'BLOCKED';

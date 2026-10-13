@@ -41,7 +41,7 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
     </button>
   );
   return (
-    <div role="tablist" aria-label="AI bo'limi" className="flex gap-1 p-1 rounded-2xl bg-white/5">
+    <div role="tablist" aria-label="AI bo'limi" className="flex gap-1 p-1 rounded-2xl bg-tint/5">
       {item('tutor', '🎓 Repetitor')}
       {item('coach', '✨ Murabbiy')}
     </div>

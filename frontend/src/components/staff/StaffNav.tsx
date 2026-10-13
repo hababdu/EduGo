@@ -21,7 +21,7 @@ export function StaffNav({ items, label }: { items: StaffNavItem[]; label: strin
   return (
     <nav
       aria-label={label}
-      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-white/5"
+      className="glass fixed inset-x-0 bottom-0 z-40 border-t border-tint/5"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="relative mx-auto flex max-w-3xl justify-around">

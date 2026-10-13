@@ -124,7 +124,7 @@ export function TeacherGroupDetail() {
   if (groupError || !group) {
     return (
       <div className={PAGE_WIDE}>
-        <div className="bg-surface/40 border border-white/10 rounded-3xl">
+        <div className="bg-surface/40 border border-tint/10 rounded-3xl">
           <EmptyState
             icon={AlertTriangle}
             title="Guruh topilmadi"
@@ -197,7 +197,7 @@ export function TeacherGroupDetail() {
       </Panel>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 rounded-2xl border border-white/10 bg-surface/40 p-1.5">
+      <div className="flex gap-1.5 rounded-2xl border border-tint/10 bg-surface/40 p-1.5">
         <button
           type="button"
           onClick={() => {
@@ -247,12 +247,12 @@ export function TeacherGroupDetail() {
       {/* Tab: Students */}
       {tab === 'students' &&
         (members.length === 0 ? (
-          <div className="bg-surface/40 border border-white/10 rounded-3xl">
+          <div className="bg-surface/40 border border-tint/10 rounded-3xl">
             <EmptyState icon={Users} title="Talabalar yo'q" />
           </div>
         ) : (
           <Panel title="Talabalar" icon={Users} accent="gold" flush>
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-tint/5">
               {members.map((m: any) => {
                 const s = m.student || {};
                 const name =
@@ -276,7 +276,7 @@ export function TeacherGroupDetail() {
                         haptic('light');
                         navigate(`/teacher/groups/${groupId}/students/${s.id || m.studentId}`);
                       }}
-                      className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-white/5 active:bg-white/10 transition"
+                      className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-tint/5 active:bg-tint/10 transition"
                     >
                       <Avatar name={name} size="md" />
                       <div className="min-w-0 flex-1">
@@ -319,7 +319,7 @@ export function TeacherGroupDetail() {
             </p>
           </div>
         ) : !assignments || assignments.length === 0 ? (
-          <div className="bg-surface/40 border border-white/10 rounded-3xl">
+          <div className="bg-surface/40 border border-tint/10 rounded-3xl">
             <EmptyState
               icon={FileText}
               title="Materiallar yo'q"
@@ -347,7 +347,7 @@ export function TeacherGroupDetail() {
                     haptic('light');
                     navigate(`/teacher/assignments/${a.id}`);
                   }}
-                  className="w-full text-left bg-surface/50 hover:bg-surface/70 border border-white/10 rounded-2xl p-4 active:scale-[0.99] transition"
+                  className="w-full text-left bg-surface/50 hover:bg-surface/70 border border-tint/10 rounded-2xl p-4 active:scale-[0.99] transition"
                 >
                   <div className="flex items-center gap-2 flex-wrap mb-1.5">
                     <span
@@ -356,7 +356,7 @@ export function TeacherGroupDetail() {
                       <cat.Icon className="w-3 h-3" />
                       {cat.label}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-white/5 text-ink-muted">
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md font-semibold bg-tint/5 text-ink-muted">
                       <content.Icon className="w-3 h-3" />
                       {content.label}
                     </span>

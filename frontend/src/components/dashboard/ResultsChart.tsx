@@ -26,7 +26,7 @@ export function ResultsChart({ results }: ResultsChartProps) {
 
   return (
     <section className="px-5">
-      <div className="bg-surface/20 p-4 rounded-3xl border border-white/5">
+      <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
         <div className="flex items-baseline justify-between mb-2">
           <h2 className="text-sm font-semibold text-ink">So'nggi natijalar</h2>
           <span className="text-xs text-ink-muted">
@@ -44,8 +44,8 @@ export function ResultsChart({ results }: ResultsChartProps) {
             const y = PAD_TOP + plotH - (g / 100) * plotH;
             return (
               <g key={g}>
-                <line x1={PAD_X} x2={W - PAD_X} y1={y} y2={y} stroke="rgb(255 255 255 / 0.07)" strokeDasharray="3 4" />
-                <text x={PAD_X} y={y - 3} fontSize="8" fill="rgb(156 163 196)">
+                <line x1={PAD_X} x2={W - PAD_X} y1={y} y2={y} style={{ stroke: "rgb(var(--c-tint) / 0.07)" }} strokeDasharray="3 4" />
+                <text x={PAD_X} y={y - 3} fontSize="8" style={{ fill: "rgb(var(--c-muted))" }}>
                   {g}%
                 </text>
               </g>
@@ -60,10 +60,10 @@ export function ResultsChart({ results }: ResultsChartProps) {
               <g key={i}>
                 <title>{`${r.testTitle}: ${p}%`}</title>
                 <rect x={x} y={y} width={barW} height={h} rx="6" fill={r.passed ? '#34D0A0' : '#F0654B'} opacity="0.9" />
-                <text x={x + barW / 2} y={y - 3} fontSize="9" fontWeight="600" textAnchor="middle" fill="#F5F3ED">
+                <text x={x + barW / 2} y={y - 3} fontSize="9" fontWeight="600" textAnchor="middle" style={{ fill: "rgb(var(--c-ink))" }}>
                   {p}
                 </text>
-                <text x={x + barW / 2} y={H - 7} fontSize="8" textAnchor="middle" fill="rgb(156 163 196)">
+                <text x={x + barW / 2} y={H - 7} fontSize="8" textAnchor="middle" style={{ fill: "rgb(var(--c-muted))" }}>
                   {i + 1}
                 </text>
               </g>

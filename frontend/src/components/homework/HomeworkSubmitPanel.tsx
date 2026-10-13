@@ -83,7 +83,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
   const graded = sub?.status === 'GRADED' && sub.score !== null;
   const showForm = data.canSubmit && (!sub || editing);
   const inputCls =
-    'w-full bg-surface/60 rounded-2xl px-4 py-3 text-sm outline-none border border-white/10 text-ink focus:border-gold/50 placeholder:text-ink-faint';
+    'w-full bg-surface/60 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50 placeholder:text-ink-faint';
 
   return (
     <Panel title="Vazifani topshirish" icon={Edit3} accent="gold">
@@ -164,7 +164,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
                 {save.isPending ? 'Yuborilmoqda…' : sub ? 'Yangilash' : 'Topshirish'}
               </button>
               {editing && (
-                <button onClick={() => setEditing(false)} className="px-4 rounded-2xl bg-surface/60 text-sm text-ink border border-white/10">
+                <button onClick={() => setEditing(false)} className="px-4 rounded-2xl bg-surface/60 text-sm text-ink border border-tint/10">
                   Bekor
                 </button>
               )}

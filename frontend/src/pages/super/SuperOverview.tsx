@@ -98,8 +98,8 @@ export function SuperOverview() {
       </Panel>
 
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={() => nav('/admin/students')} className="rounded-2xl border border-white/10 bg-surface/40 py-3 text-sm font-semibold text-ink">Studentlar</button>
-        <button type="button" onClick={() => nav('/admin/payments')} className="rounded-2xl border border-white/10 bg-surface/40 py-3 text-sm font-semibold text-ink">To'lovlar</button>
+        <button type="button" onClick={() => nav('/admin/students')} className="rounded-2xl border border-tint/10 bg-surface/40 py-3 text-sm font-semibold text-ink">Studentlar</button>
+        <button type="button" onClick={() => nav('/admin/payments')} className="rounded-2xl border border-tint/10 bg-surface/40 py-3 text-sm font-semibold text-ink">To'lovlar</button>
       </div>
     </div>
   );

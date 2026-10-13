@@ -25,7 +25,7 @@ function inline(text: string, keyBase: string): React.ReactNode[] {
           {tok.slice(2, -2)}
         </strong>
       ) : (
-        <code key={`${keyBase}-c${i++}`} className="px-1 py-0.5 rounded bg-white/10 text-[0.85em]">
+        <code key={`${keyBase}-c${i++}`} className="px-1 py-0.5 rounded bg-tint/10 text-[0.85em]">
           {tok.slice(1, -1)}
         </code>
       ),

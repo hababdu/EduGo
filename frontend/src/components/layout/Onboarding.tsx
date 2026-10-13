@@ -69,13 +69,13 @@ export function Onboarding() {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-surface border border-white/10 p-6 text-center shadow-2xl">
+      <div className="w-full max-w-sm rounded-3xl bg-surface border border-tint/10 p-6 text-center shadow-2xl">
         <div className="text-5xl mb-3">{s.icon}</div>
         <h2 className="text-lg font-bold mb-2">{s.title}</h2>
         <p className="text-sm text-ink-muted leading-relaxed min-h-[84px]">{s.text}</p>
         <div className="flex justify-center gap-1.5 my-4">
           {steps.map((_, n) => (
-            <span key={n} className={`h-1.5 rounded-full transition-all ${n === i ? 'w-5 bg-gold' : 'w-1.5 bg-white/20'}`} />
+            <span key={n} className={`h-1.5 rounded-full transition-all ${n === i ? 'w-5 bg-gold' : 'w-1.5 bg-tint/20'}`} />
           ))}
         </div>
         <div className="flex gap-2">

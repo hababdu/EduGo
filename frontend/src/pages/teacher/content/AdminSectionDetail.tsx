@@ -139,7 +139,7 @@ export function AdminSectionDetail() {
             ))}
           </div>
         ) : !topics || topics.length === 0 ? (
-          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+          <div className="bg-surface/20 border border-tint/5 rounded-2xl">
             <EmptyState icon={BookOpen} title="Mavzular yo'q" />
           </div>
         ) : (

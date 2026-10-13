@@ -14,7 +14,48 @@ body,
   height: 100%;
 }
 
+/* Yorug' mavzu */
+:root[data-theme='light'] {
+  --c-base: 246 244 238;
+  --c-surface: 255 255 255;
+  --c-raised: 236 232 221;
+  --c-tint: 20 24 45;
+  --c-ink: 20 24 45;
+  --c-muted: 88 95 126;
+  --c-faint: 150 156 184;
+  --c-gold: 205 128 0;
+  --c-gold-soft: 255 233 190;
+  --c-teal: 14 150 112;
+  --c-teal-soft: 207 243 232;
+  --c-coral: 214 70 45;
+  --c-sky: 8 132 190;
+  --glass-bg: 255 255 255;
+  --glass-a: 0.82;
+  color-scheme: light;
+}
+
+/* Mavzu almashganda yumshoq o'tish */
+html.theme-fade, html.theme-fade * { transition: background-color .25s, border-color .25s, color .25s !important; }
+
 :root {
+  /* ===== Mavzu ranglari (RGB kanallari) — qorong'i (standart) ===== */
+  --c-base: 11 13 25;
+  --c-surface: 18 22 42;
+  --c-raised: 30 36 71;
+  --c-tint: 255 255 255;
+  --c-ink: 245 243 237;
+  --c-muted: 156 163 196;
+  --c-faint: 91 95 130;
+  --c-gold: 255 176 32;
+  --c-gold-soft: 74 58 26;
+  --c-teal: 52 208 160;
+  --c-teal-soft: 21 59 51;
+  --c-coral: 240 101 75;
+  --c-sky: 56 189 248;
+  --glass-bg: 18 22 42;
+  --glass-a: 0.72;
+  color-scheme: dark;
+
   /* iPhone dinamik oroli (env) va Telegram to'liq ekran sarlavhasi (--tg-*) ostida qolish uchun */
   --island-safe: max(
     env(safe-area-inset-top, 0px),
@@ -95,9 +136,9 @@ body {
   /* Yumshoq "aurora": oltin va teal yorug'lik dog'lari */
   .bg-aurora {
     background-image:
-      radial-gradient(60% 45% at 85% -5%, rgb(255 176 32 / 0.14), transparent 70%),
-      radial-gradient(55% 40% at 0% 25%, rgb(52 208 160 / 0.10), transparent 70%),
-      radial-gradient(50% 40% at 100% 80%, rgb(56 189 248 / 0.08), transparent 70%);
+      radial-gradient(60% 45% at 85% -5%, rgb(var(--c-gold) / 0.14), transparent 70%),
+      radial-gradient(55% 40% at 0% 25%, rgb(var(--c-teal) / 0.10), transparent 70%),
+      radial-gradient(50% 40% at 100% 80%, rgb(var(--c-sky) / 0.08), transparent 70%);
     background-repeat: no-repeat;
   }
 
@@ -109,7 +150,7 @@ body {
 
   /* Shisha ko'rinish (navigatsiya, panel) */
   .glass {
-    background-color: rgb(18 22 42 / 0.72);
+    background-color: rgb(var(--glass-bg) / var(--glass-a));
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
   }

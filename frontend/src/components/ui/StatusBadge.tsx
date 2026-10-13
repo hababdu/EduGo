@@ -1,5 +1,5 @@
 const STATUS_MAP: Record<string, { label: string; cls: string }> = {
-  DRAFT: { label: 'Qoralama', cls: 'bg-white/5 text-ink-muted' },
+  DRAFT: { label: 'Qoralama', cls: 'bg-tint/5 text-ink-muted' },
   PUBLISHED: { label: 'Faol', cls: 'bg-teal/10 text-teal' },
   ARCHIVED: { label: 'Arxiv', cls: 'bg-coral/10 text-coral' },
   ACTIVE: { label: 'Faol', cls: 'bg-teal/10 text-teal' },
@@ -7,7 +7,7 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const meta = STATUS_MAP[status] ?? { label: status, cls: 'bg-white/5 text-ink-muted' };
+  const meta = STATUS_MAP[status] ?? { label: status, cls: 'bg-tint/5 text-ink-muted' };
   return (
     <span
       className={`text-[10px] px-2 py-1 rounded-lg font-semibold shrink-0 ${meta.cls}`}

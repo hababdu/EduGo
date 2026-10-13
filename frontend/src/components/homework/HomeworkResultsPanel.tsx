@@ -44,7 +44,7 @@ function Review({ row, max, onDone }: { row: Row; max: number; onDone: () => voi
   });
   const n = Number(score);
   const ok = score !== '' && Number.isInteger(n) && n >= 0 && n <= max;
-  const cls = 'bg-surface/60 rounded-xl px-3 py-2 text-sm outline-none border border-white/10 text-ink focus:border-gold/50';
+  const cls = 'bg-surface/60 rounded-xl px-3 py-2 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50';
   return (
     <div className="space-y-2 pt-2">
       <div className="flex gap-2">
@@ -102,7 +102,7 @@ export function HomeworkResultsPanel({ assignmentId }: { assignmentId: string })
           )}
         </div>
 
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-tint/5">
           {rows.map((r) => {
             const name = `${r.student.firstName ?? ''} ${r.student.lastName ?? ''}`.trim() || r.student.username || 'Talaba';
             const s = r.submission;

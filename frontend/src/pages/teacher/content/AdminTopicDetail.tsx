@@ -161,7 +161,7 @@ export function AdminTopicDetail() {
             ))}
           </div>
         ) : !lessons || lessons.length === 0 ? (
-          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+          <div className="bg-surface/20 border border-tint/5 rounded-2xl">
             <EmptyState icon={BookOpen} title="Darslar yo'q" />
           </div>
         ) : (

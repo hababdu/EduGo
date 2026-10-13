@@ -10,6 +10,7 @@ import { haptic } from '../../lib/telegram';
 import { isSoundEnabled, playSound, setSoundEnabled } from '../../lib/sound';
 import { useAuthStore } from '../../store/auth.store';
 import { toast } from '../ui/Toast';
+import { THEME_ICON, THEME_LABEL, cycleTheme, useTheme } from '../../lib/theme';
 import { IslandBot } from './island/IslandBot';
 import { MOOD, MOOD_SOUND, toIslandMood, type IslandMood } from './island/moods';
 import { OUTFITS, setOutfitPref, useOutfitPref } from './island/outfits';
@@ -321,6 +322,7 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
   const w = expanded ? BUBBLE_W : enabled ? PILL_W : 64;
   const h = expanded ? BUBBLE_H : enabled ? PILL_H : 28;
   const soundOn = isSoundEnabled();
+  const { pref: themePref } = useTheme();
 
   return (
     <MascotContext.Provider value={ctxValue}>
@@ -341,8 +343,9 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
             onPointerLeave={onPressEnd}
             onPointerCancel={onPressEnd}
             onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
-            className="relative flex items-center overflow-hidden bg-[#05070F] text-ink shadow-xl"
+            className="relative flex items-center overflow-hidden bg-[#05070F] shadow-xl"
             style={{
+              color: '#F6F3EA',
               width: `min(${w}px, calc(100vw - 16px))`,
               height: h,
               borderRadius: expanded ? 29 : 999,
@@ -371,13 +374,13 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
           {menuOpen && (
             <>
               <button type="button" aria-label="Yopish" className="fixed inset-0 z-[-1] cursor-default" onClick={() => setMenuOpen(false)} />
-              <div className="island-open absolute left-1/2 top-full mt-2 w-[280px] -translate-x-1/2 rounded-3xl glass border border-white/10 p-3 shadow-2xl text-xs">
+              <div className="island-open absolute left-1/2 top-full mt-2 w-[280px] -translate-x-1/2 rounded-3xl glass border border-tint/10 p-3 shadow-2xl text-xs">
                 <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-wider text-ink-faint">Garderob</p>
                 <div className="grid grid-cols-4 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setOutfitPref('auto')}
-                    className={`rounded-xl py-2 text-center ${pref === 'auto' ? 'bg-gold text-base font-semibold' : 'bg-white/5 text-ink-muted'}`}
+                    className={`rounded-xl py-2 text-center ${pref === 'auto' ? 'bg-gold text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
                   >
                     <span className="block text-base">✨</span>Avto
                   </button>
@@ -387,25 +390,32 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
                       type="button"
                       title={o.label}
                       onClick={() => setOutfitPref(o.id)}
-                      className={`rounded-xl py-2 text-center ${pref === o.id ? 'bg-gold text-base font-semibold' : 'bg-white/5 text-ink-muted'}`}
+                      className={`rounded-xl py-2 text-center ${pref === o.id ? 'bg-gold text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
                     >
                       <span className="block text-base">{o.emoji}</span>
                       <span className="block truncate px-0.5 text-[9px]">{o.label}</span>
                     </button>
                   ))}
                 </div>
-                <div className="mt-2 space-y-1 border-t border-white/5 pt-2">
+                <div className="mt-2 space-y-1 border-t border-tint/5 pt-2">
+                  <button
+                    type="button"
+                    onClick={cycleTheme}
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-ink-muted hover:bg-tint/5"
+                  >
+                    {THEME_ICON[themePref]} Mavzu: <span className="font-semibold text-ink">{THEME_LABEL[themePref]}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => { setSoundEnabled(!soundOn); setMenuOpen(false); }}
-                    className="w-full rounded-xl px-3 py-2.5 text-left text-ink-muted hover:bg-white/5"
+                    className="w-full rounded-xl px-3 py-2.5 text-left text-ink-muted hover:bg-tint/5"
                   >
                     {soundOn ? '🔇 Ovozni o\'chirish' : '🔊 Ovozni yoqish'}
                   </button>
                   <button
                     type="button"
                     onClick={toggleEnabled}
-                    className={`w-full rounded-xl px-3 py-2.5 text-left hover:bg-white/5 ${enabled ? 'text-coral' : 'text-teal'}`}
+                    className={`w-full rounded-xl px-3 py-2.5 text-left hover:bg-tint/5 ${enabled ? 'text-coral' : 'text-teal'}`}
                   >
                     {enabled ? '🔕 Robotni uxlatish' : '🤖 Robotni uyg\'otish'}
                   </button>

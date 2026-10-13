@@ -70,8 +70,8 @@ export function AIGenerateModal({
       <div
         className={
           island
-            ? 'island-open absolute left-1/2 -translate-x-1/2 w-[calc(100%-16px)] max-w-[440px] bg-base/95 backdrop-blur-xl rounded-[30px] border border-white/10 shadow-2xl shadow-black/60 flex flex-col overflow-hidden'
-            : 'relative w-full sm:max-w-lg sm:mx-4 max-h-[92dvh] sm:max-h-[85vh] bg-base rounded-t-[28px] sm:rounded-[28px] border border-white/10 shadow-2xl flex flex-col overflow-hidden animate-[aiSlideUp_0.28s_cubic-bezier(0.32,0.72,0,1)]'
+            ? 'island-open absolute left-1/2 -translate-x-1/2 w-[calc(100%-16px)] max-w-[440px] bg-base/95 backdrop-blur-xl rounded-[30px] border border-tint/10 shadow-2xl shadow-black/60 flex flex-col overflow-hidden'
+            : 'relative w-full sm:max-w-lg sm:mx-4 max-h-[92dvh] sm:max-h-[85vh] bg-base rounded-t-[28px] sm:rounded-[28px] border border-tint/10 shadow-2xl flex flex-col overflow-hidden animate-[aiSlideUp_0.28s_cubic-bezier(0.32,0.72,0,1)]'
         }
         style={island ? { top: 'var(--island-top)', maxHeight: 'calc(100dvh - var(--island-top) - 12px)' } : undefined}
         onClick={(e) => e.stopPropagation()}
@@ -79,12 +79,12 @@ export function AIGenerateModal({
         {/* Drag handle (mobil hissi uchun) */}
         {!island && (
           <div className="sm:hidden flex justify-center pt-2.5 pb-1 shrink-0">
-            <div className="w-9 h-1 rounded-full bg-white/15" />
+            <div className="w-9 h-1 rounded-full bg-tint/15" />
           </div>
         )}
 
         {/* HEADER */}
-        <div className={`flex items-start justify-between gap-3 px-5 pb-4 border-b border-white/5 shrink-0 ${island ? 'pt-3' : 'pt-2'}`}>
+        <div className={`flex items-start justify-between gap-3 px-5 pb-4 border-b border-tint/5 shrink-0 ${island ? 'pt-3' : 'pt-2'}`}>
           <div className={`flex gap-3 min-w-0 ${iconNode ? 'items-center' : 'items-start'}`}>
             {iconNode ?? (
               <span className="text-2xl leading-none shrink-0 mt-0.5">
@@ -104,7 +104,7 @@ export function AIGenerateModal({
             type="button"
             onClick={onClose}
             aria-label="Yopish"
-            className="shrink-0 w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-ink-muted active:scale-90 transition-transform"
+            className="shrink-0 w-9 h-9 rounded-full bg-tint/5 hover:bg-tint/10 flex items-center justify-center text-ink-muted active:scale-90 transition-transform"
           >
             ✕
           </button>
@@ -119,7 +119,7 @@ export function AIGenerateModal({
 
         {/* FOOTER */}
         {footer && (
-          <div className="shrink-0 px-5 py-4 border-t border-white/5 bg-base/95 backdrop-blur-md">
+          <div className="shrink-0 px-5 py-4 border-t border-tint/5 bg-base/95 backdrop-blur-md">
             {footer}
           </div>
         )}

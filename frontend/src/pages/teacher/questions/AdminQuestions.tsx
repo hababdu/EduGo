@@ -163,7 +163,7 @@ export function AdminQuestions() {
           <button
             type="button"
             onClick={handleClear}
-            className="bg-white/5 text-ink rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-white/10 active:scale-[0.98] transition inline-flex items-center gap-2"
+            className="bg-tint/5 text-ink rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-tint/10 active:scale-[0.98] transition inline-flex items-center gap-2"
           >
             <Trash2 className="w-4 h-4" />
             Tozalash
@@ -171,17 +171,17 @@ export function AdminQuestions() {
         }
         footer={
           <div className="flex flex-wrap gap-2 text-[11px]">
-            <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-ink-muted">
+            <span className="rounded-full bg-tint/5 border border-tint/10 px-3 py-1 text-ink-muted">
               Savollar: <b className="text-gold tabular-nums">{userCount}</b>
             </span>
-            <span className="rounded-full bg-white/5 border border-white/10 px-3 py-1 text-ink-muted">
+            <span className="rounded-full bg-tint/5 border border-tint/10 px-3 py-1 text-ink-muted">
               {isLoading ? <span className="text-gold">Yozilmoqda...</span> : 'Groq · GPT-OSS 20B'}
             </span>
           </div>
         }
       />
 
-    <div className="flex flex-col h-[calc(100dvh-340px)] min-h-[420px] rounded-3xl border border-white/10 bg-surface/40 backdrop-blur-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-340px)] min-h-[420px] rounded-3xl border border-tint/10 bg-surface/40 backdrop-blur-sm overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.map((msg) => (
@@ -193,7 +193,7 @@ export function AdminQuestions() {
               className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-gold text-base rounded-br-md'
-                  : 'bg-surface/40 border border-white/10 text-ink rounded-bl-md'
+                  : 'bg-surface/40 border border-tint/10 text-ink rounded-bl-md'
               }`}
             >
               {msg.content ? (
@@ -221,8 +221,8 @@ export function AdminQuestions() {
       </div>
 
       {/* Input */}
-      <div className="px-4 pb-4 pt-3 border-t border-white/10 bg-surface/30">
-        <div className="flex items-end gap-2 bg-surface/40 border border-white/10 rounded-2xl px-3 py-2">
+      <div className="px-4 pb-4 pt-3 border-t border-tint/10 bg-surface/30">
+        <div className="flex items-end gap-2 bg-surface/40 border border-tint/10 rounded-2xl px-3 py-2">
           <textarea
             ref={inputRef}
             value={input}

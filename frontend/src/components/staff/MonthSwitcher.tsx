@@ -8,7 +8,7 @@ export function MonthSwitcher({ month, onChange }: { month: string; onChange: (m
   const cur = currentMonth();
   const canNext = month < cur;
   const canPrev = month > shiftMonth(cur, -MAX_BACK);
-  const btn = 'flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-ink-muted transition hover:text-ink active:scale-95 disabled:opacity-30';
+  const btn = 'flex h-10 w-10 items-center justify-center rounded-xl bg-tint/5 text-ink-muted transition hover:text-ink active:scale-95 disabled:opacity-30';
   return (
     <div className="inline-flex items-center gap-2">
       <button type="button" className={btn} onClick={() => onChange(shiftMonth(month, -1))} disabled={!canPrev} aria-label="Oldingi oy">

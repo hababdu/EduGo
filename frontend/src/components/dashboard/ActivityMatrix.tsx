@@ -28,7 +28,7 @@ export function activityLevel(day: Pick<ActivityDay, 'xp' | 'count'>): 0 | 1 | 2
 }
 
 const LEVEL_CLASS = [
-  'bg-white/[0.05] text-ink-muted',
+  'bg-tint/[0.05] text-ink-muted',
   'bg-gold/25 text-ink',
   'bg-gold/45 text-ink',
   'bg-gold/70 text-base font-bold',
@@ -82,7 +82,7 @@ export function ActivityMatrix({ days }: ActivityMatrixProps) {
 
   return (
     <section
-      className="bg-surface/40 p-4 rounded-3xl border border-white/10"
+      className="bg-surface/40 p-4 rounded-3xl border border-tint/10"
       aria-label={`${MONTHS[m - 1]} ${y}: ${activeInMonth} kun faol`}
     >
       <div className="flex items-center justify-between mb-3">
@@ -91,7 +91,7 @@ export function ActivityMatrix({ days }: ActivityMatrixProps) {
           onClick={() => shift(-1)}
           disabled={!canPrev}
           aria-label="Oldingi oy"
-          className="h-8 w-8 rounded-xl bg-white/5 text-ink-muted disabled:opacity-25 active:scale-95 transition"
+          className="h-8 w-8 rounded-xl bg-tint/5 text-ink-muted disabled:opacity-25 active:scale-95 transition"
         >
           ‹
         </button>
@@ -109,7 +109,7 @@ export function ActivityMatrix({ days }: ActivityMatrixProps) {
           onClick={() => shift(1)}
           disabled={!canNext}
           aria-label="Keyingi oy"
-          className="h-8 w-8 rounded-xl bg-white/5 text-ink-muted disabled:opacity-25 active:scale-95 transition"
+          className="h-8 w-8 rounded-xl bg-tint/5 text-ink-muted disabled:opacity-25 active:scale-95 transition"
         >
           ›
         </button>

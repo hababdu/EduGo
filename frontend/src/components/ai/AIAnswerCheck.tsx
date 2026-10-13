@@ -78,7 +78,7 @@ export function AIAnswerCheck({
       )}
 
       {grading && (
-        <div className="bg-surface/50 border border-white/5 rounded-2xl p-4 space-y-3 animate-[checkFadeIn_0.25s_ease-out]">
+        <div className="bg-surface/50 border border-tint/5 rounded-2xl p-4 space-y-3 animate-[checkFadeIn_0.25s_ease-out]">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wide">
               AI taxminiy bahosi

@@ -245,7 +245,7 @@ export function AdminGroupDetail() {
               haptic('light');
               navigate('/admin/groups');
             }}
-            className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink bg-white/5 px-3 py-2 rounded-xl border border-white/10 min-h-[36px] transition"
+            className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink bg-tint/5 px-3 py-2 rounded-xl border border-tint/10 min-h-[36px] transition"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Orqaga
@@ -384,7 +384,7 @@ export function AdminGroupDetail() {
         accent="teal"
         flush
         action={
-          <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ink-muted">
+          <span className="rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">
             Jami: {memberCount} ta
           </span>
         }
@@ -398,7 +398,7 @@ export function AdminGroupDetail() {
         ) : !groupStudents || groupStudents.length === 0 ? (
           <EmptyState icon={Users} title="Bu guruhda hali talabalar mavjud emas." />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-white/5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-tint/5">
             {groupStudents.map((m: any) => {
               const s = m?.student || m?.user || m;
               const fullName =

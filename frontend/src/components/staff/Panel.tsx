@@ -24,7 +24,7 @@ interface Props {
 /** Yumaloq, shishasimon blok: ikonli sarlavha + kontent. */
 export function Panel({ title, icon: Icon, accent = 'gold', action, children, className = '', flush = false }: Props) {
   return (
-    <section className={`rounded-3xl border border-white/10 bg-surface/40 backdrop-blur-sm overflow-hidden ${className}`}>
+    <section className={`rounded-3xl border border-tint/10 bg-surface/40 backdrop-blur-sm overflow-hidden ${className}`}>
       <header className="flex items-center justify-between gap-3 px-5 pt-4 pb-3">
         <h2 className="flex items-center gap-2.5 text-sm font-bold text-ink min-w-0">
           {Icon && (

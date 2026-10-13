@@ -102,14 +102,14 @@ export function TeacherStudentDetail() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-4 mt-4 border-t border-white/5">
-            <div className="bg-surface/50 border border-white/10 rounded-2xl p-3">
+          <div className="grid grid-cols-2 gap-3 pt-4 mt-4 border-t border-tint/5">
+            <div className="bg-surface/50 border border-tint/10 rounded-2xl p-3">
               <span className={TEXT.tiny + ' block mb-1'}>Rol</span>
               <span className="text-sm font-medium text-ink">
                 {student?.role || 'STUDENT'}
               </span>
             </div>
-            <div className="bg-surface/50 border border-white/10 rounded-2xl p-3">
+            <div className="bg-surface/50 border border-tint/10 rounded-2xl p-3">
               <span className={TEXT.tiny + ' block mb-1'}>Telefon</span>
               <span className="text-sm font-medium text-ink truncate block">
                 {student?.phone || '—'}

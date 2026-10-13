@@ -64,10 +64,10 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
   };
 
   const input =
-    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted';
+    'w-full bg-surface/40 border border-tint/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted';
 
   return (
-    <div className="bg-surface/20 border border-white/5 rounded-2xl">
+    <div className="bg-surface/20 border border-tint/5 rounded-2xl">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

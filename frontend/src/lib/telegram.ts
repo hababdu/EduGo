@@ -35,7 +35,7 @@ export function initTelegramApp() {
   if (!tg) return;
   tg.ready();
   tg.expand();
-  tg.setHeaderColor('#14162B'); // dizayn tokenidagi `base` rang bilan bir xil
+  // sarlavha/fon rangi lib/theme.ts da mavzuga qarab qo'yiladi
 }
 
 export function getInitData(): string | null {
@@ -134,8 +134,6 @@ export function initTelegram() {
   try {
     tg.ready();
     tg.expand();
-    tg.setHeaderColor('#0f0f0f');
-    tg.setBackgroundColor('#0f0f0f');
     tg.disableVerticalSwipes?.();
   } catch (e) {
     console.warn('[telegram] init error:', e);

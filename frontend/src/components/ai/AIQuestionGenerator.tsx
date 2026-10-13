@@ -185,7 +185,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
           setSource(null);
         }}
         disabled={busy}
-        className="rounded-2xl bg-white/5 px-4 py-3 text-xs font-semibold text-ink-muted disabled:opacity-40 min-h-[48px]"
+        className="rounded-2xl bg-tint/5 px-4 py-3 text-xs font-semibold text-ink-muted disabled:opacity-40 min-h-[48px]"
       >
         ← Sozlamalar
       </button>
@@ -251,7 +251,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                   onClick={() => setMode(k)}
                   disabled={isGenerating}
                   className={`rounded-2xl border p-3 text-left transition active:scale-[0.98] ${
-                    mode === k ? 'border-gold/50 bg-gold/10' : 'border-white/10 bg-surface/40'
+                    mode === k ? 'border-gold/50 bg-gold/10' : 'border-tint/10 bg-surface/40'
                   }`}
                 >
                   <span className="text-lg">{icon}</span>
@@ -266,7 +266,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                 {assignmentsLoading ? (
                   <div className="h-24 animate-pulse rounded-2xl bg-surface/50" />
                 ) : !assignments || assignments.length === 0 ? (
-                  <p className="rounded-2xl border border-white/10 bg-surface/40 p-4 text-xs leading-relaxed text-ink-muted">
+                  <p className="rounded-2xl border border-tint/10 bg-surface/40 p-4 text-xs leading-relaxed text-ink-muted">
                     Hali material yo‘q. Avval “Materiallar” bo‘limida material yarating yoki “Mavzu bo‘yicha” rejimini tanlang.
                   </p>
                 ) : (
@@ -276,7 +276,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                         value={materialSearch}
                         onChange={(e) => setMaterialSearch(e.target.value)}
                         placeholder="Material qidirish..."
-                        className="w-full rounded-2xl border border-white/10 bg-surface/50 px-4 py-2.5 text-sm text-ink outline-none focus:border-gold/50"
+                        className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-2.5 text-sm text-ink outline-none focus:border-gold/50"
                       />
                     )}
                     <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
@@ -290,12 +290,12 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                             onClick={() => setAssignmentId(a.id)}
                             disabled={isGenerating}
                             className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                              on ? 'border-gold/50 bg-gold/10' : 'border-white/10 bg-surface/40 hover:border-white/20'
+                              on ? 'border-gold/50 bg-gold/10' : 'border-tint/10 bg-surface/40 hover:border-tint/20'
                             }`}
                           >
                             <span
                               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[10px] ${
-                                on ? 'border-gold bg-gold text-base' : 'border-white/20'
+                                on ? 'border-gold bg-gold text-base' : 'border-tint/20'
                               }`}
                             >
                               {on && '✓'}
@@ -326,7 +326,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                 onChange={(e) => setTopicInput(e.target.value)}
                 placeholder="Masalan: Algebra — kvadrat tenglamalar"
                 disabled={isGenerating}
-                className="w-full rounded-2xl border border-white/10 bg-surface/50 px-4 py-3 text-sm text-ink outline-none focus:border-gold/50 min-h-[48px]"
+                className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-3 text-sm text-ink outline-none focus:border-gold/50 min-h-[48px]"
               />
             )}
           </section>
@@ -335,7 +335,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
           <section className="space-y-2.5">
             <StepLabel n={2} text="Nechta savol?" />
             <div className="flex items-center gap-3">
-              <div className="flex items-center rounded-2xl border border-white/10 bg-surface/50">
+              <div className="flex items-center rounded-2xl border border-tint/10 bg-surface/50">
                 <button
                   type="button"
                   onClick={() => setCount((c) => Math.max(1, c - 1))}
@@ -364,7 +364,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                     onClick={() => setCount(n)}
                     disabled={isGenerating}
                     className={`flex-1 rounded-xl py-2.5 text-xs font-bold transition ${
-                      count === n ? 'bg-gold/15 text-gold' : 'bg-white/5 text-ink-muted'
+                      count === n ? 'bg-gold/15 text-gold' : 'bg-tint/5 text-ink-muted'
                     }`}
                   >
                     {n}
@@ -387,7 +387,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                   className={`rounded-xl border py-2.5 text-xs font-semibold transition ${
                     difficulty === d.key
                       ? 'border-gold/50 bg-gold/10 text-gold'
-                      : 'border-white/10 bg-surface/40 text-ink-muted'
+                      : 'border-tint/10 bg-surface/40 text-ink-muted'
                   }`}
                 >
                   {d.label}
@@ -401,7 +401,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
               {[...Array(Math.min(count, 3))].map((_, i) => (
                 <div
                   key={i}
-                  className="h-14 animate-pulse rounded-2xl border border-white/5 bg-surface/50"
+                  className="h-14 animate-pulse rounded-2xl border border-tint/5 bg-surface/50"
                   style={{ animationDelay: `${i * 120}ms` }}
                 />
               ))}
@@ -443,7 +443,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
               <article
                 key={q._id}
                 className={`rounded-2xl border p-4 transition ${
-                  q._selected ? 'border-white/15 bg-surface/50' : 'border-white/5 bg-surface/20 opacity-55'
+                  q._selected ? 'border-tint/15 bg-surface/50' : 'border-tint/5 bg-surface/20 opacity-55'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -453,7 +453,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                     aria-pressed={q._selected}
                     aria-label={`${idx + 1}-savolni tanlash`}
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 text-xs font-bold transition ${
-                      q._selected ? 'border-gold bg-gold text-base' : 'border-white/25'
+                      q._selected ? 'border-gold bg-gold text-base' : 'border-tint/25'
                     }`}
                   >
                     {q._selected && '✓'}
@@ -482,12 +482,12 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                                 className={`flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs transition ${
                                   correct
                                     ? 'bg-teal/10 text-ink ring-1 ring-teal/40'
-                                    : 'bg-white/[0.03] text-ink-muted hover:bg-white/[0.06]'
+                                    : 'bg-tint/[0.03] text-ink-muted hover:bg-tint/[0.06]'
                                 }`}
                               >
                                 <span
                                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${
-                                    correct ? 'bg-teal text-black' : 'bg-white/10'
+                                    correct ? 'bg-teal text-black' : 'bg-tint/10'
                                   }`}
                                 >
                                   {correct ? '✓' : String.fromCharCode(65 + i)}

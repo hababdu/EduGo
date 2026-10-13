@@ -77,7 +77,7 @@ export function GroupsPage() {
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="h-48 bg-surface/20 rounded-3xl animate-pulse border border-white/5"
+              className="h-48 bg-surface/20 rounded-3xl animate-pulse border border-tint/5"
             />
           ))}
         </div>
@@ -89,7 +89,7 @@ export function GroupsPage() {
   if (error) {
     return (
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <p className="text-sm font-semibold text-ink">
             Guruhlarni yuklashda xatolik
           </p>
@@ -132,13 +132,13 @@ export function GroupsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 Guruh nomi bo'yicha qidirish..."
-          className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px] focus:border-gold/50"
+          className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-gold/50"
         />
       )}
 
       {/* ============ EMPTY ============ */}
       {hasNoGroups ? (
-        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <div className="text-5xl">👥</div>
           <p className="text-sm font-semibold text-ink">
             Hali guruhlaringiz yo'q
@@ -148,7 +148,7 @@ export function GroupsPage() {
           </p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <div className="text-4xl">🔍</div>
           <p className="text-sm font-semibold text-ink">Natija topilmadi</p>
           <p className="text-xs text-ink-muted">
@@ -180,7 +180,7 @@ export function GroupsPage() {
                   haptic('light');
                   navigate(`/groups/${g.id}`);
                 }}
-                className="group bg-surface/20 hover:bg-surface/40 rounded-3xl border border-white/5 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col text-left"
+                className="group bg-surface/20 hover:bg-surface/40 rounded-3xl border border-tint/5 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col text-left"
               >
                 {/* ===== POSTER ===== */}
                 <div className="relative w-full h-40 bg-surface/50 overflow-hidden">

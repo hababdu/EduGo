@@ -107,8 +107,8 @@ export function LessonDetailPage() {
     return (
       <div className="p-4 max-w-3xl mx-auto space-y-4 pb-24">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-64 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
-        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-64 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
       </div>
     );
   }
@@ -117,7 +117,7 @@ export function LessonDetailPage() {
   if (error || !item) {
     return (
       <div className="p-4 max-w-3xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <div className="text-4xl">📚</div>
           <p className="text-sm font-semibold text-ink">Material topilmadi</p>
           <p className="text-xs text-ink-muted">
@@ -165,7 +165,7 @@ export function LessonDetailPage() {
               haptic('light');
               navigate('/lessons');
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-tint/10 text-ink-muted hover:text-ink active:scale-95 transition"
             aria-label="Orqaga"
           >
             ←
@@ -193,9 +193,9 @@ export function LessonDetailPage() {
 
       {/* ============ HAVOLA ============ */}
       {isHttpUrl(item.mediaUrl) && (
-        <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
+        <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-3">
           {item.type === 'VIDEO' && youtubeEmbed(item.mediaUrl) ? (
-            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-surface/50 border border-white/5">
+            <div className="aspect-video w-full overflow-hidden rounded-2xl bg-surface/50 border border-tint/5">
               <iframe
                 src={youtubeEmbed(item.mediaUrl)!}
                 title="Video"
@@ -204,7 +204,7 @@ export function LessonDetailPage() {
               />
             </div>
           ) : item.type === 'IMAGE' ? (
-            <div className="rounded-2xl overflow-hidden border border-white/5 max-h-96 bg-surface/30 flex items-center justify-center">
+            <div className="rounded-2xl overflow-hidden border border-tint/5 max-h-96 bg-surface/30 flex items-center justify-center">
               <img
                 src={item.mediaUrl}
                 alt={item.title}
@@ -228,7 +228,7 @@ export function LessonDetailPage() {
 
       {/* ============ DESCRIPTION ============ */}
       {item.description && (
-        <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-2">
+        <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-2">
           <h3 className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
             Tafsilotlar
           </h3>
@@ -240,7 +240,7 @@ export function LessonDetailPage() {
 
       {/* ============ TESTS ============ */}
       {item.tests && item.tests.length > 0 && (
-        <div className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-4">
+        <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-4">
           <h3 className="text-sm font-semibold text-gold">
             🧠 Test savollari ({item.tests.length})
           </h3>
@@ -248,7 +248,7 @@ export function LessonDetailPage() {
             {item.tests.map((test, idx) => (
               <div
                 key={test.id}
-                className="bg-surface/30 p-4 rounded-2xl space-y-3 border border-white/5"
+                className="bg-surface/30 p-4 rounded-2xl space-y-3 border border-tint/5"
               >
                 <p className="text-sm font-medium text-ink">
                   {idx + 1}. {test.question}
@@ -276,7 +276,7 @@ export function LessonDetailPage() {
 
       {/* ============ EMPTY CONTENT ============ */}
       {!item.mediaUrl && !(item.files && item.files.length > 0) && !item.description && (!item.tests || item.tests.length === 0) && (
-        <div className="bg-surface/20 p-5 rounded-3xl border border-white/5">
+        <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5">
           <div className="text-center py-8 space-y-2">
             <div className="text-3xl">📄</div>
             <p className="text-xs text-ink-muted">

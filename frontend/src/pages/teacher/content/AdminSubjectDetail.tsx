@@ -136,7 +136,7 @@ export function AdminSubjectDetail() {
             ))}
           </div>
         ) : !sections || sections.length === 0 ? (
-          <div className="bg-surface/20 border border-white/5 rounded-2xl">
+          <div className="bg-surface/20 border border-tint/5 rounded-2xl">
             <EmptyState icon={Layers} title="Bo'limlar yo'q" />
           </div>
         ) : (

@@ -74,8 +74,8 @@ export function SoundToggle({ floating = false }: { floating?: boolean }) {
       aria-pressed={on}
       className={
         floating
-          ? 'fixed left-3 bottom-[92px] z-40 h-9 w-9 rounded-full bg-surface/70 backdrop-blur border border-white/10 text-ink-muted flex items-center justify-center active:scale-95 transition'
-          : 'flex items-center gap-2 rounded-2xl bg-surface/50 border border-white/10 px-4 py-3 text-sm text-ink w-full'
+          ? 'fixed left-3 bottom-[92px] z-40 h-9 w-9 rounded-full bg-surface/70 backdrop-blur border border-tint/10 text-ink-muted flex items-center justify-center active:scale-95 transition'
+          : 'flex items-center gap-2 rounded-2xl bg-surface/50 border border-tint/10 px-4 py-3 text-sm text-ink w-full'
       }
     >
       <Icon className="h-4 w-4" aria-hidden="true" />

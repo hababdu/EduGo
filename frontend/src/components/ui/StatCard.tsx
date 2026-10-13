@@ -27,7 +27,7 @@ export function StatCard({
     <Wrapper
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`relative bg-surface/20 border border-white/5 rounded-2xl p-4 overflow-hidden text-left ${
+      className={`relative bg-surface/20 border border-tint/5 rounded-2xl p-4 overflow-hidden text-left ${
         onClick ? 'active:scale-[0.98] transition' : ''
       }`}
     >

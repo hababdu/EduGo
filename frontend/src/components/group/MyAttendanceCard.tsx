@@ -13,7 +13,7 @@ export function MyAttendanceCard({ groupId }: { groupId: string }) {
   if (!data || data.percent == null) return null; // hali davomat belgilanmagan yoki xato — jim
 
   return (
-    <section className="bg-surface/20 border border-white/5 rounded-3xl p-4" aria-label="Mening davomatim">
+    <section className="bg-surface/20 border border-tint/5 rounded-3xl p-4" aria-label="Mening davomatim">
       <div className="flex items-baseline justify-between mb-3">
         <h2 className="text-sm font-semibold text-ink">Mening davomatim</h2>
         <span className="font-display text-xl text-teal tabular-nums">{data.percent}%</span>

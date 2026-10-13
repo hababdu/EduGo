@@ -69,13 +69,13 @@ export default function AdminPayments() {
               {data.groups.length === 0 ? (
                 <EmptyState icon={Wallet} title="Guruhlar yo'q" subtitle="O'quvchisi bor guruhlar shu yerda ko'rinadi" />
               ) : (
-                <ul className="divide-y divide-white/5">
+                <ul className="divide-y divide-tint/5">
                   {data.groups.map((g) => {
                     const pay = g.paid + g.unpaid;
                     const gp = pay > 0 ? Math.round((g.paid / pay) * 100) : 0;
                     return (
                       <li key={g.groupId}>
-                        <button type="button" onClick={() => goGroup(g.groupId)} className="w-full space-y-2 px-5 py-3 text-left transition hover:bg-white/[0.03] active:bg-white/[0.05]">
+                        <button type="button" onClick={() => goGroup(g.groupId)} className="w-full space-y-2 px-5 py-3 text-left transition hover:bg-tint/[0.03] active:bg-tint/[0.05]">
                           <div className="flex items-baseline justify-between gap-3">
                             <span className="truncate text-sm font-semibold text-ink">{g.name}</span>
                             <span className="shrink-0 text-[11px] tabular-nums text-ink-muted">
@@ -108,10 +108,10 @@ export default function AdminPayments() {
               {data.debtors.length === 0 ? (
                 <p className="px-5 pb-5 text-xs text-ink-muted">Bu oy qarzdor yo'q 🎉</p>
               ) : (
-                <ul className="max-h-[420px] divide-y divide-white/5 overflow-y-auto">
+                <ul className="max-h-[420px] divide-y divide-tint/5 overflow-y-auto">
                   {data.debtors.map((d) => (
                     <li key={`${d.groupId}:${d.studentId}`}>
-                      <button type="button" onClick={() => goGroup(d.groupId)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-white/[0.03]">
+                      <button type="button" onClick={() => goGroup(d.groupId)} className="flex w-full items-center gap-3 px-5 py-2.5 text-left transition hover:bg-tint/[0.03]">
                         <Avatar name={d.name} size="sm" />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-ink">{d.name}</span>

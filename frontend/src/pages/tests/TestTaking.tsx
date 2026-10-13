@@ -118,11 +118,11 @@ export function TestTaking() {
 
   return (
     <div className="min-h-screen flex flex-col bg-aurora">
-      <header className="sticky top-0 bg-base/90 backdrop-blur-md border-b border-white/5 z-10">
+      <header className="sticky top-0 bg-base/90 backdrop-blur-md border-b border-tint/5 z-10">
         <div className="px-4 py-3 flex items-center justify-between gap-3">
           <button
             onClick={() => setShowNav(true)}
-            className="flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-ink active:scale-[0.97] transition"
+            className="flex items-center gap-2 rounded-xl bg-tint/5 px-3 py-2 text-xs font-semibold text-ink active:scale-[0.97] transition"
             aria-label="Savollar ro'yxatini ochish"
           >
             <span className="tabular-nums">{currentIndex + 1} / {total}</span>
@@ -137,13 +137,13 @@ export function TestTaking() {
             ⏱ {formatTime(remaining)}
           </span>
         </div>
-        <div className="h-1 w-full bg-white/5" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answeredCount}>
+        <div className="h-1 w-full bg-tint/5" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={answeredCount}>
           <div className="h-full bg-teal transition-all duration-300" style={{ width: `${(answeredCount / total) * 100}%` }} />
         </div>
       </header>
 
       <div className="flex-1 px-4 py-5 max-w-2xl w-full mx-auto">
-        <div className="rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-5 mb-4">
+        <div className="rounded-3xl border border-tint/10 bg-surface/50 backdrop-blur-sm p-5 mb-4">
           <p className="text-lg font-medium leading-snug text-ink">{question.text}</p>
         </div>
         <p className="text-xs text-ink-muted mb-3 px-1">{typeLabel}</p>
@@ -156,7 +156,7 @@ export function TestTaking() {
               onBlur={() => submitTextAnswer(question.id, textDraft)}
               placeholder="Javobingizni shu yerga yozing..."
               rows={6}
-              className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-white/10 text-ink resize-none focus:border-gold/60"
+              className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-tint/10 text-ink resize-none focus:border-gold/60"
             />
             <AIAnswerCheck question={question.text} answer={textDraft} />
           </div>
@@ -173,13 +173,13 @@ export function TestTaking() {
                   className={`w-full flex items-center gap-3 text-left rounded-2xl px-4 py-4 text-[15px] transition-all active:scale-[0.99] min-h-[56px] ${
                     isSelected
                       ? 'bg-gold/10 border border-gold text-ink'
-                      : 'bg-surface/60 border border-white/10 hover:border-white/20'
+                      : 'bg-surface/60 border border-tint/10 hover:border-tint/20'
                   }`}
                 >
                   <span
                     className={`flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold ${
                       multi ? 'rounded-lg' : 'rounded-full'
-                    } ${isSelected ? 'bg-gold text-base' : 'bg-white/10 text-ink-muted'}`}
+                    } ${isSelected ? 'bg-gold text-base' : 'bg-tint/10 text-ink-muted'}`}
                     aria-hidden="true"
                   >
                     {isSelected && multi ? '✓' : String.fromCharCode(65 + idx)}
@@ -192,11 +192,11 @@ export function TestTaking() {
         )}
       </div>
 
-      <footer className="sticky bottom-0 bg-base/90 backdrop-blur-md px-4 py-3 border-t border-white/5 flex gap-3">
+      <footer className="sticky bottom-0 bg-base/90 backdrop-blur-md px-4 py-3 border-t border-tint/5 flex gap-3">
         <button
           disabled={currentIndex === 0}
           onClick={() => goTo(currentIndex - 1)}
-          className="w-24 rounded-2xl bg-white/5 text-ink py-3.5 text-sm font-medium active:scale-[0.98] transition disabled:opacity-30"
+          className="w-24 rounded-2xl bg-tint/5 text-ink py-3.5 text-sm font-medium active:scale-[0.98] transition disabled:opacity-30"
         >
           ← Orqaga
         </button>
@@ -220,7 +220,7 @@ export function TestTaking() {
       {showNav && (
         <div className="fixed inset-0 z-30 flex items-end bg-black/60 backdrop-blur-sm" onClick={() => setShowNav(false)}>
           <div
-            className="w-full max-w-2xl mx-auto rounded-t-3xl bg-surface border-t border-white/10 p-5 space-y-4"
+            className="w-full max-w-2xl mx-auto rounded-t-3xl bg-surface border-t border-tint/10 p-5 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">
@@ -239,7 +239,7 @@ export function TestTaking() {
                         ? 'ring-2 ring-gold text-gold bg-gold/10'
                         : done
                         ? 'bg-teal/20 text-teal'
-                        : 'bg-white/5 text-ink-muted'
+                        : 'bg-tint/5 text-ink-muted'
                     }`}
                   >
                     {i + 1}
@@ -249,7 +249,7 @@ export function TestTaking() {
             </div>
             <div className="flex items-center gap-4 text-[11px] text-ink-muted">
               <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded bg-teal/40" /> Javob berilgan</span>
-              <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded bg-white/15" /> Javobsiz</span>
+              <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded bg-tint/15" /> Javobsiz</span>
             </div>
             <button
               onClick={() => setShowConfirm(true)}
@@ -263,7 +263,7 @@ export function TestTaking() {
 
       {showConfirm && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-5">
-          <div className="w-full max-w-sm rounded-3xl bg-surface border border-white/10 p-6 space-y-4 shadow-2xl">
+          <div className="w-full max-w-sm rounded-3xl bg-surface border border-tint/10 p-6 space-y-4 shadow-2xl">
             <h3 className="font-display text-lg text-ink">Testni yakunlaysizmi?</h3>
             <p className="text-sm text-ink-muted">
               {unanswered > 0
@@ -273,7 +273,7 @@ export function TestTaking() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirm(false)}
-                className="flex-1 rounded-2xl bg-white/5 text-ink py-3 text-sm font-medium"
+                className="flex-1 rounded-2xl bg-tint/5 text-ink py-3 text-sm font-medium"
               >
                 Davom etish
               </button>
@@ -321,10 +321,10 @@ function TestResultView({
   const circ = 2 * Math.PI * 54;
   return (
     <div className="min-h-screen flex items-center justify-center px-6 text-center bg-aurora">
-      <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-surface/50 backdrop-blur-sm p-7">
+      <div className="w-full max-w-sm rounded-3xl border border-tint/10 bg-surface/50 backdrop-blur-sm p-7">
         <div className="relative mx-auto mb-5 h-36 w-36">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden="true">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
+            <circle cx="60" cy="60" r="54" fill="none" style={{ stroke: "rgb(var(--c-tint) / 0.08)" }} strokeWidth="8" />
             <circle
               cx="60"
               cy="60"

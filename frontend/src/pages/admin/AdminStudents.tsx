@@ -47,7 +47,7 @@ export function AdminStudents() {
   };
 
   const inputCls =
-    'bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-white/10 text-ink min-h-[44px] focus:border-gold/50';
+    'bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-gold/50';
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
@@ -105,11 +105,11 @@ export function AdminStudents() {
       {isLoading && !data ? (
         <div className="space-y-2.5">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-[72px] bg-surface/40 rounded-2xl animate-pulse border border-white/5" />
+            <div key={i} className="h-[72px] bg-surface/40 rounded-2xl animate-pulse border border-tint/5" />
           ))}
         </div>
       ) : sortedItems.length === 0 ? (
-        <div className="text-center py-12 bg-surface/30 rounded-3xl border border-white/10 space-y-3">
+        <div className="text-center py-12 bg-surface/30 rounded-3xl border border-tint/10 space-y-3">
           <p className="text-sm text-ink-muted">Bu qidiruvga mos student topilmadi.</p>
           {hasActiveFilters && (
             <button
@@ -122,7 +122,7 @@ export function AdminStudents() {
         </div>
       ) : (
         <Panel title="Talabalar" icon={Users} accent="sky" flush>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-tint/5">
             {sortedItems.map((s, idx) => {
               const isBlocked = s.status === 'BLOCKED';
               const name = `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || 'Student';
@@ -130,7 +130,7 @@ export function AdminStudents() {
                 <button
                   key={s.id}
                   onClick={() => navigate(`/admin/students/${s.id}`)}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors group"
+                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-tint/[0.03] active:bg-tint/[0.05] transition-colors group"
                 >
                   <span className="w-5 text-center text-[11px] font-semibold text-ink-faint tabular-nums">
                     {(page - 1) * 20 + idx + 1}
@@ -165,7 +165,7 @@ export function AdminStudents() {
           <button
             disabled={page <= 1}
             onClick={() => setPage((p) => p - 1)}
-            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-white/10 disabled:opacity-30 active:scale-[0.98] transition"
+            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-tint/10 disabled:opacity-30 active:scale-[0.98] transition"
           >
             ← Oldingi
           </button>
@@ -175,7 +175,7 @@ export function AdminStudents() {
           <button
             disabled={page >= data.totalPages}
             onClick={() => setPage((p) => p + 1)}
-            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-white/10 disabled:opacity-30 active:scale-[0.98] transition"
+            className="text-xs font-medium px-4 py-2.5 rounded-xl bg-surface/50 border border-tint/10 disabled:opacity-30 active:scale-[0.98] transition"
           >
             Keyingi →
           </button>

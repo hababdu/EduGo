@@ -122,7 +122,7 @@ export function MaterialComposer({ groups, defaultGroupId, onDone, onCancel }: P
   const pending = create.isPending;
 
   return (
-    <div className="space-y-5 rounded-3xl border border-white/10 bg-surface/40 p-5 backdrop-blur-sm">
+    <div className="space-y-5 rounded-3xl border border-tint/10 bg-surface/40 p-5 backdrop-blur-sm">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-bold text-ink">Yangi material</h2>
         <button type="button" onClick={cancel} className="flex items-center gap-1 text-xs text-ink-muted hover:text-ink">

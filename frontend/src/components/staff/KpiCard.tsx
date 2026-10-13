@@ -26,8 +26,8 @@ export function KpiCard({ label, value, icon: Icon, accent = 'gold', hint, onCli
     <Wrapper
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-surface/50 p-4 text-left ${
-        onClick ? 'transition hover:border-white/20 hover:bg-surface/70 active:scale-[0.98]' : ''
+      className={`group relative overflow-hidden rounded-2xl border border-tint/10 bg-surface/50 p-4 text-left ${
+        onClick ? 'transition hover:border-tint/20 hover:bg-surface/70 active:scale-[0.98]' : ''
       }`}
     >
       <div className="flex items-start justify-between gap-2">

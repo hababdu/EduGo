@@ -1,28 +1,32 @@
 /** @type {import('tailwindcss').Config} */
+const v = (n) => `rgb(var(--c-${n}) / <alpha-value>)`;
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
         // Fon — sof qora emas, iliqroq tund indigo
-        base: '#0B0D19',
-        surface: '#12162A',
-        surfaceRaised: '#1E2447',
+        base: v('base'),
+        surface: v('surface'),
+        surfaceRaised: v('raised'),
+        // Yarim shaffof qatlamlar uchun (qorong'i mavzuda oq, yorug'da to'q): bg-tint/5 ...
+        tint: v('tint'),
         // Aksentlar — ball uchun oltin (hero rang), progress uchun teal
         gold: {
-          DEFAULT: '#FFB020',
-          soft: '#4A3A1A',
+          DEFAULT: v('gold'),
+          soft: v('gold-soft'),
         },
         teal: {
-          DEFAULT: '#34D0A0',
-          soft: '#153B33',
+          DEFAULT: v('teal'),
+          soft: v('teal-soft'),
         },
-        coral: '#F0654B',
-        sky: '#38BDF8',
+        coral: v('coral'),
+        sky: v('sky'),
         ink: {
-          DEFAULT: '#F5F3ED',
-          muted: '#9CA3C4',
-          faint: '#5B5F82',
+          DEFAULT: v('ink'),
+          muted: v('muted'),
+          faint: v('faint'),
         },
       },
       fontFamily: {

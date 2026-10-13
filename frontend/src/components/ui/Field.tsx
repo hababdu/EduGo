@@ -35,7 +35,7 @@ export function CheckboxRow({
   icon?: ReactNode;
 }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-surface/40 border border-white/5 active:scale-[0.99] transition min-h-[52px]">
+    <label className="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-surface/40 border border-tint/5 active:scale-[0.99] transition min-h-[52px]">
       <input
         type="checkbox"
         checked={checked}

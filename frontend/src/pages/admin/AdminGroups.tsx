@@ -256,7 +256,7 @@ export default function AdminGroups() {
               </div>
 
               {/* Dars jadvali va sig'im */}
-              <div className="space-y-3 rounded-2xl border border-white/10 bg-surface/30 p-4">
+              <div className="space-y-3 rounded-2xl border border-tint/10 bg-surface/30 p-4">
                 <ScheduleFields value={sched} onChange={setSched} />
                 <label className="block text-xs text-ink-muted space-y-1">
                   Sig'im (ixtiyoriy)
@@ -281,7 +281,7 @@ export default function AdminGroups() {
                       haptic('light');
                       setShowPexelsModal(true);
                     }}
-                    className="w-full bg-surface/40 rounded-2xl px-4 py-6 outline-none border border-dashed border-white/10 text-ink-muted hover:border-sky/50 active:scale-[0.99] transition-all min-h-[160px] flex flex-col items-center justify-center gap-2"
+                    className="w-full bg-surface/40 rounded-2xl px-4 py-6 outline-none border border-dashed border-tint/10 text-ink-muted hover:border-sky/50 active:scale-[0.99] transition-all min-h-[160px] flex flex-col items-center justify-center gap-2"
                   >
                     <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky/10 text-sky">
                       <Search className="h-6 w-6" aria-hidden="true" />
@@ -290,7 +290,7 @@ export default function AdminGroups() {
                     <span className="text-[10px]">Pexels'dan bepul rasmlar</span>
                   </button>
                 ) : (
-                  <div className="relative bg-surface/50 rounded-2xl overflow-hidden border border-white/10">
+                  <div className="relative bg-surface/50 rounded-2xl overflow-hidden border border-tint/10">
                     <img src={getFullUrl(posterUrl)} alt="Preview" className="w-full h-48 object-cover" />
                     <button
                       type="button"
@@ -348,7 +348,7 @@ export default function AdminGroups() {
           ))}
         </div>
       ) : filteredGroups.length === 0 ? (
-        <div className="rounded-3xl border border-white/10 bg-surface/40">
+        <div className="rounded-3xl border border-tint/10 bg-surface/40">
           <EmptyState icon={FolderOpen} title="Guruhlar topilmadi" subtitle="Qidiruvni o'zgartiring yoki yangi guruh yarating." />
         </div>
       ) : (
@@ -368,7 +368,7 @@ export default function AdminGroups() {
                   haptic('light');
                   navigate(`/admin/groups/${g.id}`);
                 }}
-                className="group bg-surface/50 hover:bg-surface/70 hover:border-white/20 rounded-3xl border border-white/10 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col"
+                className="group bg-surface/50 hover:bg-surface/70 hover:border-tint/20 rounded-3xl border border-tint/10 active:scale-[0.98] transition-all cursor-pointer overflow-hidden flex flex-col"
               >
                 <div className="relative w-full aspect-[4/3] bg-surface/50 overflow-hidden">
                   {posterFullUrl ? (

@@ -140,7 +140,7 @@ export function AdminTestDetail() {
                 haptic('light');
                 navigate('/teacher/tests');
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/5 px-3 py-1.5 text-xs font-medium text-ink hover:bg-white/10 active:scale-[0.98] transition"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-tint/5 px-3 py-1.5 text-xs font-medium text-ink hover:bg-tint/10 active:scale-[0.98] transition"
             >
               <ChevronLeft className="w-4 h-4" /> Orqaga
             </button>
@@ -191,7 +191,7 @@ export function AdminTestDetail() {
       </div>
 
       {/* Content */}
-      <div className="bg-surface/40 border border-white/10 rounded-3xl p-4 sm:p-5">
+      <div className="bg-surface/40 border border-tint/10 rounded-3xl p-4 sm:p-5">
         {tab === 'info' && (
           <div className="space-y-5">
             <Section
@@ -221,7 +221,7 @@ export function AdminTestDetail() {
                     return (
                       <div
                         key={tq.question.id}
-                        className="bg-surface/50 border border-white/10 rounded-2xl p-3.5 space-y-2"
+                        className="bg-surface/50 border border-tint/10 rounded-2xl p-3.5 space-y-2"
                       >
                         <p className="text-sm text-ink flex items-start gap-2">
                           <span className="text-ink-muted font-mono shrink-0 text-xs pt-0.5">
@@ -237,7 +237,7 @@ export function AdminTestDetail() {
                                 className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 ${
                                   opt.isCorrect
                                     ? 'bg-teal/10 border-teal/30 text-teal'
-                                    : 'bg-surface/30 border-white/5 text-ink-muted'
+                                    : 'bg-surface/30 border-tint/5 text-ink-muted'
                                 }`}
                               >
                                 {opt.isCorrect && <Check className="w-3 h-3 shrink-0" />}
@@ -260,7 +260,7 @@ export function AdminTestDetail() {
 
         {tab === 'reopen' && (
           <div className="space-y-4 max-w-md">
-            <div className="bg-surface/40 border border-white/5 rounded-xl p-4 space-y-1.5">
+            <div className="bg-surface/40 border border-tint/5 rounded-xl p-4 space-y-1.5">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-gold" />
                 <p className="text-xs font-semibold text-gold">Maxsus qayta ochish</p>

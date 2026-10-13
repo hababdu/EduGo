@@ -74,7 +74,7 @@ export function TeacherGroups() {
     return (
       <div className={PAGE_WIDE}>
         <StaffHero accent="gold" image={IMAGES.hero} eyebrow="O'qituvchi" title="Guruhlar" />
-        <div className="bg-surface/40 border border-white/10 rounded-3xl">
+        <div className="bg-surface/40 border border-tint/10 rounded-3xl">
           <EmptyState
             icon={RotateCw}
             title="Yuklashda xatolik"
@@ -110,7 +110,7 @@ export function TeacherGroups() {
       />
 
       {filtered.length === 0 ? (
-        <div className="bg-surface/40 border border-white/10 rounded-3xl">
+        <div className="bg-surface/40 border border-tint/10 rounded-3xl">
           <EmptyState
             icon={search ? FolderOpen : Users}
             title={search ? 'Natija topilmadi' : "Guruhlaringiz yo'q"}
@@ -148,7 +148,7 @@ function GroupCard({ group, onClick }: { group: TeacherGroup; onClick: () => voi
     <button
       type="button"
       onClick={onClick}
-      className="group bg-surface/50 border border-white/10 hover:border-gold/30 rounded-2xl overflow-hidden active:scale-[0.98] transition text-left flex flex-col"
+      className="group bg-surface/50 border border-tint/10 hover:border-gold/30 rounded-2xl overflow-hidden active:scale-[0.98] transition text-left flex flex-col"
     >
       {/* Poster */}
       <div className="relative w-full h-32 bg-surface/50 overflow-hidden shrink-0">

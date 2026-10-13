@@ -44,7 +44,7 @@ export function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm bg-surface rounded-3xl border border-white/10 p-6 space-y-4 shadow-2xl"
+        className="w-full max-w-sm bg-surface rounded-3xl border border-tint/10 p-6 space-y-4 shadow-2xl"
       >
         {title && (
           <h3 className="font-display text-lg text-ink text-center">{title}</h3>
@@ -55,7 +55,7 @@ export function Modal({
         <div className="grid grid-cols-2 gap-3 pt-2">
           <button
             onClick={onCancel}
-            className="py-3 rounded-2xl bg-white/5 text-ink-muted text-sm font-semibold active:scale-[0.98] transition-transform"
+            className="py-3 rounded-2xl bg-tint/5 text-ink-muted text-sm font-semibold active:scale-[0.98] transition-transform"
           >
             {cancelText}
           </button>

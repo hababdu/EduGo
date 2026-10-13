@@ -16,7 +16,7 @@ export function PageHeader({ title, subtitle, onBack, actions }: Props) {
         <button
           type="button"
           onClick={onBack}
-          className="p-2 rounded-xl bg-white/5 text-ink-muted hover:text-ink active:scale-95 transition shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center"
+          className="p-2 rounded-xl bg-tint/5 text-ink-muted hover:text-ink active:scale-95 transition shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center"
           aria-label="Orqaga"
         >
           <ChevronLeft className={ICON.md} />

@@ -108,7 +108,7 @@ export function ConfirmationCard({ card, status, message, onConfirm, onCancel }:
                 setArmed(false);
                 onCancel();
               }}
-              className="rounded-xl px-4 py-2.5 text-sm font-medium bg-white/5 text-ink-muted active:scale-95 transition"
+              className="rounded-xl px-4 py-2.5 text-sm font-medium bg-tint/5 text-ink-muted active:scale-95 transition"
             >
               Bekor qilish
             </button>

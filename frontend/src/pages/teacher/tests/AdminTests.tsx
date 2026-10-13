@@ -342,7 +342,7 @@ export function AdminTests() {
     return (
       <div className={PAGE}>
         <PageHeader title="Testlar" />
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+        <div className="bg-surface/20 border border-tint/5 rounded-2xl">
           <EmptyState
             icon={AlertTriangle}
             title="Testlarni yuklashda xatolik"
@@ -470,7 +470,7 @@ export function AdminTests() {
           ))}
         </div>
       ) : !tests || tests.length === 0 ? (
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+        <div className="bg-surface/20 border border-tint/5 rounded-2xl">
           <EmptyState
             icon={FileText}
             title="Testlar yo'q"
@@ -486,7 +486,7 @@ export function AdminTests() {
           />
         </div>
       ) : filteredTests.length === 0 ? (
-        <div className="bg-surface/20 border border-white/5 rounded-2xl">
+        <div className="bg-surface/20 border border-tint/5 rounded-2xl">
           <EmptyState
             icon={FileText}
             title="Natija topilmadi"
@@ -598,13 +598,13 @@ function CollapsibleSection({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-0.5 text-left transition-colors hover:bg-white/[0.03] active:bg-white/[0.05]"
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-xl px-1 py-0.5 text-left transition-colors hover:bg-tint/[0.03] active:bg-tint/[0.05]"
           aria-expanded={open}
         >
           <span
             className={`
               flex h-7 w-7 shrink-0 items-center justify-center rounded-lg
-              bg-white/5 text-ink-muted
+              bg-tint/5 text-ink-muted
               transition-transform duration-200
               ${open ? 'rotate-0' : '-rotate-90'}
             `}
@@ -701,7 +701,7 @@ function TestForm({
         <button
           type="button"
           onClick={onCancel}
-          className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-ink-muted transition hover:bg-white/5 hover:text-ink"
+          className="shrink-0 rounded-xl px-3 py-2 text-xs font-semibold text-ink-muted transition hover:bg-tint/5 hover:text-ink"
         >
           Bekor qilish
         </button>
@@ -757,7 +757,7 @@ function TestForm({
             ))}
           </div>
         ) : !teacherGroups || teacherGroups.length === 0 ? (
-          <div className="rounded-xl border border-white/5 bg-surface/30 py-6 text-center">
+          <div className="rounded-xl border border-tint/5 bg-surface/30 py-6 text-center">
             <p className={TEXT.bodySm}>Guruhlar yo‘q</p>
           </div>
         ) : (
@@ -776,14 +776,14 @@ function TestForm({
                     ${
                       selected
                         ? 'border-gold/40 bg-gold/10'
-                        : 'border-white/5 bg-surface/40 hover:bg-white/[0.05]'
+                        : 'border-tint/5 bg-surface/40 hover:bg-tint/[0.05]'
                     }
                   `}
                 >
                   <div
                     className={`
                       flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2
-                      ${selected ? 'border-gold bg-gold' : 'border-white/20'}
+                      ${selected ? 'border-gold bg-gold' : 'border-tint/20'}
                     `}
                   >
                     {selected && <Check className="h-3 w-3 text-base" />}
@@ -854,7 +854,7 @@ function TestForm({
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold border transition ${
                   durationSeconds === m * 60
                     ? 'border-gold/40 bg-gold/15 text-gold'
-                    : 'border-white/10 bg-white/5 text-ink-muted'
+                    : 'border-tint/10 bg-tint/5 text-ink-muted'
                 }`}
               >
                 {m} daqiqa
@@ -943,7 +943,7 @@ function TestForm({
       </CollapsibleSection>
 
       {/* Saqlash paneli */}
-      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl bg-base/95 ring-1 ring-white/10 p-3 backdrop-blur-md shadow-xl">
+      <div className="sticky bottom-3 z-20 flex items-center gap-3 rounded-2xl bg-base/95 ring-1 ring-tint/10 p-3 backdrop-blur-md shadow-xl">
         <div className="min-w-0 flex-1 text-[11px] text-ink-muted leading-tight">
           <p>
             <span className="font-bold text-ink">{questions.length}</span> savol ·{' '}
@@ -1023,7 +1023,7 @@ function QuestionCard({
               ${
                 open
                   ? 'bg-gold text-black'
-                  : 'border border-white/10 bg-white/[0.03] text-ink-muted'
+                  : 'border border-tint/10 bg-tint/[0.03] text-ink-muted'
               }
             `}
           >
@@ -1060,7 +1060,7 @@ function QuestionCard({
         <button
           type="button"
           onClick={onDuplicate}
-          className="shrink-0 rounded-xl px-2 py-2 text-[11px] font-semibold text-ink-muted transition hover:bg-white/5 hover:text-ink"
+          className="shrink-0 rounded-xl px-2 py-2 text-[11px] font-semibold text-ink-muted transition hover:bg-tint/5 hover:text-ink"
           aria-label="Savoldan nusxa olish"
         >
           Nusxa
@@ -1145,7 +1145,7 @@ function QuestionCard({
                     ${
                       question.correctAnswerIndex === oi
                         ? 'border-teal/40 bg-teal/5'
-                        : 'border-white/5 bg-white/[0.02]'
+                        : 'border-tint/5 bg-tint/[0.02]'
                     }
                   `}
                 >
@@ -1153,7 +1153,7 @@ function QuestionCard({
                     type="button"
                     onClick={() => onChange(index, 'correctAnswerIndex', oi)}
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition ${
-                      question.correctAnswerIndex === oi ? 'bg-teal text-black' : 'bg-white/10 text-ink-muted'
+                      question.correctAnswerIndex === oi ? 'bg-teal text-black' : 'bg-tint/10 text-ink-muted'
                     }`}
                     aria-pressed={question.correctAnswerIndex === oi}
                     aria-label={`Variant ${oi + 1} to'g'ri javob`}

@@ -49,7 +49,7 @@ export function AdminStudentDetail() {
         <p className="text-sm text-ink-muted">Talaba topilmadi yoki yuklashda xatolik yuz berdi.</p>
         <button
           onClick={() => navigate(-1)}
-          className="text-xs bg-surface px-4 py-2 rounded-xl border border-white/10 text-ink"
+          className="text-xs bg-surface px-4 py-2 rounded-xl border border-tint/10 text-ink"
         >
           ← Orqaga qaytish
         </button>
@@ -128,7 +128,7 @@ export function AdminStudentDetail() {
         <KpiCard label="Streak" value={`${student.streak?.currentStreak ?? 0} kun`} icon={Flame} accent="coral" />
       </div>
 
-      <section className="bg-surface/40 p-5 rounded-3xl border border-white/10 space-y-4">
+      <section className="bg-surface/40 p-5 rounded-3xl border border-tint/10 space-y-4">
         <h2 className="text-sm font-medium text-ink">Qo'lda ball berish / ayirish</h2>
         
         <div className="flex flex-wrap gap-2">
@@ -137,7 +137,7 @@ export function AdminStudentDetail() {
               key={val}
               type="button"
               onClick={() => handleQuickScore(val)}
-              className={`text-xs px-3 py-1 rounded-lg border border-white/10 transition-colors text-ink ${
+              className={`text-xs px-3 py-1 rounded-lg border border-tint/10 transition-colors text-ink ${
                 val > 0 ? 'hover:bg-teal/20 hover:text-teal' : 'hover:bg-coral/20 hover:text-coral'
               }`}
             >
@@ -152,13 +152,13 @@ export function AdminStudentDetail() {
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Ball miqdori (masalan: 50 yoki -20)"
-            className="w-full bg-surface rounded-lg px-4 py-2.5 text-sm outline-none border border-white/5 focus-visible:ring-2 focus-visible:ring-gold text-ink"
+            className="w-full bg-surface rounded-lg px-4 py-2.5 text-sm outline-none border border-tint/5 focus-visible:ring-2 focus-visible:ring-gold text-ink"
           />
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Sabab (audit logga yoziladi, majburiy)"
-            className="w-full bg-surface rounded-lg px-4 py-2.5 text-sm outline-none border border-white/5 focus-visible:ring-2 focus-visible:ring-gold text-ink"
+            className="w-full bg-surface rounded-lg px-4 py-2.5 text-sm outline-none border border-tint/5 focus-visible:ring-2 focus-visible:ring-gold text-ink"
           />
           {formError && <p className="text-xs text-coral">{formError}</p>}
           <button
@@ -181,12 +181,12 @@ export function AdminStudentDetail() {
               value={testSearch}
               onChange={(e) => setTestSearch(e.target.value)}
               placeholder="Test nomi..."
-              className="bg-surface text-xs rounded-lg px-3 py-1.5 outline-none border border-white/5 focus-visible:ring-1 focus-visible:ring-gold w-36 text-ink"
+              className="bg-surface text-xs rounded-lg px-3 py-1.5 outline-none border border-tint/5 focus-visible:ring-1 focus-visible:ring-gold w-36 text-ink"
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="bg-surface text-xs rounded-lg px-2 py-1.5 outline-none border border-white/5 text-ink-muted cursor-pointer"
+              className="bg-surface text-xs rounded-lg px-2 py-1.5 outline-none border border-tint/5 text-ink-muted cursor-pointer"
             >
               <option value="ALL">Barchasi</option>
               <option value="PASSED">O'tganlar</option>
@@ -196,11 +196,11 @@ export function AdminStudentDetail() {
         </div>
 
         {filteredAttempts.length === 0 ? (
-          <div className="text-center py-8 bg-surface/20 rounded-xl border border-white/5">
+          <div className="text-center py-8 bg-surface/20 rounded-xl border border-tint/5">
             <p className="text-sm text-ink-faint">Mos keladigan test natijalari topilmadi.</p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5 bg-surface/40 rounded-3xl px-4 border border-white/10">
+          <div className="divide-y divide-tint/5 bg-surface/40 rounded-3xl px-4 border border-tint/10">
             {filteredAttempts.map((a: any) => (
               <div key={a.id} className="py-3 flex items-center justify-between text-sm">
                 <div>
@@ -223,7 +223,7 @@ export function AdminStudentDetail() {
 
       {showBlockModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-surface border border-white/10 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+          <div className="bg-surface border border-tint/10 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
             <h3 className="text-lg font-display text-ink">
               {isBlocked ? 'Foydalanuvchini blokdan chiqarish' : 'Foydalanuvchini bloklash'}
             </h3>
@@ -236,7 +236,7 @@ export function AdminStudentDetail() {
               <button
                 type="button"
                 onClick={() => setShowBlockModal(false)}
-                className="px-4 py-2 text-sm rounded-lg bg-surface hover:bg-white/5 transition-colors text-ink"
+                className="px-4 py-2 text-sm rounded-lg bg-surface hover:bg-tint/5 transition-colors text-ink"
               >
                 Bekor qilish
               </button>

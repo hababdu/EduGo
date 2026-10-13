@@ -120,7 +120,7 @@ export default function AdminGroupPayments() {
           <button
             type="button"
             onClick={() => navigate('/admin/payments')}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-ink-muted transition hover:text-ink"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-xl border border-tint/10 bg-tint/5 px-3 py-2 text-xs text-ink-muted transition hover:text-ink"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Orqaga
           </button>
@@ -139,7 +139,7 @@ export default function AdminGroupPayments() {
         </div>
       )}
 
-      {data && students.length === 0 && <p className="rounded-2xl border border-white/10 bg-surface/30 py-8 text-center text-sm text-ink-muted">Guruhda hali o'quvchi yo'q</p>}
+      {data && students.length === 0 && <p className="rounded-2xl border border-tint/10 bg-surface/30 py-8 text-center text-sm text-ink-muted">Guruhda hali o'quvchi yo'q</p>}
 
       {students.length > 0 && (
         <Panel
@@ -153,7 +153,7 @@ export default function AdminGroupPayments() {
             </button>
           }
         >
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-tint/5">
             {students.map((s) => {
               const name = `${s.firstName} ${s.lastName ?? ''}`.trim() || s.username || "Noma'lum";
               const e = edits[s.studentId] ?? { status: s.status, amount: '' };
@@ -162,7 +162,7 @@ export default function AdminGroupPayments() {
                   <div className="flex items-center gap-3">
                     <Avatar name={name} size="sm" />
                     <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{name}</span>
-                    {!s.due && s.status === 'UNPAID' && <span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ink-muted">oydan keyin qo'shilgan</span>}
+                    {!s.due && s.status === 'UNPAID' && <span className="shrink-0 rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">oydan keyin qo'shilgan</span>}
                   </div>
                   <div className="grid grid-cols-3 gap-1.5" role="group" aria-label={`${name} to'lovi`}>
                     {OPTIONS.map(({ value, label, Icon, on }) => (
@@ -171,7 +171,7 @@ export default function AdminGroupPayments() {
                         type="button"
                         aria-pressed={e.status === value}
                         onClick={() => setStatus(s, value)}
-                        className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition active:scale-95 ${e.status === value ? on : 'bg-white/5 text-ink-muted'}`}
+                        className={`flex items-center justify-center gap-1 rounded-xl py-2 text-xs font-semibold transition active:scale-95 ${e.status === value ? on : 'bg-tint/5 text-ink-muted'}`}
                       >
                         <Icon className="h-3.5 w-3.5" aria-hidden="true" /> {label}
                       </button>
@@ -197,7 +197,7 @@ export default function AdminGroupPayments() {
       )}
 
       {changed.length > 0 && (
-        <div className="glass fixed inset-x-0 bottom-[60px] z-30 border-t border-white/10 px-4 py-3">
+        <div className="glass fixed inset-x-0 bottom-[60px] z-30 border-t border-tint/10 px-4 py-3">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
             <span className="text-xs text-ink-muted">{changed.length} ta o'zgarish saqlanmagan</span>
             <button type="button" onClick={save} disabled={mark.isPending} className={`${CONTROL.buttonPrimary} disabled:opacity-50`}>

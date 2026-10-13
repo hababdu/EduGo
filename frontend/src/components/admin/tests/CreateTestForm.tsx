@@ -124,7 +124,7 @@ export function CreateTestForm({ onCancel }: { onCancel: () => void }) {
             Hali savollar bank'da yo'q. Avval "Savollar banki" bo'limidan qo'shing.
           </p>
         ) : (
-          <div className="max-h-64 overflow-y-auto space-y-1.5 border border-white/5 rounded-lg p-2">
+          <div className="max-h-64 overflow-y-auto space-y-1.5 border border-tint/5 rounded-lg p-2">
             {questions?.map((q) => (
               <label
                 key={q.id}

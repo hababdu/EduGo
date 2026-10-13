@@ -13,7 +13,7 @@ interface PodiumProps {
 
 const STYLE: Record<number, { medal: string; h: string; ring: string; text: string }> = {
   1: { medal: '🥇', h: 'h-24', ring: 'border-gold/60 bg-gold/15', text: 'text-gold' },
-  2: { medal: '🥈', h: 'h-16', ring: 'border-white/15 bg-white/[0.06]', text: 'text-ink' },
+  2: { medal: '🥈', h: 'h-16', ring: 'border-tint/15 bg-tint/[0.06]', text: 'text-ink' },
   3: { medal: '🥉', h: 'h-12', ring: 'border-coral/40 bg-coral/10', text: 'text-coral' },
 };
 

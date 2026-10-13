@@ -82,7 +82,7 @@ export function AdminOverview() {
       <TodayLessons basePath="/admin/groups" />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>
+        <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>
           <MiniBars data={days} color="teal" />
         </Panel>
 
@@ -107,7 +107,7 @@ export function AdminOverview() {
       </div>
 
       <Panel title="Tezkor o'tish" icon={FolderOpen} accent="sky" flush>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-white/5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-tint/5">
           {shortcuts.map(({ label, hint, icon: Icon, to }) => (
             <button
               key={to}

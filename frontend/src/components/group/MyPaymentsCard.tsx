@@ -13,7 +13,7 @@ export function MyPaymentsCard({ groupId }: { groupId: string }) {
   if (!data || data.months.length === 0) return null;
 
   return (
-    <section className="rounded-3xl border border-white/5 bg-surface/20 p-4" aria-label="Mening to'lovlarim">
+    <section className="rounded-3xl border border-tint/5 bg-surface/20 p-4" aria-label="Mening to'lovlarim">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Wallet className="h-4 w-4 text-gold" aria-hidden="true" /> To'lovlarim

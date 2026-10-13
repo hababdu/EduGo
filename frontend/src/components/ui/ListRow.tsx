@@ -25,7 +25,7 @@ export function ListRow({
       type={onClick ? 'button' : undefined}
       onClick={onClick}
       className={`w-full flex items-center gap-3 p-3.5 text-left ${
-        onClick ? 'hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors' : ''
+        onClick ? 'hover:bg-tint/[0.03] active:bg-tint/[0.05] transition-colors' : ''
       } ${className}`}
     >
       {leading}

@@ -28,7 +28,7 @@ export function Card({ children, className = '' }: { children: ReactNode; classN
 
 export function CardList({ children }: { children: ReactNode }) {
   return (
-    <div className={`${SURFACE.card} rounded-2xl divide-y divide-white/5 overflow-hidden`}>
+    <div className={`${SURFACE.card} rounded-2xl divide-y divide-tint/5 overflow-hidden`}>
       {children}
     </div>
   );
@@ -36,7 +36,7 @@ export function CardList({ children }: { children: ReactNode }) {
 export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`bg-surface/30 rounded-2xl animate-pulse border border-white/5 ${className}`}
+      className={`bg-surface/30 rounded-2xl animate-pulse border border-tint/5 ${className}`}
     />
   );
 }

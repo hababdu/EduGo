@@ -26,7 +26,7 @@ export function ContinueLearningCard({
         }}
         className="w-full text-left rounded-2xl p-5 relative overflow-hidden active:scale-[0.98] transition-transform"
         style={{
-          background: 'linear-gradient(135deg, #232750 0%, #1B1E3A 100%)',
+          background: 'linear-gradient(135deg, rgb(var(--c-raised)) 0%, rgb(var(--c-surface)) 100%)',
         }}
       >
         <p className="font-display text-2xl">{subjectTitle}</p>

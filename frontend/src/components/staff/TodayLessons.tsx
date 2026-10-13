@@ -19,7 +19,7 @@ export function TodayLessons({ basePath, openAttendanceTab = false }: Props) {
   return (
     <Panel title="Bugungi darslar" icon={CalendarCheck} accent="teal" flush>
       {isLoading ? (
-        <div className="mx-5 mb-5 h-16 animate-pulse rounded-2xl bg-white/5" />
+        <div className="mx-5 mb-5 h-16 animate-pulse rounded-2xl bg-tint/5" />
       ) : error ? (
         <p className="px-5 pb-5 text-xs text-coral">Jadvalni yuklab bo'lmadi</p>
       ) : !data || data.length === 0 ? (
@@ -27,7 +27,7 @@ export function TodayLessons({ basePath, openAttendanceTab = false }: Props) {
           Bugun darslar yo'q. Guruh sozlamalarida dars kunlarini belgilang — shu yerda ko'rinadi.
         </p>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-tint/5">
           {data.map((l) => {
             const done = l.membersCount > 0 && l.markedCount >= l.membersCount;
             const pct = l.membersCount > 0 ? (l.markedCount / l.membersCount) * 100 : 0;

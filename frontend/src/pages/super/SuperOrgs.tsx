@@ -65,12 +65,12 @@ function OrgCard({ org }: { org: Org }) {
               <Plus className="h-4 w-4" /> Admin qo'shish
             </button>
           ) : (
-            <div className="mt-2 space-y-2 rounded-2xl border border-white/10 bg-surface/50 p-2.5">
+            <div className="mt-2 space-y-2 rounded-2xl border border-tint/10 bg-surface/50 p-2.5">
               <div className="flex items-center gap-2">
                 <input autoFocus className={`${CONTROL.input} min-w-0 flex-1`} placeholder="Foydalanuvchini qidiring (ism yoki @username)" value={q} onChange={(e) => setQ(e.target.value)} />
-                <button type="button" aria-label="Yopish" className="rounded-lg bg-white/5 p-2 text-ink-muted" onClick={() => { setOpen(false); setQ(''); }}><X className="h-4 w-4" /></button>
+                <button type="button" aria-label="Yopish" className="rounded-lg bg-tint/5 p-2 text-ink-muted" onClick={() => { setOpen(false); setQ(''); }}><X className="h-4 w-4" /></button>
               </div>
-              <ul className="max-h-64 divide-y divide-white/5 overflow-y-auto">
+              <ul className="max-h-64 divide-y divide-tint/5 overflow-y-auto">
                 {(cands ?? []).map((c: Candidate) => {
                   const other = !!c.organization && c.organization.id !== org.id && c.role !== 'STUDENT';
                   const already = c.role === 'ADMIN' && c.organization?.id === org.id;

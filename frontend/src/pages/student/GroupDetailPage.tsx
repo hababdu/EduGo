@@ -103,8 +103,8 @@ export function GroupDetailPage() {
     return (
       <div className="p-4 max-w-4xl mx-auto space-y-4 pb-24">
         <div className="h-10 w-24 bg-surface/30 rounded-2xl animate-pulse" />
-        <div className="h-56 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
-        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-white/5" />
+        <div className="h-56 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
       </div>
     );
   }
@@ -113,7 +113,7 @@ export function GroupDetailPage() {
   if (error || !group) {
     return (
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <div className="text-4xl">❌</div>
           <p className="text-sm font-semibold text-ink">Guruh topilmadi</p>
           <p className="text-xs text-ink-muted">
@@ -157,7 +157,7 @@ export function GroupDetailPage() {
               haptic('light');
               navigate('/groups');
             }}
-            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-tint/10 text-ink-muted hover:text-ink active:scale-95 transition"
             aria-label="Orqaga"
           >
             ←
@@ -167,7 +167,7 @@ export function GroupDetailPage() {
 
       {/* ============ META ============ */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+        <div className="bg-surface/20 p-3 rounded-2xl border border-tint/5 text-center">
           <p className="text-[10px] text-ink-muted uppercase tracking-wider">
             A'zolar
           </p>
@@ -175,7 +175,7 @@ export function GroupDetailPage() {
             {memberCount}
           </p>
         </div>
-        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+        <div className="bg-surface/20 p-3 rounded-2xl border border-tint/5 text-center">
           <p className="text-[10px] text-ink-muted uppercase tracking-wider">
             Materiallar
           </p>
@@ -183,7 +183,7 @@ export function GroupDetailPage() {
             {assignmentCount}
           </p>
         </div>
-        <div className="bg-surface/20 p-3 rounded-2xl border border-white/5 text-center">
+        <div className="bg-surface/20 p-3 rounded-2xl border border-tint/5 text-center">
           <p className="text-[10px] text-ink-muted uppercase tracking-wider">
             Ustoz
           </p>
@@ -205,7 +205,7 @@ export function GroupDetailPage() {
       <MyPaymentsCard groupId={group.id} />
 
       {/* ============ MEMBERS ============ */}
-      <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
+      <section className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
             <span>👥</span>
@@ -215,7 +215,7 @@ export function GroupDetailPage() {
         </div>
 
         {members.length === 0 ? (
-          <div className="text-center py-8 bg-surface/30 rounded-2xl border border-white/5">
+          <div className="text-center py-8 bg-surface/30 rounded-2xl border border-tint/5">
             <p className="text-xs text-ink-muted">
               A'zolar ro'yxati mavjud emas
             </p>
@@ -262,13 +262,13 @@ export function GroupDetailPage() {
       </section>
 
       {/* ============ MATERIALS PLACEHOLDER ============ */}
-      <section className="bg-surface/20 p-5 rounded-3xl border border-white/5 space-y-3">
+      <section className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-3">
         <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
           <span>📚</span>
           <span>Materiallar va testlar</span>
         </h2>
 
-        <div className="text-center py-8 bg-surface/30 rounded-2xl border border-white/5">
+        <div className="text-center py-8 bg-surface/30 rounded-2xl border border-tint/5">
           <div className="text-3xl mb-2">📚</div>
           <p className="text-xs text-ink-muted">
             Materiallar va testlar tez orada qo'shiladi

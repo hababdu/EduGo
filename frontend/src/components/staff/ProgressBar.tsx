@@ -10,7 +10,7 @@ export function ProgressBar({ value, tone = 'teal', className = '' }: Props) {
   const t = tone === 'auto' ? (v >= 70 ? 'teal' : v >= 40 ? 'gold' : 'coral') : tone;
   const fill = t === 'gold' ? 'bg-gold' : t === 'coral' ? 'bg-coral' : 'bg-teal';
   return (
-    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-white/10 ${className}`} role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100}>
+    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-tint/10 ${className}`} role="progressbar" aria-valuenow={v} aria-valuemin={0} aria-valuemax={100}>
       <div className={`h-full rounded-full ${fill}`} style={{ width: `${v}%` }} />
     </div>
   );

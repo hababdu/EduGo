@@ -82,8 +82,6 @@ export function App() {
         if (tg) {
           tg.ready?.();
           tg.expand?.();
-          tg.setHeaderColor?.('#0f0f0f');
-          tg.setBackgroundColor?.('#0f0f0f');
           tg.disableVerticalSwipes?.();
         }
 

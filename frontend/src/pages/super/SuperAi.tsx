@@ -29,7 +29,7 @@ export function SuperAi() {
           <p className="text-sm text-ink">{on ? 'AI yoqilgan — hamma foydalana oladi' : "AI o'chirilgan — hech kim foydalana olmaydi"}</p>
           <button type="button" role="switch" aria-checked={on} disabled={save.isPending}
             onClick={() => { if (on && !window.confirm("AI hamma uchun o'chirilsinmi?")) return; save.mutate({ enabled: !on }); }}
-            className={`relative h-7 w-12 shrink-0 rounded-full transition ${on ? 'bg-teal' : 'bg-white/15'}`}>
+            className={`relative h-7 w-12 shrink-0 rounded-full transition ${on ? 'bg-teal' : 'bg-tint/15'}`}>
             <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all ${on ? 'left-[22px]' : 'left-0.5'}`} />
           </button>
         </div>
@@ -57,7 +57,7 @@ export function SuperAi() {
 
       <Panel title="Bugun eng ko'p ishlatganlar" icon={Users} accent="teal" flush>
         {data.topToday.length === 0 ? <p className="p-6 text-center text-sm text-ink-muted">Bugun AI ishlatilmagan</p> : (
-          <ul className="divide-y divide-white/5">
+          <ul className="divide-y divide-tint/5">
             {data.topToday.map((t, i) => (
               <li key={`${t.userId}-${i}`} className="flex items-center justify-between gap-3 px-5 py-2.5 text-sm">
                 <span className="min-w-0 truncate text-ink">{t.name} <span className="text-[11px] text-ink-muted">{t.role ? ROLE_UZ[t.role] : ''}</span></span>
@@ -69,7 +69,7 @@ export function SuperAi() {
       </Panel>
 
       <Panel title="Funksiyalar bo'yicha (7 kun)" icon={Sparkles} accent="sky" flush>
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-tint/5">
           {data.features.map((f) => (
             <li key={f.feature} className="flex items-center justify-between px-5 py-2.5 text-sm">
               <span className="text-ink">{f.feature}</span>

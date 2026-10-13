@@ -52,7 +52,7 @@ export function CreateItemForm({
         placeholder={placeholder}
         maxLength={maxLength}
         disabled={isPending}
-        className="flex-1 bg-surface/40 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px] disabled:opacity-50"
+        className="flex-1 bg-surface/40 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px] disabled:opacity-50"
       />
       <button
         type="submit"

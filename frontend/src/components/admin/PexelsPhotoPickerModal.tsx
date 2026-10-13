@@ -45,10 +45,10 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface border border-white/10 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+        className="bg-surface border border-tint/10 rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/5">
+        <div className="flex items-center justify-between p-4 border-b border-tint/5">
           <div className="min-w-0">
             <h3 className="text-base font-semibold text-ink truncate">
               📷 Rasm qidirish
@@ -63,7 +63,7 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
               haptic('light');
               onClose();
             }}
-            className="text-ink-muted hover:text-ink text-sm p-2 rounded-xl bg-white/5 min-h-[40px] min-w-[40px] flex items-center justify-center"
+            className="text-ink-muted hover:text-ink text-sm p-2 rounded-xl bg-tint/5 min-h-[40px] min-w-[40px] flex items-center justify-center"
           >
             ✕
           </button>
@@ -72,14 +72,14 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
         {/* Search form */}
         <form
           onSubmit={handleSearch}
-          className="p-4 border-b border-white/5 flex gap-2"
+          className="p-4 border-b border-tint/5 flex gap-2"
         >
           <input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="coding, mathematics, sport..."
             autoFocus
-            className="flex-1 bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+            className="flex-1 bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px]"
           />
           <button
             type="submit"
@@ -112,7 +112,7 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
                         setInputValue(tag);
                         setSearchQuery(tag);
                       }}
-                      className="text-xs bg-white/5 hover:bg-white/10 text-ink-muted px-3 py-1.5 rounded-full transition-colors"
+                      className="text-xs bg-tint/5 hover:bg-tint/10 text-ink-muted px-3 py-1.5 rounded-full transition-colors"
                     >
                       {tag}
                     </button>
@@ -160,7 +160,7 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
                     key={photo.id}
                     type="button"
                     onClick={() => handleSelect(photo)}
-                    className="group relative aspect-square bg-surface/50 rounded-2xl overflow-hidden border border-white/5 active:scale-[0.97] transition-transform"
+                    className="group relative aspect-square bg-surface/50 rounded-2xl overflow-hidden border border-tint/5 active:scale-[0.97] transition-transform"
                   >
                     <img
                       src={photo.src.medium}
@@ -181,7 +181,7 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="p-3 border-t border-white/5 text-center">
+        <div className="p-3 border-t border-tint/5 text-center">
           <p className="text-[10px] text-ink-muted">
             Rasmlar{' '}
             <a

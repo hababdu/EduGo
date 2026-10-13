@@ -167,7 +167,7 @@ export function AIMaterialGenerator({
               placeholder="Masalan: Algebra — kvadrat tenglamalar"
               disabled={isGenerating}
               autoFocus
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink focus:border-gold/50 min-h-[44px]"
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px]"
             />
           </div>
 
@@ -189,7 +189,7 @@ export function AIMaterialGenerator({
                       className={`text-xs font-semibold rounded-2xl py-3 px-2 border transition-all active:scale-[0.97] ${
                         active
                           ? 'bg-gold/15 border-gold/40 text-gold'
-                          : 'bg-surface border-white/5 text-ink-muted'
+                          : 'bg-surface border-tint/5 text-ink-muted'
                       }`}
                     >
                       <span className="block text-base mb-1">
@@ -208,7 +208,7 @@ export function AIMaterialGenerator({
               {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-24 rounded-2xl bg-surface/50 border border-white/5 animate-pulse"
+                  className="h-24 rounded-2xl bg-surface/50 border border-tint/5 animate-pulse"
                   style={{ animationDelay: `${i * 100}ms` }}
                 />
               ))}
@@ -224,7 +224,7 @@ export function AIMaterialGenerator({
                 key={v._id}
                 type="button"
                 onClick={() => handlePick(v)}
-                className={`w-full text-left bg-surface/50 hover:bg-surface/70 rounded-2xl border border-white/5 hover:border-gold/30 p-4 space-y-2 transition-all duration-300 active:scale-[0.99] ${
+                className={`w-full text-left bg-surface/50 hover:bg-surface/70 rounded-2xl border border-tint/5 hover:border-gold/30 p-4 space-y-2 transition-all duration-300 active:scale-[0.99] ${
                   visible
                     ? 'opacity-100 translate-y-0'
                     : 'opacity-0 translate-y-2 pointer-events-none h-0 p-0 border-0 overflow-hidden'

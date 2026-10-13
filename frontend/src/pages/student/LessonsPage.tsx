@@ -179,7 +179,7 @@ export function LessonsPage() {
         {[...Array(3)].map((_, i) => (
           <div
             key={i}
-            className="h-24 bg-surface/20 rounded-3xl animate-pulse border border-white/5"
+            className="h-24 bg-surface/20 rounded-3xl animate-pulse border border-tint/5"
           />
         ))}
       </div>
@@ -190,7 +190,7 @@ export function LessonsPage() {
   if (error) {
     return (
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <p className="text-sm font-semibold text-ink">
             Materiallarni yuklashda xatolik
           </p>
@@ -234,7 +234,7 @@ export function LessonsPage() {
 
       {/* ============ EMPTY ============ */}
       {hasNoItems ? (
-        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+        <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
           <div className="text-4xl">📚</div>
           <p className="text-sm font-semibold text-ink">
             Hali materiallaringiz yo'q
@@ -250,7 +250,7 @@ export function LessonsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="🔍 Material nomi bo'yicha qidirish..."
-            className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink min-h-[44px] focus:border-gold/50"
+            className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-gold/50"
           />
 
           {/* ============ GROUP FILTER ============ */}
@@ -269,7 +269,7 @@ export function LessonsPage() {
                   className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                     selectedGroupId === null
                       ? 'bg-gold text-base'
-                      : 'bg-white/5 text-ink-muted hover:bg-white/10'
+                      : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                   }`}
                 >
                   Barchasi ({items?.length ?? 0})
@@ -286,7 +286,7 @@ export function LessonsPage() {
                     className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                       selectedGroupId === g.id
                         ? 'bg-gold text-base'
-                        : 'bg-white/5 text-ink-muted hover:bg-white/10'
+                        : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                     }`}
                   >
                     <span>👥</span>
@@ -318,7 +318,7 @@ export function LessonsPage() {
                 className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                   filterCategory === key
                     ? 'bg-gold text-base'
-                    : 'bg-white/5 text-ink-muted hover:bg-white/10'
+                    : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                 }`}
               >
                 {label}
@@ -328,7 +328,7 @@ export function LessonsPage() {
 
           {/* ============ ACTIVE FILTERS ============ */}
           {hasActiveFilters && (
-            <div className="flex items-center justify-between bg-surface/20 px-4 py-3 rounded-2xl border border-white/5">
+            <div className="flex items-center justify-between bg-surface/20 px-4 py-3 rounded-2xl border border-tint/5">
               <span className="text-xs text-ink-muted">
                 Topildi: <strong className="text-ink">{filtered.length}</strong> ta
               </span>
@@ -349,7 +349,7 @@ export function LessonsPage() {
 
           {/* ============ LIST ============ */}
           {groupedByGroup.length === 0 ? (
-            <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-white/5 space-y-3">
+            <div className="text-center py-14 px-6 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
               <p className="text-sm font-semibold text-ink">Natija topilmadi</p>
               <p className="text-xs text-ink-muted">
                 Filtr yoki qidiruvni o'zgartirib ko'ring
@@ -395,7 +395,7 @@ export function LessonsPage() {
                             haptic('light');
                             navigate(`/lessons/${item.id}`);
                           }}
-                          className="w-full text-left bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-white/5 active:scale-[0.99] transition-all"
+                          className="w-full text-left bg-surface/20 hover:bg-surface/40 p-4 rounded-3xl border border-tint/5 active:scale-[0.99] transition-all"
                         >
                           <div className="space-y-2">
                             {/* Badges */}
@@ -405,7 +405,7 @@ export function LessonsPage() {
                               >
                                 {cat.label}
                               </span>
-                              <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-white/5 text-ink-muted">
+                              <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-tint/5 text-ink-muted">
                                 {content.emoji} {content.label}
                               </span>
                               {item.tests && item.tests.length > 0 && (

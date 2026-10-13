@@ -183,7 +183,7 @@ export function TeacherAssignmentDetail() {
             haptic('light');
             navigate('/teacher/assignments');
           }}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted hover:text-ink active:scale-95 transition"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tint/10 text-ink-muted hover:text-ink active:scale-95 transition"
           aria-label="Orqaga"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -208,7 +208,7 @@ export function TeacherAssignmentDetail() {
     return (
       <div className={PAGE}>
         {hero}
-        <div className="space-y-5 rounded-3xl border border-white/10 bg-surface/40 p-5">
+        <div className="space-y-5 rounded-3xl border border-tint/10 bg-surface/40 p-5">
           <Field label="Toifa">
             <div className="flex flex-wrap gap-2">
               {CATS.map((c) => (
@@ -262,7 +262,7 @@ export function TeacherAssignmentDetail() {
                 <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${CONTROL.input} pl-9`} />
               </div>
               {due && (
-                <button type="button" onClick={() => setDue('')} className="rounded-xl bg-white/5 p-3 text-ink-muted" aria-label="Muddatni olib tashlash">
+                <button type="button" onClick={() => setDue('')} className="rounded-xl bg-tint/5 p-3 text-ink-muted" aria-label="Muddatni olib tashlash">
                   <X className="h-4 w-4" />
                 </button>
               )}
@@ -287,7 +287,7 @@ export function TeacherAssignmentDetail() {
         <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold ${cat.cls}`}>
           <cat.Icon className="h-3.5 w-3.5" /> {cat.label}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-lg bg-white/5 px-2.5 py-1 text-xs font-semibold text-ink-muted">
+        <span className="inline-flex items-center gap-1 rounded-lg bg-tint/5 px-2.5 py-1 text-xs font-semibold text-ink-muted">
           <content.Icon className="h-3.5 w-3.5" /> {content.label}
         </span>
         {item.dueAt && (
@@ -327,7 +327,7 @@ export function TeacherAssignmentDetail() {
           <div className="space-y-3">
             <MaterialFiles files={item.files} />
             {embed ? (
-              <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/5 bg-surface/50">
+              <div className="aspect-video w-full overflow-hidden rounded-2xl border border-tint/5 bg-surface/50">
                 <iframe src={embed} title="YouTube video" className="h-full w-full" allowFullScreen />
               </div>
             ) : (
@@ -347,7 +347,7 @@ export function TeacherAssignmentDetail() {
       {!isDraft && stats && stats.total > 0 && (
         <Panel title={`Ko'rilganlik: ${stats.viewed}/${stats.total}`} icon={Eye} accent="teal">
           <ProgressBar value={Math.round((stats.viewed / stats.total) * 100)} tone="teal" />
-          <ul className="mt-3 divide-y divide-white/5">
+          <ul className="mt-3 divide-y divide-tint/5">
             {[...viewers].sort((a: any, b: any) => Number(!!a.viewedAt) - Number(!!b.viewedAt)).map((v: any) => (
               <li key={v.studentId} className="flex items-center gap-3 py-2">
                 <Avatar name={personName(v)} size="sm" />

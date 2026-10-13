@@ -31,7 +31,7 @@ export function NotificationsPage() {
   return (
     <div className="pb-24 px-5 pt-6">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-ink-muted active:scale-95 transition" aria-label="Orqaga">
+        <button onClick={() => navigate(-1)} className="flex h-9 w-9 items-center justify-center rounded-xl bg-tint/10 text-ink-muted active:scale-95 transition" aria-label="Orqaga">
           ←
         </button>
         <h1 className="font-display text-2xl">Bildirishnomalar</h1>
@@ -49,7 +49,7 @@ export function NotificationsPage() {
         </p>
       ) : (
         <Panel title="So'nggi xabarlar" icon={Bell} accent="sky" flush>
-        <div className="divide-y divide-white/5">
+        <div className="divide-y divide-tint/5">
           {notifications.map((n) => (
             <button
               key={n.id}

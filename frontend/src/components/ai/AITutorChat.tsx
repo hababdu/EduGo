@@ -221,7 +221,7 @@ export function AITutorChat({
                 type="button"
                 aria-label="Faylni olib tashlash"
                 onClick={() => setFile(null)}
-                className="w-5 h-5 rounded-full bg-white/10 text-ink-muted flex items-center justify-center text-[10px]"
+                className="w-5 h-5 rounded-full bg-tint/10 text-ink-muted flex items-center justify-center text-[10px]"
               >
                 ✕
               </button>
@@ -243,7 +243,7 @@ export function AITutorChat({
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
             aria-label="Fayl biriktirish"
-            className="shrink-0 w-11 h-11 rounded-2xl bg-white/5 text-ink-muted flex items-center justify-center active:scale-95 transition disabled:opacity-40"
+            className="shrink-0 w-11 h-11 rounded-2xl bg-tint/5 text-ink-muted flex items-center justify-center active:scale-95 transition disabled:opacity-40"
           >
             📎
           </button>
@@ -254,7 +254,7 @@ export function AITutorChat({
             placeholder={file ? 'Fayl haqida savol yozing...' : 'Savolingizni yozing...'}
             rows={1}
             disabled={isLoading}
-            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-white/5 text-ink placeholder:text-ink-muted resize-none max-h-[100px] disabled:opacity-50"
+            className="flex-1 bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink placeholder:text-ink-muted resize-none max-h-[100px] disabled:opacity-50"
           />
           <button
             type="button"
@@ -285,7 +285,7 @@ export function AITutorChat({
               className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-sm leading-relaxed ${
                 m.role === 'user'
                   ? 'bg-gold text-base rounded-br-lg'
-                  : 'bg-surface/60 border border-white/10 text-ink rounded-bl-lg'
+                  : 'bg-surface/60 border border-tint/10 text-ink rounded-bl-lg'
               }`}
             >
               {m.role === 'user' ? (

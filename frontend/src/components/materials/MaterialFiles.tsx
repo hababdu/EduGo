@@ -64,7 +64,7 @@ function FileCard({ file }: { file: MaterialFileDto }) {
   const previewable = file.kind === 'IMAGE' || file.kind === 'VIDEO' || file.kind === 'PDF';
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-surface/40">
+    <div className="overflow-hidden rounded-2xl border border-tint/10 bg-surface/40">
       <div className="flex items-center gap-3 p-3">
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.chip}`}>
           <meta.Icon className="h-5 w-5" aria-hidden="true" />
@@ -81,7 +81,7 @@ function FileCard({ file }: { file: MaterialFileDto }) {
       {url && file.kind === 'VIDEO' && <video src={url} controls playsInline className="w-full bg-black" />}
       {url && file.kind === 'PDF' && <iframe src={url} title={file.fileName} className="h-[70vh] w-full bg-white" />}
 
-      <div className="flex flex-wrap gap-2 border-t border-white/5 p-2.5">
+      <div className="flex flex-wrap gap-2 border-t border-tint/5 p-2.5">
         {tooLarge ? (
           <>
             <p className="w-full px-1 text-[11px] text-ink-muted">
@@ -100,11 +100,11 @@ function FileCard({ file }: { file: MaterialFileDto }) {
                 Ko'rish
               </button>
             )}
-            <button type="button" onClick={download} disabled={loading} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white/5 px-3 py-2 text-xs font-medium text-ink active:scale-[0.98] disabled:opacity-60">
+            <button type="button" onClick={download} disabled={loading} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-tint/5 px-3 py-2 text-xs font-medium text-ink active:scale-[0.98] disabled:opacity-60">
               <Download className="h-4 w-4" />
               Yuklab olish
             </button>
-            <button type="button" onClick={sendToChat} disabled={sending} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-white/5 px-3 py-2 text-xs font-medium text-ink active:scale-[0.98] disabled:opacity-60" title="Telegram chatingizga yuborish">
+            <button type="button" onClick={sendToChat} disabled={sending} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-tint/5 px-3 py-2 text-xs font-medium text-ink active:scale-[0.98] disabled:opacity-60" title="Telegram chatingizga yuborish">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               <span className="sr-only sm:not-sr-only">Telegramga</span>
             </button>

@@ -26,7 +26,7 @@ export function DailyChallengeCard() {
         style={
           challenge.completed
             ? undefined
-            : { background: 'linear-gradient(135deg, #4A3A1A 0%, #1B1E3A 100%)' }
+            : { background: 'linear-gradient(135deg, rgb(var(--c-gold-soft)) 0%, rgb(var(--c-surface)) 100%)' }
         }
       >
         <p className="text-xs text-gold mb-1">🔥 BUGUNGI CHALLENGE</p>

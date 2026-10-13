@@ -8,7 +8,7 @@ export interface ScheduleValue {
 }
 
 const inputCls =
-  'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted';
+  'w-full bg-surface/40 border border-tint/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted';
 
 /** Dars kunlari (chiplar), boshlanish/tugash vaqti va xona — boshqariladigan (controlled) maydonlar. */
 export function ScheduleFields({ value, onChange }: { value: ScheduleValue; onChange: (v: ScheduleValue) => void }) {
@@ -29,7 +29,7 @@ export function ScheduleFields({ value, onChange }: { value: ScheduleValue; onCh
               aria-pressed={on}
               onClick={() => toggle(d.n)}
               className={`min-h-[40px] rounded-xl px-0 text-xs font-semibold transition ${
-                on ? 'bg-gold text-base' : 'bg-white/5 text-ink-muted hover:bg-white/10'
+                on ? 'bg-gold text-base' : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
               }`}
             >
               {d.short}
