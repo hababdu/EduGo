@@ -52,3 +52,34 @@ describe('parseSse', () => {
     expect(out).toEqual([{ event: undefined, data: 'oxirgi' }]);
   });
 });
+
+import { AiConfig } from './ai.config';
+
+describe('AiConfig: super admin tanlovi', () => {
+  const mk = (env: Record<string, string> = {}) =>
+    new AiConfig({ get: (k: string) => env[k] } as any);
+
+  it('standart asosiy AI — gemini; env undan ustun emas holatda ham ishlaydi', () => {
+    expect(mk().primary).toBe('gemini');
+    expect(mk({ AI_PROVIDER: 'groq' }).primary).toBe('groq');
+  });
+
+  it('super admin tanlovi env dan ustun; zaxira asosiy bilan bir xil bo\'lsa — yo\'q', () => {
+    const c = mk({ AI_PROVIDER: 'groq', AI_FALLBACK_PROVIDER: 'anthropic' });
+    c.applyOverrides({ primary: 'gemini', fallback: 'gemini' });
+    expect(c.primary).toBe('gemini');
+    expect(c.fallback).toBeNull();
+    c.applyOverrides({ primary: 'gemini', fallback: 'none' });
+    expect(c.fallback).toBeNull();
+    c.applyOverrides({ primary: 'gemini', fallback: 'groq' });
+    expect(c.fallback).toBe('groq');
+  });
+
+  it('model nomi: super admin > env > standart', () => {
+    const c = mk({ GEMINI_MODEL_SMART: 'env-model' });
+    expect(c.model('gemini', 'smart')).toBe('env-model');
+    c.applyOverrides({ models: { gemini: { smart: 'gemini-2.5-pro' } } });
+    expect(c.model('gemini', 'smart')).toBe('gemini-2.5-pro');
+    expect(c.model('gemini', 'fast')).toBe('gemini-2.5-flash-lite');
+  });
+});

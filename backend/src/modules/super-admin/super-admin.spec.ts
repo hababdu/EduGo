@@ -18,7 +18,7 @@ describe('SuperAdminService', () => {
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
       ...over,
     };
-    return { prisma, svc: new SuperAdminService(prisma, {} as any, {} as any, {} as any, {} as any) };
+    return { prisma, svc: new SuperAdminService(prisma, {} as any, {} as any, {} as any, {} as any, {} as any) };
   };
 
   it('bir xil nomli maktab 409', async () => {

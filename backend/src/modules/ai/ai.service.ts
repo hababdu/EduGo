@@ -48,7 +48,12 @@ export class AiService {
   providerChain(): AiProvider[] {
     const names: AiProviderName[] = [this.cfg.primary];
     if (this.cfg.fallback) names.push(this.cfg.fallback);
-    return names.map((n) => this.providers[n]).filter((p) => p.isConfigured());
+    const chain = names.map((n) => this.providers[n]).filter((p) => p.isConfigured());
+    if (chain.length > 0) return chain;
+    // Tanlangan provayderlarda kalit yo'q: AI butunlay to'xtab qolmasligi uchun kaliti bor birinchisiga o'tamiz
+    const any = (Object.values(this.providers) as AiProvider[]).find((p) => p.isConfigured());
+    if (any) this.logger.warn(`${names.join(' / ')} sozlanmagan (API kalit yo'q), ${any.name} ishlatilmoqda`);
+    return any ? [any] : [];
   }
 
   status() {

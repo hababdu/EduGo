@@ -3,7 +3,16 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AiProviderName, AiTier } from './ai.types';
 
-const PROVIDERS: AiProviderName[] = ['anthropic', 'groq', 'gemini'];
+export const PROVIDERS: AiProviderName[] = ['anthropic', 'groq', 'gemini'];
+
+/** Super admin paneldan o'rnatiladigan qiymatlar. fallback: 'none' — zaxira yo'q. */
+export interface AiOverrides {
+  limits?: Record<string, number>;
+  enabled?: boolean;
+  primary?: AiProviderName;
+  fallback?: AiProviderName | 'none';
+  models?: Partial<Record<AiProviderName, Partial<Record<AiTier, string>>>>;
+}
 
 const DEFAULT_MODELS: Record<AiProviderName, Record<AiTier, string>> = {
   anthropic: { fast: 'claude-haiku-4-5-20251001', smart: 'claude-sonnet-5-5' },
@@ -23,12 +32,18 @@ const DEFAULT_DAILY_LIMITS: Record<string, number> = {
 @Injectable()
 export class AiConfig {
   /** Super admin paneldan o'zgartiriladigan (bazada saqlanadigan) qiymatlar — env'dan ustun */
-  private overrides: { limits?: Record<string, number>; enabled?: boolean } = {};
+  private overrides: AiOverrides = {};
 
   constructor(private readonly cfg: ConfigService) {}
 
-  applyOverrides(o: { limits?: Record<string, number>; enabled?: boolean }) {
-    this.overrides = { limits: o.limits ?? {}, enabled: o.enabled };
+  applyOverrides(o: AiOverrides) {
+    this.overrides = {
+      limits: o.limits ?? {},
+      enabled: o.enabled,
+      primary: o.primary,
+      fallback: o.fallback,
+      models: o.models ?? {},
+    };
   }
 
   /** AI umuman yoqilganmi (super admin o'chira oladi) */
@@ -43,22 +58,39 @@ export class AiConfig {
     return Number.isFinite(n) ? n : fallback;
   }
 
-  /** Asosiy provayder (AI_PROVIDER). Noto'g'ri qiymat bo'lsa — anthropic. */
+  /** Asosiy provayder: super admin tanlovi > AI_PROVIDER > gemini. */
   get primary(): AiProviderName {
-    const v = (this.cfg.get<string>('AI_PROVIDER') ?? 'anthropic').toLowerCase();
-    return PROVIDERS.includes(v as AiProviderName) ? (v as AiProviderName) : 'anthropic';
+    const ov = this.overrides.primary;
+    if (ov && PROVIDERS.includes(ov)) return ov;
+    const v = (this.cfg.get<string>('AI_PROVIDER') ?? 'gemini').toLowerCase();
+    return PROVIDERS.includes(v as AiProviderName) ? (v as AiProviderName) : 'gemini';
   }
 
-  /** Zaxira provayder (AI_FALLBACK_PROVIDER), asosiydan farq qilsagina. */
+  /** Zaxira provayder: super admin tanlovi > AI_FALLBACK_PROVIDER; asosiydan farq qilsagina. */
   get fallback(): AiProviderName | null {
-    const v = (this.cfg.get<string>('AI_FALLBACK_PROVIDER') ?? '').toLowerCase();
+    const ov = this.overrides.fallback;
+    if (ov === 'none') return null;
+    const v = (ov ?? this.cfg.get<string>('AI_FALLBACK_PROVIDER') ?? '').toLowerCase();
     if (!PROVIDERS.includes(v as AiProviderName)) return null;
     return v === this.primary ? null : (v as AiProviderName);
   }
 
+  /** Model: super admin tanlovi > env (<PROVAYDER>_MODEL_<FAST|SMART>) > standart. */
   model(provider: AiProviderName, tier: AiTier): string {
+    const ov = this.overrides.models?.[provider]?.[tier];
+    if (ov) return ov;
     const key = `${provider.toUpperCase()}_MODEL_${tier.toUpperCase()}`;
     return this.cfg.get<string>(key) || DEFAULT_MODELS[provider][tier];
+  }
+
+  /** Standart (hech narsa o'rnatilmagandagi) model — panelda "standart" sifatida ko'rsatish uchun */
+  defaultModel(provider: AiProviderName, tier: AiTier): string {
+    return DEFAULT_MODELS[provider][tier];
+  }
+
+  /** Super admin o'zgartirgan qiymatlar (env hisobga olinmagan) */
+  get stored(): AiOverrides {
+    return this.overrides;
   }
 
   dailyTokenLimit(role: string): number {

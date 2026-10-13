@@ -4,6 +4,7 @@ import { CurrentUserPayload } from '../../common/decorators/current-user.decorat
 import { superAdminIds } from '../../common/super-admin.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiConfig } from '../ai/ai.config';
+import { AiService } from '../ai/ai.service';
 import { AiSettingsService, LIMIT_ROLES } from '../ai/ai-settings.service';
 import { AiUsageService } from '../ai/ai-usage.service';
 import { AssignAdminDto, CreateOrgDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
@@ -20,6 +21,7 @@ export class SuperAdminService {
     private readonly aiCfg: AiConfig,
     private readonly aiSettings: AiSettingsService,
     private readonly aiUsage: AiUsageService,
+    private readonly aiService: AiService,
   ) {}
 
   private audit(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
@@ -177,7 +179,17 @@ export class SuperAdminService {
     });
     return {
       settings: this.aiSettings.current(),
-      provider: { primary: this.aiCfg.primary, fallback: this.aiCfg.fallback },
+      provider: {
+        primary: this.aiCfg.primary,
+        fallback: this.aiCfg.fallback,
+        configured: this.aiService.status().configured,
+        active: this.aiService.status().active,
+        defaults: {
+          anthropic: { fast: this.aiCfg.defaultModel('anthropic', 'fast'), smart: this.aiCfg.defaultModel('anthropic', 'smart') },
+          groq: { fast: this.aiCfg.defaultModel('groq', 'fast'), smart: this.aiCfg.defaultModel('groq', 'smart') },
+          gemini: { fast: this.aiCfg.defaultModel('gemini', 'fast'), smart: this.aiCfg.defaultModel('gemini', 'smart') },
+        },
+      },
       topToday: top.map((t) => {
         const u = users.find((x) => x.id === t.userId);
         return { ...t, name: u ? nameOf(u) : 'Tizim', role: u?.role ?? null };
@@ -191,7 +203,13 @@ export class SuperAdminService {
     const old = this.aiSettings.current();
     const limits: Record<string, number> = {};
     for (const r of LIMIT_ROLES) if (dto.limits?.[r] !== undefined) limits[r] = dto.limits[r]!;
-    const next = await this.aiSettings.save({ enabled: dto.enabled, limits });
+    const next = await this.aiSettings.save({
+      enabled: dto.enabled,
+      limits,
+      primary: dto.primary,
+      fallback: dto.fallback,
+      models: dto.models as any,
+    });
     await this.audit(actor, 'AI_SETTINGS', 'AppSetting', 'ai', old, next);
     return next;
   }

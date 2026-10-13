@@ -20,9 +20,14 @@ export interface AdminRow {
   id: string; name: string; username: string | null; telegramId: string; role: string; status: string;
   lastActiveAt: string; organization: { id: string; name: string } | null;
 }
+export type AiProviderId = 'gemini' | 'groq' | 'anthropic';
 export interface AiInfo {
-  settings: { enabled: boolean; limits: Record<string, number> };
-  provider: { primary: string; fallback: string | null };
+  settings: { enabled: boolean; limits: Record<string, number>; primary: AiProviderId; fallback: AiProviderId | null; models: Record<AiProviderId, { fast: string; smart: string }> };
+  provider: {
+    primary: AiProviderId; fallback: AiProviderId | null;
+    configured: Record<AiProviderId, boolean>; active: AiProviderId[];
+    defaults: Record<AiProviderId, { fast: string; smart: string }>;
+  };
   topToday: { userId: string | null; name: string; role: string | null; requests: number; tokens: number }[];
   features: { feature: string; requests: number; tokens: number }[];
   days: { date: string; tokens: number }[];
@@ -73,7 +78,7 @@ export const sapi = {
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   block: (v: { id: string; blocked: boolean }) => apiFetch(`${b}/users/${v.id}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: v.blocked }) }),
-  saveAi: (v: { enabled?: boolean; limits?: Record<string, number> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),
+  saveAi: (v: { enabled?: boolean; limits?: Record<string, number>; primary?: AiProviderId; fallback?: AiProviderId | 'none'; models?: Partial<Record<AiProviderId, { fast?: string; smart?: string }>> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),
 };
 
 export const num = (n: number) => n.toLocaleString('uz-UZ');

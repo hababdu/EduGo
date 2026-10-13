@@ -16,22 +16,46 @@ body,
 
 /* Yorug' mavzu */
 :root[data-theme='light'] {
-  --c-base: 246 244 238;
+  /* Ko'zga yumshoq: oq emas, sovuq kulrang-ko'k fon; kartalar shaffof "suyuq" shisha */
+  --c-base: 223 228 240;
   --c-surface: 255 255 255;
-  --c-raised: 236 232 221;
-  --c-tint: 20 24 45;
-  --c-ink: 20 24 45;
-  --c-muted: 88 95 126;
-  --c-faint: 150 156 184;
-  --c-gold: 205 128 0;
-  --c-gold-soft: 255 233 190;
-  --c-teal: 14 150 112;
-  --c-teal-soft: 207 243 232;
-  --c-coral: 214 70 45;
-  --c-sky: 8 132 190;
+  --c-raised: 208 216 234;
+  --c-tint: 30 36 66;
+  --c-ink: 28 33 58;
+  --c-muted: 84 92 124;
+  --c-faint: 140 148 178;
+  --c-gold: 200 124 0;
+  --c-gold-soft: 250 228 186;
+  --c-teal: 14 146 110;
+  --c-teal-soft: 200 238 226;
+  --c-coral: 210 68 46;
+  --c-sky: 8 128 186;
   --glass-bg: 255 255 255;
-  --glass-a: 0.82;
+  --glass-a: 0.5;
   color-scheme: light;
+}
+
+/* Yorug' mavzuda kartalar yarim shaffof va xira (frosted glass) */
+:root[data-theme='light'] .bg-surface,
+:root[data-theme='light'] [class*='bg-surface/'] {
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  backdrop-filter: blur(18px) saturate(1.35);
+}
+:root[data-theme='light'] .bg-surface {
+  background-color: rgb(255 255 255 / 0.55);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 8px 28px -14px rgb(40 52 100 / 0.22);
+}
+:root[data-theme='light'] .glass {
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6);
+}
+:root[data-theme='light'] .bg-aurora {
+  background-image:
+    radial-gradient(60% 45% at 90% -5%, rgb(255 190 120 / 0.55), transparent 70%),
+    radial-gradient(55% 45% at 0% 20%, rgb(160 180 255 / 0.55), transparent 70%),
+    radial-gradient(55% 45% at 100% 75%, rgb(150 225 205 / 0.5), transparent 70%),
+    radial-gradient(50% 40% at 10% 95%, rgb(225 175 230 / 0.4), transparent 70%);
 }
 
 /* Mavzu almashganda yumshoq o'tish */
