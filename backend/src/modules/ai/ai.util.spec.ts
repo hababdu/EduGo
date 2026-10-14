@@ -80,6 +80,6 @@ describe('AiConfig: super admin tanlovi', () => {
     expect(c.model('gemini', 'smart')).toBe('env-model');
     c.applyOverrides({ models: { gemini: { smart: 'gemini-2.5-pro' } } });
     expect(c.model('gemini', 'smart')).toBe('gemini-2.5-pro');
-    expect(c.model('gemini', 'fast')).toBe('gemini-2.5-flash-lite');
+    expect(c.model('gemini', 'fast')).toBe('gemini-3.8-flash');
   });
 });

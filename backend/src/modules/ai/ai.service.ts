@@ -189,7 +189,9 @@ export class AiService {
   }
 
   private canFallback(e: unknown): boolean {
-    return e instanceof AiProviderError && e.retryable;
+    // Vaqtinchalik xato yoki model yopilgan (404): zaxira provayder yordam bera oladi.
+    // 401/403 (kalit noto'g'ri) va 400 (so'rov noto'g'ri) ataylab zaxiraga O'TMAYDI: xato yashirinmasin.
+    return e instanceof AiProviderError && (e.retryable || e.status === 404);
   }
 
   /** Provayder xatolarini foydalanuvchiga xavfsiz (sirsiz) HTTP xatoga aylantiradi. */
