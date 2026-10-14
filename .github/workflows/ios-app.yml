@@ -1,0 +1,60 @@
+name: iOS App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/ios-app.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build web
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://edugo-5h4d.onrender.com' }}
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      # Imzosiz arxiv: Apple Developer hisobisiz ham build bo'ladi.
+      # Haqiqiy iPhone'ga o'rnatish uchun IPA'ni AltStore / Sideloadly (bepul Apple ID) bilan imzolang.
+      - name: Archive (unsigned)
+        working-directory: frontend/ios/App
+        run: |
+          xcodebuild archive \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/EduGo.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+
+      - name: Pack IPA
+        run: |
+          mkdir -p $RUNNER_TEMP/Payload
+          cp -R $RUNNER_TEMP/EduGo.xcarchive/Products/Applications/App.app $RUNNER_TEMP/Payload/
+          (cd $RUNNER_TEMP && zip -qr EduGo-unsigned.ipa Payload)
+          mkdir -p $GITHUB_WORKSPACE/out && cp $RUNNER_TEMP/EduGo-unsigned.ipa $GITHUB_WORKSPACE/out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EduGo-unsigned-ipa
+          path: out/EduGo-unsigned.ipa
+          if-no-files-found: error
