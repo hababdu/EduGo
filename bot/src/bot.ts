@@ -47,6 +47,23 @@ async function setupMenuButton(): Promise<void> {
    /start KOMANDASI — rolga qarab menyu
    ============================================================ */
 bot.command('start', async (ctx: Context) => {
+  // Ilovadan (PWA/APK) kirish: /start login_<id>
+  const payload = typeof ctx.match === 'string' ? ctx.match.trim() : '';
+  if (payload.startsWith('login_') && ctx.from) {
+    try {
+      await api.confirmAppLogin(payload.slice(6), {
+        id: ctx.from.id,
+        first_name: ctx.from.first_name,
+        last_name: ctx.from.last_name,
+        username: ctx.from.username,
+      });
+      await ctx.reply('✅ Ilovaga kirish tasdiqlandi. Ilovaga qayting — avtomatik kirasiz.');
+    } catch {
+      await ctx.reply('⚠️ Kod eskirgan. Ilovada "Telegram orqali kirish" tugmasini qayta bosing.');
+    }
+    return;
+  }
+
   const telegramId = String(ctx.from?.id);
   let role = 'STUDENT';
   let firstName = ctx.from?.first_name ?? "do'stim";

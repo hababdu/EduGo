@@ -71,6 +71,8 @@ async function bootstrap() {
     }),
   );
 
+  // Android (Capacitor) ilovasi shu originlardan so'rov yuboradi
+  const NATIVE_APP_ORIGINS = ['https://localhost', 'capacitor://localhost', 'http://localhost'];
   const allowedOrigins = buildAllowedOrigins();
   if (allowedOrigins.length === 0 && process.env.NODE_ENV === 'production') {
     console.warn(
@@ -82,7 +84,8 @@ async function bootstrap() {
       if (
         !origin ||
         allowedOrigins.length === 0 ||
-        allowedOrigins.includes(origin)
+        allowedOrigins.includes(origin) ||
+        NATIVE_APP_ORIGINS.includes(origin)
       ) {
         callback(null, true);
       } else {

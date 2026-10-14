@@ -5,9 +5,11 @@ import { App } from './App';
 import { initTelegramApp } from './lib/telegram';
 import './styles/index.css';
 import { initTheme } from './lib/theme';
+import { initPwa } from './lib/pwa';
 
 initTelegramApp();
 initTheme();
+initPwa();
 
 const queryClient = new QueryClient({
   defaultOptions: {

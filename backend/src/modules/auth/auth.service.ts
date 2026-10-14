@@ -55,7 +55,17 @@ export class AuthService {
       throw new UnauthorizedException(err.message);
     }
 
-    const { user: tgUser } = verified;
+    return this.loginTelegramUser(verified.user);
+  }
+
+  /** Tasdiqlangan Telegram foydalanuvchisi uchun find-or-create + token berish (initData va bot-deeplink login uchun umumiy). */
+  async loginTelegramUser(tgUser: {
+    id: number | string;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    photo_url?: string;
+  }): Promise<AuthTokensResponse> {
     const telegramId = String(tgUser.id);
 
     // find-or-create — Telegram ID unique

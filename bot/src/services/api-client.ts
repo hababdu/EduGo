@@ -151,6 +151,15 @@ export interface AdminOverview {
    API METHODS
    ============================================================ */
 export const api = {
+  confirmAppLogin: (
+    id: string,
+    user: { id: number; first_name: string; last_name?: string; username?: string },
+  ) =>
+    internalGet<{ ok: boolean }>('/api/v1/internal/app-login/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ id, user }),
+    }),
+
   /* ---------- USER ---------- */
   getUserRole: (telegramId: string) =>
     internalGet<UserRoleInfo>(

@@ -31,3 +31,15 @@ export interface AuthTokensResponse {
     profilePhotoUrl?: string;
   };
 }
+
+export class AppLoginPollDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(64)
+  id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(128)
+  secret: string;
+}

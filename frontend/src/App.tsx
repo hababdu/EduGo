@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { LoginPage } from './pages/LoginPage';
 import { useAuthStore } from './store/auth.store';
 
 /* ============ STUDENT ============ */
@@ -86,6 +87,7 @@ export function App() {
         }
 
         const initData = tg?.initData || '';
+        if (!initData) return; // Telegram'siz: LoginPage hal qiladi
 
         const res = await fetch(`${API_URL}/api/v1/auth/telegram`, {
           method: 'POST',
@@ -131,20 +133,7 @@ export function App() {
     );
   }
 
-  if (status === 'no-telegram') {
-    return (
-      <div className="h-screen flex items-center justify-center px-8 text-center">
-        <div>
-          <p className="font-display text-xl mb-2">
-            Bu ilova Telegram ichida ochiladi
-          </p>
-          <p className="text-sm text-ink-muted">
-            Botga o'ting va "📚 Darsni boshlash" tugmasini bosing.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (status === 'login') return <LoginPage />;
 
   if (status === 'error') {
     return (
@@ -152,7 +141,7 @@ export function App() {
         <div>
           <p className="font-display text-xl mb-2">Kirishda xatolik</p>
           <p className="text-sm text-ink-muted">
-            Botga qaytib, "📚 Darsni boshlash" tugmasini qayta bosing.
+            Internetni tekshirib, ilovani qayta oching.
           </p>
         </div>
       </div>

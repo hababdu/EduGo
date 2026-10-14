@@ -1,14 +1,25 @@
 // src/modules/internal/internal.controller.ts
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
+import { AppLoginService } from '../auth/app-login.service';
 import { InternalService } from './internal.service';
 
 @Public()
 @UseGuards(InternalAuthGuard)
 @Controller('api/v1/internal')
 export class InternalController {
-  constructor(private readonly internalService: InternalService) {}
+  constructor(
+    private readonly internalService: InternalService,
+    private readonly appLogin: AppLoginService,
+  ) {}
+
+  /** Bot: foydalanuvchi `/start login_<id>` bosganda ilova kirishini tasdiqlaydi. */
+  @Post('app-login/confirm')
+  @HttpCode(200)
+  confirmAppLogin(@Body() body: { id: string; user: { id: number; first_name: string; last_name?: string; username?: string } }) {
+    return this.appLogin.confirm(String(body?.id ?? ''), body?.user);
+  }
 
   /* ============================================================
      USER ROLE
