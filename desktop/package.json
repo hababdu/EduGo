@@ -1,0 +1,28 @@
+{
+  "name": "edugo-desktop",
+  "version": "1.0.0",
+  "description": "EduGo — Mac ilovasi",
+  "author": "EduGo",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --mac dmg zip --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "uz.edugo.desktop",
+    "productName": "EduGo",
+    "directories": { "output": "dist" },
+    "files": ["main.js", "package.json"],
+    "mac": {
+      "category": "public.app-category.education",
+      "icon": "build/icon.png",
+      "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }, { "target": "zip", "arch": ["arm64", "x64"] }],
+      "identity": null
+    }
+  }
+}
