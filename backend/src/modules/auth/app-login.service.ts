@@ -70,6 +70,9 @@ export class AppLoginService {
     const id = crypto.randomBytes(9).toString('base64url');
     const secret = crypto.randomBytes(24).toString('base64url');
     this.store.set(id, { secretHash: this.hash(secret), expiresAt: Date.now() + TTL_MS });
+    // Bepul tarifda bot uxlab qoladi — Telegram xabari kelganda tez javob berishi uchun uyg'otamiz
+    const wake = this.config.get<string>('BOT_WAKE_URL');
+    if (wake) fetch(wake).catch(() => undefined);
     const username = await this.getBotUsername();
     return {
       id,

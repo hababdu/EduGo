@@ -9,12 +9,20 @@ type Phase = 'idle' | 'starting' | 'waiting' | 'error';
 
 interface StartRes { id: string; secret: string; url: string; expiresIn: number }
 
-async function post<T>(path: string, body?: unknown): Promise<{ status: number; data: T }> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+async function post<T>(path: string, body?: unknown, timeoutMs = 25_000): Promise<{ status: number; data: T }> {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeoutMs);
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctl.signal,
+    });
+  } finally {
+    clearTimeout(t);
+  }
   let data: any = null;
   try { data = await res.json(); } catch { /* bo'sh */ }
   return { status: res.status, data };
@@ -32,6 +40,9 @@ export function LoginPage() {
 
   const stop = () => { if (timer.current) { window.clearInterval(timer.current); timer.current = null; } };
   useEffect(() => stop, []);
+
+  // Render bepul tarifda server uxlab qoladi — sahifa ochilishi bilan uyg'otamiz
+  useEffect(() => { fetch(`${API_URL}/api/v1/auth/app-login/poll`, { method: 'POST' }).catch(() => {}); }, []);
 
   const poll = useCallback(async () => {
     const c = cur.current;
@@ -57,18 +68,28 @@ export function LoginPage() {
   const begin = async () => {
     playSound('tap');
     setPhase('starting'); setMsg('');
-    try {
-      const { status, data } = await post<StartRes>('/api/v1/auth/app-login/start');
-      if (status < 200 || status >= 300 || !data?.id) throw new Error();
-      cur.current = data;
-      setLink(data.url);
-      setPhase('waiting');
-      window.open(data.url, '_blank', 'noopener');
-      stop();
-      timer.current = window.setInterval(poll, 2000);
-    } catch {
-      setPhase('error'); setMsg("Serverga ulanib bo'lmadi. Internetni tekshiring.");
+    let lastErr = '';
+    // Server uxlab yotgan bo'lsa (Render) birinchi urinishlar o'tmaydi — bir necha marta qaytaramiz
+    for (let i = 0; i < 4; i++) {
+      try {
+        const { status, data } = await post<StartRes>('/api/v1/auth/app-login/start');
+        if (status >= 200 && status < 300 && data?.id) {
+          cur.current = data;
+          setLink(data.url);
+          setPhase('waiting');
+          try { window.open(data.url, '_blank', 'noopener'); } catch { /* bloklangan — tugma bor */ }
+          stop();
+          timer.current = window.setInterval(poll, 2000);
+          return;
+        }
+        lastErr = `server javobi ${status}${(data as any)?.message ? ': ' + (data as any).message : ''}`;
+        if (status >= 400 && status < 500 && status !== 429) break;
+      } catch (e: any) {
+        lastErr = e?.name === 'AbortError' ? 'server javob bermadi' : 'tarmoq xatosi';
+      }
+      if (i < 3) { setMsg('Server uyg‘onmoqda, biroz kuting…'); await new Promise((r) => setTimeout(r, 4000)); }
     }
+    setPhase('error'); setMsg(`Serverga ulanib bo‘lmadi (${lastErr}). Internetni tekshirib, qayta urinib ko‘ring.`);
   };
 
   // Telegramdan qaytganda darrov tekshiramiz
@@ -87,7 +108,7 @@ export function LoginPage() {
         <h1 className="font-display text-2xl mb-1">EduGo</h1>
         <p className="text-sm text-ink-muted mb-6">
           {phase === 'waiting'
-            ? 'Telegramda “Start” tugmasini bosing — tasdiqlangach ilova o‘zi ochiladi.'
+            ? '“Telegramni ochish” tugmasini bosing, botda Start bosing, so‘ng shu ilovaga qayting. (Bot uxlab yotgan bo‘lsa 1 daqiqagacha kechikishi mumkin.)'
             : 'Hisobingiz Telegram orqali tasdiqlanadi. Parol kerak emas.'}
         </p>
 
@@ -97,7 +118,7 @@ export function LoginPage() {
             disabled={phase === 'starting'}
             className="w-full rounded-2xl bg-gold text-base font-semibold py-3.5 active:scale-[0.98] transition disabled:opacity-60"
           >
-            {phase === 'starting' ? 'Tayyorlanmoqda…' : '✈️ Telegram orqali kirish'}
+            {phase === 'starting' ? (msg || 'Tayyorlanmoqda…') : '✈️ Telegram orqali kirish'}
           </button>
         )}
 

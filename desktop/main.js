@@ -10,7 +10,6 @@ function create() {
     minWidth: 420,
     minHeight: 600,
     backgroundColor: '#0b0f17',
-    titleBarStyle: 'hiddenInset',
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
 
