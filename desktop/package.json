@@ -34,8 +34,7 @@
           ]
         }
       ],
-      "identity": null,
-      "x64ArchFiles": "*"
+      "identity": null
     },
     "afterPack": "./afterPack.js"
   }
