@@ -8,6 +8,9 @@ on:
       - 'frontend/**'
       - '.github/workflows/android-apk.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -49,3 +52,12 @@ jobs:
           name: EduGo-debug-apk
           path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish to Releases
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd frontend/android/app/build/outputs/apk/debug && zip -q "$GITHUB_WORKSPACE/EduGo-android.zip" app-debug.apk)
+          gh release delete app-android --yes --cleanup-tag || true
+          gh release create app-android EduGo-android.zip --title "EduGo — Android (zip)" --notes "Oxirgi build: ${{ github.sha }}"

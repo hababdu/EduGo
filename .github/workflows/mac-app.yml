@@ -8,6 +8,9 @@ on:
       - 'desktop/**'
       - '.github/workflows/mac-app.yml'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: macos-latest
@@ -29,3 +32,12 @@ jobs:
           name: EduGo-mac
           path: desktop/dist/*.dmg
           if-no-files-found: error
+
+      - name: Publish to Releases
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          (cd desktop/dist && zip -q "$GITHUB_WORKSPACE/EduGo-mac.zip" *.dmg)
+          gh release delete app-mac --yes --cleanup-tag || true
+          gh release create app-mac EduGo-mac.zip --title "EduGo — Mac (zip)" --notes "Oxirgi build: ${{ github.sha }}"
