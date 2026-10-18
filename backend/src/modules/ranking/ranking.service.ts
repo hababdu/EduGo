@@ -14,8 +14,9 @@ export class RankingService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 34-band: GLOBAL RANKING */
-  async getGlobalRanking(limit = 20): Promise<RankingEntry[]> {
-    return this.rankProfiles({}, limit);
+  /** orgId: berilsa (null = tashkilotsiz) — faqat shu maktab o'quvchilari; undefined — hamma (faqat super admin uchun). */
+  async getGlobalRanking(limit = 20, orgId?: string | null): Promise<RankingEntry[]> {
+    return this.rankProfiles(orgId === undefined ? {} : { user: { organizationId: orgId } }, limit);
   }
 
   /** 34-band: GROUP RANKING */
@@ -31,10 +32,10 @@ export class RankingService {
   }
 
   /** 34-band: SUBJECT RANKING — ScoreTransaction ledgeridan fan bo'yicha yig'indi */
-  async getSubjectRanking(subjectId: string, limit = 50): Promise<RankingEntry[]> {
+  async getSubjectRanking(subjectId: string, limit = 50, orgId?: string | null): Promise<RankingEntry[]> {
     const grouped = await this.prisma.scoreTransaction.groupBy({
       by: ['studentId'] as const,
-      where: { subjectId },
+      where: { subjectId, ...(orgId === undefined ? {} : { student: { organizationId: orgId } }) },
       _sum: { amount: true },
     });
 
@@ -60,11 +61,18 @@ export class RankingService {
 
   /** Bitta studentning global reytingdagi o'rni (dashboard/profil uchun) */
   async getStudentRank(studentId: string): Promise<number> {
-    const profile = await this.prisma.studentProfile.findUnique({ where: { userId: studentId } });
+    const profile = await this.prisma.studentProfile.findUnique({
+      where: { userId: studentId },
+      include: { user: { select: { organizationId: true } } },
+    });
     if (!profile) return 0;
 
+    // O'rin faqat o'z maktabi o'quvchilari orasida hisoblanadi
     const higherCount = await this.prisma.studentProfile.count({
-      where: { totalScore: { gt: profile.totalScore } },
+      where: {
+        totalScore: { gt: profile.totalScore },
+        user: { organizationId: profile.user.organizationId },
+      },
     });
     return higherCount + 1;
   }
@@ -79,7 +87,7 @@ export class RankingService {
    * userlar sonida keyinchalik materialized view/cache bilan optimallashtiriladi).
    */
   private async rankProfiles(
-    where: { userId?: { in: string[] } },
+    where: { userId?: { in: string[] }; user?: { organizationId: string | null } },
     limit: number,
   ): Promise<RankingEntry[]> {
     const candidates = await this.prisma.studentProfile.findMany({

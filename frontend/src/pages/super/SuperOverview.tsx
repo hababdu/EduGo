@@ -32,8 +32,8 @@ export function SuperOverview() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <KpiCard label="Maktablar" value={o.organizations.active} icon={School} accent="gold" hint={o.organizations.suspended ? `${o.organizations.suspended} ta to'xtatilgan` : undefined} onClick={() => nav('/super/orgs')} />
-            <KpiCard label="Foydalanuvchilar" value={num(o.users.total)} icon={Users} accent="sky" hint={`7 kunda faol: ${num(o.users.active7d)}`} onClick={() => nav('/admin/users')} />
-            <KpiCard label="Guruhlar" value={num(o.groups)} icon={FolderOpen} accent="teal" onClick={() => nav('/admin/groups')} />
+            <KpiCard label="Foydalanuvchilar" value={num(o.users.total)} icon={Users} accent="sky" hint={`7 kunda faol: ${num(o.users.active7d)}`} onClick={() => nav('/super/admins')} />
+            <KpiCard label="Guruhlar" value={num(o.groups)} icon={FolderOpen} accent="teal" onClick={() => nav('/super/orgs')} />
             <KpiCard label="Fayllar" value={formatBytes(o.files.bytes)} icon={FileText} accent="coral" hint={`${num(o.files.count)} ta fayl`} />
             <KpiCard label="AI bugun" value={num(o.aiToday.tokens)} icon={Sparkles} accent="gold" hint={`${num(o.aiToday.requests)} so'rov`} onClick={() => nav('/super/ai')} />
             <KpiCard label="Testlar" value={num(o.tests)} icon={Activity} accent="sky" />

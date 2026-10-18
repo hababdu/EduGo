@@ -13,7 +13,10 @@ export class RankingController {
   @Get('global')
   async getGlobal(@Query('limit') limit: string, @CurrentUser() user: CurrentUserPayload) {
     const [top, yourRank] = await Promise.all([
-      this.rankingService.getGlobalRanking(Math.min(100, Math.max(1, Math.floor(Number(limit)) || 20))),
+      this.rankingService.getGlobalRanking(
+        Math.min(100, Math.max(1, Math.floor(Number(limit)) || 20)),
+        user.role === 'SUPER_ADMIN' ? undefined : user.organizationId ?? null,
+      ),
       this.rankingService.getStudentRank(user.id),
     ]);
     return { top, yourRank };
@@ -27,8 +30,12 @@ export class RankingController {
   }
 
   @Get('subject/:subjectId')
-  async getSubject(@Param('subjectId') subjectId: string) {
-    const top = await this.rankingService.getSubjectRanking(subjectId);
+  async getSubject(@Param('subjectId') subjectId: string, @CurrentUser() user: CurrentUserPayload) {
+    const top = await this.rankingService.getSubjectRanking(
+      subjectId,
+      50,
+      user.role === 'SUPER_ADMIN' ? undefined : user.organizationId ?? null,
+    );
     return { top };
   }
 }

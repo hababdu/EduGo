@@ -10,12 +10,12 @@ export class ChallengesController {
 
   @Get('today')
   getToday(@CurrentUser() user: CurrentUserPayload) {
-    return this.challengesService.getToday(user.id);
+    return this.challengesService.getToday(user.id, user.organizationId ?? null);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Post()
-  create(@Body() dto: CreateChallengeDto) {
-    return this.challengesService.create(dto);
+  create(@Body() dto: CreateChallengeDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.challengesService.create(dto, user);
   }
 }

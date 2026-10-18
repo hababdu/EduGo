@@ -6,7 +6,7 @@ import { AssistantToolRegistry, MAX_TOOL_RESULT_CHARS, TOOL_TIMEOUT_MS } from '.
 const ID = 'cmfx1234abcd5678efgh9012';
 const student = { id: 'student-1-id', telegramId: '1', role: 'STUDENT', status: 'ACTIVE' } as any;
 const teacher = { id: 'teacher-A-id', telegramId: '2', role: 'TEACHER', status: 'ACTIVE' } as any;
-const admin = { id: 'admin-1-id', telegramId: '3', role: 'ADMIN', status: 'ACTIVE' } as any;
+const admin = { id: 'admin-1-id', telegramId: '3', role: 'ADMIN', status: 'ACTIVE', organizationId: 'o1' } as any;
 
 export function makeRegistry(over: Record<string, any> = {}) {
   const m: any = { dashboard: {}, tests: {}, ranking: {}, streak: {}, challenges: {}, data: {}, groups: {}, teacher: {}, analytics: {}, overview: {}, students: {}, ...over };
@@ -134,7 +134,7 @@ describe("O'qituvchi tool'lari — ownership servislarga topshiriladi", () => {
 
   it("get_test_analytics (HAQIQIY AnalyticsService bilan): o'qituvchi faqat O'Z testini ko'radi", async () => {
     const prisma: any = {
-      test: { findUnique: jest.fn().mockResolvedValue({ id: ID, title: 'Algebra', createdById: 'teacher-B-id' }) },
+      test: { findUnique: jest.fn().mockResolvedValue({ id: ID, title: 'Algebra', createdById: 'teacher-B-id', createdBy: { organizationId: 'o1' } }) },
       testAttempt: { findMany: jest.fn().mockResolvedValue([]) },
       testQuestion: { findMany: jest.fn().mockResolvedValue([]) },
       testAnswer: { findMany: jest.fn() },

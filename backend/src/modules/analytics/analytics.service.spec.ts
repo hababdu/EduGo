@@ -3,11 +3,12 @@ import { AnalyticsService } from './analytics.service';
 
 const teacherA = { id: 'teacherA', telegramId: '1', role: 'TEACHER', status: 'ACTIVE' };
 const teacherB = { id: 'teacherB', telegramId: '2', role: 'TEACHER', status: 'ACTIVE' };
-const admin = { id: 'adm1', telegramId: '3', role: 'ADMIN', status: 'ACTIVE' };
+const admin = { id: 'adm1', telegramId: '3', role: 'ADMIN', status: 'ACTIVE', organizationId: 'o1' };
+const otherAdmin = { id: 'adm2', telegramId: '4', role: 'ADMIN', status: 'ACTIVE', organizationId: 'o2' };
 
 function build() {
   const prisma: any = {
-    test: { findUnique: jest.fn().mockImplementation(async ({ where }) => (where.id === 'test1' ? { id: 'test1', title: 'Algebra', createdById: 'teacherA' } : null)) },
+    test: { findUnique: jest.fn().mockImplementation(async ({ where }) => (where.id === 'test1' ? { id: 'test1', title: 'Algebra', createdById: 'teacherA', createdBy: { organizationId: 'o1' } } : null)) },
     testAttempt: { findMany: jest.fn().mockResolvedValue([{ score: 8, passed: true, timeSpentSeconds: 600 }, { score: 4, passed: false, timeSpentSeconds: 300 }]) },
     testQuestion: { findMany: jest.fn().mockResolvedValue([]) },
     testAnswer: { findMany: jest.fn().mockResolvedValue([]) },
@@ -28,7 +29,12 @@ describe('AnalyticsService — ownership', () => {
     expect(prisma.testAttempt.findMany).not.toHaveBeenCalled(); // ma'lumot o'qilmadi ham
   });
 
-  it('admin hamma testni ko\'radi', async () => {
+  it("boshqa maktab admini bu testni ko'ra olmaydi", async () => {
+    const { svc } = build();
+    await expect(svc.getTestAnalytics('test1', otherAdmin)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('o\'z maktabi admini testni ko\'radi', async () => {
     const { svc } = build();
     expect((await svc.getTestAnalytics('test1', admin)).testTitle).toBe('Algebra');
     await expect(svc.getQuestionAnalyticsForTest('test1', admin)).resolves.toEqual([]);

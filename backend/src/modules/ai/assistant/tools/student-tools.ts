@@ -119,7 +119,7 @@ export function studentTools(d: StudentToolDeps) {
       roles: ['STUDENT'],
       parse: () => ({}),
       run: async (user) => {
-        const [rank, top] = await Promise.all([d.ranking.getStudentRank(user.id), d.ranking.getGlobalRanking(5)]);
+        const [rank, top] = await Promise.all([d.ranking.getStudentRank(user.id), d.ranking.getGlobalRanking(5, user.organizationId ?? null)]);
         return {
           myRank: rank || null,
           top: top.map((e) => ({ rank: e.rank, name: e.firstName, totalScore: e.totalScore, isMe: e.studentId === user.id })),
@@ -135,7 +135,7 @@ export function studentTools(d: StudentToolDeps) {
       roles: ['STUDENT'],
       parse: () => ({}),
       run: async (user) => {
-        const [streak, challenge] = await Promise.all([d.streak.getStreak(user.id), d.challenges.getToday(user.id)]);
+        const [streak, challenge] = await Promise.all([d.streak.getStreak(user.id), d.challenges.getToday(user.id, user.organizationId ?? null)]);
         return {
           currentStreak: streak?.currentStreak ?? 0,
           longestStreak: streak?.longestStreak ?? 0,

@@ -64,11 +64,12 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       // Bloklangan/o'chirilgan foydalanuvchi (token hali tirik bo'lsa ham) ulana olmaydi; rol bazadan olinadi
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
-        select: { id: true, role: true, status: true, deletedAt: true },
+        select: { id: true, role: true, status: true, deletedAt: true, organizationId: true },
       });
       if (!user || user.status === 'BLOCKED' || user.deletedAt) throw new Error('Foydalanuvchi yaroqsiz');
       client.data.userId = user.id;
       client.data.role = user.role;
+      client.data.org = user.role === 'SUPER_ADMIN' ? 'all' : user.organizationId ?? 'none';
 
       // Har bir user avtomatik o'z shaxsiy room'iga qo'shiladi
       await client.join(`user:${payload.sub}`);
@@ -92,19 +93,24 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
     const id = typeof data.id === 'string' && data.id.length <= 40 ? data.id : undefined;
 
     if (data.scope === 'global') {
-      await client.join('ranking:global');
+      await client.join(`ranking:global:${client.data.org}`);
     } else if (data.scope === 'group' && id) {
       // Guruh reytingiga faqat shu guruh a'zosi, uning o'qituvchisi yoki admin qo'shila oladi
-      if (await this.canSeeGroup(client.data.userId, client.data.role, id)) {
+      if (await this.canSeeGroup(client.data.userId, client.data.role, id, client.data.org)) {
         await client.join(`ranking:group:${id}`);
       }
     } else if (data.scope === 'subject' && id) {
-      await client.join(`ranking:subject:${id}`);
+      await client.join(`ranking:subject:${id}:${client.data.org}`);
     }
   }
 
-  private async canSeeGroup(userId: string, role: string, groupId: string): Promise<boolean> {
-    if (role === 'ADMIN' || role === 'SUPER_ADMIN') return true;
+  private async canSeeGroup(userId: string, role: string, groupId: string, org: string): Promise<boolean> {
+    if (role === 'SUPER_ADMIN') return true;
+    if (role === 'ADMIN') {
+      // Admin faqat o'z maktabi guruhlarini ko'radi
+      const g = await this.prisma.group.findFirst({ where: { id: groupId, deletedAt: null, organizationId: org }, select: { id: true } });
+      return !!g;
+    }
     const group = await this.prisma.group.findFirst({
       where: {
         id: groupId,
@@ -134,17 +140,21 @@ export class RankingGateway implements OnGatewayConnection, OnGatewayDisconnect 
       newRank,
     });
 
-    // 2. Global reyting — faqat shu sahifani ochib turganlarga
-    const globalTop = await this.rankingService.getGlobalRanking(10);
-    this.server.to('ranking:global').emit('RANKING_UPDATED', {
+    // 2-3. Global va fan reytingi — faqat o'sha o'quvchining maktabi doirasida (+ super admin uchun umumiy)
+    const owner = await this.prisma.user.findUnique({ where: { id: payload.studentId }, select: { organizationId: true } });
+    const orgId = owner?.organizationId ?? null;
+    const orgKey = orgId ?? 'none';
+
+    const globalTop = await this.rankingService.getGlobalRanking(10, orgId);
+    this.server.to(`ranking:global:${orgKey}`).emit('RANKING_UPDATED', { scope: 'global', top: globalTop });
+    this.server.to('ranking:global:all').emit('RANKING_UPDATED', {
       scope: 'global',
-      top: globalTop,
+      top: await this.rankingService.getGlobalRanking(10),
     });
 
-    // 3. Fan reytingi (agar tegishli bo'lsa)
     if (payload.subjectId) {
-      const subjectTop = await this.rankingService.getSubjectRanking(payload.subjectId, 10);
-      this.server.to(`ranking:subject:${payload.subjectId}`).emit('RANKING_UPDATED', {
+      const subjectTop = await this.rankingService.getSubjectRanking(payload.subjectId, 10, orgId);
+      this.server.to(`ranking:subject:${payload.subjectId}:${orgKey}`).emit('RANKING_UPDATED', {
         scope: 'subject',
         subjectId: payload.subjectId,
         top: subjectTop,

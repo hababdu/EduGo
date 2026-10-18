@@ -1,4 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
+import { assertSameOrg } from '../../../common/org-scope';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CreateChallengeDto } from './dto/challenge.dto';
 
@@ -13,13 +16,19 @@ export class ChallengesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** 40-band — "Har kuni maxsus challenge." */
-  async getToday(studentId: string) {
+  /** orgId: o'quvchining maktabi — boshqa maktab testiga bog'langan challenge ko'rinmaydi. */
+  async getToday(studentId: string, orgId?: string | null) {
     const today = startOfDay(new Date());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const challenge = await this.prisma.challenge.findFirst({
-      where: { date: { gte: today, lt: tomorrow } },
+      where: {
+        date: { gte: today, lt: tomorrow },
+        ...(orgId === undefined
+          ? {}
+          : { OR: [{ testId: null }, { test: { createdBy: { OR: [{ organizationId: orgId }, { organizationId: null }] } } }] }),
+      },
       include: { test: { select: { id: true, title: true, durationSeconds: true } } },
     });
 
@@ -42,7 +51,15 @@ export class ChallengesService {
     };
   }
 
-  create(dto: CreateChallengeDto) {
+  async create(dto: CreateChallengeDto, user: CurrentUserPayload) {
+    if (dto.testId) {
+      const test = await this.prisma.test.findUnique({
+        where: { id: dto.testId },
+        include: { createdBy: { select: { organizationId: true } } },
+      });
+      if (!test) throw new NotFoundException('Test topilmadi');
+      assertSameOrg(user, test.createdBy?.organizationId, "Bu test sizning maktabingizga tegishli emas");
+    }
     return this.prisma.challenge.create({
       data: {
         title: dto.title,

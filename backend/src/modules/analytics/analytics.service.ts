@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import { assertSameOrg } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -12,11 +13,15 @@ export class AnalyticsService {
    * (TestManagementService.getDetail bilan bir xil qoida).
    */
   private async loadViewableTest(testId: string, requester: CurrentUserPayload) {
-    const test = await this.prisma.test.findUnique({ where: { id: testId } });
+    const test = await this.prisma.test.findUnique({
+      where: { id: testId },
+      include: { createdBy: { select: { organizationId: true } } },
+    });
     if (!test) throw new NotFoundException('Test topilmadi');
     if (requester.role === 'TEACHER' && test.createdById !== requester.id) {
       throw new ForbiddenException('Bu test sizga tegishli emas');
     }
+    if (requester.role === 'ADMIN') assertSameOrg(requester, (test as any).createdBy?.organizationId);
     return test;
   }
 

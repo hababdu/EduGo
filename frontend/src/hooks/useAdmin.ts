@@ -65,3 +65,18 @@ export function useAdjustScore() {
     },
   });
 }
+
+export interface MySubscription {
+  orgId: string; name: string; fee: number | null; currentMonth: string;
+  state: 'PAID' | 'WAIVED' | 'UNPAID';
+  payments: { month: string; state: string; amount: number }[];
+}
+/** Maktabning super adminga oylik obunasi holati (faqat o'z maktabi). */
+export function useMySubscription() {
+  return useQuery({
+    queryKey: ['admin', 'subscription'],
+    queryFn: () => apiFetch<MySubscription>('/api/v1/admin/subscription'),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+}

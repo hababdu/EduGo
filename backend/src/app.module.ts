@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -65,6 +66,10 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: SuperReadOnlyGuard,
     },
   ],
 })

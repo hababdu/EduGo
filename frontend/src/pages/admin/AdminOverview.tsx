@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Wallet, Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Layers, Activity, Award, ShieldCheck } from '../../design/icons';
-import { useAdminOverview } from '../../hooks/useAdmin';
+import { useAdminOverview, useMySubscription } from '../../hooks/useAdmin';
+import { formatMoney, monthLabel } from '../../hooks/usePayments';
 import { IMAGES } from '../../design/images';
 import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
@@ -12,6 +13,7 @@ const fmt = (n: number) => n.toLocaleString('uz-UZ');
 export function AdminOverview() {
   const { data, isLoading } = useAdminOverview();
   const navigate = useNavigate();
+  const { data: sub } = useMySubscription();
 
   if (isLoading || !data) {
     return (
@@ -44,6 +46,11 @@ export function AdminOverview() {
 
   return (
     <div className={PAGE_WIDE}>
+      {sub && sub.state === 'UNPAID' && sub.fee ? (
+        <div role="status" className="rounded-2xl border border-gold/30 bg-gold/10 p-3.5 text-sm text-ink">
+          <b className="text-gold">{monthLabel(sub.currentMonth)}</b> uchun «{sub.name}» obuna to'lovi hali belgilanmagan: <b>{formatMoney(sub.fee)}</b>. To'lovni super adminga topshiring.
+        </div>
+      ) : null}
       <StaffHero
         accent="sky"
         image={IMAGES.hero}

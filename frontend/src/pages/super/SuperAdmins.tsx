@@ -3,14 +3,16 @@ import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE } from '../../design/tokens';
 import { ShieldCheck } from '../../design/icons';
-import { ROLE_UZ, sapi, useSuperAdmins, useSuperMutation, when } from './superApi';
+import { ROLE_UZ, sapi, useSuperAdmins, useSuperOrgs, useSuperMutation, when } from './superApi';
 
 export function SuperAdmins() {
   const { data, isLoading } = useSuperAdmins();
   const block = useSuperMutation(sapi.block);
+  const { data: orgs } = useSuperOrgs();
+  const move = useSuperMutation(sapi.moveAdmin, "Admin ko'chirildi");
   return (
     <div className={PAGE}>
-      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="SUPER ADMIN · ADMINLAR" title="Adminlar" subtitle="Admin tayinlash «Maktablar» bo'limida. Bu yerda holatini boshqarasiz." />
+      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="SUPER ADMIN · ADMINLAR" title="Adminlar" subtitle="Tayinlash «Maktablar» bo'limida. Bu yerda holatini boshqarasiz va boshqa maktabga ko'chirasiz." />
       <Panel title="Ro'yxat" icon={ShieldCheck} accent="sky" flush>
         {isLoading ? <div className="p-5"><Skeleton className="h-24" /></div> : !data?.length ? (
           <p className="p-8 text-center text-sm text-ink-muted">Adminlar yo'q</p>
@@ -29,6 +31,14 @@ export function SuperAdmins() {
                     </div>
                     <div className="truncate text-[11px] text-ink-muted">{a.organization?.name ?? 'Maktabsiz'} · ID {a.telegramId} · {when(a.lastActiveAt)}</div>
                   </div>
+                  {!sa && orgs && orgs.length > 1 && (
+                    <select aria-label="Maktabga ko'chirish" disabled={move.isPending} value={a.organization?.id ?? ''}
+                      onChange={(e) => { const to = e.target.value; const name = orgs.find((o) => o.id === to)?.name; if (to && to !== a.organization?.id && window.confirm(`${a.name} «${name}» maktabiga ko'chirilsinmi?`)) move.mutate({ userId: a.id, organizationId: to }); }}
+                      className="max-w-[110px] shrink-0 rounded-xl bg-tint/5 px-2 py-1.5 text-xs text-ink-muted">
+                      {!a.organization && <option value="">Maktabsiz</option>}
+                      {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                    </select>
+                  )}
                   {!sa && (
                     <button type="button" disabled={block.isPending}
                       onClick={() => { if (blocked || window.confirm(`${a.name} bloklansinmi?`)) block.mutate({ id: a.id, blocked: !blocked }); }}

@@ -28,3 +28,18 @@ export function sameOrg(u: CurrentUserPayload, orgId: string | null | undefined)
 export function assertSameOrg(u: CurrentUserPayload, orgId: string | null | undefined, msg = "Bu ma'lumot sizning tashkilotingizga tegishli emas") {
   if (!sameOrg(u, orgId)) throw new ForbiddenException(msg);
 }
+
+/**
+ * Kontent (Course) uchun ko'rinish: o'z tashkiloti xodimi yoki platforma (tashkilotsiz, masalan super admin)
+ * yaratgan kontent. Boshqa maktab kontenti ko'rinmaydi. SUPER_ADMIN — hammasi.
+ */
+export function visibleCreatedBy(u: CurrentUserPayload): { createdBy?: { OR: { organizationId: string | null }[] } } {
+  if (isSuperAdmin(u)) return {};
+  return { createdBy: { OR: [{ organizationId: u.organizationId ?? NO_ORG }, { organizationId: null }] } };
+}
+
+/** O'zgartirish: faqat o'z tashkiloti kontenti (platforma kontentini maktab admini o'zgartira olmaydi). */
+export function canEditCreatedBy(u: CurrentUserPayload, creatorOrgId: string | null | undefined): boolean {
+  if (isSuperAdmin(u)) return true;
+  return !!u.organizationId && u.organizationId === creatorOrgId;
+}

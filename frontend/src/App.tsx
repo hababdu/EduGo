@@ -54,6 +54,8 @@ import { SuperOrgs } from './pages/super/SuperOrgs';
 import { SuperAdmins } from './pages/super/SuperAdmins';
 import { SuperAi } from './pages/super/SuperAi';
 import { SuperAudit } from './pages/super/SuperAudit';
+import { SuperOrgDetail } from './pages/super/SuperOrgDetail';
+import { SuperBilling } from './pages/super/SuperBilling';
 import { SuperNav } from './components/super/SuperNav';
 
 /* ============ LAYOUT ============ */
@@ -171,7 +173,7 @@ export function App() {
 }
 
 /* ============================================================
-   SUPER ADMIN ROUTES (admin sahifalari ham shu yerda — hamma maktab ma'lumoti)
+   SUPER ADMIN ROUTES (maktab, admin, obuna, AI, tizim; maktab ichini faqat ko'radi)
    ============================================================ */
 function SuperRoutes() {
   return (
@@ -184,14 +186,8 @@ function SuperRoutes() {
             <Route path="/super/admins" element={<SuperAdmins />} />
             <Route path="/super/ai" element={<SuperAi />} />
             <Route path="/super/audit" element={<SuperAudit />} />
-            <Route path="/admin" element={<Navigate to="/super" replace />} />
-            <Route path="/admin/students" element={<AdminStudents />} />
-            <Route path="/admin/students/:id" element={<AdminStudentDetail />} />
-            <Route path="/admin/users" element={<UsersAdminPage />} />
-            <Route path="/admin/groups" element={<AdminGroups />} />
-            <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
-            <Route path="/admin/payments" element={<AdminPayments />} />
-            <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
+            <Route path="/super/orgs/:id" element={<SuperOrgDetail />} />
+            <Route path="/super/billing" element={<SuperBilling />} />
             <Route path="*" element={<Navigate to="/super" replace />} />
           </Routes>
         </PageTransition>

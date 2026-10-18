@@ -3,6 +3,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
+import { visibleCreatedBy, canEditCreatedBy } from '../../../common/org-scope';
 import { AuditService } from '../../admin/audit/audit.service';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class CoursesService {
     return this.prisma.course.findMany({
       where: {
         deletedAt: null,
+        ...visibleCreatedBy(user),
         ...(isStudent ? { status: 'PUBLISHED' } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -36,8 +38,8 @@ export class CoursesService {
      GET ONE
      ============================================================ */
   async findOneFor(id: string, user: CurrentUserPayload) {
-    const course = await this.prisma.course.findUnique({
-      where: { id },
+    const course = await this.prisma.course.findFirst({
+      where: { id, ...visibleCreatedBy(user) },
       include: {
         subjects: {
           where: {
@@ -71,6 +73,7 @@ export class CoursesService {
     },
     actorId: string,
     actorRole?: string,
+    actorOrgId?: string | null,
   ) {
     const rawDto = dto as any;
 
@@ -119,15 +122,22 @@ export class CoursesService {
     },
     actorId: string,
     actorRole?: string,
+    actorOrgId?: string | null,
   ) {
     const rawDto = dto as any;
 
-    const existing = await this.prisma.course.findUnique({ where: { id } });
+    const existing = await this.prisma.course.findUnique({
+      where: { id },
+      include: { createdBy: { select: { organizationId: true } } },
+    });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
     }
     if (actorRole === 'TEACHER' && existing.createdById !== actorId) {
       throw new ForbiddenException('Bu kurs sizga tegishli emas');
+    }
+    if (actorRole === 'ADMIN' && !canEditCreatedBy({ id: actorId, role: 'ADMIN', organizationId: actorOrgId } as any, existing.createdBy?.organizationId)) {
+      throw new ForbiddenException("Bu kurs boshqa maktabga yoki platformaga tegishli");
     }
 
     // description JSON birlashtirish
@@ -207,13 +217,19 @@ export class CoursesService {
   /* ============================================================
      DELETE — soft
      ============================================================ */
-  async remove(id: string, actorId: string, actorRole?: string) {
-    const existing = await this.prisma.course.findUnique({ where: { id } });
+  async remove(id: string, actorId: string, actorRole?: string, actorOrgId?: string | null) {
+    const existing = await this.prisma.course.findUnique({
+      where: { id },
+      include: { createdBy: { select: { organizationId: true } } },
+    });
     if (!existing || existing.deletedAt) {
       throw new NotFoundException('Kurs topilmadi');
     }
     if (actorRole === 'TEACHER' && existing.createdById !== actorId) {
       throw new ForbiddenException('Bu kurs sizga tegishli emas');
+    }
+    if (actorRole === 'ADMIN' && !canEditCreatedBy({ id: actorId, role: 'ADMIN', organizationId: actorOrgId } as any, existing.createdBy?.organizationId)) {
+      throw new ForbiddenException("Bu kurs boshqa maktabga yoki platformaga tegishli");
     }
 
     await this.prisma.course.update({

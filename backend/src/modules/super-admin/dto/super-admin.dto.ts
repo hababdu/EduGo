@@ -10,11 +10,24 @@ export class UpdateOrgDto {
   @IsOptional() @IsString() @MinLength(2) @MaxLength(100) name?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
   @IsOptional() @IsIn(['ACTIVE', 'SUSPENDED']) status?: 'ACTIVE' | 'SUSPENDED';
+  /** Maktabning oylik obuna to'lovi (so'm); null — belgilanmagan */
+  @IsOptional() @IsInt() @Min(0) @Max(1_000_000_000) monthlyPlanFee?: number | null;
+}
+
+export class MarkOrgPaymentDto {
+  @IsString() @Matches(/^\d{4}-(0[1-9]|1[0-2])$/) month!: string;
+  @IsIn(['PAID', 'WAIVED', 'UNPAID']) status!: 'PAID' | 'WAIVED' | 'UNPAID';
+  @IsOptional() @IsInt() @Min(0) @Max(1_000_000_000) amount?: number;
+  @IsOptional() @IsString() @MaxLength(200) note?: string;
 }
 
 export class AssignAdminDto {
   /** Ro'yxatdan tanlangan foydalanuvchi */
   @IsString() @MinLength(5) @MaxLength(40) userId!: string;
+}
+
+export class MoveAdminDto {
+  @IsString() @MinLength(5) @MaxLength(40) organizationId!: string;
 }
 
 export class UserSearchDto {

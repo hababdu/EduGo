@@ -50,7 +50,7 @@ export class CoursesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const actorId = user.id || user['sub'];
-    return this.coursesService.update(id, updateCourseDto, actorId, user.role);
+    return this.coursesService.update(id, updateCourseDto, actorId, user.role, user.organizationId ?? null);
   }
 
   @Roles('TEACHER', 'ADMIN')
@@ -60,6 +60,6 @@ export class CoursesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     const actorId = user.id || user['sub'];
-    return this.coursesService.remove(id, actorId, user.role);
+    return this.coursesService.remove(id, actorId, user.role, user.organizationId ?? null);
   }
 }

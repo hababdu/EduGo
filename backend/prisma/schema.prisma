@@ -39,13 +39,37 @@ model Organization {
   name      String
   status    OrgStatus @default(ACTIVE)
   note      String?
+  /// Maktabning super adminga oylik obuna to'lovi (so'm). null = belgilanmagan.
+  monthlyPlanFee Int?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  users  User[]
-  groups Group[]
+  users    User[]
+  groups   Group[]
+  payments OrgPayment[]
 
   @@index([status])
+}
+
+/// Maktab → super admin: oylik obuna to'lovi belgisi (o'quvchilarning guruh to'lovlari — `Payment` — bundan butunlay alohida).
+/// Yozuv yo'q = to'lamagan.
+model OrgPayment {
+  id             String        @id @default(cuid())
+  organizationId String
+  month          String // "YYYY-MM" (Toshkent oyi)
+  status         PaymentStatus
+  amount         Int           @default(0)
+  note           String?
+  paidAt         DateTime      @default(now())
+  markedById     String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  markedBy     User         @relation("OrgPaymentMarker", fields: [markedById], references: [id])
+
+  @@unique([organizationId, month])
+  @@index([month])
 }
 
 /// Global sozlamalar (kalit-qiymat), faqat super admin o'zgartiradi
@@ -97,6 +121,7 @@ model User {
   attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
   payments             Payment[]            @relation("PaymentStudent")
   paymentsMarked       Payment[]            @relation("PaymentMarker")
+  orgPaymentsMarked    OrgPayment[]         @relation("OrgPaymentMarker")
   createdTests         Test[]               @relation("TestCreatedBy")
   createdQuestions     Question[]           @relation("QuestionCreatedBy")
   assignedTests        TestAssignment[]     @relation("AssignedBy")

@@ -20,19 +20,19 @@ export class SubjectsController {
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
-  create(@Body() dto: CreateSubjectDto) {
-    return this.subjectsService.create(dto);
+  create(@Body() dto: CreateSubjectDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.subjectsService.create(dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateSubjectDto) {
-    return this.subjectsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateSubjectDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.subjectsService.update(id, dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.subjectsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.subjectsService.remove(id, user);
   }
 }

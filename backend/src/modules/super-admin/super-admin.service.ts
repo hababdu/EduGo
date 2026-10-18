@@ -7,6 +7,7 @@ import { AiConfig } from '../ai/ai.config';
 import { AiService } from '../ai/ai.service';
 import { AiSettingsService, LIMIT_ROLES } from '../ai/ai-settings.service';
 import { AiUsageService } from '../ai/ai-usage.service';
+import { currentMonth } from '../groups/payments.service';
 import { AssignAdminDto, CreateOrgDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
 
 const PAGE = 30;
@@ -63,7 +64,7 @@ export class SuperAdminService {
       select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, organizationId: true },
     });
     return orgs.map((o) => ({
-      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt,
+      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee,
       users: o._count.users, groups: o._count.groups,
       admins: admins.filter((a) => a.organizationId === o.id).map((a) => ({ id: a.id, name: nameOf(a), username: a.username, telegramId: a.telegramId })),
     }));
@@ -85,10 +86,62 @@ export class SuperAdminService {
     if (dto.name !== undefined) data.name = dto.name.trim();
     if (dto.note !== undefined) data.note = dto.note.trim() || null;
     if (dto.status !== undefined) data.status = dto.status;
+    if (dto.monthlyPlanFee !== undefined) data.monthlyPlanFee = dto.monthlyPlanFee;
     const org = await this.prisma.organization.update({ where: { id }, data });
     await this.audit(actor, dto.status && dto.status !== old.status ? `ORG_${dto.status}` : 'ORG_UPDATE', 'Organization', id,
-      { name: old.name, status: old.status }, { name: org.name, status: org.status });
+      { name: old.name, status: old.status, monthlyPlanFee: old.monthlyPlanFee }, { name: org.name, status: org.status, monthlyPlanFee: org.monthlyPlanFee });
     return org;
+  }
+
+  /** Maktab ichi: super admin FAQAT ko'radi (guruhlar, xodimlar, o'quvchilar to'lovi jamlamasi, obuna). */
+  async orgDetail(id: string) {
+    const org = await this.prisma.organization.findUnique({ where: { id } });
+    if (!org) throw new NotFoundException('Maktab topilmadi');
+    const month = currentMonth();
+    const [groups, staff, studentCount, pays, sub] = await Promise.all([
+      this.prisma.group.findMany({
+        where: { organizationId: id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, name: true, monthlyFee: true, teacher: { select: { firstName: true, lastName: true, username: true } }, _count: { select: { members: true } } },
+      }),
+      this.prisma.user.findMany({
+        where: { organizationId: id, deletedAt: null, role: { in: ['ADMIN', 'TEACHER'] } },
+        orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
+        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true },
+      }),
+      this.prisma.user.count({ where: { organizationId: id, deletedAt: null, role: 'STUDENT' } }),
+      this.prisma.payment.groupBy({ by: ['status'], where: { month, group: { organizationId: id, deletedAt: null } }, _count: true, _sum: { amount: true } }),
+      this.prisma.orgPayment.findMany({ where: { organizationId: id }, orderBy: { month: 'desc' }, take: 12 }),
+    ]);
+    const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
+    const paid = pays.find((p) => p.status === 'PAID');
+    return {
+      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, createdAt: org.createdAt },
+      counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
+      admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
+      teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),
+      groups: groups.map((g) => ({ id: g.id, name: g.name, fee: g.monthlyFee, members: g._count.members, teacher: g.teacher ? nameOf(g.teacher) : null })),
+      studentPayments: { month, collected: paid?._sum.amount ?? 0, paidCount: paid?._count ?? 0, expected },
+      subscription: {
+        currentMonth: month,
+        state: sub.find((p) => p.month === month)?.status ?? 'UNPAID',
+        history: sub.map((p) => ({ month: p.month, state: p.status, amount: p.amount, paidAt: p.paidAt })),
+      },
+    };
+  }
+
+  /** Adminni boshqa maktabga ko'chirish (super admin). */
+  async moveAdmin(actor: CurrentUserPayload, userId: string, orgId: string) {
+    const [user, org] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId } }),
+      this.prisma.organization.findUnique({ where: { id: orgId } }),
+    ]);
+    if (!user || user.deletedAt || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
+    if (!org) throw new NotFoundException('Maktab topilmadi');
+    if (user.organizationId === orgId) return { ok: true };
+    await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+    await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: user.organizationId }, { organizationId: orgId });
+    return { ok: true };
   }
 
   async assignAdmin(actor: CurrentUserPayload, orgId: string, dto: AssignAdminDto) {

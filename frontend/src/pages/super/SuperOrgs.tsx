@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { StaffHero, Panel } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { toast } from '../../components/ui/Toast';
@@ -95,6 +96,8 @@ function OrgCard({ org }: { org: Org }) {
             </div>
           )}
         </div>
+
+        <Link to={`/super/orgs/${org.id}`} className={`${CONTROL.buttonSubtle} block w-full text-center`}>Maktab ichini ko'rish</Link>
 
         <button type="button" disabled={upd.isPending} className={suspended ? `${CONTROL.buttonSubtle} w-full` : `${CONTROL.buttonDanger} w-full`}
           onClick={() => {
