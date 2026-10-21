@@ -3,10 +3,13 @@ import { IsBoolean, IsIn, IsInt, IsNumberString, IsOptional, IsString, Matches, 
 
 export class CreateOrgDto {
   @IsString() @MinLength(2) @MaxLength(100) name!: string;
+  /** Maktabning yopiq Telegram kanali (-100…). Bot unda admin bo'lishi shart. */
+  @IsString() @Matches(/^-100\d{5,}$/, { message: "Kanal ID -100 bilan boshlanishi kerak" }) storageChatId!: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
 }
 
 export class UpdateOrgDto {
+  @IsOptional() @IsString() @Matches(/^-100\d{5,}$/, { message: "Kanal ID -100 bilan boshlanishi kerak" }) storageChatId?: string;
   @IsOptional() @IsString() @MinLength(2) @MaxLength(100) name?: string;
   @IsOptional() @IsString() @MaxLength(500) note?: string;
   @IsOptional() @IsIn(['ACTIVE', 'SUSPENDED']) status?: 'ACTIVE' | 'SUSPENDED';

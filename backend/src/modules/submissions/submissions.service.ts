@@ -154,7 +154,7 @@ export class SubmissionsService {
       await this.prisma.materialFile.delete({ where: { id: f.id } }).catch(() => undefined);
       if (f.tgMessageId) {
         const shared = await this.prisma.materialFile.count({ where: { tgFileId: f.tgFileId } });
-        if (shared === 0) await this.tg.remove(f.tgMessageId).catch(() => undefined);
+        if (shared === 0) await this.tg.remove(f.tgMessageId, (f as any).tgChatId).catch(() => undefined);
       }
     }
 

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { superAdminIds } from '../../common/super-admin.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import { TelegramStorageService } from '../materials/telegram-storage.service';
 import { AiConfig } from '../ai/ai.config';
 import { AiService } from '../ai/ai.service';
 import { AiSettingsService, LIMIT_ROLES } from '../ai/ai-settings.service';
@@ -23,6 +24,7 @@ export class SuperAdminService {
     private readonly aiSettings: AiSettingsService,
     private readonly aiUsage: AiUsageService,
     private readonly aiService: AiService,
+    private readonly storage: TelegramStorageService,
   ) {}
 
   private audit(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
@@ -64,18 +66,26 @@ export class SuperAdminService {
       select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, organizationId: true },
     });
     return orgs.map((o) => ({
-      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee,
+      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId,
       users: o._count.users, groups: o._count.groups,
       admins: admins.filter((a) => a.organizationId === o.id).map((a) => ({ id: a.id, name: nameOf(a), username: a.username, telegramId: a.telegramId })),
     }));
+  }
+
+  /** Bitta kanal faqat bitta maktabga biriktiriladi (aks holda maktablar ma'lumoti aralashib ketadi). */
+  private async assertChannelFree(chatId: string, exceptOrgId?: string) {
+    const used = await this.prisma.organization.findFirst({ where: { storageChatId: chatId, ...(exceptOrgId ? { id: { not: exceptOrgId } } : {}) }, select: { name: true } });
+    if (used) throw new ConflictException(`Bu kanal allaqachon «${used.name}» maktabiga biriktirilgan. Har maktabga alohida kanal kerak`);
   }
 
   async createOrg(actor: CurrentUserPayload, dto: CreateOrgDto) {
     const name = dto.name.trim();
     const exists = await this.prisma.organization.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } });
     if (exists) throw new ConflictException('Bunday nomli maktab allaqachon bor');
-    const org = await this.prisma.organization.create({ data: { name, note: dto.note?.trim() || null } });
-    await this.audit(actor, 'ORG_CREATE', 'Organization', org.id, null, { name });
+    await this.assertChannelFree(dto.storageChatId);
+    const ch = await this.storage.verifyChannel(dto.storageChatId);
+    const org = await this.prisma.organization.create({ data: { name, note: dto.note?.trim() || null, storageChatId: dto.storageChatId } });
+    await this.audit(actor, 'ORG_CREATE', 'Organization', org.id, null, { name, storageChatId: dto.storageChatId, channel: ch.title });
     return org;
   }
 
@@ -87,9 +97,14 @@ export class SuperAdminService {
     if (dto.note !== undefined) data.note = dto.note.trim() || null;
     if (dto.status !== undefined) data.status = dto.status;
     if (dto.monthlyPlanFee !== undefined) data.monthlyPlanFee = dto.monthlyPlanFee;
+    if (dto.storageChatId !== undefined && dto.storageChatId !== old.storageChatId) {
+      await this.assertChannelFree(dto.storageChatId, id);
+      await this.storage.verifyChannel(dto.storageChatId);
+      data.storageChatId = dto.storageChatId;
+    }
     const org = await this.prisma.organization.update({ where: { id }, data });
     await this.audit(actor, dto.status && dto.status !== old.status ? `ORG_${dto.status}` : 'ORG_UPDATE', 'Organization', id,
-      { name: old.name, status: old.status, monthlyPlanFee: old.monthlyPlanFee }, { name: org.name, status: org.status, monthlyPlanFee: org.monthlyPlanFee });
+      { name: old.name, status: old.status, monthlyPlanFee: old.monthlyPlanFee, storageChatId: old.storageChatId }, { name: org.name, status: org.status, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId });
     return org;
   }
 
@@ -116,7 +131,7 @@ export class SuperAdminService {
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
-      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, createdAt: org.createdAt },
+      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId, createdAt: org.createdAt },
       counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
       admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
       teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),

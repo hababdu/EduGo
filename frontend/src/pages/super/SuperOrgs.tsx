@@ -9,19 +9,36 @@ import { School, Plus, X } from '../../design/icons';
 import { Avatar } from '../../components/staff';
 import { Candidate, Org, ROLE_UZ, sapi, useCandidates, useSuperMutation, useSuperOrgs } from './superApi';
 
+const CH_RE = /^-100\d{5,}$/;
+
+/** Kanal ID'sini qanday olish va botni qo'shish bo'yicha qisqa yo'riqnoma */
+function ChannelHelp() {
+  return (
+    <ol className="list-decimal space-y-1 pl-5 text-[11px] leading-relaxed text-ink-muted">
+      <li>Telegramda maktab uchun <b>yopiq (private)</b> kanal yarating — ochiq havola (@username) qo'ymang.</li>
+      <li>Botni kanalga <b>administrator</b> qilib qo'shing (xabar yuborish huquqi bilan).</li>
+      <li>Kanal ID'sini oling: kanaldan biror xabarni @getidsbot yoki @RawDataBot ga forward qiling. ID <b>-100</b> bilan boshlanadi.</li>
+    </ol>
+  );
+}
+
 function CreateOrg() {
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
+  const [chan, setChan] = useState('');
   const m = useSuperMutation(sapi.createOrg, 'Maktab yaratildi');
-  const ok = name.trim().length >= 2;
+  const ok = name.trim().length >= 2 && CH_RE.test(chan.trim());
   return (
     <Panel title="Yangi maktab" icon={Plus} accent="gold">
       <div className="space-y-2.5">
         <input className={CONTROL.input} placeholder="Maktab nomi (masalan: 12-maktab)" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         <input className={CONTROL.input} placeholder="Izoh (ixtiyoriy)" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
+        <input className={CONTROL.input} placeholder="Yopiq kanal ID (masalan -1001234567890)" inputMode="numeric" value={chan} onChange={(e) => setChan(e.target.value.trim())} />
+        {chan && !CH_RE.test(chan) && <p className="text-[11px] text-coral">ID -100 bilan boshlanishi kerak</p>}
+        <ChannelHelp />
         <button type="button" disabled={!ok || m.isPending} className={`${CONTROL.buttonPrimary} w-full disabled:opacity-40`}
-          onClick={() => m.mutate({ name: name.trim(), note: note.trim() || undefined }, { onSuccess: () => { setName(''); setNote(''); } })}>
-          {m.isPending ? 'Yaratilmoqda…' : 'Maktab yaratish'}
+          onClick={() => m.mutate({ name: name.trim(), note: note.trim() || undefined, storageChatId: chan.trim() }, { onSuccess: () => { setName(''); setNote(''); setChan(''); } })}>
+          {m.isPending ? 'Kanal tekshirilmoqda…' : 'Maktab yaratish'}
         </button>
       </div>
     </Panel>
@@ -36,6 +53,8 @@ function OrgCard({ org }: { org: Org }) {
   const remove = useSuperMutation(sapi.removeAdmin, 'Admin olib tashlandi');
   const upd = useSuperMutation(sapi.updateOrg);
   const suspended = org.status === 'SUSPENDED';
+  const [editCh, setEditCh] = useState(false);
+  const [ch, setCh] = useState('');
 
   return (
     <Panel title={org.name} icon={School} accent={suspended ? 'coral' : 'teal'}
@@ -45,6 +64,33 @@ function OrgCard({ org }: { org: Org }) {
         <div className="grid grid-cols-2 gap-2 text-center">
           <div className="rounded-2xl bg-surface/50 py-2.5"><div className="font-display text-lg font-bold text-ink tabular-nums">{org.users}</div><div className="text-[11px] text-ink-muted">Foydalanuvchi</div></div>
           <div className="rounded-2xl bg-surface/50 py-2.5"><div className="font-display text-lg font-bold text-ink tabular-nums">{org.groups}</div><div className="text-[11px] text-ink-muted">Guruh</div></div>
+        </div>
+
+        <div className="rounded-2xl bg-surface/50 px-3 py-2.5">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-ink-muted">Yopiq kanal</div>
+              {org.storageChatId ? (
+                <div className="truncate text-[11px] text-teal">Biriktirilgan · {org.storageChatId}</div>
+              ) : (
+                <div className="text-[11px] font-semibold text-coral">Biriktirilmagan — fayl yuklab bo'lmaydi</div>
+              )}
+            </div>
+            {!editCh && <button type="button" className="shrink-0 rounded-lg bg-tint/5 px-2.5 py-1.5 text-[11px] font-semibold text-gold" onClick={() => setEditCh(true)}>{org.storageChatId ? "O'zgartirish" : 'Biriktirish'}</button>}
+          </div>
+          {editCh && (
+            <div className="mt-2 space-y-2">
+              <input autoFocus className={CONTROL.input} placeholder="-1001234567890" inputMode="numeric" value={ch} onChange={(e) => setCh(e.target.value.trim())} />
+              <ChannelHelp />
+              <div className="flex gap-2">
+                <button type="button" className={`${CONTROL.buttonPrimary} flex-1 disabled:opacity-40`} disabled={!CH_RE.test(ch) || upd.isPending}
+                  onClick={() => upd.mutate({ id: org.id, storageChatId: ch }, { onSuccess: () => { toast('success', 'Kanal biriktirildi'); setEditCh(false); setCh(''); } })}>
+                  {upd.isPending ? 'Tekshirilmoqda…' : 'Saqlash'}
+                </button>
+                <button type="button" className={CONTROL.buttonSubtle} onClick={() => { setEditCh(false); setCh(''); }}>Bekor</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>

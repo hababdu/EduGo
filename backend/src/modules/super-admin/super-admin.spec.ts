@@ -11,6 +11,7 @@ describe('superAdminIds', () => {
 
 describe('SuperAdminService', () => {
   const actor: any = { id: 's1', role: 'SUPER_ADMIN' };
+  const CH = '-1001234567890';
   const mk = (over: any = {}) => {
     const prisma: any = {
       organization: { findFirst: jest.fn().mockResolvedValue(null), findUnique: jest.fn().mockResolvedValue({ id: 'o1', name: 'M' }), create: jest.fn().mockResolvedValue({ id: 'o1' }) },
@@ -18,19 +19,46 @@ describe('SuperAdminService', () => {
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
       ...over,
     };
-    return { prisma, svc: new SuperAdminService(prisma, {} as any, {} as any, {} as any, {} as any, {} as any) };
+    const storage: any = { verifyChannel: jest.fn().mockResolvedValue({ title: 'Maktab kanali' }) };
+    return { prisma, storage, svc: new SuperAdminService(prisma, {} as any, {} as any, {} as any, {} as any, {} as any, storage) };
   };
 
   it('bir xil nomli maktab 409', async () => {
     const { svc } = mk({ organization: { findFirst: jest.fn().mockResolvedValue({ id: 'x' }) } });
-    await expect(svc.createOrg(actor, { name: 'Maktab 1' })).rejects.toBeInstanceOf(ConflictException);
+    await expect(svc.createOrg(actor, { name: 'Maktab 1', storageChatId: CH })).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('maktab yaratilganda audit yoziladi', async () => {
     const { svc, prisma } = mk();
-    await svc.createOrg(actor, { name: ' Maktab 1 ' });
+    await svc.createOrg(actor, { name: ' Maktab 1 ', storageChatId: CH });
     expect(prisma.organization.create.mock.calls[0][0].data.name).toBe('Maktab 1');
     expect(prisma.adminActionLog.create.mock.calls[0][0].data.action).toBe('ORG_CREATE');
+  });
+
+  it('maktab yaratishda kanal tekshiriladi va maktabga yoziladi', async () => {
+    const { svc, prisma, storage } = mk();
+    await svc.createOrg(actor, { name: 'Maktab 2', storageChatId: CH });
+    expect(storage.verifyChannel).toHaveBeenCalledWith(CH);
+    expect(prisma.organization.create.mock.calls[0][0].data.storageChatId).toBe(CH);
+  });
+
+  it('kanal boshqa maktabga biriktirilgan bo\'lsa 409, maktab yaratilmaydi', async () => {
+    const { svc, prisma, storage } = mk({
+      organization: {
+        findFirst: jest.fn().mockImplementation(async ({ where }: any) => (where.storageChatId ? { name: 'Boshqa maktab' } : null)),
+        create: jest.fn(),
+      },
+    });
+    await expect(svc.createOrg(actor, { name: 'Yangi', storageChatId: CH })).rejects.toBeInstanceOf(ConflictException);
+    expect(storage.verifyChannel).not.toHaveBeenCalled();
+    expect(prisma.organization.create).not.toHaveBeenCalled();
+  });
+
+  it('kanal tekshiruvdan o\'tmasa maktab yaratilmaydi', async () => {
+    const { svc, prisma, storage } = mk();
+    storage.verifyChannel.mockRejectedValue(new BadRequestException('Bot kanalda admin emas'));
+    await expect(svc.createOrg(actor, { name: 'Yangi', storageChatId: CH })).rejects.toBeInstanceOf(BadRequestException);
+    expect(prisma.organization.create).not.toHaveBeenCalled();
   });
 
   it('adminni tayinlash: topilmasa 404, super adminni rad etadi, boshqa maktab xodimi 409', async () => {

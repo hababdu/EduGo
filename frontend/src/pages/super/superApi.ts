@@ -13,7 +13,7 @@ export interface Overview {
 }
 export interface Org {
   id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; createdAt: string;
-  users: number; groups: number;
+  users: number; groups: number; storageChatId: string | null;
   admins: { id: string; name: string; username: string | null; telegramId: string }[];
 }
 export interface AdminRow {
@@ -73,8 +73,8 @@ export function useSuperMutation<V>(fn: (v: V) => Promise<unknown>, okMsg?: stri
   });
 }
 export const sapi = {
-  createOrg: (v: { name: string; note?: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
-  updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
+  createOrg: (v: { name: string; note?: string; storageChatId: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
+  updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null; storageChatId?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
@@ -90,7 +90,7 @@ export interface BillingOverview {
   totals: { paid: number; waived: number; unpaid: number; collected: number; expected: number };
 }
 export interface OrgDetail {
-  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; createdAt: string };
+  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; createdAt: string };
   counts: { students: number; teachers: number; admins: number; groups: number };
   admins: { id: string; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
   teachers: { id: string; name: string; username: string | null; status: string }[];

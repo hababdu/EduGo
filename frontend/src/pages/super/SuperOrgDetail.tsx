@@ -31,6 +31,11 @@ export function SuperOrgDetail() {
             <KpiCard label="Guruhlar" value={d.counts.groups} icon={FolderOpen} accent="coral" />
           </div>
 
+          <div className="rounded-2xl border border-tint/10 bg-surface/40 px-4 py-3 text-xs">
+            <span className="text-ink-muted">Yopiq kanal: </span>
+            {d.org.storageChatId ? <span className="font-semibold text-teal">biriktirilgan ({d.org.storageChatId})</span> : <span className="font-semibold text-coral">biriktirilmagan</span>}
+          </div>
+
           <Panel title="Obuna (maktab → siz)" icon={Banknote} accent="gold">
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">

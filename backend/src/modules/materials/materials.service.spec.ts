@@ -3,7 +3,7 @@ import { MaterialsService } from './materials.service';
 
 const teacher: any = { id: 't1', role: 'TEACHER' };
 const otherTeacher: any = { id: 't2', role: 'TEACHER' };
-const admin: any = { id: 'adm', role: 'ADMIN' };
+const admin: any = { id: 'adm', role: 'ADMIN', organizationId: 'o1' };
 const student: any = { id: 's1', role: 'STUDENT' };
 const outsider: any = { id: 's9', role: 'STUDENT' };
 
@@ -12,7 +12,7 @@ const pdfBuf = Buffer.from('%PDF-1.7 hello');
 function file(over: any = {}) {
   return {
     id: 'f1', uploaderId: 't1', assignmentId: 'a1', kind: 'PDF', fileName: 'x.pdf',
-    mimeType: 'application/pdf', sizeBytes: 100, tgFileId: 'TG1', tgMessageId: 5,
+    mimeType: 'application/pdf', sizeBytes: 100, tgFileId: 'TG1', tgMessageId: 5, tgChatId: 'CH1',
     assignment: { id: 'a1', teacherId: 't1', groupId: 'g1', status: 'PUBLISHED', deletedAt: null },
     ...over,
   };
@@ -27,10 +27,11 @@ function build(f: any = file(), member = true) {
       delete: jest.fn().mockResolvedValue({}),
     },
     groupMember: { findFirst: jest.fn().mockResolvedValue(member ? { id: 'm' } : null) },
-    user: { findUnique: jest.fn().mockResolvedValue({ telegramId: '777' }) },
+    user: { findUnique: jest.fn().mockResolvedValue({ telegramId: '777', organizationId: 'o1' }) },
+    organization: { findUnique: jest.fn().mockResolvedValue({ storageChatId: '-100777' }) },
   };
   const tg: any = {
-    store: jest.fn().mockResolvedValue({ fileId: 'TGNEW', messageId: 9 }),
+    store: jest.fn().mockResolvedValue({ fileId: 'TGNEW', messageId: 9, chatId: '-100777' }),
     download: jest.fn().mockResolvedValue(Buffer.from('data')),
     sendToChat: jest.fn().mockResolvedValue(undefined),
     remove: jest.fn().mockResolvedValue(undefined),
@@ -64,6 +65,37 @@ describe('MaterialsService.upload', () => {
   it('20 MB dan katta fayl previewable=false', async () => {
     const { svc } = build();
     expect(svc.toDto({ id: 'x', kind: 'VIDEO', fileName: 'v.mp4', mimeType: 'video/mp4', sizeBytes: 30 * 1024 * 1024 }).previewable).toBe(false);
+  });
+});
+
+describe('MaterialsService — maktab kanali', () => {
+  const orgTeacher: any = { id: 't1', role: 'TEACHER', organizationId: 'o1' };
+  const up = { originalname: 'x.pdf', mimetype: 'application/pdf', buffer: pdfBuf };
+
+  it("maktab xodimi fayli FAQAT o'z maktabining kanaliga yuklanadi va kanal yoziladi", async () => {
+    const { svc, tg, prisma } = build();
+    await svc.upload(orgTeacher, up);
+    expect(tg.store.mock.calls[0][3]).toBe('-100777');
+    expect(prisma.materialFile.create.mock.calls[0][0].data.tgChatId).toBe('-100777');
+  });
+
+  it("kanali yo'q maktab uchun yuklash rad etiladi (umumiy kanalga tushmaydi)", async () => {
+    const { svc, tg, prisma } = build();
+    prisma.organization.findUnique.mockResolvedValue({ storageChatId: null });
+    await expect(svc.upload(orgTeacher, up)).rejects.toThrow(/yopiq kanal/);
+    expect(tg.store).not.toHaveBeenCalled();
+  });
+
+  it("maktabsiz foydalanuvchi (platforma) umumiy kanalga yuklaydi", async () => {
+    const { svc, tg } = build();
+    await svc.upload(teacher, up);
+    expect(tg.store.mock.calls[0][3]).toBeNull();
+  });
+
+  it("boshqa maktab admini faylni ko'ra ham, o'chira ham olmaydi", async () => {
+    const other: any = { id: 'adm2', role: 'ADMIN', organizationId: 'o2' };
+    await expect(build().svc.content(other, 'f1')).rejects.toThrow(ForbiddenException);
+    await expect(build().svc.remove(other, 'f1')).rejects.toThrow(ForbiddenException);
   });
 });
 
@@ -126,7 +158,7 @@ describe('MaterialsService.sendToChat / remove', () => {
 
     const a = build();
     await a.svc.remove(teacher, 'f1');
-    expect(a.tg.remove).toHaveBeenCalledWith(5);
+    expect(a.tg.remove).toHaveBeenCalledWith(5, 'CH1');
 
     const b = build();
     b.prisma.materialFile.count.mockResolvedValue(1); // boshqa guruh nusxasi bor

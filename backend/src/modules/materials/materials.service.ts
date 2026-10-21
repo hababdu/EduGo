@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MAX_INLINE_BYTES, isInlineSafe, validateUpload } from './material-file.util';
@@ -35,7 +35,16 @@ export class MaterialsService {
       throw new BadRequestException("Biriktirilmagan fayllar ko'p. Avval materialni saqlang yoki keraksiz fayllarni o'chiring");
     }
 
-    const stored = await this.tg.store(file.buffer, v.fileName, v.mimeType);
+    // Har maktab fayli FAQAT o'z yopiq kanaliga tushadi; maktabsiz foydalanuvchi (platforma) — umumiy kanalga
+    let chatId: string | null = null;
+    if (actor.organizationId) {
+      const org = await this.prisma.organization.findUnique({ where: { id: actor.organizationId }, select: { storageChatId: true } });
+      if (!org?.storageChatId) {
+        throw new ServiceUnavailableException("Maktabingiz uchun yopiq kanal biriktirilmagan. Super adminga murojaat qiling. Hozircha havola (URL) bilan material yarating.");
+      }
+      chatId = org.storageChatId;
+    }
+    const stored = await this.tg.store(file.buffer, v.fileName, v.mimeType, chatId);
     const row = await this.prisma.materialFile.create({
       data: {
         uploaderId: actor.id,
@@ -45,6 +54,7 @@ export class MaterialsService {
         sizeBytes: file.buffer.length,
         tgFileId: stored.fileId,
         tgMessageId: stored.messageId,
+        tgChatId: stored.chatId,
       },
     });
     return this.toDto(row);
@@ -74,7 +84,13 @@ export class MaterialsService {
     });
     if (!file) throw new NotFoundException('Fayl topilmadi');
 
-    if (STAFF.includes(actor.role)) return file;
+    if (actor.role === 'SUPER_ADMIN') return file;
+    if (actor.role === 'ADMIN') {
+      // Admin faqat o'z maktabi fayllarini ko'radi
+      const uploader = await this.prisma.user.findUnique({ where: { id: file.uploaderId }, select: { organizationId: true } });
+      if (!actor.organizationId || uploader?.organizationId !== actor.organizationId) throw new ForbiddenException("Bu faylga ruxsat yo'q");
+      return file;
+    }
 
     // O'quvchi topshirig'idagi fayl: faqat o'zi, vazifa o'qituvchisi va admin ko'radi (boshqa o'quvchilar emas)
     if (file.submission) {
@@ -127,6 +143,10 @@ export class MaterialsService {
       throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");
     }
     const owner = file.assignment ? file.assignment.teacherId : file.uploaderId;
+    if (actor.role === 'ADMIN') {
+      const uploader = await this.prisma.user.findUnique({ where: { id: file.uploaderId }, select: { organizationId: true } });
+      if (!actor.organizationId || uploader?.organizationId !== actor.organizationId) throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");
+    }
     if (owner !== actor.id && !STAFF.includes(actor.role)) {
       throw new ForbiddenException("Bu faylni o'chirishga ruxsat yo'q");
     }
@@ -135,7 +155,7 @@ export class MaterialsService {
     // Boshqa material (ko'p guruhga nusxa) shu Telegram faylidan foydalanayotgan bo'lsa — kanal xabarini saqlab qolamiz
     if (file.tgMessageId) {
       const shared = await this.prisma.materialFile.count({ where: { tgFileId: file.tgFileId } });
-      if (shared === 0) await this.tg.remove(file.tgMessageId);
+      if (shared === 0) await this.tg.remove(file.tgMessageId, file.tgChatId);
     }
     return { ok: true };
   }
