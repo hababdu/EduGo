@@ -42,7 +42,7 @@ model Organization {
   /// Maktabning super adminga oylik obuna to'lovi (so'm). null = belgilanmagan.
   monthlyPlanFee Int?
   /// Maktabning YOPIQ Telegram kanali (-100…): maktab fayllari faqat shu yerda saqlanadi. Har maktabga alohida.
-  storageChatId String? @unique
+  storageChatId String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
