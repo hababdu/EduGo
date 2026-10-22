@@ -1,3 +1,4 @@
+import { SchoolBackupService } from './school-backup.service';
 import { Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -9,7 +10,9 @@ import { SuperAdminService } from './super-admin.service';
 @Roles('SUPER_ADMIN')
 @Controller('api/v1/super')
 export class SuperAdminController {
-  constructor(private readonly svc: SuperAdminService, private readonly billing: OrgBillingService) {}
+  constructor(private readonly svc: SuperAdminService, private readonly billing: OrgBillingService, private readonly backup: SchoolBackupService) {}
+
+  @Post('organizations/:id/backup') runBackup(@Param('id') id: string) { return this.backup.backup(id); }
 
   /** Maktab obunalari (maktab → super admin) */
   @Get('billing') billingOverview(@Query('month') month?: string) { return this.billing.overview(month); }

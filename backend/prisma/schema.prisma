@@ -43,6 +43,9 @@ model Organization {
   monthlyPlanFee Int?
   /// Maktabning YOPIQ Telegram kanali (-100…): maktab fayllari faqat shu yerda saqlanadi. Har maktabga alohida.
   storageChatId String?
+  /// Oxirgi zaxira (backup) vaqti va natijasi ("OK 123 KB" yoki xato matni)
+  lastBackupAt     DateTime?
+  lastBackupStatus String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 

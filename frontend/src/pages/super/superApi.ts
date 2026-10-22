@@ -78,6 +78,7 @@ export const sapi = {
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
+  backupOrg: (id: string) => apiFetch(`${b}/organizations/${id}/backup`, { method: 'POST' }),
   moveAdmin: (v: { userId: string; organizationId: string }) => apiFetch(`${b}/admins/${v.userId}/organization`, { method: 'PATCH', body: JSON.stringify({ organizationId: v.organizationId }) }),
   block: (v: { id: string; blocked: boolean }) => apiFetch(`${b}/users/${v.id}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: v.blocked }) }),
   saveAi: (v: { enabled?: boolean; limits?: Record<string, number>; primary?: AiProviderId; fallback?: AiProviderId | 'none'; models?: Partial<Record<AiProviderId, { fast?: string; smart?: string }>> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),
@@ -90,7 +91,7 @@ export interface BillingOverview {
   totals: { paid: number; waived: number; unpaid: number; collected: number; expected: number };
 }
 export interface OrgDetail {
-  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; createdAt: string };
+  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string };
   counts: { students: number; teachers: number; admins: number; groups: number };
   admins: { id: string; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
   teachers: { id: string; name: string; username: string | null; status: string }[];

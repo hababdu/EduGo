@@ -66,7 +66,7 @@ export class SuperAdminService {
       select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, organizationId: true },
     });
     return orgs.map((o) => ({
-      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId,
+      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId, lastBackupAt: o.lastBackupAt, lastBackupStatus: o.lastBackupStatus,
       users: o._count.users, groups: o._count.groups,
       admins: admins.filter((a) => a.organizationId === o.id).map((a) => ({ id: a.id, name: nameOf(a), username: a.username, telegramId: a.telegramId })),
     }));
@@ -131,7 +131,7 @@ export class SuperAdminService {
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
-      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId, createdAt: org.createdAt },
+      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId, lastBackupAt: org.lastBackupAt, lastBackupStatus: org.lastBackupStatus, createdAt: org.createdAt },
       counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
       admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
       teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),

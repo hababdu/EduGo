@@ -5,13 +5,14 @@ import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE } from '../../design/tokens';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
-import { useOrgDetail, when } from './superApi';
+import { sapi, useOrgDetail, useSuperMutation, when } from './superApi';
 
 const SUB = { PAID: ["To'lagan", 'bg-teal/15 text-teal'], WAIVED: ['Imtiyoz', 'bg-sky/15 text-sky'], UNPAID: ["To'lamagan", 'bg-coral/15 text-coral'] } as const;
 
 /** Maktab ichi — super admin uchun FAQAT KO'RISH. O'zgartirishni maktab admini qiladi. */
 export function SuperOrgDetail() {
   const { id = '' } = useParams();
+  const backup = useSuperMutation(sapi.backupOrg, 'Zaxira kanalga yuborildi');
   const { data: d, isLoading, error } = useOrgDetail(id);
 
   return (
@@ -34,6 +35,12 @@ export function SuperOrgDetail() {
           <div className="rounded-2xl border border-tint/10 bg-surface/40 px-4 py-3 text-xs">
             <span className="text-ink-muted">Yopiq kanal: </span>
             {d.org.storageChatId ? <span className="font-semibold text-teal">biriktirilgan ({d.org.storageChatId})</span> : <span className="font-semibold text-coral">biriktirilmagan</span>}
+            {d.org.storageChatId && (
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <span className="text-ink-muted">Zaxira: {d.org.lastBackupAt ? `${when(d.org.lastBackupAt)} · ${d.org.lastBackupStatus ?? ''}` : 'hali olinmagan'}</span>
+                <button disabled={backup.isPending} onClick={() => backup.mutate(d.org.id)} className="rounded-lg bg-teal/15 px-3 py-1 font-semibold text-teal disabled:opacity-50">{backup.isPending ? 'Yuborilmoqda…' : 'Zaxira olish'}</button>
+              </div>
+            )}
           </div>
 
           <Panel title="Obuna (maktab → siz)" icon={Banknote} accent="gold">
