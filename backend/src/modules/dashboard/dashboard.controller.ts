@@ -22,6 +22,11 @@ export class DashboardController {
     return this.dashboardService.getMyActivity(user.id, days ? Number(days) : undefined);
   }
 
+  @Get('standing')
+  getMyStanding(@CurrentUser() user: CurrentUserPayload) {
+    return this.dashboardService.myStanding(user.id);
+  }
+
   @Get('tasks')
   getMyTasks(@CurrentUser() user: CurrentUserPayload) {
     return this.dashboardService.myTasks(user.id);

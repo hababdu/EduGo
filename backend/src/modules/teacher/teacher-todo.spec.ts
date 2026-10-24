@@ -46,3 +46,39 @@ describe('DashboardService.myTasks', () => {
     expect(r[1]).toMatchObject({ state: 'GRADED', score: 80 });
   });
 });
+
+describe('DashboardService.myStanding', () => {
+  it('davomat foizi va oylik to\'lov holatini hisoblaydi', async () => {
+    const prisma: any = {
+      groupMember: { findMany: jest.fn().mockResolvedValue([
+        { group: { id: 'g1', name: 'A', monthlyFee: 100000 } },
+        { group: { id: 'g2', name: 'B', monthlyFee: null } },
+      ]) },
+      attendanceRecord: { findMany: jest.fn().mockResolvedValue([
+        { groupId: 'g1', status: 'PRESENT' }, { groupId: 'g1', status: 'ABSENT' },
+      ]) },
+      payment: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const svc = new (DashboardService as any)(prisma);
+    const r = await svc.myStanding('s1');
+    expect(r[0]).toMatchObject({ groupId: 'g1', attendancePct: 50, absent: 1, payment: 'UNPAID' });
+    expect(r[1]).toMatchObject({ attendancePct: null, payment: 'NONE' });
+  });
+});
+
+describe('TeacherService.getGroupSubmissionStats', () => {
+  it("faqat o'z guruhi uchun, topshirilgan va baholanganlarni sanaydi", async () => {
+    const prisma: any = {
+      group: { findFirst: jest.fn().mockResolvedValue({ id: 'g1', _count: { members: 5 } }) },
+      teacherAssignment: { findMany: jest.fn().mockResolvedValue([
+        { id: 'a', title: 'HW', dueAt: null, submissions: [{ status: 'GRADED', teacherScore: null }, { status: 'NEEDS_REVIEW', teacherScore: null }, { status: 'SUBMITTED', teacherScore: 7 }] },
+      ]) },
+    };
+    const svc = new TeacherService(prisma, {} as any, {} as any, {} as any);
+    const r = await svc.getGroupSubmissionStats('t1', 'g1');
+    expect(r[0]).toMatchObject({ total: 5, submitted: 3, graded: 2 });
+    expect(prisma.group.findFirst.mock.calls[0][0].where.teacherId).toBe('t1');
+    prisma.group.findFirst.mockResolvedValue(null);
+    await expect(svc.getGroupSubmissionStats('t2', 'g1')).rejects.toThrow();
+  });
+});

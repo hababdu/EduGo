@@ -303,6 +303,29 @@ export class TeacherService {
     });
   }
 
+  /** Guruh vazifalari bo'yicha topshirish statistikasi (faqat o'z guruhi). */
+  async getGroupSubmissionStats(teacherId: string, groupId: string) {
+    const group = await this.prisma.group.findFirst({
+      where: { id: groupId, teacherId, deletedAt: null },
+      select: { id: true, _count: { select: { members: true } } },
+    });
+    if (!group) throw new NotFoundException('Guruh topilmadi');
+    const assignments = await this.prisma.teacherAssignment.findMany({
+      where: { groupId, deletedAt: null, status: 'PUBLISHED', category: 'HOMEWORK' },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      select: { id: true, title: true, dueAt: true, submissions: { select: { status: true, teacherScore: true } } },
+    });
+    return assignments.map((a) => ({
+      id: a.id,
+      title: a.title,
+      dueAt: a.dueAt,
+      total: group._count.members,
+      submitted: a.submissions.length,
+      graded: a.submissions.filter((x) => x.status === 'GRADED' || x.teacherScore != null).length,
+    }));
+  }
+
   async getMyGroup(teacherId: string, groupId: string) {
     const group = await this.prisma.group.findFirst({
       where: { id: groupId, teacherId, deletedAt: null },

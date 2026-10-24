@@ -1,4 +1,5 @@
 // src/pages/teacher/TeacherGroupDetail.tsx
+import { SubmissionStats } from '../../components/staff/SubmissionStats';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -302,6 +303,8 @@ export function TeacherGroupDetail() {
         ))}
 
       {/* Tab: Materials */}
+      {tab === 'materials' && <SubmissionStats groupId={groupId} />}
+
       {tab === 'materials' &&
         (assignmentsLoading ? (
           <div className="space-y-2">

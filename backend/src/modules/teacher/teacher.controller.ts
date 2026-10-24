@@ -49,6 +49,11 @@ export class TeacherController {
     return this.teacherService.getMyGroup(user.id, groupId);
   }
 
+  @Get('groups/:groupId/submission-stats')
+  getSubmissionStats(@Param('groupId') groupId: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.teacherService.getGroupSubmissionStats(user.id, groupId);
+  }
+
   @Get('groups/:groupId/students')
   getGroupStudents(
     @Param('groupId') groupId: string,

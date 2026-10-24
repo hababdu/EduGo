@@ -151,6 +151,36 @@ export class DashboardService {
     };
   }
 
+  /** O'quvchining guruhlari bo'yicha davomat (30 kun) va shu oy to'lov holati. */
+  async myStanding(studentId: string) {
+    const tz = new Date(Date.now() + 5 * 3_600_000);
+    const month = tz.toISOString().slice(0, 7);
+    const since = new Date(tz.getTime() - 30 * 86_400_000);
+    since.setUTCHours(0, 0, 0, 0);
+    const memberships = await this.prisma.groupMember.findMany({
+      where: { studentId, group: { deletedAt: null } },
+      select: { group: { select: { id: true, name: true, monthlyFee: true } } },
+    });
+    if (memberships.length === 0) return [];
+    const groupIds = memberships.map((m) => m.group.id);
+    const [att, pays] = await Promise.all([
+      this.prisma.attendanceRecord.findMany({ where: { studentId, groupId: { in: groupIds }, date: { gte: since } }, select: { groupId: true, status: true } }),
+      this.prisma.payment.findMany({ where: { studentId, groupId: { in: groupIds }, month }, select: { groupId: true, status: true } }),
+    ]);
+    return memberships.map(({ group: g }) => {
+      const mine = att.filter((a) => a.groupId === g.id);
+      const present = mine.filter((a) => a.status === 'PRESENT').length;
+      const pay = pays.find((p) => p.groupId === g.id);
+      return {
+        groupId: g.id, groupName: g.name,
+        attendancePct: mine.length ? Math.round((present * 100) / mine.length) : null,
+        lessons: mine.length, absent: mine.filter((a) => a.status === 'ABSENT').length,
+        fee: g.monthlyFee, month,
+        payment: g.monthlyFee == null && !pay ? 'NONE' : pay ? pay.status : 'UNPAID',
+      };
+    });
+  }
+
   /** O'quvchining vazifalari: topshirilmagan (muddati bo'yicha), keyin topshirilgan/baholangan. */
   async myTasks(studentId: string) {
     const memberships = await this.prisma.groupMember.findMany({ where: { studentId }, select: { groupId: true } });
