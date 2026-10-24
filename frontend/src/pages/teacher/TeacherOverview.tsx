@@ -6,6 +6,7 @@ import { apiFetch } from '../../lib/api-client';
 import { useTelegram } from '../../hooks/useTelegram';
 import { ListRow, EmptyState, Skeleton, CardList } from '../../components/ui';
 import { StaffHero, Panel, PanelLink, KpiCard, MiniBars, Avatar, TodayLessons } from '../../components/staff';
+import { TeacherTodo } from '../../components/staff/TeacherTodo';
 import { IMAGES } from '../../design/images';
 import {
   Users,
@@ -128,6 +129,8 @@ export function TeacherOverview() {
       </div>
 
       <TodayLessons basePath="/teacher/groups" openAttendanceTab />
+
+      <TeacherTodo />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Panel title="Oxirgi 7 kun faolligi" icon={BarChart3} accent="gold" className="lg:col-span-3">

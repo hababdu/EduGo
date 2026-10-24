@@ -30,6 +30,11 @@ export class TeacherController {
     return this.teacherService.getOverview(user.id);
   }
 
+  @Get('todo')
+  getTodo(@CurrentUser() user: CurrentUserPayload) {
+    return this.teacherService.getTodo(user.id);
+  }
+
   /* ============ GROUPS ============ */
   @Get('groups')
   listMyGroups(@CurrentUser() user: CurrentUserPayload) {

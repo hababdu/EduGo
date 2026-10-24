@@ -26,6 +26,66 @@ export class TeacherService {
   ) {}
 
   /* ============================================================
+     TODO — o'qituvchining bugungi ishi: baholash navbati va e'tibor talab qiladiganlar
+     ============================================================ */
+  async getTodo(teacherId: string) {
+    const since = new Date(Date.now() + 5 * 3_600_000 - 30 * 86_400_000);
+    since.setUTCHours(0, 0, 0, 0);
+
+    const [pending, records] = await Promise.all([
+      this.prisma.assignmentSubmission.findMany({
+        where: {
+          status: { in: ['NEEDS_REVIEW', 'FAILED'] },
+          teacherScore: null,
+          assignment: { teacherId, deletedAt: null },
+        },
+        select: { assignment: { select: { id: true, title: true, group: { select: { id: true, name: true } } } } },
+        take: 500,
+      }),
+      this.prisma.attendanceRecord.findMany({
+        where: { date: { gte: since }, group: { teacherId, deletedAt: null } },
+        select: {
+          groupId: true,
+          studentId: true,
+          status: true,
+          group: { select: { name: true } },
+          student: { select: { firstName: true, lastName: true, deletedAt: true } },
+        },
+        take: 20000,
+      }),
+    ]);
+
+    const byAssignment = new Map<string, { assignmentId: string; title: string; groupId: string; groupName: string; pending: number }>();
+    for (const sub of pending) {
+      const a = sub.assignment;
+      const row = byAssignment.get(a.id) ?? { assignmentId: a.id, title: a.title, groupId: a.group.id, groupName: a.group.name, pending: 0 };
+      row.pending++;
+      byAssignment.set(a.id, row);
+    }
+    const toGrade = [...byAssignment.values()].sort((x, y) => y.pending - x.pending);
+
+    const agg = new Map<string, { groupId: string; groupName: string; studentId: string; name: string; present: number; total: number; absent: number }>();
+    for (const r of records) {
+      if (r.student.deletedAt) continue;
+      const k = `${r.groupId}:${r.studentId}`;
+      const row =
+        agg.get(k) ??
+        { groupId: r.groupId, groupName: r.group.name, studentId: r.studentId, name: `${r.student.firstName} ${r.student.lastName ?? ''}`.trim(), present: 0, total: 0, absent: 0 };
+      row.total++;
+      if (r.status === 'PRESENT') row.present++;
+      if (r.status === 'ABSENT') row.absent++;
+      agg.set(k, row);
+    }
+    const atRisk = [...agg.values()]
+      .filter((r) => r.total >= 3 && (r.present * 100) / r.total < 70)
+      .map((r) => ({ ...r, attendancePct: Math.round((r.present * 100) / r.total) }))
+      .sort((a, b) => a.attendancePct - b.attendancePct)
+      .slice(0, 8);
+
+    return { toGradeTotal: pending.length, toGrade: toGrade.slice(0, 8), atRisk };
+  }
+
+  /* ============================================================
      OVERVIEW
      ============================================================ */
   async getOverview(teacherId: string) {

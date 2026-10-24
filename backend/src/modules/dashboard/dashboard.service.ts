@@ -151,6 +151,36 @@ export class DashboardService {
     };
   }
 
+  /** O'quvchining vazifalari: topshirilmagan (muddati bo'yicha), keyin topshirilgan/baholangan. */
+  async myTasks(studentId: string) {
+    const memberships = await this.prisma.groupMember.findMany({ where: { studentId }, select: { groupId: true } });
+    const groupIds = memberships.map((m) => m.groupId);
+    if (groupIds.length === 0) return [];
+    const items = await this.prisma.teacherAssignment.findMany({
+      where: { groupId: { in: groupIds }, deletedAt: null, status: 'PUBLISHED', category: 'HOMEWORK' },
+      orderBy: { createdAt: 'desc' },
+      take: 40,
+      select: {
+        id: true, title: true, dueAt: true, maxScore: true, group: { select: { id: true, name: true } },
+        submissions: { where: { studentId }, select: { status: true, aiScore: true, teacherScore: true } },
+      },
+    });
+    const now = Date.now();
+    const rows = items.map((a) => {
+      const sub = a.submissions[0];
+      const score = sub ? (sub.teacherScore ?? sub.aiScore ?? null) : null;
+      const state = !sub ? 'PENDING' : sub.status === 'GRADED' || sub.teacherScore != null ? 'GRADED' : 'SUBMITTED';
+      return {
+        id: a.id, title: a.title, groupId: a.group.id, groupName: a.group.name, dueAt: a.dueAt, maxScore: a.maxScore,
+        state, score, overdue: state === 'PENDING' && !!a.dueAt && a.dueAt.getTime() < now,
+      };
+    });
+    const rank = (r: { state: string; dueAt: Date | null }) => (r.state === 'PENDING' ? 0 : 1);
+    return rows
+      .sort((x, y) => rank(x) - rank(y) || (x.dueAt?.getTime() ?? Infinity) - (y.dueAt?.getTime() ?? Infinity))
+      .slice(0, 12);
+  }
+
   /* ============================================================
      LIST MY ASSIGNMENTS — faqat o'z guruhlariga tegishli materiallar
      ============================================================ */

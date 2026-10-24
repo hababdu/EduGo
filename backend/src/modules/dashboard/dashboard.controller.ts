@@ -22,6 +22,11 @@ export class DashboardController {
     return this.dashboardService.getMyActivity(user.id, days ? Number(days) : undefined);
   }
 
+  @Get('tasks')
+  getMyTasks(@CurrentUser() user: CurrentUserPayload) {
+    return this.dashboardService.myTasks(user.id);
+  }
+
   /** Barcha materiallar — student a'zo bo'lgan guruhlarga tegishli */
   @Get('assignments')
   async getMyAssignments(@CurrentUser() user: CurrentUserPayload) {

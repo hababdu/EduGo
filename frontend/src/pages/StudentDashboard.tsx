@@ -9,6 +9,7 @@ import { ScoreHero } from '../components/dashboard/ScoreHero';
 import { BackdropImage } from '../components/ui/BackdropImage';
 import { IMAGES } from '../design/images';
 import { StatChips } from '../components/dashboard/StatChips';
+import { StudentToday } from '../components/dashboard/StudentToday';
 import { DailyChallengeCard } from '../components/dashboard/DailyChallengeCard';
 import { ContinueLearningCard } from '../components/dashboard/ContinueLearningCard';
 import { AchievementsRow } from '../components/dashboard/AchievementsRow';
@@ -226,6 +227,8 @@ export function StudentDashboard() {
           navigate('/ranking');
         }}
       />
+
+      <StudentToday />
 
       {/* ============ DAILY CHALLENGE ============ */}
       <DailyChallengeCard />
