@@ -5,6 +5,7 @@ import { MyPaymentsCard } from '../../components/group/MyPaymentsCard';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { CapacityBar } from '../../components/group/CapacityBar';
 import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
+import { LessonLogPanel } from '../../components/group/LessonLogPanel';
 import { MyAttendanceCard } from '../../components/group/MyAttendanceCard';
 import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -202,6 +203,7 @@ export function GroupDetailPage() {
         </div>
       )}
       <MyAttendanceCard groupId={group.id} />
+      <LessonLogPanel groupId={group.id} canEdit={false} />
       <MyPaymentsCard groupId={group.id} />
 
       {/* ============ MEMBERS ============ */}

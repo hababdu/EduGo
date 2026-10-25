@@ -197,6 +197,7 @@ model Group {
   teacherAssignments TeacherAssignment[]
   attendance         AttendanceRecord[]
   payments           Payment[]
+  lessonLogs         LessonLog[]
 
   @@index([teacherId])
   @@index([assistantId])
@@ -227,6 +228,23 @@ enum AttendanceStatus {
   PRESENT // kelgan
   ABSENT // kelmagan
   EXCUSED // sababli
+}
+
+/// Dars jurnali: guruhning bir kunlik darsi — o'tilgan mavzu va uyga vazifa
+model LessonLog {
+  id          String   @id @default(cuid())
+  groupId     String
+  date        DateTime @db.Date // Toshkent kuni
+  topic       String
+  homework    String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, date])
+  @@index([groupId, date])
 }
 
 model AttendanceRecord {

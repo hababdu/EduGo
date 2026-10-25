@@ -6,13 +6,15 @@ import { AttendanceService } from './attendance.service';
 import { ScheduleService } from './schedule.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
+import { LessonLogController } from './lesson-log.controller';
+import { LessonLogService } from './lesson-log.service';
 import { LessonReminderService } from './lesson-reminder.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [NotificationsModule],
-  controllers: [GroupsController, AttendanceController, PaymentsController],
-  providers: [GroupsService, AttendanceService, ScheduleService, PaymentsService, LessonReminderService],
+  controllers: [GroupsController, AttendanceController, PaymentsController, LessonLogController],
+  providers: [GroupsService, AttendanceService, ScheduleService, PaymentsService, LessonReminderService, LessonLogService],
   exports: [GroupsService, AttendanceService, ScheduleService, PaymentsService],
 })
 export class GroupsModule {}

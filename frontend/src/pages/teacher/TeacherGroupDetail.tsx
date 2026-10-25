@@ -1,4 +1,5 @@
 // src/pages/teacher/TeacherGroupDetail.tsx
+import { LessonLogPanel } from '../../components/group/LessonLogPanel';
 import { SubmissionStats } from '../../components/staff/SubmissionStats';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
 import { useState, useEffect, useMemo } from 'react';
@@ -243,7 +244,12 @@ export function TeacherGroupDetail() {
       </div>
 
       {/* Tab: Attendance */}
-      {tab === 'attendance' && <AttendancePanel groupId={groupId} />}
+      {tab === 'attendance' && (
+        <>
+          <AttendancePanel groupId={groupId} />
+          <LessonLogPanel groupId={groupId} canEdit />
+        </>
+      )}
 
       {/* Tab: Students */}
       {tab === 'students' &&

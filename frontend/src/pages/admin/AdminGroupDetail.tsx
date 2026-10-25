@@ -18,6 +18,7 @@ import { toast } from '../../components/ui/Toast';
 import { CapacityBar } from '../../components/group/CapacityBar';
 import { TelegramLinkButton } from '../../components/group/TelegramLinkButton';
 import { GroupSettingsForm } from '../../components/group/GroupSettingsForm';
+import { LessonLogPanel } from '../../components/group/LessonLogPanel';
 import { AttendancePanel } from '../../components/group/AttendancePanel';
 import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
 import { EmptyState, Skeleton } from '../../components/ui';
@@ -374,7 +375,10 @@ export function AdminGroupDetail() {
 
       {/* ============ DAVOMAT ============ */}
       <Panel title="Davomat" icon={ClipboardCheck} accent="sky">
-        <AttendancePanel groupId={id} />
+        <>
+          <AttendancePanel groupId={id} />
+          <LessonLogPanel groupId={id} canEdit />
+        </>
       </Panel>
 
       {/* ============ STUDENTS LIST ============ */}
