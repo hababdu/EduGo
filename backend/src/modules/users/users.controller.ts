@@ -4,20 +4,34 @@ import {
   Patch,
   Param,
   Body,
+  Post,
   ForbiddenException,
 } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import { PrivacyService } from './privacy.service';
 import { UsersService } from './users.service';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 
 @Controller('api/v1/users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService, private readonly privacy: PrivacyService) {}
 
   /** Har doim TOKEN'dagi id orqali — bu eng xavfsiz "o'zim" endpointi */
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload) {
     return this.usersService.getProfileFor(user.id, user);
+  }
+
+  /** O'z ma'lumotlarini yuklab olish (JSON) */
+  @Get('me/export')
+  exportMe(@CurrentUser() user: CurrentUserPayload) {
+    return this.privacy.exportMine(user);
+  }
+
+  /** Hisobni o'chirish (anonimlashtirish). Body: { confirm: "DELETE" } */
+  @Post('me/delete')
+  deleteMe(@CurrentUser() user: CurrentUserPayload, @Body() body: { confirm?: string }) {
+    return this.privacy.deleteMine(user, body?.confirm);
   }
 
   /**

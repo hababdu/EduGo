@@ -26,6 +26,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { UploadModule } from './modules/upload/upload.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { AiModule } from './modules/ai/ai.module';
+import { HealthModule } from './modules/health/health.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
@@ -57,6 +58,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     SuperAdminModule,
     ParentsModule,
     CertificatesModule,
+    HealthModule,
     SubmissionsModule,
   ],
   providers: [

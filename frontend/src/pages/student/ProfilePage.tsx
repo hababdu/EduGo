@@ -5,6 +5,7 @@ import { SoundToggle } from '../../components/layout/Effects';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
+import { PrivacyCard } from '../../components/profile/PrivacyCard';
 import { MyCertificates } from '../../components/profile/MyCertificates';
 import { ParentInviteCard } from '../../components/group/ParentInviteCard';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -163,6 +164,8 @@ export function ProfilePage() {
       <MyCertificates />
 
       <ParentInviteCard />
+
+      <PrivacyCard />
 
       {activity && <ActivityMatrix days={activity.days} activeDays={activity.activeDays} />}
 

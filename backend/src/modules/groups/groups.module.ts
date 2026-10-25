@@ -8,6 +8,8 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { LessonLogController } from './lesson-log.controller';
 import { LessonLogService } from './lesson-log.service';
+import { InsightsController } from './insights.controller';
+import { InsightsService } from './insights.service';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 import { InactivityReminderService } from './inactivity-reminder.service';
@@ -17,8 +19,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [NotificationsModule],
-  controllers: [GroupsController, AttendanceController, PaymentsController, LessonLogController, ReportsController],
-  providers: [GroupsService, AttendanceService, ScheduleService, PaymentsService, LessonReminderService, LessonLogService, PaymentReminderService, ReportsService, InactivityReminderService],
+  controllers: [GroupsController, AttendanceController, PaymentsController, LessonLogController, ReportsController, InsightsController],
+  providers: [GroupsService, AttendanceService, ScheduleService, PaymentsService, LessonReminderService, LessonLogService, PaymentReminderService, ReportsService, InsightsService, InactivityReminderService],
   exports: [GroupsService, AttendanceService, ScheduleService, PaymentsService],
 })
 export class GroupsModule {}

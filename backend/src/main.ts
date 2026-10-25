@@ -48,6 +48,19 @@ async function bootstrap() {
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
 
+  // Sekin so'rovlarni logga yozish (monitoring): 1.5 s dan oshganlar
+  app.use((req: any, res: any, next: () => void) => {
+    const t0 = Date.now();
+    res.on('finish', () => {
+      const ms = Date.now() - t0;
+      if (ms > 1500 && !String(req.originalUrl).startsWith('/api/v1/health')) {
+        // eslint-disable-next-line no-console
+        console.warn(`[slow] ${req.method} ${String(req.originalUrl).split('?')[0]} ${res.statusCode} ${ms}ms`);
+      }
+    });
+    next();
+  });
+
   // ✅ Uploads papka avtomatik yaratish — ENG MUHIM QADAM
   const uploadsDir = ensureUploadsDir();
 

@@ -3,6 +3,7 @@ import { Wallet, Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Lay
 import { useAdminOverview, useMySubscription } from '../../hooks/useAdmin';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
 import { IMAGES } from '../../design/images';
+import { AdminInsights } from '../../components/staff/AdminInsights';
 import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
@@ -87,6 +88,8 @@ export function AdminOverview() {
       </div>
 
       <TodayLessons basePath="/admin/groups" />
+
+      <AdminInsights />
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>
