@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Put, ForbiddenException, Bad
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
-import { ReviewSubmissionDto, SubmitHomeworkDto } from './dto/submissions.dto';
+import { ReturnSubmissionDto, ReviewSubmissionDto, SubmitHomeworkDto } from './dto/submissions.dto';
 import { SubmissionGradingService } from './submission-grading.service';
 import { SubmissionsService } from './submissions.service';
 
@@ -38,6 +38,12 @@ export class SubmissionsController {
   @Patch(':id/review')
   review(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: ReviewSubmissionDto) {
     return this.svc.review(u, id, dto);
+  }
+
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Patch(':id/return')
+  returnIt(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: ReturnSubmissionDto) {
+    return this.svc.returnForFix(u, id, dto);
   }
 
   @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')

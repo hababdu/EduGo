@@ -6,7 +6,7 @@ import { formatTime, useTodayLessons } from '../../hooks/useSchedule';
 
 interface Task {
   id: string; title: string; groupId: string; groupName: string; dueAt: string | null; maxScore: number;
-  state: 'PENDING' | 'SUBMITTED' | 'GRADED'; score: number | null; overdue: boolean;
+  state: 'PENDING' | 'SUBMITTED' | 'GRADED' | 'RETURNED'; score: number | null; overdue: boolean;
 }
 
 interface Standing {
@@ -31,7 +31,8 @@ export function StudentToday() {
   if (todays.length === 0 && list.length === 0 && st.length === 0) return null;
 
   const badge = (t: Task) =>
-    t.state === 'GRADED' ? { text: `${t.score ?? '—'}/${t.maxScore}`, cls: 'bg-teal/15 text-teal' }
+    t.state === 'RETURNED' ? { text: 'Qaytarildi', cls: 'bg-coral/15 text-coral' }
+    : t.state === 'GRADED' ? { text: `${t.score ?? '—'}/${t.maxScore}`, cls: 'bg-teal/15 text-teal' }
     : t.state === 'SUBMITTED' ? { text: 'Topshirildi', cls: 'bg-sky/15 text-sky' }
     : t.overdue ? { text: "Muddati o'tgan", cls: 'bg-coral/15 text-coral' }
     : { text: 'Topshiring', cls: 'bg-gold/15 text-gold' };

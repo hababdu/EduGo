@@ -1,10 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
+import { assertSameOrg } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MaterialsService } from '../materials/materials.service';
 import { TelegramStorageService } from '../materials/telegram-storage.service';
-import { ReviewSubmissionDto, SubmitHomeworkDto } from './dto/submissions.dto';
+import { ReturnSubmissionDto, ReviewSubmissionDto, SubmitHomeworkDto } from './dto/submissions.dto';
 
 const STAFF = ['ADMIN', 'SUPER_ADMIN'];
 
@@ -21,6 +22,7 @@ type SubmissionRow = {
   teacherScore: number | null;
   teacherFeedback: string | null;
   gradeError?: string | null;
+  returnNote?: string | null;
   files?: { id: string; kind: string; fileName: string; mimeType: string; sizeBytes: number; order: number }[];
 };
 
@@ -59,6 +61,20 @@ export class SubmissionsService {
     return { ok: true as const, reason: null };
   }
 
+  /** O'qituvchi — o'z vazifasi; admin — faqat o'z maktabi; super admin — hammasi. */
+  private assertStaff(user: CurrentUserPayload, a: { teacherId: string; group?: { organizationId: string | null } | null }) {
+    if (user.role === 'ADMIN') return assertSameOrg(user, a.group?.organizationId ?? null);
+    if (user.role === 'SUPER_ADMIN') return;
+    if (a.teacherId !== user.id) throw new ForbiddenException("Ruxsat yo'q");
+  }
+
+  /** Qaytarilgan topshiriq: muddat/baholash yopilgan bo'lsa ham, vazifa e'lon qilingan bo'lsa qayta topshirish mumkin. */
+  private canResubmit(a: { status: string; category: string }, subStatus?: string) {
+    if (subStatus !== 'RETURNED') return null;
+    if (a.category !== 'HOMEWORK' || a.status !== 'PUBLISHED') return { ok: false, reason: 'Vazifa yopilgan' };
+    return { ok: true as const, reason: null };
+  }
+
   private async assertMember(studentId: string, groupId: string) {
     const m = await this.prisma.groupMember.findFirst({ where: { studentId, groupId }, select: { id: true } });
     if (!m) throw new ForbiddenException("Siz bu guruhga a'zo emassiz");
@@ -85,6 +101,7 @@ export class SubmissionsService {
       improvements: graded && !s.teacherFeedback ? s.aiImprovements : [],
       gradedBy: graded ? (s.teacherScore !== null ? 'TEACHER' : 'AI') : null,
       gradedAt: s.gradedAt,
+      returnNote: s.status === 'RETURNED' ? s.returnNote ?? null : null,
     };
   }
 
@@ -97,7 +114,7 @@ export class SubmissionsService {
       where: { assignmentId_studentId: { assignmentId, studentId: user.id } },
       include: { files: { orderBy: { order: 'asc' } } },
     });
-    const can = this.canSubmitNow(a);
+    const can = this.canResubmit(a, sub?.status) ?? this.canSubmitNow(a);
     return {
       assignment: { id: a.id, title: a.title, dueAt: a.dueAt, maxScore: a.maxScore, gradingStatus: a.gradingStatus },
       canSubmit: can.ok,
@@ -109,8 +126,13 @@ export class SubmissionsService {
   async submit(user: CurrentUserPayload, assignmentId: string, dto: SubmitHomeworkDto) {
     const a = await this.loadHomework(assignmentId);
     await this.assertMember(user.id, a.groupId);
-    const can = this.canSubmitNow(a);
+    const prev = await this.prisma.assignmentSubmission.findUnique({
+      where: { assignmentId_studentId: { assignmentId, studentId: user.id } },
+      select: { status: true },
+    });
+    const can = this.canResubmit(a, prev?.status) ?? this.canSubmitNow(a);
     if (!can.ok) throw new ForbiddenException(can.reason);
+    const wasReturned = prev?.status === 'RETURNED';
 
     const text = dto.textAnswer?.trim() || null;
     const fileIds = Array.from(new Set(dto.fileIds ?? []));
@@ -139,7 +161,18 @@ export class SubmissionsService {
       const row = existing
         ? await tx.assignmentSubmission.update({
             where: { id: existing.id },
-            data: { textAnswer: text, status: 'SUBMITTED', submittedAt: new Date() },
+            data: wasReturned
+              ? {
+                  textAnswer: text,
+                  // Baholash allaqachon yopilgan bo'lsa — AI kutmay, o'qituvchi ko'radi
+                  status: a.gradingStatus === 'PENDING' ? 'SUBMITTED' : 'NEEDS_REVIEW',
+                  submittedAt: new Date(),
+                  aiScore: null, aiFeedback: null, aiStrengths: [], aiImprovements: [], aiModel: null,
+                  gradeAttempts: 0, gradeError: null, gradedAt: null,
+                  teacherScore: null, teacherFeedback: null, reviewedAt: null,
+                  returnNote: null, returnedAt: null,
+                }
+              : { textAnswer: text, status: 'SUBMITTED', submittedAt: new Date() },
           })
         : await tx.assignmentSubmission.create({
             data: { assignmentId, studentId: user.id, textAnswer: text },
@@ -225,10 +258,10 @@ export class SubmissionsService {
   async review(user: CurrentUserPayload, submissionId: string, dto: ReviewSubmissionDto) {
     const sub = await this.prisma.assignmentSubmission.findUnique({
       where: { id: submissionId },
-      include: { assignment: { select: { id: true, title: true, teacherId: true, maxScore: true, deletedAt: true } } },
+      include: { assignment: { select: { id: true, title: true, teacherId: true, maxScore: true, deletedAt: true, group: { select: { organizationId: true } } } } },
     });
     if (!sub || sub.assignment.deletedAt) throw new NotFoundException('Topshiriq topilmadi');
-    if (!STAFF.includes(user.role) && sub.assignment.teacherId !== user.id) throw new ForbiddenException('Ruxsat yo\'q');
+    this.assertStaff(user, sub.assignment);
     if (dto.score > sub.assignment.maxScore) throw new BadRequestException(`Ball ${sub.assignment.maxScore} dan oshmasin`);
 
     await this.prisma.assignmentSubmission.update({
@@ -248,6 +281,23 @@ export class SubmissionsService {
         '📝 Vazifangiz baholandi',
         `"${sub.assignment.title}": ${dto.score}/${sub.assignment.maxScore} (o'qituvchi bahosi)`,
       )
+      .catch(() => undefined);
+    return { ok: true };
+  }
+  /** O'qituvchi topshiriqni tuzatish uchun qaytaradi (izoh majburiy); o'quvchiga xabar boradi. */
+  async returnForFix(user: CurrentUserPayload, submissionId: string, dto: ReturnSubmissionDto) {
+    const sub = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      include: { assignment: { select: { id: true, title: true, teacherId: true, deletedAt: true, group: { select: { organizationId: true } } } } },
+    });
+    if (!sub || sub.assignment.deletedAt) throw new NotFoundException('Topshiriq topilmadi');
+    this.assertStaff(user, sub.assignment);
+    await this.prisma.assignmentSubmission.update({
+      where: { id: submissionId },
+      data: { status: 'RETURNED', returnNote: dto.note.trim(), returnedAt: new Date() },
+    });
+    await this.notifications
+      .notify(sub.studentId, 'TEST_RESULT', '↩️ Vazifa tuzatish uchun qaytarildi', `"${sub.assignment.title}": ${dto.note.trim().slice(0, 200)}`)
       .catch(() => undefined);
     return { ok: true };
   }

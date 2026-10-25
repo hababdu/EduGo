@@ -27,6 +27,7 @@ const STATUS: Record<string, { l: string; c: string }> = {
   GRADED: { l: 'Baholandi', c: 'bg-teal/15 text-teal' },
   NEEDS_REVIEW: { l: 'Tekshirish kerak', c: 'bg-gold/15 text-gold' },
   FAILED: { l: 'AI xatosi', c: 'bg-coral/15 text-coral' },
+  RETURNED: { l: 'Qaytarilgan', c: 'bg-coral/15 text-coral' },
 };
 
 function Review({ row, max, onDone }: { row: Row; max: number; onDone: () => void }) {
@@ -42,6 +43,13 @@ function Review({ row, max, onDone }: { row: Row; max: number; onDone: () => voi
     onSuccess: () => { toast('success', 'Saqlandi'); onDone(); },
     onError: (e: any) => toast('error', e?.message || 'Xatolik'),
   });
+  const [ret, setRet] = useState(false);
+  const [note, setNote] = useState('');
+  const back = useMutation({
+    mutationFn: () => apiFetch(`/api/v1/submissions/${s.id}/return`, { method: 'PATCH', body: JSON.stringify({ note: note.trim() }) }),
+    onSuccess: () => { toast('success', "Tuzatish uchun qaytarildi"); onDone(); },
+    onError: (e: any) => toast('error', e?.message || 'Xatolik'),
+  });
   const n = Number(score);
   const ok = score !== '' && Number.isInteger(n) && n >= 0 && n <= max;
   const cls = 'bg-surface/60 rounded-xl px-3 py-2 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50';
@@ -54,6 +62,18 @@ function Review({ row, max, onDone }: { row: Row; max: number; onDone: () => voi
           Saqlash
         </button>
       </div>
+      {s.status !== 'RETURNED' && (
+        <div className="space-y-2">
+          {!ret ? (
+            <button type="button" onClick={() => setRet(true)} className="text-xs font-semibold text-coral">↩️ Tuzatish uchun qaytarish</button>
+          ) : (
+            <div className="flex gap-2">
+              <input value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} placeholder="Nimani tuzatish kerak?" className={`${cls} flex-1 min-w-0`} />
+              <button disabled={note.trim().length < 3 || back.isPending} onClick={() => back.mutate()} className="px-4 rounded-xl bg-coral text-base text-sm font-semibold disabled:opacity-40">Qaytarish</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

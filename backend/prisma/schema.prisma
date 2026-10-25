@@ -383,6 +383,8 @@ enum SubmissionStatus {
   GRADED
   NEEDS_REVIEW
   FAILED
+  /// O'qituvchi tuzatish uchun qaytargan — o'quvchi qayta topshiradi
+  RETURNED
 }
 
 /// O'quvchining vazifa bo'yicha topshirig'i (bitta o'quvchi — bitta vazifaga bitta topshiriq)
@@ -412,6 +414,10 @@ model AssignmentSubmission {
   teacherScore    Int?
   teacherFeedback String?
   reviewedAt      DateTime?
+
+  /// Qaytarish izohi va vaqti (status RETURNED)
+  returnNote      String?
+  returnedAt      DateTime?
 
   files MaterialFile[]
 

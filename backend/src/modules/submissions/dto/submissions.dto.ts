@@ -1,4 +1,4 @@
-import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsInt, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 
 export class SubmitHomeworkDto {
   @IsOptional() @IsString() @MaxLength(10000)
@@ -14,4 +14,9 @@ export class ReviewSubmissionDto {
 
   @IsOptional() @IsString() @MaxLength(2000)
   feedback?: string;
+}
+
+export class ReturnSubmissionDto {
+  @IsString() @MinLength(3, { message: "Nimani tuzatish kerakligini yozing" }) @MaxLength(2000)
+  note: string;
 }

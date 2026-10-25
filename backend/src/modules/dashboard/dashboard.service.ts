@@ -199,13 +199,13 @@ export class DashboardService {
     const rows = items.map((a) => {
       const sub = a.submissions[0];
       const score = sub ? (sub.teacherScore ?? sub.aiScore ?? null) : null;
-      const state = !sub ? 'PENDING' : sub.status === 'GRADED' || sub.teacherScore != null ? 'GRADED' : 'SUBMITTED';
+      const state = !sub ? 'PENDING' : sub.status === 'RETURNED' ? 'RETURNED' : sub.status === 'GRADED' || sub.teacherScore != null ? 'GRADED' : 'SUBMITTED';
       return {
         id: a.id, title: a.title, groupId: a.group.id, groupName: a.group.name, dueAt: a.dueAt, maxScore: a.maxScore,
-        state, score, overdue: state === 'PENDING' && !!a.dueAt && a.dueAt.getTime() < now,
+        state, score, overdue: (state === 'PENDING' || state === 'RETURNED') && !!a.dueAt && a.dueAt.getTime() < now,
       };
     });
-    const rank = (r: { state: string; dueAt: Date | null }) => (r.state === 'PENDING' ? 0 : 1);
+    const rank = (r: { state: string; dueAt: Date | null }) => (r.state === 'RETURNED' ? 0 : r.state === 'PENDING' ? 1 : 2);
     return rows
       .sort((x, y) => rank(x) - rank(y) || (x.dueAt?.getTime() ?? Infinity) - (y.dueAt?.getTime() ?? Infinity))
       .slice(0, 12);

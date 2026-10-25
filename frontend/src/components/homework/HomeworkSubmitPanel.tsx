@@ -24,6 +24,7 @@ interface Mine {
     strengths: string[];
     improvements: string[];
     gradedBy: 'AI' | 'TEACHER' | null;
+    returnNote?: string | null;
   };
 }
 
@@ -81,7 +82,8 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
   if (isLoading || !data) return <div className="h-24 rounded-3xl bg-surface/40 animate-pulse" />;
 
   const graded = sub?.status === 'GRADED' && sub.score !== null;
-  const showForm = data.canSubmit && (!sub || editing);
+  const returned = sub?.status === 'RETURNED';
+  const showForm = data.canSubmit && (!sub || editing || returned);
   const inputCls =
     'w-full bg-surface/60 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50 placeholder:text-ink-faint';
 
@@ -98,6 +100,14 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
             </span>
           )}
         </div>
+
+        {returned && (
+          <div className="rounded-2xl bg-coral/10 border border-coral/30 p-4 space-y-1">
+            <p className="text-xs font-semibold text-coral">↩️ O'qituvchi tuzatish uchun qaytardi</p>
+            {sub!.returnNote && <p className="text-sm text-ink whitespace-pre-wrap">{sub!.returnNote}</p>}
+            <p className="text-[11px] text-ink-muted">Javobingizni tuzatib, qayta topshiring.</p>
+          </div>
+        )}
 
         {graded && (
           <div className="rounded-2xl bg-teal/10 border border-teal/30 p-4 space-y-2">
@@ -163,7 +173,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
               >
                 {save.isPending ? 'Yuborilmoqda…' : sub ? 'Yangilash' : 'Topshirish'}
               </button>
-              {editing && (
+              {editing && !returned && (
                 <button onClick={() => setEditing(false)} className="px-4 rounded-2xl bg-surface/60 text-sm text-ink border border-tint/10">
                   Bekor
                 </button>
