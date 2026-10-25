@@ -1,3 +1,4 @@
+import { assertCanEditContent, assertCanSeeContent } from '../content-access';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Body, Controller, Delete, Get, Injectable, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
@@ -25,7 +26,8 @@ export class UpdateSectionDto {
 export class SectionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAllBySubject(subjectId: string, user: CurrentUserPayload) {
+  async findAllBySubject(subjectId: string, user: CurrentUserPayload) {
+    await assertCanSeeContent(this.prisma, user, 'subject', subjectId);
     const isStudent = user.role === 'STUDENT';
     return this.prisma.section.findMany({
       where: { subjectId, deletedAt: null, ...(isStudent ? { status: 'PUBLISHED' } : {}) },
@@ -36,13 +38,15 @@ export class SectionsService {
   async findOneFor(id: string, user: CurrentUserPayload) {
     const section = await this.prisma.section.findUnique({ where: { id } });
     if (!section || section.deletedAt) throw new NotFoundException('Bo\'lim topilmadi');
+    await assertCanSeeContent(this.prisma, user, 'section', id);
     if (user.role === 'STUDENT' && section.status !== 'PUBLISHED') {
       throw new NotFoundException('Bo\'lim topilmadi');
     }
     return section;
   }
 
-  create(dto: CreateSectionDto) {
+  async create(dto: CreateSectionDto, user: CurrentUserPayload) {
+    await assertCanEditContent(this.prisma, user, 'subject', dto.subjectId);
     return this.prisma.section.create({
       data: {
         subjectId: dto.subjectId,
@@ -54,15 +58,17 @@ export class SectionsService {
     });
   }
 
-  async update(id: string, dto: UpdateSectionDto) {
+  async update(id: string, dto: UpdateSectionDto, user: CurrentUserPayload) {
     const existing = await this.prisma.section.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Bo\'lim topilmadi');
+    await assertCanEditContent(this.prisma, user, 'section', id);
     return this.prisma.section.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: CurrentUserPayload) {
     const existing = await this.prisma.section.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Bo\'lim topilmadi');
+    await assertCanEditContent(this.prisma, user, 'section', id);
     await this.prisma.section.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 }
@@ -83,19 +89,19 @@ export class SectionsController {
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
-  create(@Body() dto: CreateSectionDto) {
-    return this.sectionsService.create(dto);
+  create(@Body() dto: CreateSectionDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.sectionsService.create(dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateSectionDto) {
-    return this.sectionsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateSectionDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.sectionsService.update(id, dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.sectionsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.sectionsService.remove(id, user);
   }
 }

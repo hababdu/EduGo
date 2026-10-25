@@ -1,3 +1,4 @@
+import { assertCanEditContent, assertCanSeeContent } from '../content-access';
 import { IsBoolean, IsIn, IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Body, Controller, Delete, ForbiddenException, Get, Injectable, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
@@ -28,6 +29,7 @@ export class TopicsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAllBySection(sectionId: string, user: CurrentUserPayload) {
+    await assertCanSeeContent(this.prisma, user, 'section', sectionId);
     const isStudent = user.role === 'STUDENT';
     const topics = await this.prisma.topic.findMany({
       where: { sectionId, deletedAt: null, ...(isStudent ? { status: 'PUBLISHED' } : {}) },
@@ -69,6 +71,7 @@ export class TopicsService {
   async findOneFor(id: string, user: CurrentUserPayload) {
     const topic = await this.prisma.topic.findUnique({ where: { id } });
     if (!topic || topic.deletedAt) throw new NotFoundException('Mavzu topilmadi');
+    await assertCanSeeContent(this.prisma, user, 'topic', id);
     if (user.role === 'STUDENT') {
       if (topic.status !== 'PUBLISHED') throw new NotFoundException('Mavzu topilmadi');
 
@@ -82,7 +85,8 @@ export class TopicsService {
     return topic;
   }
 
-  create(dto: CreateTopicDto) {
+  async create(dto: CreateTopicDto, user: CurrentUserPayload) {
+    await assertCanEditContent(this.prisma, user, 'section', dto.sectionId);
     return this.prisma.topic.create({
       data: {
         sectionId: dto.sectionId,
@@ -95,15 +99,17 @@ export class TopicsService {
     });
   }
 
-  async update(id: string, dto: UpdateTopicDto) {
+  async update(id: string, dto: UpdateTopicDto, user: CurrentUserPayload) {
     const existing = await this.prisma.topic.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Mavzu topilmadi');
+    await assertCanEditContent(this.prisma, user, 'topic', id);
     return this.prisma.topic.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: CurrentUserPayload) {
     const existing = await this.prisma.topic.findUnique({ where: { id } });
     if (!existing || existing.deletedAt) throw new NotFoundException('Mavzu topilmadi');
+    await assertCanEditContent(this.prisma, user, 'topic', id);
     await this.prisma.topic.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 }
@@ -124,19 +130,19 @@ export class TopicsController {
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
-  create(@Body() dto: CreateTopicDto) {
-    return this.topicsService.create(dto);
+  create(@Body() dto: CreateTopicDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.topicsService.create(dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTopicDto) {
-    return this.topicsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateTopicDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.topicsService.update(id, dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.topicsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.topicsService.remove(id, user);
   }
 }

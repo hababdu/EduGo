@@ -1,3 +1,4 @@
+import { assertCanEditContent, assertCanSeeContent } from '../content-access';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Body, Controller, Delete, Get, Injectable, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
@@ -49,7 +50,8 @@ export class LessonsService {
     private readonly streakService: StreakService,
   ) {}
 
-  findAllByTopic(topicId: string) {
+  async findAllByTopic(topicId: string, user: CurrentUserPayload) {
+    await assertCanSeeContent(this.prisma, user, 'topic', topicId);
     return this.prisma.lesson.findMany({
       where: { topicId },
       orderBy: { order: 'asc' },
@@ -57,37 +59,42 @@ export class LessonsService {
     });
   }
 
-  create(dto: CreateLessonDto) {
+  async create(dto: CreateLessonDto, user: CurrentUserPayload) {
+    await assertCanEditContent(this.prisma, user, 'topic', dto.topicId);
     return this.prisma.lesson.create({
       data: { topicId: dto.topicId, title: dto.title, order: dto.order ?? 0 },
     });
   }
 
-  async update(id: string, dto: UpdateLessonDto) {
+  async update(id: string, dto: UpdateLessonDto, user: CurrentUserPayload) {
     const existing = await this.prisma.lesson.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Dars topilmadi');
+    await assertCanEditContent(this.prisma, user, 'lesson', id);
     return this.prisma.lesson.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: CurrentUserPayload) {
     const existing = await this.prisma.lesson.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Dars topilmadi');
+    await assertCanEditContent(this.prisma, user, 'lesson', id);
     await this.prisma.lesson.delete({ where: { id } });
   }
 
   /** 12-band — video biriktirish */
-  async addVideo(lessonId: string, dto: CreateVideoDto) {
+  async addVideo(lessonId: string, dto: CreateVideoDto, user: CurrentUserPayload) {
     const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
+    await assertCanEditContent(this.prisma, user, 'lesson', lessonId);
     return this.prisma.video.create({
       data: { lessonId, source: dto.source, url: dto.url, duration: dto.duration },
     });
   }
 
   /** 13-band — PDF/material biriktirish */
-  async addMaterial(lessonId: string, dto: CreateMaterialDto) {
+  async addMaterial(lessonId: string, dto: CreateMaterialDto, user: CurrentUserPayload) {
     const lesson = await this.prisma.lesson.findUnique({ where: { id: lessonId } });
     if (!lesson) throw new NotFoundException('Dars topilmadi');
+    await assertCanEditContent(this.prisma, user, 'lesson', lessonId);
     return this.prisma.material.create({
       data: { lessonId, type: dto.type, fileUrl: dto.fileUrl, title: dto.title },
     });
@@ -117,38 +124,38 @@ export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}
 
   @Get()
-  findAll(@Query('topicId') topicId: string) {
-    return this.lessonsService.findAllByTopic(topicId);
+  findAll(@Query('topicId') topicId: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.findAllByTopic(topicId, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post()
-  create(@Body() dto: CreateLessonDto) {
-    return this.lessonsService.create(dto);
+  create(@Body() dto: CreateLessonDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.create(dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateLessonDto) {
-    return this.lessonsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateLessonDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.update(id, dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.lessonsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.remove(id, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post(':lessonId/videos')
-  addVideo(@Param('lessonId') lessonId: string, @Body() dto: CreateVideoDto) {
-    return this.lessonsService.addVideo(lessonId, dto);
+  addVideo(@Param('lessonId') lessonId: string, @Body() dto: CreateVideoDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.addVideo(lessonId, dto, user);
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post(':lessonId/materials')
-  addMaterial(@Param('lessonId') lessonId: string, @Body() dto: CreateMaterialDto) {
-    return this.lessonsService.addMaterial(lessonId, dto);
+  addMaterial(@Param('lessonId') lessonId: string, @Body() dto: CreateMaterialDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.lessonsService.addMaterial(lessonId, dto, user);
   }
 
   @Patch('videos/:videoId/progress')
