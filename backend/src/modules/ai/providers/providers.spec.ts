@@ -248,4 +248,13 @@ describe('AiConfig: gemini', () => {
     expect(ai.fallback).toBe('groq');
     expect(ai.model('gemini', 'smart')).toMatch(/^gemini-/);
   });
+
+  it('Gemini: thought_signature (extra_content) qaytariladi, boshqa provayderga yuborilmaydi', () => {
+    const sig = { google: { thought_signature: 'abc' } };
+    const conv: any = JSON.parse(JSON.stringify(toolConversation));
+    const asst = conv.messages[1].content.find((b: any) => b.type === 'tool_use');
+    asst.extra = sig;
+    expect(toOpenAiMessages(conv, 'gemini')[2].tool_calls[0].extra_content).toEqual(sig);
+    expect(toOpenAiMessages(conv, 'groq')[2].tool_calls[0].extra_content).toBeUndefined();
+  });
 });

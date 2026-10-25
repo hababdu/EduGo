@@ -27,6 +27,7 @@
     "@types/pdf-parse": "^1.1.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "exceljs": "^4.4.0",
     "helmet": "^7.1.0",
     "mammoth": "^1.13.0",
     "multer": "^2.4.0",

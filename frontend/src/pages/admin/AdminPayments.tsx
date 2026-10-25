@@ -4,6 +4,7 @@ import { Banknote, Users, TrendingUp, CircleAlert, Wallet } from 'lucide-react';
 import { currentMonth, formatMoney, monthLabel, usePaymentsOverview } from '../../hooks/usePayments';
 import { IMAGES } from '../../design/images';
 import { StaffHero, Panel, KpiCard, Avatar, ProgressBar } from '../../components/staff';
+import { ReportDownload } from '../../components/staff/ReportDownload';
 import { MonthSwitcher } from '../../components/staff/MonthSwitcher';
 import { EmptyState, Skeleton } from '../../components/ui';
 import { PAGE_WIDE } from '../../design/tokens';
@@ -27,7 +28,7 @@ export default function AdminPayments() {
         eyebrow="EduGo · To'lovlar"
         title="To'lov nazorati"
         subtitle="Kim to'lagan, kim qarzdor — har oy uchun qo'lda belgilanadi."
-        actions={<MonthSwitcher month={month} onChange={setMonth} />}
+        actions={<div className="flex items-center gap-2"><MonthSwitcher month={month} onChange={setMonth} /><ReportDownload month={month} /></div>}
         footer={
           t && (
             <div className="flex flex-wrap items-center gap-x-8 gap-y-3 pt-1">

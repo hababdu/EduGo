@@ -20,7 +20,7 @@ import { postJson, toProviderError } from '../http.util';
 import { parseSse } from '../sse.util';
 
 /** Umumiy so'rovni OpenAI-mos "messages" massiviga o'giradi (sof funksiya). */
-export function toOpenAiMessages(req: AiRequest) {
+export function toOpenAiMessages(req: AiRequest, providerName?: string) {
   const out: any[] = [];
   if (req.system) out.push({ role: 'system', content: req.system });
 
@@ -38,6 +38,8 @@ export function toOpenAiMessages(req: AiRequest) {
           id: b.id,
           type: 'function',
           function: { name: b.name, arguments: JSON.stringify(b.input ?? {}) },
+          // Gemini "thinking" modellari tool chaqiruvi imzosini keyingi so'rovda qaytarishni talab qiladi
+          ...(providerName === 'gemini' && b.extra ? { extra_content: b.extra } : {}),
         }));
       out.push({
         role: 'assistant',
@@ -115,7 +117,7 @@ export abstract class OpenAiCompatProvider implements AiProvider {
       // gpt-oss kabi reasoning modellarda "o'ylash" tokenlari ham limitga kiradi — JSON qirqilib qolmasin
       max_tokens: this.maxTokensFor(req, model),
       ...(/gpt-oss/i.test(model) ? { reasoning_effort: 'low' } : {}),
-      messages: toOpenAiMessages(req),
+      messages: toOpenAiMessages(req, this.name),
       ...(req.tools?.length
         ? {
             tools: req.tools.map((t) => ({
@@ -166,6 +168,7 @@ export abstract class OpenAiCompatProvider implements AiProvider {
         id: tc.id || `call_${i}`,
         name: tc.function?.name,
         input: safeParse(tc.function?.arguments ?? ''),
+        ...(tc.extra_content ? { extra: tc.extra_content } : {}),
       }));
       const text: string = msg.content ?? '';
       return this.finish(
@@ -197,7 +200,7 @@ export abstract class OpenAiCompatProvider implements AiProvider {
     let text = '';
     let finishReason: string | undefined;
     let usage: { inputTokens: number; outputTokens: number } | null = null;
-    const calls = new Map<number, { id: string; name: string; args: string }>();
+    const calls = new Map<number, { id: string; name: string; args: string; extra?: unknown }>();
 
     try {
       for await (const msg of parseSse(res.body)) {
@@ -232,8 +235,9 @@ export abstract class OpenAiCompatProvider implements AiProvider {
           if (existing && ((tc.function?.name && existing.name) || (tc.id && existing.id && tc.id !== existing.id))) {
             i = Math.max(...calls.keys()) + 1;
           }
-          const cur = calls.get(i) ?? { id: '', name: '', args: '' };
+          const cur = calls.get(i) ?? { id: '', name: '', args: '', extra: undefined as unknown };
           if (tc.id) cur.id = tc.id;
+          if (tc.extra_content) cur.extra = tc.extra_content;
           if (tc.function?.name) cur.name = tc.function.name;
           if (tc.function?.arguments) cur.args += tc.function.arguments;
           calls.set(i, cur);
@@ -250,6 +254,7 @@ export abstract class OpenAiCompatProvider implements AiProvider {
           id: c.id || `call_${i}`,
           name: c.name,
           input: safeParse(c.args),
+          ...(c.extra ? { extra: c.extra } : {}),
         }));
       for (const call of toolCalls) yield { type: 'tool_use', call };
 

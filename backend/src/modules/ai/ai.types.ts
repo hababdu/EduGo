@@ -19,6 +19,8 @@ export interface AiToolUseBlock {
   id: string;
   name: string;
   input: Record<string, unknown>;
+  /** Provayderga xos qo'shimcha (masalan Gemini `extra_content.google.thought_signature`) — keyingi so'rovda o'sha provayderga qaytariladi */
+  extra?: unknown;
 }
 
 export interface AiToolResultBlock {
