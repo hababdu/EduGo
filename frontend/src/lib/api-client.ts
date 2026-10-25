@@ -83,6 +83,9 @@ export async function apiFetchRaw(
       ...((headers as Record<string, string>) ?? {}),
     };
 
+    // FormData bo'lsa brauzer o'zi boundary bilan Content-Type qo'yadi
+    if (typeof FormData !== 'undefined' && rest.body instanceof FormData) delete finalHeaders['Content-Type'];
+
     // `data` bo'lsa — JSON.stringify
     const body: BodyInit | undefined =
       data !== undefined ? JSON.stringify(data) : rest.body ?? undefined;

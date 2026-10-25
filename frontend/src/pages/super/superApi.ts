@@ -79,11 +79,17 @@ export const sapi = {
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
   backupOrg: (id: string) => apiFetch(`${b}/organizations/${id}/backup`, { method: 'POST' }),
+  restoreOrg: (v: { id: string; file: File; apply: boolean }) => {
+    const form = new FormData();
+    form.append('file', v.file);
+    return apiFetch<RestoreResult>(`${b}/organizations/${v.id}/restore${v.apply ? '?apply=1' : ''}`, { method: 'POST', body: form });
+  },
   moveAdmin: (v: { userId: string; organizationId: string }) => apiFetch(`${b}/admins/${v.userId}/organization`, { method: 'PATCH', body: JSON.stringify({ organizationId: v.organizationId }) }),
   block: (v: { id: string; blocked: boolean }) => apiFetch(`${b}/users/${v.id}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: v.blocked }) }),
   saveAi: (v: { enabled?: boolean; limits?: Record<string, number>; primary?: AiProviderId; fallback?: AiProviderId | 'none'; models?: Partial<Record<AiProviderId, { fast?: string; smart?: string }>> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),
 };
 
+export interface RestoreResult { dryRun: boolean; backupCreatedAt: string | null; toRestore: { groups: number; members: number; payments: number; attendance: number } }
 export type SubState = 'PAID' | 'WAIVED' | 'UNPAID';
 export interface BillingOverview {
   month: string;

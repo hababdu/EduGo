@@ -1,5 +1,7 @@
 import { SchoolBackupService } from './school-backup.service';
-import { Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { OrgBillingService } from './org-billing.service';
@@ -11,6 +13,16 @@ import { SuperAdminService } from './super-admin.service';
 @Controller('api/v1/super')
 export class SuperAdminController {
   constructor(private readonly svc: SuperAdminService, private readonly billing: OrgBillingService, private readonly backup: SchoolBackupService) {}
+
+  @Post('organizations/:id/restore')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 1 } }))
+  async restore(@Param('id') id: string, @Query('apply') apply: string | undefined, @UploadedFile() file: { buffer: Buffer } | undefined, @CurrentUser() u: CurrentUserPayload) {
+    if (!file?.buffer) throw new BadRequestException('Zaxira faylini yuklang (.json.gz)');
+    const dryRun = apply !== '1';
+    const r = await this.backup.restore(id, file.buffer, dryRun);
+    if (!dryRun) await this.svc.auditAction(u, 'ORG_RESTORE', 'Organization', id, null, r.toRestore);
+    return r;
+  }
 
   @Post('organizations/:id/backup') runBackup(@Param('id') id: string) { return this.backup.backup(id); }
 

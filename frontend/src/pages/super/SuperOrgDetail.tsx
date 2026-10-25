@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Banknote, FolderOpen, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
@@ -5,7 +6,7 @@ import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE } from '../../design/tokens';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
-import { sapi, useOrgDetail, useSuperMutation, when } from './superApi';
+import { sapi, type RestoreResult, useOrgDetail, useSuperMutation, when } from './superApi';
 
 const SUB = { PAID: ["To'lagan", 'bg-teal/15 text-teal'], WAIVED: ['Imtiyoz', 'bg-sky/15 text-sky'], UNPAID: ["To'lamagan", 'bg-coral/15 text-coral'] } as const;
 
@@ -13,6 +14,10 @@ const SUB = { PAID: ["To'lagan", 'bg-teal/15 text-teal'], WAIVED: ['Imtiyoz', 'b
 export function SuperOrgDetail() {
   const { id = '' } = useParams();
   const backup = useSuperMutation(sapi.backupOrg, 'Zaxira kanalga yuborildi');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [pending, setPending] = useState<{ file: File; preview: RestoreResult } | null>(null);
+  const check = useSuperMutation((f: File) => sapi.restoreOrg({ id, file: f, apply: false }).then((preview) => setPending({ file: f, preview })));
+  const apply = useSuperMutation((f: File) => sapi.restoreOrg({ id, file: f, apply: true }).then(() => setPending(null)), 'Zaxiradan tiklandi');
   const { data: d, isLoading, error } = useOrgDetail(id);
 
   return (
@@ -38,7 +43,21 @@ export function SuperOrgDetail() {
             {d.org.storageChatId && (
               <div className="mt-2 flex items-center justify-between gap-2">
                 <span className="text-ink-muted">Zaxira: {d.org.lastBackupAt ? `${when(d.org.lastBackupAt)} · ${d.org.lastBackupStatus ?? ''}` : 'hali olinmagan'}</span>
+                <input ref={fileRef} type="file" accept=".gz,application/gzip" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) check.mutate(f); }} />
+                <button disabled={check.isPending} onClick={() => fileRef.current?.click()} className="rounded-lg bg-surface px-3 py-1 font-semibold text-ink-muted disabled:opacity-50">{check.isPending ? 'Tekshirilmoqda…' : 'Tiklash'}</button>
                 <button disabled={backup.isPending} onClick={() => backup.mutate(d.org.id)} className="rounded-lg bg-teal/15 px-3 py-1 font-semibold text-teal disabled:opacity-50">{backup.isPending ? 'Yuborilmoqda…' : 'Zaxira olish'}</button>
+              </div>
+            )}
+            {pending && (
+              <div className="mt-3 space-y-2 rounded-xl border border-gold/30 bg-gold/10 p-3">
+                <p className="font-semibold text-ink">Zaxiradan tiklash (faqat yo'qolgan yozuvlar qaytariladi)</p>
+                <p className="text-ink-muted">
+                  Guruh: {pending.preview.toRestore.groups} · A'zolik: {pending.preview.toRestore.members} · To'lov: {pending.preview.toRestore.payments} · Davomat: {pending.preview.toRestore.attendance}
+                </p>
+                <div className="flex gap-2">
+                  <button disabled={apply.isPending} onClick={() => apply.mutate(pending.file)} className="rounded-lg bg-gold px-3 py-1.5 font-semibold text-base disabled:opacity-50">{apply.isPending ? 'Tiklanmoqda…' : 'Tiklash'}</button>
+                  <button onClick={() => setPending(null)} className="rounded-lg bg-surface px-3 py-1.5 text-ink-muted">Bekor</button>
+                </div>
               </div>
             )}
           </div>

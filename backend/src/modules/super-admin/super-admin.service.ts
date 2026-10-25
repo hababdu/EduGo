@@ -27,6 +27,10 @@ export class SuperAdminService {
     private readonly storage: TelegramStorageService,
   ) {}
 
+  auditAction(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
+    return this.audit(actor, action, targetType, targetId, oldValue, newValue);
+  }
+
   private audit(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
     return this.prisma.adminActionLog
       .create({ data: { actorId: actor.id, action, targetType, targetId, oldValue: oldValue as any, newValue: newValue as any } })
