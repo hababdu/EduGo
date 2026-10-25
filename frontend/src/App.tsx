@@ -23,6 +23,7 @@ import { ProfilePage } from './pages/student/ProfilePage';
 import { TestTaking } from './pages/tests/TestTaking';
 import { RankingPage } from './pages/ranking/RankingPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { ParentRoutes } from './pages/parent/ParentPages';
 
 /* ============ ADMIN ============ */
 import { AdminOverview } from './pages/admin/AdminOverview';
@@ -153,6 +154,7 @@ export function App() {
   const isSuper = user?.role === 'SUPER_ADMIN';
   const isAdmin = user?.role === 'ADMIN';
   const isTeacher = user?.role === 'TEACHER';
+  const isParent = user?.role === 'PARENT';
 
   return (
     <BrowserRouter>
@@ -166,7 +168,8 @@ export function App() {
         {isSuper && <SuperRoutes />}
         {isAdmin && <AdminRoutes />}
         {isTeacher && <TeacherRoutes />}
-        {!isSuper && !isAdmin && !isTeacher && <StudentRoutes />}
+        {isParent && <ParentRoutes />}
+        {!isSuper && !isAdmin && !isTeacher && !isParent && <StudentRoutes />}
       </AIMascotProvider>
     </BrowserRouter>
   );

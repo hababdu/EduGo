@@ -61,6 +61,22 @@ export class TelegramStorageService {
     }
   }
 
+  private cachedBotUsername?: string;
+  /** Bot @username'i (taklif havolalari uchun). BOT_USERNAME env yoki getMe; topilmasa null. */
+  async botUsername(): Promise<string | null> {
+    if (this.cachedBotUsername) return this.cachedBotUsername;
+    const env = process.env.BOT_USERNAME?.replace(/^@/, '').trim();
+    if (env) return (this.cachedBotUsername = env);
+    if (!this.token) return null;
+    try {
+      const res = await fetch(this.api('getMe'));
+      const json: any = await res.json();
+      const u = json?.result?.username;
+      if (typeof u === 'string' && u) return (this.cachedBotUsername = u);
+    } catch { /* tarmoq xatosi — havolasiz davom etamiz */ }
+    return null;
+  }
+
   /** Xato matnidan token sizib chiqmasligi uchun faqat Telegram "description" qaytariladi. */
   private async fail(res: Response, what: string): Promise<never> {
     let desc = '';

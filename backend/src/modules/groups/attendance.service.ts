@@ -4,6 +4,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { AttendanceStatusValue, MarkAttendanceDto } from './dto/attendance.dto';
 import { isoWeekday } from './schedule.util';
+import { Optional } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const TZ_OFFSET_MS = 5 * 3_600_000; // Toshkent, UTC+5
 const DAY_MS = 86_400_000;
@@ -48,7 +50,7 @@ function percentOf(c: ReturnType<typeof emptyCounts>): number | null {
 
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly notifications?: NotificationsService) {}
 
   /** Guruhni topadi; o'qituvchi faqat O'Z guruhini, admin — hammasini boshqaradi. */
   private async loadManageableGroup(groupId: string, user: CurrentUserPayload) {
@@ -125,6 +127,13 @@ export class AttendanceService {
       throw new BadRequestException(`${ids.length - members.length} ta o'quvchi bu guruh a'zosi emas`);
     }
 
+    // Ota-onaga xabar faqat YANGI "kelmadi" uchun (avval shunday belgilanmagan bo'lsa)
+    const before = await this.prisma.attendanceRecord.findMany({
+      where: { groupId, date, studentId: { in: ids } },
+      select: { studentId: true, status: true },
+    });
+    const wasAbsent = new Set(before.filter((b: any) => b.status === 'ABSENT').map((b: any) => b.studentId));
+
     await this.prisma.$transaction(
       dto.records.map((r) =>
         this.prisma.attendanceRecord.upsert({
@@ -134,7 +143,27 @@ export class AttendanceService {
         }),
       ),
     );
+    const newAbsent = dto.records.filter((r) => r.status === 'ABSENT' && !wasAbsent.has(r.studentId)).map((r) => r.studentId);
+    if (newAbsent.length) void this.notifyParents(groupId, newAbsent, iso);
     return { ok: true, date: iso, saved: dto.records.length };
+  }
+
+  /** Best-effort: kelmagan o'quvchilarning ota-onalariga xabar (xato davomatni to'xtatmaydi). */
+  private async notifyParents(groupId: string, studentIds: string[], iso: string) {
+    try {
+      if (!this.notifications || !(this.prisma as any).parentLink) return;
+      const [group, links] = await Promise.all([
+        this.prisma.group.findUnique({ where: { id: groupId }, select: { name: true } }),
+        (this.prisma as any).parentLink.findMany({
+          where: { studentId: { in: studentIds }, parent: { status: 'ACTIVE', deletedAt: null } },
+          select: { parentId: true, student: { select: { firstName: true, lastName: true } } },
+        }),
+      ]);
+      for (const l of links) {
+        const child = `${l.student.firstName} ${l.student.lastName ?? ''}`.trim();
+        await this.notifications.notify(l.parentId, 'SYSTEM', `⚠️ ${child} darsga kelmadi`, `${iso} · ${group?.name ?? 'guruh'}`).catch(() => undefined);
+      }
+    } catch { /* e'tiborsiz */ }
   }
 
   /** O'qituvchi/admin uchun: oxirgi N kunda har bir o'quvchining davomati. */

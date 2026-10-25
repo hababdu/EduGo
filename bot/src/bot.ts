@@ -64,6 +64,31 @@ bot.command('start', async (ctx: Context) => {
     return;
   }
 
+  // Ota-ona taklifi: /start parent_<kod>
+  if (payload.startsWith('parent_') && ctx.from) {
+    try {
+      const r = await api.linkParent(payload.slice(7), {
+        id: ctx.from.id,
+        first_name: ctx.from.first_name,
+        last_name: ctx.from.last_name,
+        username: ctx.from.username,
+      });
+      await ctx.reply(
+        `✅ Siz ${r.childName} ning ota-onasi sifatida ulandingiz.\n\n` +
+          `Davomat, vazifa va to'lov haqida xabarlar shu yerga keladi. Batafsil ko'rish uchun "Ochish" tugmasini bosing.`,
+        { reply_markup: getMenuForRole('PARENT') },
+      );
+    } catch (err: any) {
+      const msg = `${err?.message ?? ''} ${typeof err?.body === 'string' ? err.body : ''}`;
+      await ctx.reply(
+        msg.includes('boshqa rolda')
+          ? '⚠️ Bu Telegram akkaunt boshqa rolda (o\'quvchi/o\'qituvchi) ishlatilgan. Ota-ona sifatida boshqa akkaunt bilan ulaning.'
+          : '⚠️ Taklif eskirgan yoki ishlatilgan. O\'quvchidan yangi havola so\'rang.',
+      );
+    }
+    return;
+  }
+
   const telegramId = String(ctx.from?.id);
   let role = 'STUDENT';
   let firstName = ctx.from?.first_name ?? "do'stim";
@@ -94,6 +119,9 @@ bot.command('start', async (ctx: Context) => {
     SUPER_ADMIN:
       `Assalomu alaykum, ${firstName}! 👋\n\n` +
       `⚡ Super Admin:`,
+    PARENT:
+      `Assalomu alaykum, ${firstName}! 👋\n\n` +
+      `👨‍👩‍👧 Ota-ona paneli — farzandingiz natijalarini "Ochish" tugmasi orqali ko'ring:`,
   };
 
   await ctx.reply(greeting[role] ?? greeting.STUDENT, {

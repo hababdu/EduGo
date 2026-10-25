@@ -1,4 +1,5 @@
 // src/pages/teacher/TeacherStudentDetail.tsx
+import { ParentInviteCard } from '../../components/group/ParentInviteCard';
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -117,6 +118,8 @@ export function TeacherStudentDetail() {
             </div>
           </div>
         </Panel>
+
+        <div className="lg:col-span-5"><ParentInviteCard studentId={studentId} /></div>
 
         <Panel title="Xavfli zona" icon={AlertTriangle} accent="coral" className="lg:col-span-2">
           <div className="bg-coral/5 border border-coral/20 rounded-2xl p-4 space-y-3">

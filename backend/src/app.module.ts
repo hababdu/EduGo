@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { ParentScopeGuard } from './common/guards/parent-scope.guard';
 import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -25,6 +26,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { UploadModule } from './modules/upload/upload.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { AiModule } from './modules/ai/ai.module';
+import { ParentsModule } from './modules/parents/parents.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 @Module({
@@ -52,6 +54,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     AssignmentsModule, // <-- 2. IMPORTS MASSIVIGA QO'SHISH
     AiModule,
     SuperAdminModule,
+    ParentsModule,
     SubmissionsModule,
   ],
   providers: [
@@ -70,6 +73,10 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     {
       provide: APP_GUARD,
       useClass: SuperReadOnlyGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ParentScopeGuard,
     },
   ],
 })

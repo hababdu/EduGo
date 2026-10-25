@@ -20,6 +20,8 @@ enum RoleName {
   TEACHER
   ADMIN
   SUPER_ADMIN
+  /// Ota-ona: faqat bog'langan farzandining ma'lumotini ko'radi (o'qiydi)
+  PARENT
 }
 
 enum AccountStatus {
@@ -124,6 +126,8 @@ model User {
   assistantGroups      Group[]              @relation("GroupAssistant")
   attendanceRecords    AttendanceRecord[]   @relation("AttendanceStudent")
   attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
+  parentLinks          ParentLink[]         @relation("ParentOf")
+  childLinks           ParentLink[]         @relation("ChildOf")
   payments             Payment[]            @relation("PaymentStudent")
   paymentsMarked       Payment[]            @relation("PaymentMarker")
   orgPaymentsMarked    OrgPayment[]         @relation("OrgPaymentMarker")
@@ -228,6 +232,33 @@ enum AttendanceStatus {
   PRESENT // kelgan
   ABSENT // kelmagan
   EXCUSED // sababli
+}
+
+/// Ota-ona ↔ farzand (o'quvchi) bog'lanishi
+model ParentLink {
+  id        String   @id @default(cuid())
+  parentId  String
+  studentId String
+  createdAt DateTime @default(now())
+
+  parent  User @relation("ParentOf", fields: [parentId], references: [id], onDelete: Cascade)
+  student User @relation("ChildOf", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([studentId])
+}
+
+/// Ota-onani ulash uchun bir martalik taklif kodi (Telegram botda /start parent_<code>)
+model ParentInvite {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  studentId   String
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([studentId])
 }
 
 /// Dars jurnali: guruhning bir kunlik darsi — o'tilgan mavzu va uyga vazifa

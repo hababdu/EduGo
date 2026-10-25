@@ -77,7 +77,7 @@ async function internalGet<T>(
 /* ============================================================
    TYPES
    ============================================================ */
-export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN';
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN' | 'PARENT';
 
 export interface UserRoleInfo {
   id: string;
@@ -151,6 +151,15 @@ export interface AdminOverview {
    API METHODS
    ============================================================ */
 export const api = {
+  linkParent: (
+    code: string,
+    user: { id: number; first_name: string; last_name?: string; username?: string },
+  ) =>
+    internalGet<{ ok: boolean; childName: string }>('/api/v1/internal/parents/link', {
+      method: 'POST',
+      body: JSON.stringify({ code, user }),
+    }),
+
   confirmAppLogin: (
     id: string,
     user: { id: number; first_name: string; last_name?: string; username?: string },

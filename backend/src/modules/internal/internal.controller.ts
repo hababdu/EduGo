@@ -3,6 +3,7 @@ import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '
 import { Public } from '../../common/decorators/public.decorator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
 import { AppLoginService } from '../auth/app-login.service';
+import { ParentsService } from '../parents/parents.service';
 import { InternalService } from './internal.service';
 
 @Public()
@@ -12,7 +13,15 @@ export class InternalController {
   constructor(
     private readonly internalService: InternalService,
     private readonly appLogin: AppLoginService,
+    private readonly parents: ParentsService,
   ) {}
+
+  /** Bot: ota-ona `/start parent_<kod>` bosganda farzandga bog'laydi. */
+  @Post('parents/link')
+  @HttpCode(200)
+  linkParent(@Body() body: { code: string; user: { id: number; first_name: string; last_name?: string; username?: string } }) {
+    return this.parents.linkByCode(body?.code, body?.user);
+  }
 
   /** Bot: foydalanuvchi `/start login_<id>` bosganda ilova kirishini tasdiqlaydi. */
   @Post('app-login/confirm')
