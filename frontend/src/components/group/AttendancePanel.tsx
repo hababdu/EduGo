@@ -50,10 +50,16 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
     setSaved(false);
     setEdits((e) => ({ ...e, [id]: st }));
   };
-  const markAllPresent = () => {
+  // Faqat hali belgilanmaganlarni "keldi" qiladi — qo'lda qo'yilgan "kelmadi/sababli" saqlanib qoladi
+  const unmarked = students.filter((s) => !edits[s.studentId]);
+  const markRestPresent = () => {
     setSaved(false);
-    setEdits(Object.fromEntries(students.map((s) => [s.studentId, 'PRESENT' as AttendanceStatus])));
+    setEdits((e) => ({ ...e, ...Object.fromEntries(unmarked.map((s) => [s.studentId, 'PRESENT' as AttendanceStatus])) }));
   };
+  const counts = students.reduce(
+    (c, s) => { const st = edits[s.studentId]; if (st) c[st]++; return c; },
+    { PRESENT: 0, ABSENT: 0, EXCUSED: 0 } as Record<AttendanceStatus, number>,
+  );
   const save = () => {
     const records = students
       .filter((s) => edits[s.studentId])
@@ -111,15 +117,17 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
         <>
           <div className="flex items-center justify-between">
             <span className="text-xs text-ink-muted tabular-nums">
-              Belgilangan: {markedNow} / {students.length}
+              <span className="text-teal">{counts.PRESENT} keldi</span> · <span className="text-coral">{counts.ABSENT} kelmadi</span> · <span className="text-gold">{counts.EXCUSED} sababli</span> · {unmarked.length} qoldi
             </span>
-            <button
-              type="button"
-              onClick={markAllPresent}
-              className="text-xs font-semibold text-teal bg-teal/10 border border-teal/20 rounded-xl px-3 py-1.5 active:scale-95 transition"
-            >
-              Hammasi keldi
-            </button>
+            {unmarked.length > 0 && (
+              <button
+                type="button"
+                onClick={markRestPresent}
+                className="text-xs font-semibold text-teal bg-teal/10 border border-teal/20 rounded-xl px-3 py-1.5 active:scale-95 transition"
+              >
+                {markedNow === 0 ? 'Hammasi keldi' : 'Qolganlari keldi'}
+              </button>
+            )}
           </div>
 
           <ul className="bg-surface/20 border border-tint/5 rounded-2xl divide-y divide-tint/5 overflow-hidden">
@@ -160,6 +168,8 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
           <button
             type="button"
             onClick={save}
+            // Mobilda saqlash tugmasi har doim ko'rinib turadi
+            style={{ position: 'sticky', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
             disabled={mark.isPending || markedNow === 0 || (!dirty && !saved)}
             className="w-full rounded-xl bg-gold text-base font-semibold py-3 text-sm disabled:opacity-40 active:scale-[0.99] transition"
           >

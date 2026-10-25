@@ -5,11 +5,12 @@ import { AdminModule } from '../admin/admin.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { TeacherController } from './teacher.controller';
 import { TeacherService } from './teacher.service';
+import { DeadlineReminderService } from './deadline-reminder.service';
 
 @Module({
   imports: [GroupsModule, AdminModule, NotificationsModule],
   controllers: [TeacherController],
-  providers: [TeacherService],
+  providers: [TeacherService, DeadlineReminderService],
   exports: [TeacherService],
 })
 export class TeacherModule {}
