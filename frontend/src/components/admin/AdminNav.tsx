@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, GraduationCap, FolderOpen, Wallet } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, FolderOpen, Wallet, UserPlus } from 'lucide-react';
 import { StaffNav, StaffNavItem } from '../staff';
 
 const ITEMS: StaffNavItem[] = [
@@ -7,6 +7,7 @@ const ITEMS: StaffNavItem[] = [
   { to: '/admin/students', label: 'Studentlar', Icon: GraduationCap },
   { to: '/admin/groups', label: 'Guruhlar', Icon: FolderOpen },
   { to: '/admin/payments', label: "To'lovlar", Icon: Wallet },
+  { to: '/admin/leads', label: 'Qabul', Icon: UserPlus },
 ];
 
 export function AdminNav() {

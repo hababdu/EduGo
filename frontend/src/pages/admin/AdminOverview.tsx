@@ -43,6 +43,7 @@ export function AdminOverview() {
     { label: 'Studentlar', hint: "Qidirish va natijalari", icon: GraduationCap, to: '/admin/students' },
     { label: 'Guruhlar', hint: "Sig'im, davomat, o'qituvchi", icon: FolderOpen, to: '/admin/groups' },
     { label: "To'lovlar", hint: "Kim to'lagan, qarzdorlar", icon: Wallet, to: '/admin/payments' },
+    { label: 'Qabul (arizalar)', hint: 'Yangi o\'quvchilar, aloqa, sinov darsi', icon: Users, to: '/admin/leads' },
   ];
 
   return (

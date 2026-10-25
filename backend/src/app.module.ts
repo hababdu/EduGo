@@ -26,6 +26,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { UploadModule } from './modules/upload/upload.module';
 import { MaterialsModule } from './modules/materials/materials.module';
 import { AiModule } from './modules/ai/ai.module';
+import { LeadsModule } from './modules/leads/leads.module';
 import { HealthModule } from './modules/health/health.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
@@ -59,6 +60,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     ParentsModule,
     CertificatesModule,
     HealthModule,
+    LeadsModule,
     SubmissionsModule,
   ],
   providers: [

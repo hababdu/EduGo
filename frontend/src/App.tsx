@@ -33,6 +33,7 @@ import UsersAdminPage from './pages/admin/UsersAdminPage';
 import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail';
 import AdminPayments from './pages/admin/AdminPayments';
+import AdminLeads from './pages/admin/AdminLeads';
 import AdminGroupPayments from './pages/admin/AdminGroupPayments';
 
 /* ============ TEACHER ============ */
@@ -219,6 +220,7 @@ function AdminRoutes() {
           <Route path="/admin/groups" element={<AdminGroups />} />
           <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/admin/leads" element={<AdminLeads />} />
           <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

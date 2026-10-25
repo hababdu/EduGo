@@ -234,6 +234,33 @@ enum AttendanceStatus {
   EXCUSED // sababli
 }
 
+enum LeadStatus {
+  NEW // yangi ariza
+  CONTACTED // aloqa qilindi
+  TRIAL // sinov darsi
+  ENROLLED // qabul qilindi
+  LOST // rad / qiziqmadi
+}
+
+/// Qabul (lid) CRM: maktabga yangi o'quvchi bo'lishi mumkin bo'lgan odam. Faqat shu maktab adminlari ko'radi.
+model Lead {
+  id             String     @id @default(cuid())
+  organizationId String
+  name           String
+  phone          String?
+  source         String? // Instagram, Telegram, tanish, ...
+  interest       String? // qaysi kurs/guruh
+  status         LeadStatus @default(NEW)
+  note           String?
+  nextContactAt  DateTime?
+  createdById    String
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([organizationId, status])
+  @@index([organizationId, nextContactAt])
+}
+
 /// Sertifikat: o'quvchi guruhni/kursni muvaffaqiyatli tugatganda beriladi. Ismlar nusxalanadi (keyin o'zgarsa ham haqiqiyligi saqlanadi).
 model Certificate {
   id             String    @id @default(cuid())
