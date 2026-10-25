@@ -1,4 +1,5 @@
 // src/pages/teacher/TeacherGroupDetail.tsx
+import { CertificatesPanel } from '../../components/group/CertificatesPanel';
 import { LessonLogPanel } from '../../components/group/LessonLogPanel';
 import { SubmissionStats } from '../../components/staff/SubmissionStats';
 import { ScheduleBadge } from '../../components/group/ScheduleBadge';
@@ -307,6 +308,16 @@ export function TeacherGroupDetail() {
             </ul>
           </Panel>
         ))}
+
+      {tab === 'students' && members.length > 0 && (
+        <CertificatesPanel
+          groupId={groupId}
+          students={members.map((m: any) => ({
+            id: m.student?.id || m.studentId,
+            name: `${m.student?.firstName || ''} ${m.student?.lastName || ''}`.trim() || m.student?.username || "Noma'lum",
+          }))}
+        />
+      )}
 
       {/* Tab: Materials */}
       {tab === 'materials' && <SubmissionStats groupId={groupId} />}

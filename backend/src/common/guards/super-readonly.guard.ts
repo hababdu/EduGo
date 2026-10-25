@@ -12,6 +12,7 @@ const SCHOOL_OPS = [
   '/api/v1/submissions',
   '/api/v1/challenges',
   '/api/v1/users',
+  '/api/v1/certificates',
 ];
 
 /**

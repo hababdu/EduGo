@@ -234,6 +234,26 @@ enum AttendanceStatus {
   EXCUSED // sababli
 }
 
+/// Sertifikat: o'quvchi guruhni/kursni muvaffaqiyatli tugatganda beriladi. Ismlar nusxalanadi (keyin o'zgarsa ham haqiqiyligi saqlanadi).
+model Certificate {
+  id             String    @id @default(cuid())
+  code           String    @unique
+  studentId      String
+  groupId        String?
+  organizationId String?
+  title          String
+  studentName    String
+  groupName      String
+  schoolName     String
+  issuedById     String
+  issuedAt       DateTime  @default(now())
+  revokedAt      DateTime?
+
+  @@index([studentId])
+  @@index([groupId])
+  @@index([organizationId])
+}
+
 /// Ota-ona ↔ farzand (o'quvchi) bog'lanishi
 model ParentLink {
   id        String   @id @default(cuid())
