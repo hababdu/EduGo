@@ -380,7 +380,7 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setOutfitPref('auto')}
-                    className={`rounded-xl py-2 text-center ${pref === 'auto' ? 'bg-gold text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
+                    className={`rounded-xl py-2 text-center ${pref === 'auto' ? 'bg-accent text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
                   >
                     <span className="block text-base">✨</span>Avto
                   </button>
@@ -390,7 +390,7 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
                       type="button"
                       title={o.label}
                       onClick={() => setOutfitPref(o.id)}
-                      className={`rounded-xl py-2 text-center ${pref === o.id ? 'bg-gold text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
+                      className={`rounded-xl py-2 text-center ${pref === o.id ? 'bg-accent text-base font-semibold' : 'bg-tint/5 text-ink-muted'}`}
                     >
                       <span className="block text-base">{o.emoji}</span>
                       <span className="block truncate px-0.5 text-[9px]">{o.label}</span>

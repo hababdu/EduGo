@@ -79,12 +79,12 @@ export function PexelsPhotoPickerModal({ isOpen, onClose, onSelect }: Props) {
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="coding, mathematics, sport..."
             autoFocus
-            className="flex-1 bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px]"
+            className="flex-1 bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-accent/60 min-h-[44px]"
           />
           <button
             type="submit"
             disabled={!inputValue.trim()}
-            className="bg-gold text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
+            className="bg-accent text-base text-sm font-semibold px-5 py-3 rounded-2xl active:scale-[0.98] transition-transform disabled:opacity-50 min-h-[44px] shrink-0"
           >
             🔍 Qidirish
           </button>

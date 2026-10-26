@@ -250,7 +250,7 @@ export function LessonsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="🔍 Material nomi bo'yicha qidirish..."
-            className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-gold/50"
+            className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-accent/60"
           />
 
           {/* ============ GROUP FILTER ============ */}
@@ -268,7 +268,7 @@ export function LessonsPage() {
                   }}
                   className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                     selectedGroupId === null
-                      ? 'bg-gold text-base'
+                      ? 'bg-accent text-base'
                       : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                   }`}
                 >
@@ -285,7 +285,7 @@ export function LessonsPage() {
                     }}
                     className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors flex items-center gap-1.5 ${
                       selectedGroupId === g.id
-                        ? 'bg-gold text-base'
+                        ? 'bg-accent text-base'
                         : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                     }`}
                   >
@@ -317,7 +317,7 @@ export function LessonsPage() {
                 }}
                 className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
                   filterCategory === key
-                    ? 'bg-gold text-base'
+                    ? 'bg-accent text-base'
                     : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
                 }`}
               >

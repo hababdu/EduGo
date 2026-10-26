@@ -151,7 +151,7 @@ export default function UsersAdminPage(): JSX.Element {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Ism, username yoki Telegram ID..."
-          className="w-full bg-surface/50 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-gold/50 placeholder:text-ink-faint"
+          className="w-full bg-surface/50 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-accent/60 placeholder:text-ink-faint"
         />
       </div>
 

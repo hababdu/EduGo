@@ -52,13 +52,13 @@ function Review({ row, max, onDone }: { row: Row; max: number; onDone: () => voi
   });
   const n = Number(score);
   const ok = score !== '' && Number.isInteger(n) && n >= 0 && n <= max;
-  const cls = 'bg-surface/60 rounded-xl px-3 py-2 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50';
+  const cls = 'bg-surface/60 rounded-xl px-3 py-2 text-sm outline-none border border-tint/10 text-ink focus:border-accent/60';
   return (
     <div className="space-y-2 pt-2">
       <div className="flex gap-2">
         <input type="number" min={0} max={max} value={score} onChange={(e) => setScore(e.target.value)} placeholder={`0–${max}`} className={`${cls} w-24`} />
         <input value={fb} maxLength={2000} onChange={(e) => setFb(e.target.value)} placeholder="Izoh (ixtiyoriy)" className={`${cls} flex-1 min-w-0`} />
-        <button disabled={!ok || m.isPending} onClick={() => m.mutate()} className="px-4 rounded-xl bg-gold text-base text-sm font-semibold disabled:opacity-40">
+        <button disabled={!ok || m.isPending} onClick={() => m.mutate()} className="px-4 rounded-xl bg-accent text-base text-sm font-semibold disabled:opacity-40">
           Saqlash
         </button>
       </div>

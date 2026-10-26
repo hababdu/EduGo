@@ -260,7 +260,7 @@ export function AITutorChat({
             type="button"
             onClick={() => void handleSend()}
             disabled={isLoading || (!input.trim() && !file)}
-            className="shrink-0 w-11 h-11 rounded-2xl bg-gold text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40"
+            className="shrink-0 w-11 h-11 rounded-2xl bg-accent text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40"
             aria-label="Yuborish"
           >
             {isLoading ? (
@@ -284,7 +284,7 @@ export function AITutorChat({
             <div
               className={`max-w-[85%] rounded-3xl px-4 py-2.5 text-sm leading-relaxed ${
                 m.role === 'user'
-                  ? 'bg-gold text-base rounded-br-lg'
+                  ? 'bg-accent text-base rounded-br-lg'
                   : 'bg-surface/60 border border-tint/10 text-ink rounded-bl-lg'
               }`}
             >

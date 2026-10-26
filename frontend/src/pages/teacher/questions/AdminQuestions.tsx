@@ -192,7 +192,7 @@ export function AdminQuestions() {
             <div
               className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-gold text-base rounded-br-md'
+                  ? 'bg-accent text-base rounded-br-md'
                   : 'bg-surface/40 border border-tint/10 text-ink rounded-bl-md'
               }`}
             >
@@ -247,7 +247,7 @@ export function AdminQuestions() {
               type="button"
               onClick={handleSend}
               disabled={!input.trim()}
-              className="shrink-0 w-10 h-10 rounded-xl bg-gold text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40 disabled:active:scale-100"
+              className="shrink-0 w-10 h-10 rounded-xl bg-accent text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40 disabled:active:scale-100"
               aria-label="Yuborish"
             >
               <Send className="w-4 h-4" />

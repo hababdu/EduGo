@@ -20,7 +20,7 @@ export function TeacherTodo() {
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       {data.toGrade.length > 0 && (
         <Panel title={`Baholash kutmoqda (${data.toGradeTotal})`} icon={ClipboardCheck} accent="gold" flush>
-          <ul className="divide-y divide-tint/5">
+          <ul className="divide-y divide-tint/5 stagger">
             {data.toGrade.map((t) => (
               <li key={t.assignmentId}>
                 <button type="button" onClick={() => navigate(`/teacher/assignments/${t.assignmentId}`)} className="flex w-full items-center gap-3 px-5 py-3 text-left active:bg-tint/5">

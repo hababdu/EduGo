@@ -19,7 +19,7 @@ import { PAGE_WIDE, CONTROL } from '../../design/tokens';
 const OPTIONS: { value: PaymentState; label: string; Icon: typeof Check; on: string }[] = [
   { value: 'UNPAID', label: "To'lamagan", Icon: X, on: 'bg-coral text-base' },
   { value: 'PAID', label: "To'lagan", Icon: Check, on: 'bg-teal text-base' },
-  { value: 'WAIVED', label: 'Imtiyoz', Icon: Gift, on: 'bg-gold text-base' },
+  { value: 'WAIVED', label: 'Imtiyoz', Icon: Gift, on: 'bg-accent text-base' },
 ];
 
 interface Edit {

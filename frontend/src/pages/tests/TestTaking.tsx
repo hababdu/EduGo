@@ -50,7 +50,7 @@ export function TestTaking() {
           <p className="text-sm text-ink-muted mb-6">{errorMessage}</p>
           <button
             onClick={() => navigate(-1)}
-            className="rounded-2xl bg-gold text-base font-semibold px-6 py-3 text-sm active:scale-[0.98] transition"
+            className="rounded-2xl bg-accent text-base font-semibold px-6 py-3 text-sm active:scale-[0.98] transition"
           >
             Orqaga qaytish
           </button>
@@ -156,7 +156,7 @@ export function TestTaking() {
               onBlur={() => submitTextAnswer(question.id, textDraft)}
               placeholder="Javobingizni shu yerga yozing..."
               rows={6}
-              className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-tint/10 text-ink resize-none focus:border-gold/60"
+              className="w-full bg-surface/60 rounded-2xl px-4 py-3.5 text-sm outline-none border border-tint/10 text-ink resize-none focus:border-accent/60"
             />
             <AIAnswerCheck question={question.text} answer={textDraft} />
           </div>
@@ -179,7 +179,7 @@ export function TestTaking() {
                   <span
                     className={`flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold ${
                       multi ? 'rounded-lg' : 'rounded-full'
-                    } ${isSelected ? 'bg-gold text-base' : 'bg-tint/10 text-ink-muted'}`}
+                    } ${isSelected ? 'bg-accent text-base' : 'bg-tint/10 text-ink-muted'}`}
                     aria-hidden="true"
                   >
                     {isSelected && multi ? '✓' : String.fromCharCode(65 + idx)}
@@ -203,7 +203,7 @@ export function TestTaking() {
         {isLast ? (
           <button
             onClick={() => setShowConfirm(true)}
-            className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
+            className="flex-1 rounded-2xl bg-accent text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
           >
             Yakunlash
           </button>
@@ -253,7 +253,7 @@ export function TestTaking() {
             </div>
             <button
               onClick={() => setShowConfirm(true)}
-              className="w-full rounded-2xl bg-gold text-base font-semibold py-3 text-sm active:scale-[0.98] transition"
+              className="w-full rounded-2xl bg-accent text-base font-semibold py-3 text-sm active:scale-[0.98] transition"
             >
               Testni yakunlash
             </button>
@@ -277,7 +277,7 @@ export function TestTaking() {
               >
                 Davom etish
               </button>
-              <button onClick={finish} className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3 text-sm">
+              <button onClick={finish} className="flex-1 rounded-2xl bg-accent text-base font-semibold py-3 text-sm">
                 Yakunlash
               </button>
             </div>
@@ -357,7 +357,7 @@ function TestResultView({
         )}
         <button
           onClick={onDone}
-          className="mt-6 w-full rounded-2xl bg-gold text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
+          className="mt-6 w-full rounded-2xl bg-accent text-base font-semibold py-3.5 text-sm active:scale-[0.98] transition"
         >
           Bosh sahifaga qaytish
         </button>

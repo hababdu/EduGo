@@ -18,7 +18,7 @@ export function SubmissionStats({ groupId }: { groupId: string }) {
   if (!data || data.length === 0) return null;
   return (
     <Panel title="Vazifalar topshirilishi" icon={ClipboardCheck} accent="gold" flush>
-      <ul className="divide-y divide-tint/5">
+      <ul className="divide-y divide-tint/5 stagger">
         {data.map((r) => (
           <li key={r.id}>
             <button type="button" onClick={() => navigate(`/teacher/assignments/${r.id}`)} className="block w-full px-5 py-3 text-left active:bg-tint/5">

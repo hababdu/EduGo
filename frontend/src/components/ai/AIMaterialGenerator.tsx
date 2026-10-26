@@ -141,7 +141,7 @@ export function AIMaterialGenerator({
             type="button"
             onClick={runGeneration}
             disabled={isGenerating || !topic.trim()}
-            className="w-full text-sm bg-gold text-base rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2 min-h-[48px]"
+            className="w-full text-sm bg-accent text-base rounded-2xl px-5 py-3.5 font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2 min-h-[48px]"
           >
             {isGenerating ? (
               <>
@@ -167,7 +167,7 @@ export function AIMaterialGenerator({
               placeholder="Masalan: Algebra — kvadrat tenglamalar"
               disabled={isGenerating}
               autoFocus
-              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px]"
+              className="w-full bg-surface rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-accent/60 min-h-[44px]"
             />
           </div>
 

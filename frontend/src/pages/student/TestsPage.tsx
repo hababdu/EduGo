@@ -96,7 +96,7 @@ export function TestsPage() {
             }}
             className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-semibold transition-colors ${
               filter === key
-                ? 'bg-gold text-base'
+                ? 'bg-accent text-base'
                 : 'bg-tint/5 text-ink-muted hover:bg-tint/10'
             }`}
           >

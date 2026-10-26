@@ -36,7 +36,7 @@ export function CardList({ children }: { children: ReactNode }) {
 export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`bg-surface/30 rounded-2xl animate-pulse border border-tint/5 ${className}`}
+      className={`bg-surface/30 rounded-2xl shimmer border border-tint/5 ${className}`}
     />
   );
 }

@@ -31,7 +31,7 @@ export function StaffNav({ items, label }: { items: StaffNavItem[]; label: strin
             className="nav-indicator pointer-events-none absolute top-0 left-0 flex justify-center"
             style={{ width: `${100 / n}%`, transform: `translateX(${activeIdx * 100}%)` }}
           >
-            <span className="h-0.5 w-8 rounded-full bg-gold shadow-[0_0_10px_2px_rgb(232_184_74/0.55)]" />
+            <span className="h-0.5 w-8 rounded-full bg-accent shadow-[0_0_12px_2px_rgb(var(--c-accent)/0.55)]" />
           </span>
         )}
         {items.map((item) => {
@@ -44,10 +44,10 @@ export function StaffNav({ items, label }: { items: StaffNavItem[]; label: strin
               onClick={() => haptic('light')}
               aria-current={active ? 'page' : undefined}
               className={`relative flex min-w-0 flex-1 flex-col items-center gap-0.5 px-1 py-2 text-[11px] font-semibold transition-colors duration-200 ${
-                active ? 'text-gold' : 'text-ink-faint hover:text-ink-muted'
+                active ? 'text-accent' : 'text-ink-faint hover:text-ink-muted'
               }`}
             >
-              <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-300 ${active ? 'bg-gold/15' : ''}`}>
+              <span className={`relative flex h-7 w-12 items-center justify-center rounded-full transition-colors duration-300 ${active ? 'bg-accent/15' : ''}`}>
                 <Icon
                   key={active ? 'on' : 'off'}
                   className={`h-5 w-5 ${active ? 'nav-pop' : ''}`}

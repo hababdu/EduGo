@@ -276,7 +276,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                         value={materialSearch}
                         onChange={(e) => setMaterialSearch(e.target.value)}
                         placeholder="Material qidirish..."
-                        className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-2.5 text-sm text-ink outline-none focus:border-gold/50"
+                        className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-2.5 text-sm text-ink outline-none focus:border-accent/60"
                       />
                     )}
                     <div className="max-h-52 space-y-1.5 overflow-y-auto pr-0.5">
@@ -295,7 +295,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                           >
                             <span
                               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[10px] ${
-                                on ? 'border-gold bg-gold text-base' : 'border-tint/20'
+                                on ? 'border-gold bg-accent text-base' : 'border-tint/20'
                               }`}
                             >
                               {on && '✓'}
@@ -326,7 +326,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                 onChange={(e) => setTopicInput(e.target.value)}
                 placeholder="Masalan: Algebra — kvadrat tenglamalar"
                 disabled={isGenerating}
-                className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-3 text-sm text-ink outline-none focus:border-gold/50 min-h-[48px]"
+                className="w-full rounded-2xl border border-tint/10 bg-surface/50 px-4 py-3 text-sm text-ink outline-none focus:border-accent/60 min-h-[48px]"
               />
             )}
           </section>
@@ -453,7 +453,7 @@ export function AIQuestionGenerator({ isOpen, onClose, onAccept }: Props) {
                     aria-pressed={q._selected}
                     aria-label={`${idx + 1}-savolni tanlash`}
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 text-xs font-bold transition ${
-                      q._selected ? 'border-gold bg-gold text-base' : 'border-tint/25'
+                      q._selected ? 'border-gold bg-accent text-base' : 'border-tint/25'
                     }`}
                   >
                     {q._selected && '✓'}

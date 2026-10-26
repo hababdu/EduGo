@@ -82,7 +82,7 @@ export function LessonCard({ lesson, topicId }: { lesson: LessonItem; topicId: s
                 { onSuccess: () => setVideoUrl('') },
               );
             }}
-            className="text-xs bg-gold text-base rounded-lg px-3 py-2 font-medium"
+            className="text-xs bg-accent text-base rounded-lg px-3 py-2 font-medium"
           >
             Saqlash
           </button>
@@ -135,7 +135,7 @@ export function LessonCard({ lesson, topicId }: { lesson: LessonItem; topicId: s
                   },
                 );
               }}
-              className="text-xs bg-gold text-base rounded-lg px-3 py-2 font-medium"
+              className="text-xs bg-accent text-base rounded-lg px-3 py-2 font-medium"
             >
               Saqlash
             </button>

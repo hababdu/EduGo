@@ -132,7 +132,7 @@ export function GroupsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="🔍 Guruh nomi bo'yicha qidirish..."
-          className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-gold/50"
+          className="w-full bg-surface/30 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink min-h-[44px] focus:border-accent/60"
         />
       )}
 

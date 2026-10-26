@@ -32,11 +32,11 @@ export function LessonLogPanel({ groupId, canEdit }: { groupId: string; canEdit:
       {canEdit && (
         <div className="space-y-2">
           <input type="date" value={date} min={shiftDate(today, -90)} max={today} onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-gold/50" />
+            className="min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60" />
           <input value={topic} maxLength={300} onChange={(e) => setTopic(e.target.value)} placeholder="Bugun nima o'tildi? (mavzu)"
-            className="min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-gold/50" />
+            className="min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60" />
           <textarea value={homework} maxLength={1000} onChange={(e) => setHomework(e.target.value)} rows={2} placeholder="Uyga vazifa (ixtiyoriy)"
-            className="w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-gold/50" />
+            className="w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60" />
           <button type="button" disabled={save.isPending || topic.trim().length < 2} onClick={() => save.mutate()}
             className="w-full rounded-xl bg-gold py-2.5 text-sm font-semibold text-base disabled:opacity-40">{save.isPending ? 'Saqlanmoqda…' : 'Jurnalga yozish'}</button>
           {save.error && <p className="text-xs text-coral" role="alert">{(save.error as Error).message || "Saqlab bo'lmadi"}</p>}

@@ -52,12 +52,12 @@ export function CreateItemForm({
         placeholder={placeholder}
         maxLength={maxLength}
         disabled={isPending}
-        className="flex-1 bg-surface/40 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-gold/50 min-h-[44px] disabled:opacity-50"
+        className="flex-1 bg-surface/40 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/5 text-ink focus:border-accent/60 min-h-[44px] disabled:opacity-50"
       />
       <button
         type="submit"
         disabled={isPending || !value.trim()}
-        className="shrink-0 text-xs font-semibold px-4 py-3 rounded-2xl bg-gold text-base active:scale-[0.97] transition-transform disabled:opacity-50 min-h-[44px]"
+        className="shrink-0 text-xs font-semibold px-4 py-3 rounded-2xl bg-accent text-base active:scale-[0.97] transition-transform disabled:opacity-50 min-h-[44px]"
       >
         {isPending ? (
           <span className="flex items-center gap-1.5">

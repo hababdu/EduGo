@@ -116,7 +116,7 @@ export function LoginPage() {
           <button
             onClick={begin}
             disabled={phase === 'starting'}
-            className="w-full rounded-2xl bg-gold text-base font-semibold py-3.5 active:scale-[0.98] transition disabled:opacity-60"
+            className="w-full rounded-2xl bg-accent text-base font-semibold py-3.5 active:scale-[0.98] transition disabled:opacity-60"
           >
             {phase === 'starting' ? (msg || 'Tayyorlanmoqda…') : '✈️ Telegram orqali kirish'}
           </button>
@@ -128,7 +128,7 @@ export function LoginPage() {
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full rounded-2xl bg-gold text-base font-semibold py-3.5"
+              className="block w-full rounded-2xl bg-accent text-base font-semibold py-3.5"
             >
               Telegramni ochish
             </a>

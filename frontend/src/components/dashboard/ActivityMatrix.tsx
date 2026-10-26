@@ -32,7 +32,7 @@ const LEVEL_CLASS = [
   'bg-gold/25 text-ink',
   'bg-gold/45 text-ink',
   'bg-gold/70 text-base font-bold',
-  'bg-gold text-base font-bold',
+  'bg-accent text-base font-bold',
 ] as const;
 
 /** 'YYYY-MM-DD' -> haftaning kuni, Dushanba = 0 */

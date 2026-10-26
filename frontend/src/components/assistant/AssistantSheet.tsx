@@ -67,7 +67,7 @@ function Bubble({
     const text = message.parts.map((p) => (p.kind === 'text' ? p.text : '')).join('');
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-gold text-base px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words">
+        <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-accent text-base px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words">
           {text}
         </div>
       </div>
@@ -234,7 +234,7 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
               onClick={() => submit(input)}
               disabled={!input.trim() || !!disabledReason}
               aria-label="Yuborish"
-              className="shrink-0 w-11 h-11 rounded-2xl bg-gold text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40"
+              className="shrink-0 w-11 h-11 rounded-2xl bg-accent text-base flex items-center justify-center active:scale-95 transition disabled:opacity-40"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5" aria-hidden="true">
                 <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />

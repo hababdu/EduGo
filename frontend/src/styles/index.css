@@ -32,6 +32,9 @@ body,
   --c-sky: 8 128 186;
   --glass-bg: 255 255 255;
   --glass-a: 0.5;
+  --c-accent: 200 124 0;
+  --c-accent-soft: 250 228 186;
+  --c-accent-2: 14 146 110;
   color-scheme: light;
 }
 
@@ -78,6 +81,10 @@ html.theme-fade, html.theme-fade * { transition: background-color .25s, border-c
   --c-sky: 56 189 248;
   --glass-bg: 18 22 42;
   --glass-a: 0.72;
+  /* Rol aksenti (standart = o'quvchi). Pastdagi [data-role] bloklari almashtiradi */
+  --c-accent: 255 176 32;
+  --c-accent-soft: 74 58 26;
+  --c-accent-2: 52 208 160;
   color-scheme: dark;
 
   /* iPhone dinamik oroli (env) va Telegram to'liq ekran sarlavhasi (--tg-*) ostida qolish uchun */
@@ -88,6 +95,21 @@ html.theme-fade, html.theme-fade * { transition: background-color .25s, border-c
   --island-top: calc(var(--island-safe) + 8px);
 }
 
+
+/* ============================================================
+   ROL RANGLARI (docs/DESIGN.md dagi jadval bilan bir xil).
+   Semantik ranglar HAMMA rolda bir xil: teal = muvaffaqiyat, gold = ball/kutilmoqda,
+   coral = xavf/qarz, sky = ma'lumot. Faqat ACCENT (asosiy tugma, faol belgi, fokus) rolga qarab o'zgaradi.
+   ============================================================ */
+:root[data-role='teacher'] { --c-accent: 45 212 140; --c-accent-soft: 20 62 48; --c-accent-2: 56 189 248; }
+:root[data-role='admin']   { --c-accent: 129 140 248; --c-accent-soft: 40 44 92; --c-accent-2: 255 176 32; }
+:root[data-role='super']   { --c-accent: 192 132 252; --c-accent-soft: 56 36 84; --c-accent-2: 56 189 248; }
+:root[data-role='parent']  { --c-accent: 34 211 238; --c-accent-soft: 16 60 70; --c-accent-2: 255 176 32; }
+:root[data-theme='light'][data-role='teacher'] { --c-accent: 5 150 105; --c-accent-soft: 200 238 226; --c-accent-2: 8 128 186; }
+:root[data-theme='light'][data-role='admin']   { --c-accent: 79 70 229; --c-accent-soft: 224 226 252; --c-accent-2: 200 124 0; }
+:root[data-theme='light'][data-role='super']   { --c-accent: 126 34 206; --c-accent-soft: 237 221 253; --c-accent-2: 8 128 186; }
+:root[data-theme='light'][data-role='parent']  { --c-accent: 8 145 178; --c-accent-soft: 207 240 248; --c-accent-2: 200 124 0; }
+
 body {
   @apply bg-base text-ink font-sans antialiased;
   /* AI orol tepa markazda turadi: iPhone "oroli"/Telegram sarlavhasidan pastda, kontent esa undan pastda */
@@ -96,7 +118,7 @@ body {
 
 /* Klaviatura fokusi — accessibility uchun har doim ko'rinadi */
 :focus-visible {
-  outline: 2px solid theme('colors.gold.DEFAULT');
+  outline: 2px solid rgb(var(--c-accent));
   outline-offset: 2px;
 }
 
@@ -160,8 +182,8 @@ body {
   /* Yumshoq "aurora": oltin va teal yorug'lik dog'lari */
   .bg-aurora {
     background-image:
-      radial-gradient(60% 45% at 85% -5%, rgb(var(--c-gold) / 0.14), transparent 70%),
-      radial-gradient(55% 40% at 0% 25%, rgb(var(--c-teal) / 0.10), transparent 70%),
+      radial-gradient(60% 45% at 85% -5%, rgb(var(--c-accent) / 0.16), transparent 70%),
+      radial-gradient(55% 40% at 0% 25%, rgb(var(--c-accent-2) / 0.10), transparent 70%),
       radial-gradient(50% 40% at 100% 80%, rgb(var(--c-sky) / 0.08), transparent 70%);
     background-repeat: no-repeat;
   }
@@ -180,16 +202,62 @@ body {
   }
 }
 
+
+/* ============================================================
+   SUYUQ ANIMATSIYALAR (faqat transform/opacity — telefon va Telegram WebView'da yengil)
+   ============================================================ */
+/* Orqa fondagi sekin suzuvchi yorug'lik dog'lari (rol aksentida) */
+@keyframes blob-drift-a { from { transform: translate3d(-6%, -4%, 0) scale(1); } to { transform: translate3d(8%, 10%, 0) scale(1.18); } }
+@keyframes blob-drift-b { from { transform: translate3d(6%, 8%, 0) scale(1.1); } to { transform: translate3d(-10%, -6%, 0) scale(0.92); } }
+.blob { position: absolute; border-radius: 9999px; will-change: transform; }
+.blob-a { animation: blob-drift-a 26s ease-in-out infinite alternate; }
+.blob-b { animation: blob-drift-b 32s ease-in-out infinite alternate; }
+
+/* Ro'yxat elementlari birin-ketin "ko'tarilib" chiqadi: <ul className="stagger"> */
+@keyframes rise-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+.stagger > * { animation: rise-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 55ms; }
+.stagger > *:nth-child(3) { animation-delay: 110ms; }
+.stagger > *:nth-child(4) { animation-delay: 165ms; }
+.stagger > *:nth-child(5) { animation-delay: 220ms; }
+.stagger > *:nth-child(6) { animation-delay: 275ms; }
+.stagger > *:nth-child(7) { animation-delay: 330ms; }
+.stagger > *:nth-child(8) { animation-delay: 385ms; }
+.stagger > *:nth-child(n+9) { animation-delay: 440ms; }
+
+/* Karta ustiga olib borilganda yumshoq ko'tariladi va aksent nuri paydo bo'ladi */
+@media (hover: hover) {
+  .lift { transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.25s; }
+  .lift:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -16px rgb(var(--c-accent) / 0.5); border-color: rgb(var(--c-accent) / 0.35); }
+}
+
+/* Yuklanish skeleti: pulsatsiya o'rniga o'tib turuvchi yorug'lik */
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.shimmer {
+  background-image: linear-gradient(100deg, transparent 30%, rgb(var(--c-tint) / 0.09) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* Aksent nuri (asosiy tugma): bosilganda tarqaladigan halqa */
+@keyframes accent-ping { 0% { box-shadow: 0 0 0 0 rgb(var(--c-accent) / 0.45); } 100% { box-shadow: 0 0 0 14px rgb(var(--c-accent) / 0); } }
+.ping-accent { animation: accent-ping 1.8s ease-out infinite; }
+
+/* Raqam/belgi paydo bo'lishi */
+@keyframes pop-in { 0% { opacity: 0; transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+.pop-in { animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+
 /* ===== O'tish va bosish effektlari ===== */
 @keyframes page-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
   to { opacity: 1; transform: none; }
 }
-.page-in { animation: page-in 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; }
+.page-in { animation: page-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 
 /* `scale` alohida xossa — mavjud transform (translate) bilan to'qnashmaydi */
-button:not(:disabled), a[href], [role='button'] { transition: scale 0.1s ease; }
-button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 0.97; }
+button:not(:disabled), a[href], [role='button'] { transition: scale 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 0.96; transition-duration: 0.08s; }
 
 /* Pastki navigatsiya: sirg'aluvchi indikator va ikonka "sakrashi" */
 .nav-indicator { transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1); }
@@ -230,5 +298,8 @@ button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 0.
   .nav-indicator { transition: none; }
   .nav-pop { animation: none; }
   .page-in { animation: none; }
+  .blob-a, .blob-b, .shimmer, .ping-accent, .pop-in { animation: none; }
+  .stagger > * { animation: none; }
+  .lift:hover { transform: none; }
   button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 1; }
 }

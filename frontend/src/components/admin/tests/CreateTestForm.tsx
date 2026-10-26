@@ -156,7 +156,7 @@ export function CreateTestForm({ onCancel }: { onCancel: () => void }) {
         <button
           type="submit"
           disabled={createTest.isPending}
-          className="flex-1 rounded-full bg-gold text-base font-semibold py-2.5 text-sm disabled:opacity-50"
+          className="flex-1 rounded-full bg-accent text-base font-semibold py-2.5 text-sm disabled:opacity-50"
         >
           {createTest.isPending ? 'Yaratilmoqda...' : 'Testni yaratish'}
         </button>

@@ -34,7 +34,7 @@ function Tabs({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
         onChange(id);
       }}
       className={`flex-1 rounded-xl py-2 text-xs font-semibold transition ${
-        tab === id ? 'bg-gold text-base' : 'text-ink-muted'
+        tab === id ? 'bg-accent text-base' : 'text-ink-muted'
       }`}
     >
       {label}

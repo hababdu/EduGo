@@ -20,7 +20,7 @@ export function AdminOverview() {
     return (
       <div className={PAGE_WIDE}>
         <Skeleton className="h-40 rounded-3xl" />
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-24" />
           ))}

@@ -47,7 +47,7 @@ export function AdminStudents() {
   };
 
   const inputCls =
-    'bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-gold/50';
+    'bg-surface/50 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink min-h-[44px] focus:border-accent/60';
 
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
@@ -114,7 +114,7 @@ export function AdminStudents() {
           {hasActiveFilters && (
             <button
               onClick={handleResetFilters}
-              className="text-xs bg-gold text-base font-semibold px-4 py-2 rounded-xl active:scale-[0.98] transition"
+              className="text-xs bg-accent text-base font-semibold px-4 py-2 rounded-xl active:scale-[0.98] transition"
             >
               Barcha filtrlarni olib tashlash
             </button>

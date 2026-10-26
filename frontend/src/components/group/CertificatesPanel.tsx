@@ -23,7 +23,7 @@ export function CertificatesPanel({ groupId, students }: { groupId: string; stud
     onSuccess: () => qc.invalidateQueries({ queryKey: key }),
     onError: (e: any) => toast('error', e?.message || 'Xatolik'),
   });
-  const inputCls = 'min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-gold/50';
+  const inputCls = 'min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60';
   return (
     <section className="space-y-3 rounded-3xl border border-tint/10 bg-surface/30 p-4">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-ink"><Award className="h-4 w-4 text-gold" aria-hidden="true" />Sertifikatlar</h3>

@@ -13,7 +13,7 @@ import { formatDays } from '../../hooks/useSchedule';
 const OPTIONS: { value: AttendanceStatus; label: string; Icon: typeof Check; on: string }[] = [
   { value: 'PRESENT', label: 'Keldi', Icon: Check, on: 'bg-teal text-base' },
   { value: 'ABSENT', label: 'Kelmadi', Icon: X, on: 'bg-coral text-base' },
-  { value: 'EXCUSED', label: 'Sababli', Icon: Clock3, on: 'bg-gold text-base' },
+  { value: 'EXCUSED', label: 'Sababli', Icon: Clock3, on: 'bg-accent text-base' },
 ];
 
 const MAX_BACK_DAYS = 90;
@@ -79,7 +79,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
             min={shiftDate(today, -MAX_BACK_DAYS)}
             max={today}
             onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="bg-surface/40 border border-tint/5 rounded-xl px-3 py-2 text-sm text-ink normal-case tracking-normal outline-none focus:border-gold/50 min-h-[44px]"
+            className="bg-surface/40 border border-tint/5 rounded-xl px-3 py-2 text-sm text-ink normal-case tracking-normal outline-none focus:border-accent/60 min-h-[44px]"
           />
         </label>
         {summary?.overallPercent != null && (
@@ -171,7 +171,7 @@ export function AttendancePanel({ groupId }: { groupId: string }) {
             // Mobilda saqlash tugmasi har doim ko'rinib turadi
             style={{ position: 'sticky', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}
             disabled={mark.isPending || markedNow === 0 || (!dirty && !saved)}
-            className="w-full rounded-xl bg-gold text-base font-semibold py-3 text-sm disabled:opacity-40 active:scale-[0.99] transition"
+            className="w-full rounded-xl bg-accent text-base font-semibold py-3 text-sm disabled:opacity-40 active:scale-[0.99] transition"
           >
             {mark.isPending ? 'Saqlanmoqda…' : saved ? 'Saqlandi ✓' : 'Davomatni saqlash'}
           </button>

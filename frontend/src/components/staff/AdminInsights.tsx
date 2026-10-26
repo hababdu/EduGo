@@ -42,7 +42,7 @@ export function AdminInsights() {
       )}
       {risk.data && risk.data.length > 0 && (
         <Panel title={`Xavf ostida (${risk.data.length})`} icon={AlertTriangle} accent="coral" flush>
-          <ul className="divide-y divide-tint/5">
+          <ul className="divide-y divide-tint/5 stagger">
             {risk.data.slice(0, 6).map((r) => (
               <li key={r.studentId}>
                 <button type="button" onClick={() => navigate(`/admin/students`)} className="flex w-full items-center gap-3 px-5 py-3 text-left active:bg-tint/5">

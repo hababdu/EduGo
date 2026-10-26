@@ -84,7 +84,7 @@ export function Onboarding() {
           )}
           <button
             onClick={() => { if (last) { playSound('nav'); close(); } else setI(i + 1); }}
-            className="flex-1 py-3 rounded-xl bg-gold text-base font-semibold text-sm active:scale-[0.98] transition"
+            className="flex-1 py-3 rounded-xl bg-accent text-base font-semibold text-sm active:scale-[0.98] transition"
           >
             {last ? 'Boshlash' : 'Keyingisi'}
           </button>

@@ -30,21 +30,21 @@ export const RADIUS = {
 
 export const CONTROL = {
   input:
-    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted',
+    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent/60 min-h-[44px] placeholder:text-ink-muted',
   select:
-    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px]',
+    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent/60 min-h-[44px]',
   textarea:
-    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 resize-none placeholder:text-ink-muted',
+    'w-full bg-surface/40 border border-white/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent/60 resize-none placeholder:text-ink-muted',
   buttonPrimary:
-    'bg-gold text-base rounded-xl px-4 py-2.5 text-sm font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
+    'bg-accent text-base rounded-xl px-4 py-2.5 text-sm font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
   buttonGhost:
     'bg-white/5 text-ink rounded-xl px-4 py-2.5 text-sm font-medium hover:bg-white/10 active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
   buttonSubtle:
-    'bg-gold/10 text-gold rounded-xl px-4 py-2.5 text-sm font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
+    'bg-accent/10 text-accent rounded-xl px-4 py-2.5 text-sm font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
   buttonDanger:
     'bg-red-500/10 text-red-400 rounded-xl px-4 py-2.5 text-sm font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-2',
   chip: 'px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0',
-  chipActive: 'bg-gold text-base',
+  chipActive: 'bg-accent text-base',
   chipInactive: 'bg-white/5 text-ink-muted hover:bg-white/10',
 } as const;
 

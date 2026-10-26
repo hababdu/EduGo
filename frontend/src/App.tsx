@@ -1,4 +1,5 @@
 // src/App.tsx
+import { applyRole } from './lib/theme';
 import { AppBackground } from './components/layout/AppBackground';
 import {
   BrowserRouter,
@@ -77,6 +78,9 @@ import { API_URL } from './lib/config';
 export function App() {
   const status = useAuth();
   const user = useAuthStore((s) => s.user);
+
+  // Rolga mos aksent rangi (o'quvchi/o'qituvchi/admin/super/ota-ona)
+  useEffect(() => { applyRole(user?.role); }, [user?.role]);
 
   /* ---------- Avtorizatsiya ---------- */
   useEffect(() => {

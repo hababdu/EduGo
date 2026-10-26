@@ -1,4 +1,5 @@
 import { LucideIcon } from 'lucide-react';
+import { useCountUp } from '../../hooks/useCountUp';
 
 type Accent = 'gold' | 'teal' | 'coral' | 'sky';
 const ICON_CLS: Record<Accent, string> = {
@@ -8,6 +9,11 @@ const ICON_CLS: Record<Accent, string> = {
   sky: 'bg-sky/10 text-sky',
 };
 const VALUE_CLS: Record<Accent, string> = { gold: 'text-gold', teal: 'text-teal', coral: 'text-coral', sky: 'text-sky' };
+
+function parseNumeric(v: string): { pre: string; n: number; suf: string } | null {
+  const r = /^(\D*)(\d+)(\D*)$/.exec(v.replace(/\s/g, ''));
+  return r ? { pre: r[1], n: Number(r[2]), suf: r[3] } : null;
+}
 
 interface Props {
   label: string;
@@ -22,11 +28,15 @@ interface Props {
 /** Ko'rsatkich kartasi: ikonli chip, katta raqam, izoh. */
 export function KpiCard({ label, value, icon: Icon, accent = 'gold', hint, onClick }: Props) {
   const Wrapper: any = onClick ? 'button' : 'div';
+  // Son bo'lsa (yoki "85%" kabi) — raqam qismi sanab chiqiladi; boshqa matn o'zgarishsiz
+  const parts = typeof value === 'number' ? { pre: '', n: value, suf: '' } : parseNumeric(String(value));
+  const counted = useCountUp(parts ? parts.n : 0);
+  const shown = parts ? `${parts.pre}${Math.round(counted).toLocaleString('uz-UZ')}${parts.suf}` : value;
   return (
     <Wrapper
       type={onClick ? 'button' : undefined}
       onClick={onClick}
-      className={`group relative overflow-hidden rounded-2xl border border-tint/10 bg-surface/50 p-4 text-left ${
+      className={`group relative overflow-hidden lift rounded-2xl border border-tint/10 bg-surface/50 p-4 text-left ${
         onClick ? 'transition hover:border-tint/20 hover:bg-surface/70 active:scale-[0.98]' : ''
       }`}
     >
@@ -41,7 +51,7 @@ export function KpiCard({ label, value, icon: Icon, accent = 'gold', hint, onCli
           String(value).length > 8 ? 'text-lg sm:text-2xl' : 'text-2xl sm:text-3xl'
         } ${VALUE_CLS[accent]}`}
       >
-        {value}
+        {shown}
       </div>
       {hint && <div className="mt-0.5 text-[11px] text-ink-muted">{hint}</div>}
     </Wrapper>

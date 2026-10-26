@@ -38,7 +38,7 @@ export function StudentToday() {
     : { text: 'Topshiring', cls: 'bg-gold/15 text-gold' };
 
   return (
-    <div className="space-y-3 px-5">
+    <div className="space-y-3 px-5 stagger">
       {todays.length > 0 && (
         <section className="rounded-3xl border border-tint/10 bg-surface/40 p-4">
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink"><CalendarCheck className="h-4 w-4 text-teal" aria-hidden="true" />Bugungi darslar</h3>

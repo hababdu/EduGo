@@ -21,6 +21,12 @@ export default {
           DEFAULT: v('teal'),
           soft: v('teal-soft'),
         },
+        // Rol aksenti (o'quvchi/o'qituvchi/admin/super/ota-ona bo'yicha o'zgaradi) — asosiy tugma, faol belgi, fokus
+        accent: {
+          DEFAULT: v('accent'),
+          soft: v('accent-soft'),
+          2: v('accent-2'),
+        },
         coral: v('coral'),
         sky: v('sky'),
         ink: {

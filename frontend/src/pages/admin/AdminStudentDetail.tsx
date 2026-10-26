@@ -164,7 +164,7 @@ export function AdminStudentDetail() {
           <button
             type="submit"
             disabled={adjustScore.isPending}
-            className="w-full rounded-full bg-gold text-base font-semibold py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="w-full rounded-full bg-accent text-base font-semibold py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {adjustScore.isPending ? 'Saqlanmoqda...' : 'Balni yangilash'}
           </button>

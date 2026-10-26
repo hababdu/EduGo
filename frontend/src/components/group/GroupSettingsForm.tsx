@@ -64,7 +64,7 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
   };
 
   const input =
-    'w-full bg-surface/40 border border-tint/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-gold/50 min-h-[44px] placeholder:text-ink-muted';
+    'w-full bg-surface/40 border border-tint/5 rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent/60 min-h-[44px] placeholder:text-ink-muted';
 
   return (
     <div className="bg-surface/20 border border-tint/5 rounded-2xl">
@@ -122,7 +122,7 @@ export function GroupSettingsForm({ groupId, maxCapacity, telegramChatUrl, membe
             type="button"
             onClick={submit}
             disabled={save.isPending}
-            className="w-full rounded-xl bg-gold text-base font-semibold py-2.5 text-sm disabled:opacity-50"
+            className="w-full rounded-xl bg-accent text-base font-semibold py-2.5 text-sm disabled:opacity-50"
           >
             {save.isPending ? 'Saqlanmoqda…' : 'Saqlash'}
           </button>

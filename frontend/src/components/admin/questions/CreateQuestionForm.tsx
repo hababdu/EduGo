@@ -160,7 +160,7 @@ export function CreateQuestionForm({ onCreated }: { onCreated?: () => void }) {
       <button
         type="submit"
         disabled={createQuestion.isPending}
-        className="rounded-full bg-gold text-base font-semibold px-5 py-2 text-sm disabled:opacity-50"
+        className="rounded-full bg-accent text-base font-semibold px-5 py-2 text-sm disabled:opacity-50"
       >
         {createQuestion.isPending ? 'Saqlanmoqda...' : 'Savolni saqlash'}
       </button>

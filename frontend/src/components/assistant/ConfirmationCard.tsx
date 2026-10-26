@@ -54,7 +54,7 @@ export function ConfirmationCard({ card, status, message, onConfirm, onCancel }:
 
   const tone = high
     ? { box: 'border-coral/40 bg-coral/10', badge: 'text-coral', btn: 'bg-coral text-white' }
-    : { box: 'border-gold/30 bg-gold/10', badge: 'text-gold', btn: 'bg-gold text-base' };
+    : { box: 'border-gold/30 bg-gold/10', badge: 'text-gold', btn: 'bg-accent text-base' };
 
   const handleConfirm = () => {
     if (high && !armed) {

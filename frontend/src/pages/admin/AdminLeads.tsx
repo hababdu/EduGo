@@ -20,7 +20,7 @@ const STATUS: Record<Status, { l: string; c: string }> = {
   LOST: { l: 'Rad / qiziqmadi', c: 'bg-coral/15 text-coral' },
 };
 const ORDER = Object.keys(STATUS) as Status[];
-const inputCls = 'min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-gold/50';
+const inputCls = 'min-h-[44px] w-full rounded-xl border border-tint/5 bg-surface/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60';
 const dayStr = (iso: string) => new Date(iso).toLocaleDateString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit' });
 
 /** Qabul (lid) CRM: kimdir qiziqsa — yozib qo'yamiz, holatini kuzatamiz, qayta aloqa sanasini belgilaymiz. */
@@ -72,7 +72,7 @@ export default function AdminLeads() {
       <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist">
         {(['ALL', ...ORDER] as const).map((s) => (
           <button key={s} type="button" role="tab" aria-selected={filter === s} onClick={() => setFilter(s)}
-            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold ${filter === s ? 'bg-gold text-base' : 'bg-surface/40 text-ink-muted'}`}>
+            className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold ${filter === s ? 'bg-accent text-base' : 'bg-surface/40 text-ink-muted'}`}>
             {s === 'ALL' ? `Hammasi · ${total}` : `${STATUS[s].l} · ${data?.counts[s] ?? 0}`}
           </button>
         ))}
@@ -82,7 +82,7 @@ export default function AdminLeads() {
       {error && <p className="rounded-2xl border border-coral/20 bg-coral/10 p-3 text-sm text-coral">{(error as Error).message}</p>}
       {data && data.items.length === 0 && <EmptyState icon={UserPlus} title="Arizalar yo'q" subtitle="Yangi qiziqqan odamni “Ariza” tugmasi bilan qo'shing" />}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 stagger">
         {data?.items.map((l) => {
           const overdue = l.nextContactAt && l.status !== 'ENROLLED' && l.status !== 'LOST' && l.nextContactAt.slice(0, 10) < today;
           return (

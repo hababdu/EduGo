@@ -85,7 +85,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
   const returned = sub?.status === 'RETURNED';
   const showForm = data.canSubmit && (!sub || editing || returned);
   const inputCls =
-    'w-full bg-surface/60 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink focus:border-gold/50 placeholder:text-ink-faint';
+    'w-full bg-surface/60 rounded-2xl px-4 py-3 text-sm outline-none border border-tint/10 text-ink focus:border-accent/60 placeholder:text-ink-faint';
 
   return (
     <Panel title="Vazifani topshirish" icon={Edit3} accent="gold">
@@ -169,7 +169,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
               <button
                 onClick={() => save.mutate()}
                 disabled={busy || save.isPending || (!text.trim() && files.length === 0)}
-                className="flex-1 rounded-2xl bg-gold text-base font-semibold py-3 text-sm disabled:opacity-40 active:scale-[0.98] transition"
+                className="flex-1 rounded-2xl bg-accent text-base font-semibold py-3 text-sm disabled:opacity-40 active:scale-[0.98] transition"
               >
                 {save.isPending ? 'Yuborilmoqda…' : sub ? 'Yangilash' : 'Topshirish'}
               </button>

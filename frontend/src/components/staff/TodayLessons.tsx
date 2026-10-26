@@ -27,7 +27,7 @@ export function TodayLessons({ basePath, openAttendanceTab = false }: Props) {
           Bugun darslar yo'q. Guruh sozlamalarida dars kunlarini belgilang — shu yerda ko'rinadi.
         </p>
       ) : (
-        <ul className="divide-y divide-tint/5">
+        <ul className="divide-y divide-tint/5 stagger">
           {data.map((l) => {
             const done = l.membersCount > 0 && l.markedCount >= l.membersCount;
             const pct = l.membersCount > 0 ? (l.markedCount / l.membersCount) * 100 : 0;
@@ -54,7 +54,7 @@ export function TodayLessons({ basePath, openAttendanceTab = false }: Props) {
                   type="button"
                   onClick={() => navigate(`${basePath}/${l.id}${openAttendanceTab ? '?tab=attendance' : ''}`)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-95 ${
-                    done ? 'bg-teal/10 text-teal' : 'bg-gold text-base'
+                    done ? 'bg-teal/10 text-teal' : 'bg-accent text-base'
                   }`}
                 >
                   {done && <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />}

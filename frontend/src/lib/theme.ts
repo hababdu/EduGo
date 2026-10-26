@@ -95,3 +95,12 @@ export function useTheme(): { pref: ThemePref; theme: Theme } {
 
 export const THEME_LABEL: Record<ThemePref, string> = { auto: 'Avto', dark: "Qorong'i", light: "Yorug'" };
 export const THEME_ICON: Record<ThemePref, string> = { auto: '🌓', dark: '🌙', light: '☀️' };
+
+/** Rol aksentini qo'llaydi: <html data-role="teacher"> → CSS'dagi --c-accent almashadi. */
+export function applyRole(role?: string | null) {
+  const map: Record<string, string> = { TEACHER: 'teacher', ADMIN: 'admin', SUPER_ADMIN: 'super', PARENT: 'parent' };
+  const v = role ? map[role] : undefined;
+  const root = document.documentElement;
+  if (v) root.dataset.role = v;
+  else delete root.dataset.role; // o'quvchi (standart)
+}

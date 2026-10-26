@@ -35,7 +35,7 @@ export function Modal({
   const confirmClass =
     variant === 'danger'
       ? 'bg-red-500 text-white'
-      : 'bg-gold text-base';
+      : 'bg-accent text-base';
 
   return (
     <div
