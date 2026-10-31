@@ -39,7 +39,10 @@ export function toOpenAiMessages(req: AiRequest, providerName?: string) {
           type: 'function',
           function: { name: b.name, arguments: JSON.stringify(b.input ?? {}) },
           // Gemini "thinking" modellari tool chaqiruvi imzosini keyingi so'rovda qaytarishni talab qiladi
-          ...(providerName === 'gemini' && b.extra ? { extra_content: b.extra } : {}),
+          // Imzo yo'q bo'lsa (chaqiruv zaxira provayderdan kelgan) — Gemini hujjatlaridagi o'tkazib yuborish qiymati
+          ...(providerName === 'gemini'
+            ? { extra_content: b.extra ?? { google: { thought_signature: 'skip_thought_signature_validator' } } }
+            : {}),
         }));
       out.push({
         role: 'assistant',

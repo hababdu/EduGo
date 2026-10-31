@@ -16,6 +16,7 @@ import { MOOD, MOOD_SOUND, toIslandMood, type IslandMood } from './island/moods'
 import { OUTFITS, setOutfitPref, useOutfitPref } from './island/outfits';
 import {
   MascotContext,
+  captureIslandOrigin,
   useMascot,
   type AttachedFile,
   type MascotContextValue,
@@ -71,6 +72,9 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
   const [flash, setFlash] = useState<IslandMood | null>(null);
   const [bubble, setBubble] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [pillLinger, setPillLinger] = useState(false);
+  const lingerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (lingerTimer.current) clearTimeout(lingerTimer.current); }, []);
   const [chatContext, setChatContext] = useState<OpenChatContext>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -138,6 +142,11 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
       setChatContext(ctx);
       fileRef.current = ctx.file;
     }
+    captureIslandOrigin();
+    // Kapsula oyna ostida biroz turadi: oyna aynan undan "o'sib" chiqadi, miltillash bo'lmaydi
+    setPillLinger(true);
+    if (lingerTimer.current) clearTimeout(lingerTimer.current);
+    lingerTimer.current = setTimeout(() => setPillLinger(false), 280);
     setBubble(null);
     setMenuOpen(false);
     setFlash(null);
@@ -328,15 +337,16 @@ export function AIMascotProvider({ children }: { children?: ReactNode }) {
     <MascotContext.Provider value={ctxValue}>
       {children}
 
-      {!chatOpen && (
+      {(!chatOpen || pillLinger) && (
         <div
           className="fixed left-1/2 z-50 -translate-x-1/2 select-none"
-          style={{ top: 'var(--island-top)', maxWidth: 'calc(100vw - 16px)' }}
+          style={{ top: 'var(--island-top)', maxWidth: 'calc(100vw - 16px)', animation: 'island-fade .22s .2s backwards' }}
         >
           <button
             type="button"
             aria-label="AI yordamchini ochish"
             data-silent
+            data-island-pill
             onClick={onTap}
             onPointerDown={onPressStart}
             onPointerUp={onPressEnd}

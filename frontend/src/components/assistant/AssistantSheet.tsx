@@ -176,8 +176,13 @@ export function AssistantSheet({ isOpen, onClose, role, assistant, headerSlot, d
     if (isOpen && !disabledReason) void restorePending();
   }, [isOpen, disabledReason, restorePending]);
 
+  // Ochilish animatsiyasi paytida sakrash/silliq aylantirish bo'lmasin: ochilganda darhol, yangi xabarda silliq
+  const wasOpen = useRef(false);
   useEffect(() => {
-    endRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
+    const opening = isOpen && !wasOpen.current;
+    wasOpen.current = isOpen;
+    if (!isOpen) return;
+    endRef.current?.scrollIntoView?.({ behavior: opening ? 'auto' : 'smooth', block: 'end' });
   }, [messages, isOpen]);
 
   const submit = (text: string) => {

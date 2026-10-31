@@ -4,6 +4,17 @@ import { IslandBot } from './island/IslandBot';
 import { type IslandMood } from './island/moods';
 import { useOutfitPref } from './island/outfits';
 
+/** Chat ochilish paytida kapsulaning joyi: oyna aynan shu joydan "o'sib" chiqadi va shu joyga qaytib yig'iladi */
+let islandOrigin: { top: number; left: number; width: number; height: number } | null = null;
+export function captureIslandOrigin() {
+  const el = typeof document !== 'undefined' ? document.querySelector('[data-island-pill]') : null;
+  const r = el?.getBoundingClientRect();
+  islandOrigin = r && r.width > 0 ? { top: r.top, left: r.left, width: r.width, height: r.height } : null;
+}
+export function getIslandOrigin() {
+  return islandOrigin;
+}
+
 /* Robot konteksti: hissiyat, kiyim va suhbatlar robotga "reaksiya" yuborishi uchun.
    Alohida faylda — chat komponentlari AIMascot'ni import qilib aylanma bog'lanish hosil qilmasligi uchun. */
 

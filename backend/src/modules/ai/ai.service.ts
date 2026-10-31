@@ -122,34 +122,47 @@ export class AiService {
     const chain = this.requireChain();
 
     let lastError: unknown;
+    let stop = false;
     for (const provider of chain) {
+      if (stop) break;
       const model = this.cfg.model(provider.name, tier);
-      let started = false;
-      let recorded = false;
-      let outChars = 0;
-      try {
-        for await (const ev of provider.stream(req, model)) {
-          started = true;
-          if (ev.type === 'text') outChars += ev.text.length;
-          if (ev.type === 'done') {
-            recorded = true;
-            await this.usage.record(user.id, feature, provider.name, ev.response.model, ev.response.usage);
+      // Vaqtinchalik 429/5xx: zaxiraga o'tishdan oldin shu provayderga bir marta qayta uriniladi
+      for (let attempt = 0; attempt < 2; attempt++) {
+        let started = false;
+        let recorded = false;
+        let outChars = 0;
+        let retry = false;
+        try {
+          for await (const ev of provider.stream(req, model)) {
+            started = true;
+            if (ev.type === 'text') outChars += ev.text.length;
+            if (ev.type === 'done') {
+              recorded = true;
+              await this.usage.record(user.id, feature, provider.name, ev.response.model, ev.response.usage);
+            }
+            yield ev;
           }
-          yield ev;
+          return;
+        } catch (e) {
+          lastError = e;
+          if (!started && attempt === 0 && e instanceof AiProviderError && e.retryable && !e.timeout) {
+            retry = true;
+          } else if (started || !this.canFallback(e)) {
+            stop = true;
+          } else {
+            this.logger.warn(`${provider.name} stream ishlamadi (${(e as Error).message}), zaxiraga o'tilmoqda`);
+          }
+        } finally {
+          // Foydalanuvchi stream'ni to'xtatsa yoki ulanish uzilsa ham, sarflangan tokenlar limitga hisoblanadi
+          if (started && !recorded) {
+            await this.usage.record(user.id, feature, provider.name, model, {
+              inputTokens: estimateTokens(req),
+              outputTokens: Math.ceil(outChars / 4),
+            });
+          }
         }
-        return;
-      } catch (e) {
-        lastError = e;
-        if (started || !this.canFallback(e)) break;
-        this.logger.warn(`${provider.name} stream ishlamadi (${(e as Error).message}), zaxiraga o'tilmoqda`);
-      } finally {
-        // Foydalanuvchi stream'ni to'xtatsa yoki ulanish uzilsa ham, sarflangan tokenlar limitga hisoblanadi
-        if (started && !recorded) {
-          await this.usage.record(user.id, feature, provider.name, model, {
-            inputTokens: estimateTokens(req),
-            outputTokens: Math.ceil(outChars / 4),
-          });
-        }
+        if (!retry) break;
+        await new Promise((r) => setTimeout(r, 700));
       }
     }
     throw this.toHttp(lastError);
