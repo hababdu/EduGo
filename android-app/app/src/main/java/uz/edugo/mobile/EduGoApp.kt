@@ -14,5 +14,6 @@ class EduGoApp : Application() {
         super.onCreate()
         session = Session(this)
         api = Api(session)
+        NotifyWorker.schedule(this)
     }
 }

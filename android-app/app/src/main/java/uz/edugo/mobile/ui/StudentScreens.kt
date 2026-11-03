@@ -32,10 +32,10 @@ private fun TaskBadge(t: Task) {
 }
 
 @Composable
-fun TaskList(tasks: List<Task>) {
+fun TaskList(tasks: List<Task>, onOpen: (String) -> Unit) {
     val p = P
     tasks.forEachIndexed { i, t ->
-        Panel(Modifier.stagger(i)) {
+        Panel(Modifier.stagger(i).pressable { onOpen(t.id) }) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(t.title, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -49,7 +49,7 @@ fun TaskList(tasks: List<Task>) {
 }
 
 @Composable
-fun StudentHome(user: AuthUser) {
+fun StudentHome(user: AuthUser, openTask: (String) -> Unit) {
     val p = P
     val dash = rememberRemote("/api/v1/dashboard/me", DashboardData.serializer())
     val today = rememberRemoteList("/api/v1/groups/schedule/today", TodayLesson.serializer())
@@ -85,7 +85,7 @@ fun StudentHome(user: AuthUser) {
             val active = list.filter { it.state == "PENDING" || it.state == "RETURNED" }
             SectionTitle(if (active.isEmpty()) "Vazifalar" else "Vazifalar (${active.size} ta kutmoqda)")
             if (list.isEmpty()) Panel { Text("Hozircha vazifa yo'q", color = p.muted, fontSize = 14.sp) }
-            TaskList(list.take(4))
+            TaskList(list.take(4), openTask)
         }
         Section(standing) { list ->
             if (list.isNotEmpty()) {
@@ -110,13 +110,13 @@ fun StudentHome(user: AuthUser) {
 }
 
 @Composable
-fun StudentTasks() {
+fun StudentTasks(openTask: (String) -> Unit) {
     val tasks = rememberRemoteList("/api/v1/dashboard/tasks", Task.serializer())
     RefreshColumn(listOf(tasks)) {
         Hero("Vazifalar", "Uy vazifalarim", "Muddat, holat va baho")
         Section(tasks) { list ->
             if (list.isEmpty()) EmptyText("Hozircha vazifa yo'q")
-            TaskList(list)
+            TaskList(list, openTask)
         }
     }
 }
