@@ -32,6 +32,17 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
 
+      - name: Build signed release (AAB + APK)
+        if: ${{ secrets.EDUGO_KEYSTORE_BASE64 != '' }}
+        env:
+          KS_B64: ${{ secrets.EDUGO_KEYSTORE_BASE64 }}
+          EDUGO_KEYSTORE_PASSWORD: ${{ secrets.EDUGO_KEYSTORE_PASSWORD }}
+          EDUGO_KEY_ALIAS: ${{ secrets.EDUGO_KEY_ALIAS }}
+          EDUGO_KEY_PASSWORD: ${{ secrets.EDUGO_KEY_PASSWORD }}
+        run: |
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/edugo.keystore"
+          EDUGO_KEYSTORE_PATH="$RUNNER_TEMP/edugo.keystore" ./gradlew assembleRelease bundleRelease --no-daemon
+
       - uses: actions/upload-artifact@v4
         with:
           name: EduGo-native-debug-apk

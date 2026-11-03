@@ -20,8 +20,22 @@ android {
         buildConfigField("String", "API_URL", "\"${api.trimEnd('/')}\"")
     }
 
+    // Imzolash: faqat muhit o'zgaruvchilari berilganda (CI'dagi sirlar). Kalit repoga kirmaydi.
+    val ksPath = System.getenv("EDUGO_KEYSTORE_PATH")
+    if (ksPath != null) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(ksPath)
+                storePassword = System.getenv("EDUGO_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("EDUGO_KEY_ALIAS")
+                keyPassword = System.getenv("EDUGO_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (ksPath != null) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }

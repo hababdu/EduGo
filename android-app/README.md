@@ -8,3 +8,5 @@ Native ilova. Backend: mavjud NestJS API (`/api/v1/*`), kirish: Telegram bot (`a
 - CI: `.github/workflows/android-native.yml` → Releases `app-android-native`
 
 Qilinmagan (keyingi bosqich): push-bildirishnoma (FCM), test topshirish, vazifa yuborish, AI yordamchi, release imzolash.
+
+Imzolangan release (Play Market): GitHub Secrets: EDUGO_KEYSTORE_BASE64, EDUGO_KEYSTORE_PASSWORD, EDUGO_KEY_ALIAS, EDUGO_KEY_PASSWORD. Berilsa CI `assembleRelease` + `bundleRelease` ham bajaradi.
