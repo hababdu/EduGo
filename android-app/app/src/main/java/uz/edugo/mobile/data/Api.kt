@@ -136,6 +136,7 @@ class Api(private val session: Session) {
      * Server-Sent Events (AI yordamchi). `onData(event, data)` har bir blok uchun chaqiriladi.
      * 401 bo'lsa bir marta yangilab qayta urinadi. Korutina bekor qilinsa ulanish yopiladi.
      */
+    @OptIn(kotlinx.coroutines.InternalCoroutinesApi::class)
     suspend fun sse(path: String, body: String, onData: (event: String?, data: String) -> Unit) {
         var token = session.accessToken
         var retried = false
