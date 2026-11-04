@@ -23,7 +23,7 @@ import uz.edugo.mobile.data.SuperAdminRow
 import uz.edugo.mobile.data.SuperOrganization
 
 @Composable
-fun SuperAdminsScreen() {
+fun SuperAdminsScreen(onBack: () -> Unit) {
     val p = P
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
@@ -33,7 +33,7 @@ fun SuperAdminsScreen() {
     var message by remember { mutableStateOf<String?>(null) }
     val orgList = (orgs.state as? UiState.Ready)?.value.orEmpty()
     RefreshColumn(listOf(admins, orgs)) {
-        BackHeader("Administratorlar", onBack = {})
+        BackHeader("Administratorlar", onBack)
         Hero("Super admin", "Maktab adminlari", "Admin akkauntlari, bloklash va tashkilotga biriktirish")
         message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
         Section(admins) { list ->
