@@ -60,3 +60,5 @@ import kotlinx.serialization.Serializable
     val monthlyFee: Int? = null, val maxCapacity: Int? = null,
 )
 @Serializable data class AssignGroupTeacherBody(val teacherId: String)
+
+@Serializable data class UpdateAdminRoleBody(val role: String)
