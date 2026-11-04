@@ -52,8 +52,8 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.STUDENT -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("lessons", "Darslar", Icons.Rounded.MenuBook),
-        Tab("tests", "Testlar", Icons.Rounded.Quiz), Tab("tasks", "Vazifalar", Icons.Rounded.Assignment),
-        Tab("ranking", "Reyting", Icons.Rounded.EmojiEvents), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("tests", "Testlar", Icons.Rounded.Quiz), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
+        Tab("profile", "Profil", Icons.Rounded.Person),
     )
     Role.TEACHER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
@@ -66,7 +66,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -108,7 +108,7 @@ fun MainShell(user: AuthUser) {
             },
         ) { pad ->
           Column(Modifier.padding(pad)) {
-            if (showTop) TopBar(user, onBell = { nav.navigate("notifications") }, onProfile = { nav.navigate("profile") })
+            if (showTop) TopBar(user, onBell = { nav.navigate("notifications") }, onProfile = { nav.navigate("profile") }, onAI = { nav.navigate("ai") })
             NavHost(
                 navController = nav,
                 startDestination = "home",
@@ -120,7 +120,7 @@ fun MainShell(user: AuthUser) {
             ) {
                 composable("home") {
                     when (role) {
-                        Role.STUDENT -> StudentHome(user) { nav.navigate("task/$it") }
+                        Role.STUDENT -> StudentHome(user, openTask = { nav.navigate("task/$it") }, openRanking = { nav.navigate("ranking") }, openTasks = { nav.navigate("tasks") })
                         Role.TEACHER -> TeacherHome(user) { nav.navigate("group/$it") }
                         Role.ADMIN, Role.SUPER -> AdminHome(user)
                         Role.PARENT -> ParentHome { nav.navigate("child/$it") }
@@ -147,11 +147,12 @@ fun MainShell(user: AuthUser) {
 }
 
 @Composable
-private fun TopBar(user: AuthUser, onBell: () -> Unit, onProfile: () -> Unit) {
+private fun TopBar(user: AuthUser, onBell: () -> Unit, onProfile: () -> Unit, onAI: () -> Unit) {
     val p = P
     Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Text("EduGo", color = p.accent, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Box(Modifier.pressable(onAI).padding(8.dp)) { Icon(Icons.Rounded.AutoAwesome, contentDescription = "AI yordamchi", tint = p.accent) }
             Box(Modifier.pressable(onBell).padding(8.dp)) { Icon(Icons.Rounded.Notifications, contentDescription = "Xabarlar", tint = p.ink) }
             Avatar(user.firstName, Modifier.pressable(onProfile), size = 36.dp)
         }
