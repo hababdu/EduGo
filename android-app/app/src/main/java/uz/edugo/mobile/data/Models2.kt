@@ -81,6 +81,7 @@ data class HwSubmission(
     val improvements: List<String> = emptyList(),
     val gradedBy: String? = null,
     val returnNote: String? = null,
+    val files: List<MaterialFileDto> = emptyList(),
 )
 
 @Serializable
@@ -91,7 +92,7 @@ data class HwMine(
     val submission: HwSubmission? = null,
 )
 
-@Serializable data class HwBody(val textAnswer: String?)
+@Serializable data class HwBody(val textAnswer: String?, val fileIds: List<String> = emptyList())
 
 /* ---------- AI yordamchi ---------- */
 @Serializable data class ChatTurn(val role: String, val content: String)
