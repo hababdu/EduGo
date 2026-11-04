@@ -133,6 +133,8 @@ fun NotificationsScreen() {
 fun ProfileScreen(user: AuthUser) {
     val p = P
     val app = LocalContext.current.applicationContext as EduGoApp
+    val themeMode = LocalThemeMode.current
+    val setThemeMode = LocalSetThemeMode.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     RefreshColumn(emptyList()) {
