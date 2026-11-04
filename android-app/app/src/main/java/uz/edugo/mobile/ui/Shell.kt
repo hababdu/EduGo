@@ -71,7 +71,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/", "payments-group/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/", "payments-group/", "admin-group/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -144,7 +144,8 @@ fun MainShell(user: AuthUser) {
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
                 composable("students") { AdminUsersScreen() }
-                composable("admin-groups") { AdminGroupsScreen() }
+                composable("admin-groups") { AdminGroupsScreen { nav.navigate("admin-group/$it") } }
+                composable("admin-group/{id}") { AdminGroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
                 composable("payments-group/{id}/{month}") { entry ->
                     AdminGroupPaymentsScreen(entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("month").orEmpty()) { nav.popBackStack() }
