@@ -62,3 +62,10 @@ import kotlinx.serialization.Serializable
 @Serializable data class AssignGroupTeacherBody(val teacherId: String)
 
 @Serializable data class UpdateAdminRoleBody(val role: String)
+
+@Serializable data class AddGroupStudentBody(val studentId: String)
+@Serializable data class AdminGroupStudentRef(
+    val id: String = "", val firstName: String = "", val lastName: String? = null,
+    val username: String? = null, val phone: String? = null, val role: String = "STUDENT",
+)
+@Serializable data class AdminGroupMember(val id: String = "", val student: AdminGroupStudentRef = AdminGroupStudentRef())
