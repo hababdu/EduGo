@@ -50,3 +50,13 @@ import kotlinx.serialization.Serializable
 @Serializable data class UpdateLeadBody(
     val status: String? = null, val note: String? = null, val nextContactAt: String? = null,
 )
+
+@Serializable data class AdminUserItem(
+    val id: String, val firstName: String = "", val lastName: String? = null,
+    val username: String? = null, val role: String = "STUDENT",
+)
+@Serializable data class CreateAdminGroupBody(
+    val name: String, val description: String? = null, val teacherId: String? = null,
+    val monthlyFee: Int? = null, val maxCapacity: Int? = null,
+)
+@Serializable data class AssignGroupTeacherBody(val teacherId: String)
