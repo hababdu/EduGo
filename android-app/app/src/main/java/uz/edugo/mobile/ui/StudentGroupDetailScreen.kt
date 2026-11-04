@@ -41,7 +41,7 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
                 } }
             }
             val schedule = g.lessonDays.orEmpty().mapNotNull { day ->
-                listOf("Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan").getOrNull(day)
+                listOf("Dush", "Sesh", "Chor", "Pay", "Jum", "Shan", "Yak").getOrNull(day - 1)
             }.joinToString(" · ")
             if (schedule.isNotBlank() || g.lessonStartTime != null || g.room != null) {
                 Panel {
