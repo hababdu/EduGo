@@ -49,7 +49,7 @@ fun TaskList(tasks: List<Task>, onOpen: (String) -> Unit) {
 }
 
 @Composable
-fun StudentHome(user: AuthUser, openTask: (String) -> Unit) {
+fun StudentHome(user: AuthUser, openTask: (String) -> Unit, openRanking: () -> Unit, openTasks: () -> Unit) {
     val p = P
     val dash = rememberRemote("/api/v1/dashboard/me", DashboardData.serializer())
     val today = rememberRemoteList("/api/v1/groups/schedule/today", TodayLesson.serializer())
@@ -60,6 +60,10 @@ fun StudentHome(user: AuthUser, openTask: (String) -> Unit) {
         Hero("O'quvchi paneli", "Salom, ${user.firstName}!", "Bugungi darslar, vazifalar va natijalar bir joyda")
         Section(dash) { d ->
             KpiRow(listOf(Triple("Ball", d.stats.totalScore, p.gold), Triple("Daraja", d.stats.level, p.accent), Triple("Reyting", d.student.rank, p.sky)))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Reytingni ko'rish →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).pressable(openRanking).padding(vertical = 6.dp))
+                Text("Barcha vazifalar →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.pressable(openTasks).padding(vertical = 6.dp))
+            }
             Panel {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
