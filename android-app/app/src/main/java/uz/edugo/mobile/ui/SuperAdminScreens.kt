@@ -1,5 +1,8 @@
 package uz.edugo.mobile.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -33,7 +37,10 @@ import uz.edugo.mobile.data.CreateSuperOrgBody
 import uz.edugo.mobile.data.UpdateSuperOrgBody
 import uz.edugo.mobile.data.SuperAdminCandidate
 import uz.edugo.mobile.data.AssignSuperAdminBody
+import uz.edugo.mobile.data.SuperRestoreResult
 import uz.edugo.mobile.data.SuperOrgAdmin
+import uz.edugo.mobile.data.AppJson
+import kotlinx.serialization.decodeFromString
 
 @Composable
 fun SuperAdminHome(openOrganizations: () -> Unit) {
@@ -151,6 +158,7 @@ fun SuperOrganizations(openOrganization: (String) -> Unit) {
 fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
     val p = P
     val api = LocalApi.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val remote = rememberRemote("/api/v1/super/organizations/$id/detail", SuperOrgDetail.serializer())
     var candidateQuery by remember { mutableStateOf("") }
@@ -162,6 +170,22 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
     var channelId by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    var restoreBusy by remember { mutableStateOf(false) }
+    var restorePreview by remember { mutableStateOf<SuperRestoreResult?>(null) }
+    var restoreUri by remember { mutableStateOf<Uri?>(null) }
+    val restorePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            restoreUri = uri
+            restoreBusy = true
+            scope.launch {
+                try {
+                    val raw = api.restoreOrganization(context, uri, id, false)
+                    restorePreview = AppJson.decodeFromString(SuperRestoreResult.serializer(), raw)
+                } catch (e: Exception) { message = e.message ?: "Backup tekshirilmadi" }
+                restoreBusy = false
+            }
+        }
+    }
     val current = (remote.state as? UiState.Ready)?.value
     LaunchedEffect(current?.org?.id) {
         current?.org?.let { status = it.status; monthlyFee = it.monthlyPlanFee?.toString().orEmpty(); note = it.note.orEmpty(); channelId = it.storageChatId.orEmpty() }
@@ -201,6 +225,7 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
                             busy = false
                         }
                     })
+                    PrimaryButton(if (restoreBusy) "Backup tekshirilmoqda…" else "Backupdan tiklash", enabled = !busy && !restoreBusy, modifier = Modifier.fillMaxWidth(), onClick = { restorePicker.launch(arrayOf("*/*")) })
                 }
             }
             KpiRow(listOf(
@@ -281,6 +306,30 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
                 }
             }) { Text("Chiqarish") } },
             dismissButton = { TextButton(onClick = { removeAdminTarget = null }) { Text("Bekor qilish") } },
+        )
+    }
+    restorePreview?.let { preview ->
+        AlertDialog(
+            onDismissRequest = { restorePreview = null; restoreUri = null },
+            title = { Text("Backupni tiklashni tasdiqlaysizmi?") },
+            text = { Text("Backup sanasi: ${preview.backupCreatedAt ?: "noma'lum"}\nGuruhlar: ${preview.toRestore.groups}\nA'zolar: ${preview.toRestore.members}\nTo'lovlar: ${preview.toRestore.payments}\nDavomat: ${preview.toRestore.attendance}\n\nAvvalgi ma'lumotlar bilan birlashtirish amali bajariladi.") },
+            confirmButton = { TextButton(enabled = !restoreBusy, onClick = {
+                val uri = restoreUri
+                if (uri != null) {
+                    restoreBusy = true
+                    restorePreview = null
+                    scope.launch {
+                        try {
+                            api.restoreOrganization(context, uri, id, true)
+                            remote.reload()
+                            message = "Zaxira tiklandi"
+                        } catch (e: Exception) { message = e.message ?: "Tiklash bajarilmadi" }
+                        restoreBusy = false
+                        restoreUri = null
+                    }
+                }
+            }) { Text("Tiklash") } },
+            dismissButton = { TextButton(onClick = { restorePreview = null; restoreUri = null }) { Text("Bekor qilish") } },
         )
     }
 }
