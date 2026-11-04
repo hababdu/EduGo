@@ -106,8 +106,8 @@ fun TeacherMaterialsScreen() {
                 } else {
                     val body = UpdateTeacherMaterial(
                         title = title.trim(),
-                        description = description.trim().ifBlank { null },
-                        mediaUrl = mediaUrl.trim().ifBlank { null },
+                        description = description.trim(),
+                        mediaUrl = mediaUrl.trim(),
                         groupId = groupId,
                         category = category,
                         type = type,
