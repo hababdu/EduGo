@@ -165,10 +165,16 @@ class Api(private val session: Session) {
     /** Material faylini Android Document Picker orqali backendga yuboradi. */
     suspend fun uploadMaterial(context: Context, uri: Uri): MaterialFileDto {
         val resolver = context.contentResolver
-        val name = resolver.query(uri, null, null, null, null)?.use { cursor ->
-            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
-        } ?: "material"
+        val metadata = resolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) null else {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                (if (nameIndex >= 0) cursor.getString(nameIndex) else null) to
+                    (if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else -1L)
+            }
+        }
+        val name = metadata?.first ?: "material"
+        if ((metadata?.second ?: -1L) > 45L * 1024 * 1024) throw ApiException(413, "Fayl hajmi 45 MB dan oshmasligi kerak")
         val mime = resolver.getType(uri) ?: "application/octet-stream"
         val bytes = withContext(Dispatchers.IO) {
             resolver.openInputStream(uri)?.use { it.readBytes() }
