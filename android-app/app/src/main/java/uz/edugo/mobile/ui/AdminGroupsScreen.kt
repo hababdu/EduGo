@@ -43,10 +43,15 @@ fun AdminGroupsScreen(openGroup: (String) -> Unit) {
     var fee by remember { mutableStateOf("") }
     var capacity by remember { mutableStateOf("") }
     var teacherId by remember { mutableStateOf("") }
+    var lessonDays by remember { mutableStateOf(setOf<Int>()) }
+    var startTime by remember { mutableStateOf("") }
+    var endTime by remember { mutableStateOf("") }
+    var room by remember { mutableStateOf("") }
     var assignTarget by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<GroupItem?>(null) }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
+    val scheduleValid = lessonDays.isEmpty() && startTime.isBlank() && endTime.isBlank() || lessonDays.isNotEmpty() && Regex("^([01]\\d|2[0-3]):[0-5]\\d$").matches(startTime) && Regex("^([01]\\d|2[0-3]):[0-5]\\d$").matches(endTime)
     RefreshColumn(listOf(groups, users)) {
         Hero("Administrator", "Guruhlar", "Guruh yaratish, oylik to'lov va ustozni biriktirish")
         PrimaryButton(if (adding) "Formani yopish" else "+ Guruh yaratish", modifier = Modifier.fillMaxWidth(), onClick = { adding = !adding; message = null })
@@ -60,6 +65,22 @@ fun AdminGroupsScreen(openGroup: (String) -> Unit) {
                         AdminGroupField(fee, { fee = it.filter(Char::isDigit).take(10) }, "Oylik to'lov (so'm)", Modifier.weight(1f))
                         AdminGroupField(capacity, { capacity = it.filter(Char::isDigit).take(3) }, "Sig'im", Modifier.weight(1f))
                     }
+                    SectionTitle("Dars kunlari")
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        listOf(1 to "Du", 2 to "Se", 3 to "Ch", 4 to "Pa", 5 to "Ju", 6 to "Sh", 7 to "Ya").forEach { (day, label) ->
+                            val selected = day in lessonDays
+                            Text(label, color = if (selected) p.base else p.muted, fontSize = 11.sp,
+                                modifier = Modifier.background(if (selected) p.accent else p.raised, RoundedCornerShape(20.dp))
+                                    .pressable { lessonDays = if (selected) lessonDays - day else lessonDays + day }
+                                    .padding(horizontal = 9.dp, vertical = 8.dp))
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AdminGroupField(startTime, { startTime = it.take(5) }, "Boshlanish HH:mm", Modifier.weight(1f))
+                        AdminGroupField(endTime, { endTime = it.take(5) }, "Tugash HH:mm", Modifier.weight(1f))
+                    }
+                    AdminGroupField(room, { room = it }, "Xona (ixtiyoriy)")
+                    if (!scheduleValid) Text("Dars kunlari tanlang va vaqtni HH:mm formatida kiriting.", color = p.coral, fontSize = 11.sp)
                     SectionTitle("Ustoz (ixtiyoriy)")
                     Text(if (teacherId.isBlank()) "Ustoz tanlanmagan" else teachers.firstOrNull { it.id == teacherId }?.let { "${it.firstName} ${it.lastName.orEmpty()}" } ?: "Tanlandi", color = p.muted, fontSize = 12.sp)
                     teachers.forEach { teacher ->
@@ -70,14 +91,14 @@ fun AdminGroupsScreen(openGroup: (String) -> Unit) {
                     message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
                     PrimaryButton(if (busy) "Yaratilmoqda…" else "Guruhni yaratish", enabled = !busy && name.trim().isNotEmpty() &&
                         (fee.isBlank() || fee.toIntOrNull()?.let { it <= 100_000_000 } == true) &&
-                        (capacity.isBlank() || capacity.toIntOrNull()?.let { it in 1..500 } == true),
+                        (capacity.isBlank() || capacity.toIntOrNull()?.let { it in 1..500 } == true) && scheduleValid,
                         modifier = Modifier.fillMaxWidth(), onClick = {
                             busy = true
                             scope.launch {
                                 try {
                                     api.send("POST", "/api/v1/groups", CreateAdminGroupBody.serializer(),
-                                        CreateAdminGroupBody(name.trim(), description.trim().ifBlank { null }, teacherId.ifBlank { null }, fee.toIntOrNull(), capacity.toIntOrNull()))
-                                    name = ""; description = ""; fee = ""; capacity = ""; teacherId = ""; adding = false; groups.reload()
+                                        CreateAdminGroupBody(name.trim(), description.trim().ifBlank { null }, teacherId.ifBlank { null }, fee.toIntOrNull(), capacity.toIntOrNull(), lessonDays.takeIf { it.isNotEmpty() }?.sorted(), startTime.ifBlank { null }, endTime.ifBlank { null }, room.trim().ifBlank { null }))
+                                    name = ""; description = ""; fee = ""; capacity = ""; teacherId = ""; lessonDays = emptySet(); startTime = ""; endTime = ""; room = ""; adding = false; groups.reload()
                                 } catch (e: Exception) { message = e.message ?: "Guruh yaratilmadi" }
                                 busy = false
                             }
