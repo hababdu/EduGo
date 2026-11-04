@@ -61,7 +61,8 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     )
     Role.ADMIN -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "O'quvchilar", Icons.Rounded.People),
-        Tab("groups", "Guruhlar", Icons.Rounded.Groups), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("admin-groups", "Guruhlar", Icons.Rounded.Groups), Tab("payments", "To'lov", Icons.Rounded.Assignment),
+        Tab("leads", "Qabul", Icons.Rounded.People),
     )
     Role.SUPER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
@@ -70,7 +71,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/", "payments-group/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -143,6 +144,12 @@ fun MainShell(user: AuthUser) {
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
                 composable("students") { AdminStudents() }
+                composable("admin-groups") { AdminGroupsScreen() }
+                composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
+                composable("payments-group/{id}/{month}") { entry ->
+                    AdminGroupPaymentsScreen(entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("month").orEmpty()) { nav.popBackStack() }
+                }
+                composable("leads") { AdminLeadsScreen() }
                 composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
