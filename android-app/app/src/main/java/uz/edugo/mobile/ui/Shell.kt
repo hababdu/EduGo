@@ -57,7 +57,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     )
     Role.TEACHER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
-        Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("materials", "Materiallar", Icons.Rounded.MenuBook), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
     )
     Role.ADMIN -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "O'quvchilar", Icons.Rounded.People),
@@ -140,6 +140,7 @@ fun MainShell(user: AuthUser) {
                 composable("test/{id}") { TestTakingScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("ranking") { RankingScreen() }
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
+                composable("materials") { TeacherMaterialsScreen() }
                 composable("students") { AdminStudents() }
                 composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
