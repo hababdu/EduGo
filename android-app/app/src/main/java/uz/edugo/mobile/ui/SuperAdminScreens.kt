@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import uz.edugo.mobile.data.SuperOrganization
 import uz.edugo.mobile.data.SuperOrgDetail
 import uz.edugo.mobile.data.SuperOverview
+import uz.edugo.mobile.data.SuperSystemData
 import uz.edugo.mobile.data.CreateSuperOrgBody
 import uz.edugo.mobile.data.UpdateSuperOrgBody
 import uz.edugo.mobile.data.SuperAdminCandidate
@@ -38,8 +39,22 @@ import uz.edugo.mobile.data.SuperOrgAdmin
 fun SuperAdminHome(openOrganizations: () -> Unit) {
     val p = P
     val remote = rememberRemote("/api/v1/super/overview", SuperOverview.serializer())
-    RefreshColumn(listOf(remote)) {
+    val system = rememberRemote("/api/v1/super/system", SuperSystemData.serializer())
+    RefreshColumn(listOf(remote, system)) {
         Hero("Super admin", "Platforma boshqaruvi", "Barcha tashkilotlar va tizim holati")
+        Section(system) { status ->
+            Panel {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    SectionTitle("Tizim holati")
+                    Pill(if (status.db.ok) "Ma'lumotlar bazasi faol" else "Ma'lumotlar bazasi xatosi", if (status.db.ok) P.teal else P.coral)
+                    Text("DB kechikishi: ${status.db.latencyMs} ms · Hajmi: ${status.db.sizeBytes?.div(1_048_576) ?: "—"} MB", color = P.muted, fontSize = 11.sp)
+                    Text("Server: ${status.server.env} · Node ${status.server.node} · Uptime: ${status.server.uptimeSec / 3600} soat", color = P.muted, fontSize = 11.sp)
+                    Text("Xotira: RSS ${status.server.rssMb} MB · Heap ${status.server.heapMb} MB", color = P.muted, fontSize = 11.sp)
+                    Text("AI baholash: ${status.queue.gradingRunning} jarayonda · ${status.queue.gradingOverdue} muddati o'tgan", color = P.gold, fontSize = 11.sp)
+                    Text("Tekshiruv: ${status.queue.needsReview} · Xatolik: ${status.queue.failedSubmissions} · Yetim fayl: ${status.queue.orphanFiles}", color = P.muted, fontSize = 11.sp)
+                }
+            }
+        }
         Section(remote) { data ->
             KpiRow(listOf(
                 Triple("Maktablar", data.organizations.active, p.accent),
