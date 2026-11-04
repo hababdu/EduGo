@@ -70,7 +70,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -147,7 +147,8 @@ fun MainShell(user: AuthUser) {
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
-                composable("group/{id}") { GroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
+                composable("group/{id}") { GroupDetailScreen(it.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, openAssignment = { nav.navigate("homework-review/$it") }) }
+                composable("homework-review/{id}") { TeacherHomeworkReviewScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("child/{id}") { ChildScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
             }
           }
