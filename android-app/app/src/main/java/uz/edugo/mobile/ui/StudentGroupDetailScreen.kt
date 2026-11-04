@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +34,7 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
                 Triple("Materiallar", (assignments.state as? UiState.Ready)?.value?.count { it.groupId == groupId } ?: 0, p.teal),
             ))
             g.teacher?.let { teacher ->
-                val name = listOfNotNull(teacher.firstName, teacher.lastName).joinToString(" ").ifBlank { teacher.username ?: "O'qituvchi" }
+                val name = listOfNotNull(teacher.firstName, teacher.lastName).joinToString(" ").ifBlank { "O'qituvchi" }
                 Panel { Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("O'qituvchi", color = p.faint, fontSize = 11.sp)
                     Text(name, color = p.ink, fontWeight = FontWeight.SemiBold)
