@@ -60,6 +60,7 @@ fun TeacherMaterialsScreen() {
     var deleteTarget by remember { mutableStateOf<TeacherMaterialItem?>(null) }
     val groupList = (groups.state as? UiState.Ready)?.value.orEmpty()
     val list = (materials.state as? UiState.Ready)?.value.orEmpty()
+    val dueDateValid = dueDate.isBlank() || runCatching { java.time.LocalDate.parse(dueDate) }.isSuccess
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         if (uri != null) scope.launch {
             uploading = true
@@ -140,6 +141,7 @@ fun TeacherMaterialsScreen() {
                     MaterialField(description, { description = it }, "Izoh va ko'rsatmalar")
                     MaterialField(mediaUrl, { mediaUrl = it }, "Video/havola (ixtiyoriy)")
                     MaterialField(dueDate, { dueDate = it.take(10) }, "Muddat · YYYY-MM-DD (ixtiyoriy)")
+                    if (!dueDateValid) Text("Sanani YYYY-MM-DD formatida kiriting.", color = p.coral, fontSize = 11.sp)
                     Text("Guruh", color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                     groupList.forEach { group ->
                         val selected = groupId == group.id
@@ -170,7 +172,7 @@ fun TeacherMaterialsScreen() {
                     message?.let { Text(it, color = if (it == "Saqlandi" || it.startsWith("Fayl yuklandi")) p.teal else p.coral, fontSize = 12.sp) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PrimaryButton("Bekor qilish", onClick = { formOpen = false; editingId = null; title = ""; description = ""; mediaUrl = ""; dueDate = ""; groupId = ""; files = emptyList(); message = null }, modifier = Modifier.weight(1f))
-                        PrimaryButton(if (saving) "Saqlanmoqda…" else "Saqlash", enabled = !saving && !uploading && title.isNotBlank() && groupId.isNotBlank(), onClick = { save() }, modifier = Modifier.weight(1f))
+                        PrimaryButton(if (saving) "Saqlanmoqda…" else "Saqlash", enabled = !saving && !uploading && title.isNotBlank() && groupId.isNotBlank() && dueDateValid, onClick = { save() }, modifier = Modifier.weight(1f))
                     }
                 }
             }
