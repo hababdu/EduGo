@@ -11,9 +11,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -24,6 +26,8 @@ import androidx.compose.ui.unit.sp
 import uz.edugo.mobile.data.SuperOrganization
 import uz.edugo.mobile.data.SuperOrgDetail
 import uz.edugo.mobile.data.SuperOverview
+import uz.edugo.mobile.data.CreateSuperOrgBody
+import uz.edugo.mobile.data.UpdateSuperOrgBody
 
 @Composable
 fun SuperAdminHome(openOrganizations: () -> Unit) {
@@ -58,12 +62,43 @@ fun SuperAdminHome(openOrganizations: () -> Unit) {
 @Composable
 fun SuperOrganizations(openOrganization: (String) -> Unit) {
     val p = P
+    val api = LocalApi.current
+    val scope = rememberCoroutineScope()
     val remote = rememberRemoteList("/api/v1/super/organizations", SuperOrganization.serializer())
     var query by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
+    var orgName by remember { mutableStateOf("") }
+    var storageChatId by remember { mutableStateOf("") }
+    var orgNote by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
     val list = (remote.state as? UiState.Ready)?.value.orEmpty()
         .filter { it.name.contains(query, true) }
     RefreshColumn(listOf(remote)) {
         Hero("Super admin", "Maktablar", "Tashkilotlar holati va foydalanuvchilari")
+        PrimaryButton(if (creating) "Formani yopish" else "+ Maktab yaratish", modifier = Modifier.fillMaxWidth(), onClick = { creating = !creating; message = null })
+        if (creating) {
+            Panel {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionTitle("Yangi maktab")
+                    BasicTextField(orgName, { orgName = it }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 14.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(12.dp)).padding(12.dp), decorationBox = { inner -> if (orgName.isEmpty()) Text("Maktab nomi", color = p.faint); inner() })
+                    BasicTextField(storageChatId, { storageChatId = it.filter { ch -> ch.isDigit() || ch == '-' }.take(20) }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 14.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(12.dp)).padding(12.dp), decorationBox = { inner -> if (storageChatId.isEmpty()) Text("Yopiq Telegram kanal ID (-100...)", color = p.faint); inner() })
+                    BasicTextField(orgNote, { orgNote = it }, singleLine = false, textStyle = TextStyle(color = p.ink, fontSize = 13.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(12.dp)).padding(12.dp), decorationBox = { inner -> if (orgNote.isEmpty()) Text("Izoh (ixtiyoriy)", color = p.faint); inner() })
+                    Text("Botni maktabning yopiq kanaliga administrator qilib qo'shing. Kanal ID -100 bilan boshlanishi shart.", color = p.muted, fontSize = 11.sp)
+                    message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
+                    PrimaryButton(if (saving) "Tekshirilmoqda…" else "Maktab yaratish", enabled = !saving && orgName.trim().length >= 2 && Regex("^-100\\d{5,}$").matches(storageChatId), modifier = Modifier.fillMaxWidth(), onClick = {
+                        saving = true
+                        scope.launch {
+                            try {
+                                api.send("POST", "/api/v1/super/organizations", CreateSuperOrgBody.serializer(), CreateSuperOrgBody(orgName.trim(), storageChatId, orgNote.trim().ifBlank { null }))
+                                orgName = ""; storageChatId = ""; orgNote = ""; creating = false; remote.reload()
+                            } catch (e: Exception) { message = e.message ?: "Maktab yaratilmadi" }
+                            saving = false
+                        }
+                    })
+                }
+            }
+        }
         BasicTextField(
             value = query, onValueChange = { query = it }, singleLine = true,
             textStyle = TextStyle(color = p.ink, fontSize = 15.sp),
@@ -95,11 +130,56 @@ fun SuperOrganizations(openOrganization: (String) -> Unit) {
 @Composable
 fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
     val p = P
+    val api = LocalApi.current
+    val scope = rememberCoroutineScope()
     val remote = rememberRemote("/api/v1/super/organizations/$id/detail", SuperOrgDetail.serializer())
+    var status by remember { mutableStateOf("ACTIVE") }
+    var monthlyFee by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
+    var channelId by remember { mutableStateOf("") }
+    var busy by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+    val current = (remote.state as? UiState.Ready)?.value
+    LaunchedEffect(current?.org?.id) {
+        current?.org?.let { status = it.status; monthlyFee = it.monthlyPlanFee?.toString().orEmpty(); note = it.note.orEmpty(); channelId = it.storageChatId.orEmpty() }
+    }
     RefreshColumn(listOf(remote)) {
         BackHeader("Maktab tafsilotlari", onBack)
         Section(remote) { data ->
             Hero("Tashkilot", data.org.name, data.org.note)
+            Panel {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionTitle("Maktab sozlamalari")
+                    Text("Holat: $status", color = if (status == "ACTIVE") p.teal else p.coral, fontWeight = FontWeight.SemiBold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Faol", color = if (status == "ACTIVE") p.base else p.muted, modifier = Modifier.background(if (status == "ACTIVE") p.accent else p.raised, RoundedCornerShape(18.dp)).pressable { status = "ACTIVE" }.padding(9.dp))
+                        Text("To'xtatish", color = if (status == "SUSPENDED") p.base else p.muted, modifier = Modifier.background(if (status == "SUSPENDED") p.coral else p.raised, RoundedCornerShape(18.dp)).pressable { status = "SUSPENDED" }.padding(9.dp))
+                    }
+                    BasicTextField(monthlyFee, { monthlyFee = it.filter(Char::isDigit).take(12) }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 13.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(11.dp)).padding(11.dp), decorationBox = { inner -> if (monthlyFee.isEmpty()) Text("Oylik obuna summasi (so'm)", color = p.faint); inner() })
+                    BasicTextField(note, { note = it }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 13.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(11.dp)).padding(11.dp), decorationBox = { inner -> if (note.isEmpty()) Text("Izoh", color = p.faint); inner() })
+                    BasicTextField(channelId, { channelId = it.filter { ch -> ch.isDigit() || ch == '-' }.take(20) }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 13.sp), cursorBrush = SolidColor(p.accent), modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(11.dp)).padding(11.dp), decorationBox = { inner -> if (channelId.isEmpty()) Text("Yopiq kanal ID (-100...)", color = p.faint); inner() })
+                    Text("Oxirgi zaxira: ${data.org.lastBackupAt ?: "hali yo'q"} · ${data.org.lastBackupStatus ?: "holat yo'q"}", color = p.faint, fontSize = 10.sp)
+                    message?.let { Text(it, color = if (it.startsWith("Saqlandi") || it.startsWith("Zaxira")) p.teal else p.coral, fontSize = 12.sp) }
+                    PrimaryButton(if (busy) "Bajarilmoqda…" else "Sozlamalarni saqlash", enabled = !busy && monthlyFee.toLongOrNull()?.let { it <= 1_000_000_000L } != false && (channelId.isBlank() || Regex("^-100\\d{5,}$").matches(channelId)), modifier = Modifier.fillMaxWidth(), onClick = {
+                        busy = true
+                        scope.launch {
+                            try {
+                                api.send("PATCH", "/api/v1/super/organizations/$id", UpdateSuperOrgBody.serializer(), UpdateSuperOrgBody(note = note, status = status, monthlyPlanFee = monthlyFee.toLongOrNull() ?: 0L, storageChatId = channelId.ifBlank { null }))
+                                remote.reload(); message = "Saqlandi"
+                            } catch (e: Exception) { message = e.message ?: "Saqlanmadi" }
+                            busy = false
+                        }
+                    })
+                    PrimaryButton("Hozir zaxira yaratish", enabled = !busy && channelId.isNotBlank(), modifier = Modifier.fillMaxWidth(), onClick = {
+                        busy = true
+                        scope.launch {
+                            try { api.raw("POST", "/api/v1/super/organizations/$id/backup", "{}"); remote.reload(); message = "Zaxira yaratildi" }
+                            catch (e: Exception) { message = e.message ?: "Zaxira yaratilmadi" }
+                            busy = false
+                        }
+                    })
+                }
+            }
             KpiRow(listOf(
                 Triple("O'quvchilar", data.counts.students, p.accent),
                 Triple("O'qituvchi", data.counts.teachers, p.sky),
@@ -115,6 +195,10 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
                     Pill("Obuna: ${data.subscription.state}", if (data.subscription.state == "PAID") p.teal else p.gold)
                 }
             }
+            SectionTitle("Adminlar · ${data.admins.size}")
+            data.admins.forEach { admin -> Text("${admin.name}${admin.username?.let { " · @$it" } ?: ""}", color = p.ink, fontSize = 12.sp) }
+            SectionTitle("O'qituvchilar · ${data.teachers.size}")
+            data.teachers.forEach { teacher -> Text("${teacher.name}${teacher.username?.let { " · @$it" } ?: ""}", color = p.muted, fontSize = 12.sp) }
             SectionTitle("Guruhlar · ${data.groups.size}")
             if (data.groups.isEmpty()) EmptyText("Guruhlar mavjud emas")
             data.groups.forEach { group ->
