@@ -65,13 +65,19 @@ fun paletteFor(role: Role, dark: Boolean): Palette {
 }
 
 val LocalPalette = staticCompositionLocalOf { paletteFor(Role.STUDENT, true) }
+val LocalThemeMode = staticCompositionLocalOf { "system" }
+val LocalSetThemeMode = staticCompositionLocalOf<(String) -> Unit> { {} }
 
 val P: Palette
     @Composable @ReadOnlyComposable get() = LocalPalette.current
 
 @Composable
-fun EduGoTheme(role: Role, content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
+fun EduGoTheme(role: Role, themeMode: String = "system", content: @Composable () -> Unit) {
+    val dark = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> isSystemInDarkTheme()
+    }
     val p = paletteFor(role, dark)
     val scheme = if (dark) darkColorScheme(
         primary = p.accent, onPrimary = p.base, secondary = p.accent2, onSecondary = p.base,
