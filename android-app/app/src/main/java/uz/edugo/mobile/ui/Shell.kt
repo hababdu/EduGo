@@ -59,14 +59,18 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
         Tab("ai", "AI", Icons.Rounded.AutoAwesome),
     )
-    Role.ADMIN, Role.SUPER -> listOf(
+    Role.ADMIN -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "O'quvchilar", Icons.Rounded.People),
         Tab("groups", "Guruhlar", Icons.Rounded.Groups), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+    )
+    Role.SUPER -> listOf(
+        Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
+        Tab("ai", "AI", Icons.Rounded.AutoAwesome), Tab("profile", "Profil", Icons.Rounded.Person),
     )
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -122,7 +126,8 @@ fun MainShell(user: AuthUser) {
                     when (role) {
                         Role.STUDENT -> StudentHome(user, openTask = { nav.navigate("task/$it") }, openRanking = { nav.navigate("ranking") }, openTasks = { nav.navigate("tasks") })
                         Role.TEACHER -> TeacherHome(user) { nav.navigate("group/$it") }
-                        Role.ADMIN, Role.SUPER -> AdminHome(user)
+                        Role.ADMIN -> AdminHome(user)
+                        Role.SUPER -> SuperAdminHome { nav.navigate("orgs") }
                         Role.PARENT -> ParentHome { nav.navigate("child/$it") }
                     }
                 }
@@ -136,6 +141,8 @@ fun MainShell(user: AuthUser) {
                 composable("ranking") { RankingScreen() }
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
                 composable("students") { AdminStudents() }
+                composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
+                composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
                 composable("group/{id}") { GroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
