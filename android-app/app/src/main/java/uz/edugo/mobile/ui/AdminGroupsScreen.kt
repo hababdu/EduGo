@@ -30,7 +30,7 @@ import uz.edugo.mobile.data.CreateAdminGroupBody
 import uz.edugo.mobile.data.GroupItem
 
 @Composable
-fun AdminGroupsScreen() {
+fun AdminGroupsScreen(openGroup: (String) -> Unit) {
     val p = P
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
@@ -89,7 +89,7 @@ fun AdminGroupsScreen() {
             SectionTitle("Guruhlar · ${list.size}")
             if (list.isEmpty()) EmptyText("Guruhlar topilmadi")
             list.forEachIndexed { index, group ->
-                Panel(Modifier.stagger(index)) {
+                Panel(Modifier.stagger(index).pressable { openGroup(group.id) }) {
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Text(group.name, color = p.ink, fontWeight = FontWeight.SemiBold)
                         Text("${group.memberCount} a'zo · ${group.teacher?.let { "${it.firstName} ${it.lastName.orEmpty()}".trim() } ?: "Ustoz biriktirilmagan"}", color = p.muted, fontSize = 12.sp)
