@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Notifications
+import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Icon
@@ -50,9 +51,9 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.STUDENT -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("tests", "Testlar", Icons.Rounded.Quiz),
-        Tab("tasks", "Vazifalar", Icons.Rounded.Assignment), Tab("ranking", "Reyting", Icons.Rounded.EmojiEvents),
-        Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("home", "Bosh", Icons.Rounded.Home), Tab("lessons", "Darslar", Icons.Rounded.MenuBook),
+        Tab("tests", "Testlar", Icons.Rounded.Quiz), Tab("tasks", "Vazifalar", Icons.Rounded.Assignment),
+        Tab("ranking", "Reyting", Icons.Rounded.EmojiEvents), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
     )
     Role.TEACHER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
@@ -125,6 +126,8 @@ fun MainShell(user: AuthUser) {
                         Role.PARENT -> ParentHome { nav.navigate("child/$it") }
                     }
                 }
+                composable("lessons") { StudentLessons { nav.navigate("lesson/$it") } }
+                composable("lesson/{id}") { StudentLessonDetail(it.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }) { nav.navigate("task/$it") } }
                 composable("tasks") { StudentTasks { nav.navigate("task/$it") } }
                 composable("tests") { StudentTests { nav.navigate("test/$it") } }
                 composable("ai") { ChatScreen(role) }
