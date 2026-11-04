@@ -60,7 +60,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
         Tab("materials", "Materiallar", Icons.Rounded.MenuBook), Tab("teacher-tests", "Testlar", Icons.Rounded.Quiz),
     )
     Role.ADMIN -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "Foydalanuvchi", Icons.Rounded.People),
+        Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "Foydalanuvchilar", Icons.Rounded.People),
         Tab("admin-groups", "Guruhlar", Icons.Rounded.Groups), Tab("payments", "To'lov", Icons.Rounded.Assignment),
         Tab("leads", "Qabul", Icons.Rounded.People),
     )
