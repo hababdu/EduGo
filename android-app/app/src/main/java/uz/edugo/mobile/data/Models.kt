@@ -193,6 +193,7 @@ data class GroupItem(
     val lessonStartTime: String? = null,
     val lessonEndTime: String? = null,
     val room: String? = null,
+    val monthlyFee: Double? = null,
 ) {
     val memberCount: Int get() = count?.students ?: count?.members ?: studentMemberCount ?: 0
 }
