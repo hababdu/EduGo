@@ -162,6 +162,41 @@ class Api(private val session: Session) {
         return FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
     }
 
+
+    /** Maktab backup faylini avval tekshiradi, so'ng tasdiqlansa tiklaydi. */
+    suspend fun restoreOrganization(context: Context, uri: Uri, orgId: String, apply: Boolean): String {
+        val resolver = context.contentResolver
+        val name = resolver.query(uri, null, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        } ?: "backup.json.gz"
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+        val bytes = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: throw ApiException(0, "Backup faylini o'qib bo'lmadi")
+        }
+        if (bytes.size > 50 * 1024 * 1024) throw ApiException(413, "Backup 50 MB dan katta")
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", name, bytes.toRequestBody(mime.toMediaType())).build()
+        suspend fun attempt(token: String?): Resp = withContext(Dispatchers.IO) {
+            val suffix = if (apply) "?apply=1" else ""
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/super/organizations/$orgId/restore$suffix")
+                .header("Accept", "application/json")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .post(body).build()
+            try {
+                client.newCall(request).execute().use { response -> Resp(response.code, response.body?.string().orEmpty(), token) }
+            } catch (e: IOException) { throw ApiException(0, "Backup serverga yuborilmadi") }
+        }
+        var response = attempt(session.accessToken)
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.sentToken)
+            response = attempt(session.accessToken)
+        }
+        if (response.code !in 200..299) throw ApiException(response.code, parseMessage(response.text, response.code))
+        return response.text
+    }
+
     /** Material faylini Android Document Picker orqali backendga yuboradi. */
     suspend fun uploadMaterial(context: Context, uri: Uri): MaterialFileDto {
         val resolver = context.contentResolver
