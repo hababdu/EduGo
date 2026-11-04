@@ -214,8 +214,7 @@ fun SuperAiSettingsScreen() {
                         saving = true; message = null
                         scope.launch {
                             try {
-                                val body = UpdateSuperAiBody(enabled, limits.mapValues { it.value.toInt() }, primary, fallback,
-                                    mapOf("gemini" to mapOf("fast" to "", "smart" to ""), "groq" to mapOf("fast" to "", "smart" to ""), "anthropic" to mapOf("fast" to "", "smart" to "")))
+                                val body = UpdateSuperAiBody(enabled, limits.mapValues { it.value.toInt() }, primary, fallback)
                                 api.send("PUT", "/api/v1/super/ai", UpdateSuperAiBody.serializer(), body)
                                 remote.reload(); message = "AI sozlamalari saqlandi"
                             } catch (e: Exception) { message = e.message ?: "Sozlamalar saqlanmadi" }
