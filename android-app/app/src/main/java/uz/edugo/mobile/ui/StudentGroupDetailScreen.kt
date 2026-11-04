@@ -1,11 +1,14 @@
 package uz.edugo.mobile.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,6 +21,7 @@ import uz.edugo.mobile.data.Standing
 @Composable
 fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (String) -> Unit) {
     val p = P
+    val context = LocalContext.current
     val group = rememberRemote("/api/v1/groups/$groupId", GroupItem.serializer())
     val assignments = rememberRemoteList("/api/v1/dashboard/assignments", LessonItem.serializer())
     val standing = rememberRemoteList("/api/v1/dashboard/standing", Standing.serializer())
@@ -55,8 +59,7 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
             }
             if (!g.telegramChatUrl.isNullOrBlank()) {
                 PrimaryButton("Telegram guruhiga o'tish ↗", modifier = Modifier.fillMaxWidth(), onClick = {
-                    runCatching { android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(g.telegramChatUrl)) }
-                        .getOrNull()?.let { intent -> }
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(g.telegramChatUrl))) }
                 })
             }
         }
