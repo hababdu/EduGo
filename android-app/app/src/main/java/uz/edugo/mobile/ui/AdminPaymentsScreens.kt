@@ -128,7 +128,7 @@ fun AdminGroupPaymentsScreen(groupId: String, month: String, onBack: () -> Unit)
             message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
             PrimaryButton(
                 if (saving) "Saqlanmoqda…" else "To'lov holatlarini saqlash",
-                enabled = !saving && d.students.isNotEmpty() && (d.monthlyFee != null || d.students.none { (states[it.studentId] ?: it.status) == "PAID" && it.amount <= 0 }),
+                enabled = !saving && d.students.any { it.due } && (d.monthlyFee != null || d.students.none { (states[it.studentId] ?: it.status) == "PAID" && it.amount <= 0 }),
                 modifier = Modifier.fillMaxWidth(),
                 onClick = {
                     saving = true; message = null
