@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.AlertDialog
@@ -51,7 +53,7 @@ fun AdminLeadsScreen() {
     RefreshColumn(listOf(remote)) {
         Hero("Administrator", "Qabul / arizalar", "Yangi murojaatlar, aloqa va sinov darslari")
         val counts = (remote.state as? UiState.Ready)?.value?.counts
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             listOf("ALL" to "Barchasi", *leadStatuses.toTypedArray()).forEach { (key, label) ->
                 val selected = filter == key
                 Text(label, color = if (selected) p.base else p.muted, fontSize = 10.sp,
