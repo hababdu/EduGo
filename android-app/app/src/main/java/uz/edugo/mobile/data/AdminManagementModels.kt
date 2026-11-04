@@ -58,6 +58,8 @@ import kotlinx.serialization.Serializable
 @Serializable data class CreateAdminGroupBody(
     val name: String, val description: String? = null, val teacherId: String? = null,
     val monthlyFee: Int? = null, val maxCapacity: Int? = null,
+    val lessonDays: List<Int>? = null, val lessonStartTime: String? = null,
+    val lessonEndTime: String? = null, val room: String? = null,
 )
 @Serializable data class AssignGroupTeacherBody(val teacherId: String)
 
