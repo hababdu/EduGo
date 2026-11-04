@@ -147,7 +147,11 @@ fun MainShell(user: AuthUser) {
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
-                composable("group/{id}") { GroupDetailScreen(it.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, openAssignment = { nav.navigate("homework-review/$it") }) }
+                composable("group/{id}") {
+                    val groupId = it.arguments?.getString("id").orEmpty()
+                    if (role == Role.STUDENT) StudentGroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openLesson = { nav.navigate("lesson/$it") })
+                    else GroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openAssignment = { nav.navigate("homework-review/$it") })
+                }
                 composable("homework-review/{id}") { TeacherHomeworkReviewScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("child/{id}") { ChildScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
             }
