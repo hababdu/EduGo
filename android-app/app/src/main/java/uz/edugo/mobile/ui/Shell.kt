@@ -143,7 +143,7 @@ fun MainShell(user: AuthUser) {
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
-                composable("students") { AdminStudents() }
+                composable("students") { AdminUsersScreen() }
                 composable("admin-groups") { AdminGroupsScreen() }
                 composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
                 composable("payments-group/{id}/{month}") { entry ->
