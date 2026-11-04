@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.LessonItem
 
 private val lessonFilters = listOf("BARCHA", "LESSON", "HOMEWORK", "RESOURCE")
@@ -137,7 +138,9 @@ fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -
     val context = LocalContext.current
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     var sendingFile by remember { mutableStateOf<String?>(null) }
+    var openingFile by remember { mutableStateOf<String?>(null) }
     var fileMessage by remember { mutableStateOf<String?>(null) }
     val remote = rememberRemote("/api/v1/dashboard/assignments/$id", LessonItem.serializer())
     RefreshColumn(listOf(remote)) {
@@ -180,15 +183,38 @@ fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionTitle("Biriktirilgan fayllar · ${item.files.size}")
                         item.files.forEach { file ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text("📎 ${file.fileName.ifBlank { "Fayl" }}", color = p.ink, fontSize = 13.sp)
-                                    Text("${file.kind} · ${file.sizeBytes / 1024} KB", color = p.faint, fontSize = 11.sp)
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text("📎 ${file.fileName.ifBlank { "Fayl" }}", color = p.ink, fontSize = 13.sp)
+                                        Text("${file.kind} · ${file.sizeBytes / 1024} KB", color = p.faint, fontSize = 11.sp)
+                                    }
+                                    Text(
+                                        if (openingFile == file.id) "Ochilmoqda…" else "Ochish / yuklab olish",
+                                        color = p.accent,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.pressable {
+                                            if (openingFile == null) {
+                                                openingFile = file.id
+                                                fileMessage = null
+                                                scope.launch {
+                                                    fileMessage = runCatching {
+                                                        val uri = api.materialFileUri(context, file.id, file.fileName, file.mimeType)
+                                                        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, file.mimeType)
+                                                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        context.startActivity(Intent.createChooser(intent, "Faylni ochish"))
+                                                        "Fayl ochish uchun ilova tanlandi"
+                                                    }.getOrElse { it.message ?: "Faylni ochib bo'lmadi" }
+                                                    openingFile = null
+                                                }
+                                            }
+                                        }.padding(start = 8.dp, top = 5.dp, bottom = 5.dp),
+                                    )
                                 }
                                 Text(
-                                    if (sendingFile == file.id) "Yuborilmoqda…" else "Telegramga yuborish",
-                                    color = p.accent,
-                                    fontSize = 11.sp,
+                                    if (sendingFile == file.id) "Telegramga yuborilmoqda…" else "Telegramga yuborish",
+                                    color = p.muted,
+                                    fontSize = 10.sp,
                                     modifier = Modifier.pressable {
                                         if (sendingFile == null) {
                                             sendingFile = file.id
@@ -201,7 +227,7 @@ fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -
                                                 sendingFile = null
                                             }
                                         }
-                                    }.padding(start = 8.dp, top = 5.dp, bottom = 5.dp),
+                                    }.padding(vertical = 3.dp),
                                 )
                             }
                         }
