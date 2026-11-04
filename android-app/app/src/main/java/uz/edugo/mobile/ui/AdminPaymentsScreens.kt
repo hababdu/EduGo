@@ -35,7 +35,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 private fun currentEduGoMonth() = YearMonth.now(ZoneId.of("Asia/Tashkent")).toString()
-private fun money(value: Double?) = value?.let { "${"%,.0f".format(it).replace(",", " ")} so'm" } ?: "—"
+private fun paymentMoney(value: Double?) = value?.let { "${"%,.0f".format(it).replace(",", " ")} so'm" } ?: "—"
 
 @Composable
 fun AdminPaymentsScreen(openGroup: (String, String) -> Unit) {
@@ -56,8 +56,8 @@ fun AdminPaymentsScreen(openGroup: (String, String) -> Unit) {
             Panel {
                 Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                     Text("Yig'ilgan", color = p.muted, fontSize = 12.sp)
-                    Text(money(data.totals.collected), color = p.teal, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
-                    Text("Kutilgan: ${money(data.totals.expected)}", color = p.ink, fontSize = 13.sp)
+                    Text(paymentMoney(data.totals.collected), color = p.teal, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("Kutilgan: ${paymentMoney(data.totals.expected)}", color = p.ink, fontSize = 13.sp)
                     Text("To'lagan: ${data.totals.paid} · Imtiyoz: ${data.totals.waived} · Qarzdor: ${data.totals.unpaid}", color = p.muted, fontSize = 12.sp)
                 }
             }
@@ -67,7 +67,7 @@ fun AdminPaymentsScreen(openGroup: (String, String) -> Unit) {
                     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(group.name, color = p.ink, fontWeight = FontWeight.SemiBold)
                         Text("${group.membersCount} a'zo · ${group.paid} to'lagan · ${group.unpaid} qarzdor", color = p.muted, fontSize = 12.sp)
-                        Text("Yig'ilgan: ${money(group.collected)} · Oylik: ${money(group.monthlyFee)}", color = p.teal, fontSize = 12.sp)
+                        Text("Yig'ilgan: ${paymentMoney(group.collected)} · Oylik: ${paymentMoney(group.monthlyFee)}", color = p.teal, fontSize = 12.sp)
                     }
                 }
             }
@@ -79,7 +79,7 @@ fun AdminPaymentsScreen(openGroup: (String, String) -> Unit) {
                         Text(debtor.name, color = p.ink, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Text(debtor.groupName, color = p.muted, fontSize = 11.sp)
                     }
-                    Text(money(debtor.monthlyFee), color = p.coral, fontSize = 12.sp)
+                    Text(paymentMoney(debtor.monthlyFee), color = p.coral, fontSize = 12.sp)
                 }
             }
         }
@@ -100,9 +100,9 @@ fun AdminGroupPaymentsScreen(groupId: String, month: String, onBack: () -> Unit)
     RefreshColumn(listOf(remote)) {
         BackHeader("Guruh to'lovlari", onBack)
         Section(remote) { d ->
-            Hero("To'lov nazorati", d.name, "Oy: $month · Oylik: ${money(d.monthlyFee)}")
+            Hero("To'lov nazorati", d.name, "Oy: $month · Oylik: ${paymentMoney(d.monthlyFee)}")
             KpiRow(listOf(Triple("To'lagan", d.totals.paid, p.teal), Triple("Qarzdor", d.totals.unpaid, p.coral), Triple("Imtiyoz", d.totals.waived, p.sky)))
-            Text("Yig'ilgan: ${money(d.totals.collected)} · Kutilgan: ${money(d.totals.expected)}", color = p.ink, fontWeight = FontWeight.SemiBold)
+            Text("Yig'ilgan: ${paymentMoney(d.totals.collected)} · Kutilgan: ${paymentMoney(d.totals.expected)}", color = p.ink, fontWeight = FontWeight.SemiBold)
             d.students.forEachIndexed { index, student ->
                 val state = states[student.studentId] ?: student.status
                 val name = listOfNotNull(student.firstName, student.lastName).joinToString(" ").ifBlank { student.username ?: "O'quvchi" }
@@ -121,7 +121,7 @@ fun AdminGroupPaymentsScreen(groupId: String, month: String, onBack: () -> Unit)
                                         .padding(horizontal = 10.dp, vertical = 8.dp))
                             }
                         }
-                        if (state == "PAID") Text("Summa: ${money(d.monthlyFee ?: student.amount.takeIf { it > 0 })}", color = p.teal, fontSize = 12.sp)
+                        if (state == "PAID") Text("Summa: ${paymentMoney(d.monthlyFee ?: student.amount.takeIf { it > 0 })}", color = p.teal, fontSize = 12.sp)
                     }
                 }
             }
