@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -168,12 +169,14 @@ fun SuperAiSettingsScreen() {
     var initialized by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     val data = (remote.state as? UiState.Ready)?.value
-    if (data != null && !initialized) {
-        enabled = data.settings.enabled
-        primary = data.settings.primary
-        fallback = data.settings.fallback ?: "none"
-        limits = listOf("STUDENT", "TEACHER", "ADMIN").associateWith { data.settings.limits[it]?.toString() ?: "0" }
-        initialized = true
+    LaunchedEffect(data) {
+        if (data != null && !initialized) {
+            enabled = data.settings.enabled
+            primary = data.settings.primary
+            fallback = data.settings.fallback ?: "none"
+            limits = listOf("STUDENT", "TEACHER", "ADMIN").associateWith { data.settings.limits[it]?.toString() ?: "0" }
+            initialized = true
+        }
     }
     RefreshColumn(listOf(remote)) {
         Hero("Super administrator", "AI sozlamalari", "Provayder, zaxira AI va rollar bo'yicha limitlar")
