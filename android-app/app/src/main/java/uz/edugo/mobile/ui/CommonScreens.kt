@@ -23,10 +23,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.serialization.decodeFromString
 import kotlinx.coroutines.launch
 import uz.edugo.mobile.BuildConfig
 import uz.edugo.mobile.EduGoApp
 import uz.edugo.mobile.data.AuthUser
+import uz.edugo.mobile.data.ParentInviteData
+import uz.edugo.mobile.data.AppJson
 import uz.edugo.mobile.data.NotificationItem
 import uz.edugo.mobile.data.Standing
 import uz.edugo.mobile.data.TodayLesson
@@ -137,6 +140,10 @@ fun ProfileScreen(user: AuthUser) {
     val setThemeMode = LocalSetThemeMode.current
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
+    var inviteBusy by remember { mutableStateOf(false) }
+    var invite by remember { mutableStateOf<ParentInviteData?>(null) }
+    var inviteError by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
     RefreshColumn(emptyList()) {
         Hero(roleLabel(user.role), user.fullName, user.username?.let { "@$it" })
         Panel {
@@ -151,6 +158,33 @@ fun ProfileScreen(user: AuthUser) {
                 Text("Versiya ${BuildConfig.VERSION_NAME}", color = p.faint, fontSize = 12.sp)
                 Text(BuildConfig.API_URL, color = p.faint, fontSize = 12.sp)
             }
+        }
+        if (user.role == "STUDENT") {
+            PrimaryButton(if (inviteBusy) "Taklif yaratilmoqda…" else "Ota-onani ulash", enabled = !inviteBusy, modifier = Modifier.fillMaxWidth(), onClick = {
+                inviteBusy = true; inviteError = null
+                scope.launch {
+                    try {
+                        val raw = app.api.raw("POST", "/api/v1/parents/invite", "{}")
+                        invite = AppJson.decodeFromString(ParentInviteData.serializer(), raw)
+                    } catch (e: Exception) { inviteError = e.message ?: "Taklif yaratilmadi" }
+                    inviteBusy = false
+                }
+            })
+            invite?.let { data ->
+                Panel {
+                    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        SectionTitle("Ota-onaga yuboriladigan taklif")
+                        Text("Kod: ${data.code}", color = p.accent, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                        Text("Taklif 7 kun amal qiladi. Ota-ona Telegramda havolani ochishi kerak.", color = p.muted, fontSize = 11.sp)
+                        PrimaryButton("Telegram orqali ulashish", modifier = Modifier.fillMaxWidth(), onClick = {
+                            val shareText = data.link ?: "EduGo ota-ona ulanish kodi: ${data.code}"
+                            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain").putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                            context.startActivity(android.content.Intent.createChooser(intent, "Taklifni ulashish"))
+                        })
+                    }
+                }
+            }
+            inviteError?.let { Text(it, color = p.coral, fontSize = 12.sp) }
         }
         PrimaryButton(
             if (busy) "Chiqilmoqda…" else "Hisobdan chiqish",
