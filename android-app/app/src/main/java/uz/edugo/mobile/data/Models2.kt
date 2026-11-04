@@ -123,3 +123,5 @@ data class ChatEvent(
 )
 
 @Serializable data class ActionResult(val id: String = "", val status: String = "", val message: String? = null)
+
+@Serializable data class ParentInviteData(val code: String = "", val link: String? = null, val expiresAt: String? = null)
