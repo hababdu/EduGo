@@ -131,14 +131,14 @@ fun GroupsScreen(openGroup: (String) -> Unit) {
 }
 
 @Composable
-fun GroupDetailScreen(groupId: String, onBack: () -> Unit) {
+fun GroupDetailScreen(groupId: String, onBack: () -> Unit, openAssignment: (String) -> Unit) {
     val p = P
     var tab by remember { mutableStateOf(0) }
     val group = rememberRemote("/api/v1/groups/$groupId", GroupItem.serializer())
     Column {
         BackHeader((group.state as? UiState.Ready)?.value?.name ?: "Guruh", onBack)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Davomat", "O'quvchilar").forEachIndexed { i, label ->
+            listOf("Davomat", "O'quvchilar", "Vazifalar").forEachIndexed { i, label ->
                 val on = tab == i
                 Text(
                     label,
@@ -151,7 +151,11 @@ fun GroupDetailScreen(groupId: String, onBack: () -> Unit) {
                 )
             }
         }
-        if (tab == 0) AttendanceEditor(groupId) else GroupStudents(groupId)
+        when (tab) {
+            0 -> AttendanceEditor(groupId)
+            1 -> GroupStudents(groupId)
+            else -> TeacherGroupAssignments(groupId, openAssignment)
+        }
     }
 }
 
