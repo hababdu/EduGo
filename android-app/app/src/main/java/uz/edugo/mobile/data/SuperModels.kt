@@ -122,3 +122,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class SuperRestoreCounts(val groups: Int = 0, val members: Int = 0, val payments: Int = 0, val attendance: Int = 0)
 @Serializable data class SuperRestoreResult(val dryRun: Boolean = true, val backupCreatedAt: String? = null, val toRestore: SuperRestoreCounts = SuperRestoreCounts())
+
+@Serializable data class SuperAdminRow(
+    val id: String = "", val name: String = "", val username: String? = null,
+    val telegramId: String = "", val role: String = "", val status: String = "",
+    val lastActiveAt: String = "", val organization: SuperCandidateOrg? = null,
+)
+@Serializable data class BlockSuperUserBody(val blocked: Boolean)
+@Serializable data class MoveSuperAdminBody(val organizationId: String)
