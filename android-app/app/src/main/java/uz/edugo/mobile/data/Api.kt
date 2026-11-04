@@ -1,5 +1,8 @@
 package uz.edugo.mobile.data
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -14,6 +17,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -122,6 +126,46 @@ class Api(private val session: Session) {
         raw(method, path, AppJson.encodeToString(ser, body))
 
     suspend fun patch(path: String): String = raw("PATCH", path, "{}")
+
+    /** Material faylini Android Document Picker orqali backendga yuboradi. */
+    suspend fun uploadMaterial(context: Context, uri: Uri): MaterialFileDto {
+        val resolver = context.contentResolver
+        val name = resolver.query(uri, null, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        } ?: "material"
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+        val bytes = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: throw ApiException(0, "Tanlangan faylni o'qib bo'lmadi")
+        }
+        if (bytes.size > 45 * 1024 * 1024) throw ApiException(413, "Fayl hajmi 45 MB dan oshmasligi kerak")
+        val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", name, bytes.toRequestBody(mime.toMediaType()))
+            .build()
+        suspend fun attempt(): Resp = withContext(Dispatchers.IO) {
+            val token = session.accessToken
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/materials/files")
+                .header("Accept", "application/json")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .post(requestBody).build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    Resp(response.code, response.body?.string().orEmpty(), token)
+                }
+            } catch (e: IOException) {
+                throw ApiException(0, "Fayl yuklanmadi. Internetni tekshiring")
+            }
+        }
+        var response = attempt()
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.sentToken)
+            response = attempt()
+        }
+        if (response.code !in 200..299) throw ApiException(response.code, parseMessage(response.text, response.code))
+        return AppJson.decodeFromString(MaterialFileDto.serializer(), response.text)
+    }
+
 
     // ---- Kirish (Telegram bot orqali) ----
     suspend fun loginStart(): LoginStart =
