@@ -64,6 +64,7 @@ data class SubmitResult(
 @Serializable
 data class HwAssignment(
     val id: String = "",
+    val title: String = "",
     val dueAt: String? = null,
     val maxScore: Int = 0,
     val gradingStatus: String = "PENDING",
