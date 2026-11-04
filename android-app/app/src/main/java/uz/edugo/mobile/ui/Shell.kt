@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -38,7 +39,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.material3.Icon
 import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -84,7 +84,7 @@ fun MainShell(user: AuthUser) {
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                if (tabs.size > 1 && !isDetail) NavigationBar(containerColor = p.surface.copy(alpha = if (p.dark) 0.88f else 0.95f)) {
+                if (tabs.size > 1 && !isDetail) NavigationBar(modifier = Modifier.navigationBarsPadding(), containerColor = p.surface.copy(alpha = if (p.dark) 0.88f else 0.95f)) {
                     tabs.forEach { t ->
                         NavigationBarItem(
                             selected = current == t.route,
@@ -149,7 +149,7 @@ fun MainShell(user: AuthUser) {
 @Composable
 private fun TopBar(user: AuthUser, onBell: () -> Unit, onProfile: () -> Unit) {
     val p = P
-    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
         Text("EduGo", color = p.accent, fontWeight = FontWeight.ExtraBold, fontSize = 22.sp)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Box(Modifier.pressable(onBell).padding(8.dp)) { Icon(Icons.Rounded.Notifications, contentDescription = "Xabarlar", tint = p.ink) }
