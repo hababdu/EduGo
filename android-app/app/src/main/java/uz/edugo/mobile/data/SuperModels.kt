@@ -119,3 +119,6 @@ import kotlinx.serialization.Serializable
     val config: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
     val queue: SuperSystemQueue = SuperSystemQueue(),
 )
+
+@Serializable data class SuperRestoreCounts(val groups: Int = 0, val members: Int = 0, val payments: Int = 0, val attendance: Int = 0)
+@Serializable data class SuperRestoreResult(val dryRun: Boolean = true, val backupCreatedAt: String? = null, val toRestore: SuperRestoreCounts = SuperRestoreCounts())
