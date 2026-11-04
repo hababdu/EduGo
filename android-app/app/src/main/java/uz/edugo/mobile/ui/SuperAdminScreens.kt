@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +30,9 @@ import uz.edugo.mobile.data.SuperOrgDetail
 import uz.edugo.mobile.data.SuperOverview
 import uz.edugo.mobile.data.CreateSuperOrgBody
 import uz.edugo.mobile.data.UpdateSuperOrgBody
+import uz.edugo.mobile.data.SuperAdminCandidate
+import uz.edugo.mobile.data.AssignSuperAdminBody
+import uz.edugo.mobile.data.SuperOrgAdmin
 
 @Composable
 fun SuperAdminHome(openOrganizations: () -> Unit) {
@@ -133,6 +138,9 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
     val remote = rememberRemote("/api/v1/super/organizations/$id/detail", SuperOrgDetail.serializer())
+    var candidateQuery by remember { mutableStateOf("") }
+    val candidatesRemote = rememberRemoteList("/api/v1/super/users?search=$candidateQuery", SuperAdminCandidate.serializer())
+    var removeAdminTarget by remember { mutableStateOf<SuperOrgAdmin?>(null) }
     var status by remember { mutableStateOf("ACTIVE") }
     var monthlyFee by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
@@ -143,7 +151,7 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
     LaunchedEffect(current?.org?.id) {
         current?.org?.let { status = it.status; monthlyFee = it.monthlyPlanFee?.toString().orEmpty(); note = it.note.orEmpty(); channelId = it.storageChatId.orEmpty() }
     }
-    RefreshColumn(listOf(remote)) {
+    RefreshColumn(listOf(remote, candidatesRemote)) {
         BackHeader("Maktab tafsilotlari", onBack)
         Section(remote) { data ->
             Hero("Tashkilot", data.org.name, data.org.note)
@@ -196,7 +204,41 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
                 }
             }
             SectionTitle("Adminlar · ${data.admins.size}")
-            data.admins.forEach { admin -> Text("${admin.name}${admin.username?.let { " · @$it" } ?: ""}", color = p.ink, fontSize = 12.sp) }
+            data.admins.forEach { admin ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("${admin.name}${admin.username?.let { " · @$it" } ?: ""}", color = p.ink, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text("Olib tashlash", color = p.coral, fontSize = 10.sp, modifier = Modifier.pressable { removeAdminTarget = admin }.padding(4.dp))
+                }
+            }
+            SectionTitle("Admin biriktirish")
+            BasicTextField(candidateQuery, { candidateQuery = it }, singleLine = true,
+                textStyle = TextStyle(color = p.ink, fontSize = 12.sp), cursorBrush = SolidColor(p.accent),
+                modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(10.dp)).padding(10.dp),
+                decorationBox = { inner -> if (candidateQuery.isEmpty()) Text("Foydalanuvchini qidirish", color = p.faint); inner() },
+            )
+            val currentAdminIds = data.admins.map { it.id }.toSet()
+            val candidates = (candidatesRemote.state as? UiState.Ready)?.value.orEmpty().filter { it.id !in currentAdminIds }
+            if (candidates.isEmpty()) Text("Adminlikka nomzod topilmadi", color = p.faint, fontSize = 11.sp)
+            candidates.take(8).forEach { candidate ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(Modifier.weight(1f)) {
+                        Text(candidate.name, color = p.ink, fontSize = 12.sp)
+                        Text("${candidate.role}${candidate.organization?.let { " · ${it.name}" } ?: ""}", color = p.faint, fontSize = 10.sp)
+                    }
+                    Text("Biriktirish", color = p.accent, fontSize = 10.sp, modifier = Modifier.pressable {
+                        if (!busy) {
+                            busy = true
+                            scope.launch {
+                                try {
+                                    api.send("POST", "/api/v1/super/organizations/$id/admins", AssignSuperAdminBody.serializer(), AssignSuperAdminBody(candidate.id))
+                                    remote.reload(); candidatesRemote.reload(); message = "Admin biriktirildi"
+                                } catch (e: Exception) { message = e.message ?: "Admin biriktirilmadi" }
+                                busy = false
+                            }
+                        }
+                    }.padding(5.dp))
+                }
+            }
             SectionTitle("O'qituvchilar · ${data.teachers.size}")
             data.teachers.forEach { teacher -> Text("${teacher.name}${teacher.username?.let { " · @$it" } ?: ""}", color = p.muted, fontSize = 12.sp) }
             SectionTitle("Guruhlar · ${data.groups.size}")
@@ -210,5 +252,20 @@ fun SuperOrganizationDetail(id: String, onBack: () -> Unit) {
                 }
             }
         }
+    }
+    removeAdminTarget?.let { admin ->
+        AlertDialog(
+            onDismissRequest = { removeAdminTarget = null },
+            title = { Text("Adminlikdan chiqarilsinmi?") },
+            text = { Text("${admin.name} admin rolidan chiqariladi va o'qituvchi bo'lib qoladi.") },
+            confirmButton = { TextButton(onClick = {
+                removeAdminTarget = null
+                scope.launch {
+                    runCatching { api.raw("DELETE", "/api/v1/super/organizations/$id/admins/${admin.id}", "{}"); remote.reload() }
+                        .onFailure { message = it.message ?: "Admin olib tashlanmadi" }
+                }
+            }) { Text("Chiqarish") } },
+            dismissButton = { TextButton(onClick = { removeAdminTarget = null }) { Text("Bekor qilish") } },
+        )
     }
 }
