@@ -111,8 +111,8 @@ fun StudentLessons(openLesson: (String) -> Unit) {
                             }
                             Text(item.title, color = p.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             Text(
-                                listOfNotNull(item.group?.name, item.teacher?.let {
-                                    listOfNotNull(it.firstName, it.lastName).joinToString(" ").ifBlank { it.username }
+                                listOfNotNull(item.group?.name, item.teacher?.let { teacher ->
+                                    listOfNotNull(teacher.firstName, teacher.lastName).joinToString(" ").ifBlank { teacher.username.orEmpty() }
                                 }).filter { it.isNotBlank() }.joinToString(" · ").ifBlank { "EduGo materiali" },
                                 color = p.muted, fontSize = 12.sp,
                             )
