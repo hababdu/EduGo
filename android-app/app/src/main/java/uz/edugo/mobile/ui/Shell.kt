@@ -66,7 +66,8 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     )
     Role.SUPER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
-        Tab("ai", "AI", Icons.Rounded.AutoAwesome), Tab("profile", "Profil", Icons.Rounded.Person),
+        Tab("billing", "Obuna", Icons.Rounded.Assignment), Tab("audit", "Audit", Icons.Rounded.People),
+        Tab("ai-settings", "AI sozlama", Icons.Rounded.AutoAwesome),
     )
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
@@ -151,6 +152,9 @@ fun MainShell(user: AuthUser) {
                     AdminGroupPaymentsScreen(entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("month").orEmpty()) { nav.popBackStack() }
                 }
                 composable("leads") { AdminLeadsScreen() }
+                composable("billing") { SuperBillingScreen() }
+                composable("audit") { SuperAuditScreen() }
+                composable("ai-settings") { SuperAiSettingsScreen() }
                 composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
