@@ -76,7 +76,7 @@ fun MainShell(user: AuthUser) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val current = entry?.destination?.route
-    val isDetail = current != null && (DETAIL_PREFIXES.any { current.startsWith(it) } || current == "notifications" || current == "profile")
+    val isDetail = current != null && (DETAIL_PREFIXES.any { current.startsWith(it) } || current == "notifications")
     val showTop = current != null && DETAIL_PREFIXES.none { current.startsWith(it) } && current != "notifications" && current != "profile" && current != "ai"
 
     Box {
