@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.LessonItem
 
 private val lessonFilters = listOf("BARCHA", "LESSON", "HOMEWORK", "RESOURCE")
@@ -137,7 +136,6 @@ fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -
     val p = P
     val context = LocalContext.current
     val api = LocalApi.current
-    val scope = rememberCoroutineScope()
     val scope = rememberCoroutineScope()
     var sendingFile by remember { mutableStateOf<String?>(null) }
     var openingFile by remember { mutableStateOf<String?>(null) }
