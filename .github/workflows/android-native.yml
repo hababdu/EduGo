@@ -52,6 +52,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish to Releases
+        if: ${{ github.ref == 'refs/heads/main' }}
         working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
