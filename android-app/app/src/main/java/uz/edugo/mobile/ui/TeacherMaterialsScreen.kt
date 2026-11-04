@@ -45,6 +45,7 @@ fun TeacherMaterialsScreen() {
     val materials = rememberRemoteList("/api/v1/teacher/assignments", TeacherMaterialItem.serializer())
     val groups = rememberRemoteList("/api/v1/teacher/groups", GroupItem.serializer())
     var editingId by remember { mutableStateOf<String?>(null) }
+    var formOpen by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var mediaUrl by remember { mutableStateOf("") }
@@ -73,6 +74,7 @@ fun TeacherMaterialsScreen() {
     }
 
     fun startEdit(item: TeacherMaterialItem?) {
+        formOpen = true
         editingId = item?.id
         title = item?.title.orEmpty()
         description = item?.description.orEmpty()
@@ -114,7 +116,9 @@ fun TeacherMaterialsScreen() {
                     api.send("PATCH", "/api/v1/teacher/assignments/$editingId", UpdateTeacherMaterial.serializer(), body)
                 }
                 materials.reload()
-                startEdit(null)
+                editingId = null
+                formOpen = false
+                title = ""; description = ""; mediaUrl = ""; groupId = ""; files = emptyList()
                 message = "Saqlandi"
             } catch (e: Exception) {
                 message = e.message ?: "Saqlab bo'lmadi"
@@ -124,7 +128,7 @@ fun TeacherMaterialsScreen() {
 
     RefreshColumn(listOf(materials, groups)) {
         Hero("O'qituvchi", "Materiallar", "Dars, vazifa va resurslarni yaratish hamda boshqarish")
-        if (editingId != null || title.isNotBlank() || files.isNotEmpty()) {
+        if (formOpen) {
             Panel {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     SectionTitle(if (editingId == null) "Yangi material" else "Materialni tahrirlash")
@@ -160,13 +164,13 @@ fun TeacherMaterialsScreen() {
                     PrimaryButton(if (uploading) "Fayl yuklanmoqda…" else "+ Fayl biriktirish", enabled = !uploading && files.size < 10, modifier = Modifier.fillMaxWidth(), onClick = { picker.launch(arrayOf("*/*")) })
                     message?.let { Text(it, color = if (it == "Saqlandi" || it.startsWith("Fayl yuklandi")) p.teal else p.coral, fontSize = 12.sp) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        PrimaryButton("Bekor qilish", onClick = { startEdit(null) }, modifier = Modifier.weight(1f))
+                        PrimaryButton("Bekor qilish", onClick = { formOpen = false; editingId = null; title = ""; description = ""; mediaUrl = ""; groupId = ""; files = emptyList(); message = null }, modifier = Modifier.weight(1f))
                         PrimaryButton(if (saving) "Saqlanmoqda…" else "Saqlash", enabled = !saving && !uploading && title.isNotBlank() && groupId.isNotBlank(), onClick = { save() }, modifier = Modifier.weight(1f))
                     }
                 }
             }
         } else {
-            PrimaryButton("+ Material yaratish", modifier = Modifier.fillMaxWidth(), onClick = { startEdit(null); title = " " })
+            PrimaryButton("+ Material yaratish", modifier = Modifier.fillMaxWidth(), onClick = { startEdit(null) })
         }
 
         Section(materials) {
