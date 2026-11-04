@@ -155,6 +155,16 @@ fun ProfileScreen(user: AuthUser) {
                         Text(roleLabel(user.role), color = p.muted, fontSize = 13.sp)
                     }
                 }
+                Text("Ko'rinish", color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                    listOf("system" to "Tizim", "dark" to "Qorong'i", "light" to "Yorug'").forEach { (mode, label) ->
+                        val selected = themeMode == mode
+                        Text(label, color = if (selected) p.base else p.muted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f).background(if (selected) p.accent else p.raised, RoundedCornerShape(12.dp))
+                                .pressable { setThemeMode(mode) }.padding(vertical = 10.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
                 Text("Versiya ${BuildConfig.VERSION_NAME}", color = p.faint, fontSize = 12.sp)
                 Text(BuildConfig.API_URL, color = p.faint, fontSize = 12.sp)
             }
