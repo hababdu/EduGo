@@ -58,7 +58,7 @@ fun AdminUsersScreen() {
                                 Text(name, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 user.username?.let { Text("@$it", color = p.faint, fontSize = 11.sp) }
                             }
-                            Pill(roleLabel(user.role), if (user.role == "TEACHER") p.teal else if (user.role == "ADMIN") p.accent else p.sky)
+                            Pill(adminUserRoleLabel(user.role), if (user.role == "TEACHER") p.teal else if (user.role == "ADMIN") p.accent else p.sky)
                         }
                         if (user.role == "STUDENT" || user.role == "TEACHER") {
                             val next = if (user.role == "STUDENT") "TEACHER" else "STUDENT"
@@ -86,7 +86,7 @@ fun AdminUsersScreen() {
     }
 }
 
-private fun roleLabel(role: String) = when (role) {
+private fun adminUserRoleLabel(role: String) = when (role) {
     "STUDENT" -> "O'quvchi"
     "TEACHER" -> "O'qituvchi"
     "ADMIN" -> "Administrator"
