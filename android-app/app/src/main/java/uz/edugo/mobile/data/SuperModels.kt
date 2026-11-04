@@ -107,3 +107,15 @@ import kotlinx.serialization.Serializable
     val primary: String? = null, val fallback: String? = null,
     val models: Map<String, Map<String, String>>? = null,
 )
+
+@Serializable data class SuperSystemServer(val uptimeSec: Long = 0, val node: String = "", val rssMb: Int = 0, val heapMb: Int = 0, val env: String = "")
+@Serializable data class SuperSystemDb(val ok: Boolean = false, val latencyMs: Long = 0, val sizeBytes: Long? = null)
+@Serializable data class SuperSystemQueue(
+    val gradingRunning: Int = 0, val gradingOverdue: Int = 0,
+    val failedSubmissions: Int = 0, val needsReview: Int = 0, val orphanFiles: Int = 0,
+)
+@Serializable data class SuperSystemData(
+    val server: SuperSystemServer = SuperSystemServer(), val db: SuperSystemDb = SuperSystemDb(),
+    val config: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    val queue: SuperSystemQueue = SuperSystemQueue(),
+)
