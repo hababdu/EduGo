@@ -3,6 +3,7 @@ package uz.edugo.mobile.data
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,6 +24,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import uz.edugo.mobile.BuildConfig
 import java.io.IOException
+import java.io.File
 import kotlin.coroutines.coroutineContext
 import java.util.concurrent.TimeUnit
 
@@ -126,6 +128,39 @@ class Api(private val session: Session) {
         raw(method, path, AppJson.encodeToString(ser, body))
 
     suspend fun patch(path: String): String = raw("PATCH", path, "{}")
+
+
+    /** Himoyalangan material faylini yuklab, vaqtinchalik cache URI qaytaradi. */
+    suspend fun materialFileUri(context: Context, id: String, fileName: String, mimeType: String): Uri {
+        data class BinaryResponse(val code: Int, val bytes: ByteArray, val token: String?)
+        suspend fun fetch(token: String?): BinaryResponse = withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/materials/files/$id/content")
+                .header("Accept", "*/*")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .get().build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    BinaryResponse(response.code, response.body?.bytes() ?: byteArrayOf(), token)
+                }
+            } catch (e: IOException) {
+                throw ApiException(0, "Faylni yuklab bo'lmadi. Internetni tekshiring")
+            }
+        }
+        var response = fetch(session.accessToken)
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.token)
+            response = fetch(session.accessToken)
+        }
+        if (response.code !in 200..299) {
+            if (response.code == 413) throw ApiException(413, "Fayl 20 MB dan katta — Telegram chatga yuboring")
+            throw ApiException(response.code, parseMessage(String(response.bytes, Charsets.UTF_8), response.code))
+        }
+        val dir = File(context.cacheDir, "materials").apply { mkdirs() }
+        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").take(100).ifBlank { "material" }
+        val file = File(dir, "${id}_$safeName")
+        withContext(Dispatchers.IO) { file.writeBytes(response.bytes) }
+        return FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+    }
 
     /** Material faylini Android Document Picker orqali backendga yuboradi. */
     suspend fun uploadMaterial(context: Context, uri: Uri): MaterialFileDto {
