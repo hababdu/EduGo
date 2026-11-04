@@ -112,8 +112,8 @@ fun TeacherTestsScreen() {
                     message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
                     PrimaryButton(
                         if (saving) "Yaratilmoqda…" else "Test yaratish va guruhlarga biriktirish",
-                        enabled = !saving && title.isNotBlank() && duration.toIntOrNull() in 10..21600 &&
-                            passing.toIntOrNull() in 1..100 && selectedGroups.isNotEmpty() &&
+                        enabled = !saving && title.isNotBlank() && duration.toIntOrNull()?.let { it in 10..21600 } == true &&
+                            passing.toIntOrNull()?.let { it in 1..100 } == true && selectedGroups.isNotEmpty() &&
                             questions.isNotEmpty() && questions.all { it.text.isNotBlank() && it.optionA.isNotBlank() && it.optionB.isNotBlank() },
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
