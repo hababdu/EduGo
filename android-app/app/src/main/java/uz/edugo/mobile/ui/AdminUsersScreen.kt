@@ -26,7 +26,7 @@ import uz.edugo.mobile.data.AdminUserItem
 import uz.edugo.mobile.data.UpdateAdminRoleBody
 
 @Composable
-fun AdminUsersScreen() {
+fun AdminUsersScreen(openStudent: (String) -> Unit = {}) {
     val p = P
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
@@ -51,7 +51,7 @@ fun AdminUsersScreen() {
             message?.let { Text(it, color = p.coral, fontSize = 12.sp) }
             users.forEachIndexed { index, user ->
                 val name = listOfNotNull(user.firstName, user.lastName).joinToString(" ").ifBlank { user.username ?: "Foydalanuvchi" }
-                Panel(Modifier.stagger(index)) {
+                Panel(Modifier.stagger(index).pressable { if (user.role == "STUDENT") openStudent(user.id) }) {
                     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(Modifier.weight(1f)) {
