@@ -165,6 +165,7 @@ fun ProfileScreen(user: AuthUser) {
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }
                 }
+                if (user.role == "STUDENT") StudentProfileExtras()
                 Text("Versiya ${BuildConfig.VERSION_NAME}", color = p.faint, fontSize = 12.sp)
                 Text(BuildConfig.API_URL, color = p.faint, fontSize = 12.sp)
             }
