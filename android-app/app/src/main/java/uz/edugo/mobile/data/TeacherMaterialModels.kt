@@ -36,7 +36,7 @@ import kotlinx.serialization.Serializable
     val groupId: String,
     val fileIds: List<String> = emptyList(),
     val status: String = "PUBLISHED",
-    val dueAt: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val dueAt: String? = null,
 )
 @Serializable data class UpdateTeacherMaterial(
     val title: String? = null,
