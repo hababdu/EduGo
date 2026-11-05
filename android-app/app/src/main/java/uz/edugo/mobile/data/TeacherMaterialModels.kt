@@ -47,5 +47,5 @@ import kotlinx.serialization.Serializable
     val groupId: String? = null,
     val fileIds: List<String>? = null,
     val status: String? = null,
-    val dueAt: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val dueAt: String? = null,
 )
