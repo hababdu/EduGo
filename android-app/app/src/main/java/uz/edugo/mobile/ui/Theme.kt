@@ -42,25 +42,15 @@ class Palette(
 private fun c(r: Int, g: Int, b: Int) = Color(r, g, b)
 
 fun paletteFor(role: Role, dark: Boolean): Palette {
-    val (accent, accent2) = if (dark) when (role) {
-        Role.STUDENT -> c(255, 176, 32) to c(52, 208, 160)
-        Role.TEACHER -> c(45, 212, 140) to c(56, 189, 248)
-        Role.ADMIN -> c(129, 140, 248) to c(255, 176, 32)
-        Role.SUPER -> c(192, 132, 252) to c(56, 189, 248)
-        Role.PARENT -> c(34, 211, 238) to c(255, 176, 32)
-    } else when (role) {
-        Role.STUDENT -> c(200, 124, 0) to c(14, 146, 110)
-        Role.TEACHER -> c(5, 150, 105) to c(8, 128, 186)
-        Role.ADMIN -> c(79, 70, 229) to c(200, 124, 0)
-        Role.SUPER -> c(126, 34, 206) to c(8, 128, 186)
-        Role.PARENT -> c(8, 145, 178) to c(200, 124, 0)
-    }
+    // Yagona EduGo brand palette: barcha rollarda bir xil xalqaro EdTech identifikatsiyasi.
+    val accent = c(53, 99, 246)
+    val accent2 = c(129, 87, 246)
     return if (dark) Palette(
-        true, c(11, 13, 25), c(18, 22, 42), c(30, 36, 71), c(245, 243, 237), c(156, 163, 196), c(91, 95, 130),
-        accent, accent2, c(255, 176, 32), c(52, 208, 160), c(240, 101, 75), c(56, 189, 248),
+        true, c(15, 19, 38), c(25, 31, 56), c(37, 45, 76), c(246, 247, 255), c(166, 175, 205), c(112, 123, 158),
+        accent, accent2, c(255, 190, 74), c(48, 196, 145), c(245, 103, 115), c(73, 174, 255),
     ) else Palette(
-        false, c(223, 228, 240), c(255, 255, 255), c(208, 216, 234), c(28, 33, 58), c(84, 92, 124), c(140, 148, 178),
-        accent, accent2, c(200, 124, 0), c(14, 146, 110), c(210, 68, 46), c(8, 128, 186),
+        false, c(245, 247, 255), c(255, 255, 255), c(237, 241, 255), c(25, 31, 55), c(104, 114, 145), c(150, 159, 184),
+        accent, accent2, c(230, 157, 45), c(20, 164, 123), c(220, 76, 91), c(40, 145, 235),
     )
 }
 
