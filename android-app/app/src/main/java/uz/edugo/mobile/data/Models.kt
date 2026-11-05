@@ -185,8 +185,17 @@ data class GroupItem(
     val description: String? = null,
     val teacher: TeacherRef? = null,
     @kotlinx.serialization.SerialName("_count") val count: GroupCount? = null,
+    @kotlinx.serialization.SerialName("memberCount") val studentMemberCount: Int? = null,
+    val posterUrl: String? = null,
+    val maxCapacity: Int? = null,
+    val telegramChatUrl: String? = null,
+    val lessonDays: List<Int>? = null,
+    val lessonStartTime: String? = null,
+    val lessonEndTime: String? = null,
+    val room: String? = null,
+    val monthlyFee: Double? = null,
 ) {
-    val memberCount: Int get() = count?.students ?: count?.members ?: 0
+    val memberCount: Int get() = count?.students ?: count?.members ?: studentMemberCount ?: 0
 }
 
 @Serializable

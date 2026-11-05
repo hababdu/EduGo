@@ -1,5 +1,9 @@
 package uz.edugo.mobile.data
 
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -14,11 +18,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import uz.edugo.mobile.BuildConfig
 import java.io.IOException
+import java.io.File
 import kotlin.coroutines.coroutineContext
 import java.util.concurrent.TimeUnit
 
@@ -122,6 +128,120 @@ class Api(private val session: Session) {
         raw(method, path, AppJson.encodeToString(ser, body))
 
     suspend fun patch(path: String): String = raw("PATCH", path, "{}")
+
+
+    /** Himoyalangan material faylini yuklab, vaqtinchalik cache URI qaytaradi. */
+    suspend fun materialFileUri(context: Context, id: String, fileName: String, mimeType: String): Uri {
+        data class BinaryResponse(val code: Int, val bytes: ByteArray, val token: String?)
+        suspend fun fetch(token: String?): BinaryResponse = withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/materials/files/$id/content")
+                .header("Accept", "*/*")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .get().build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    BinaryResponse(response.code, response.body?.bytes() ?: byteArrayOf(), token)
+                }
+            } catch (e: IOException) {
+                throw ApiException(0, "Faylni yuklab bo'lmadi. Internetni tekshiring")
+            }
+        }
+        var response = fetch(session.accessToken)
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.token)
+            response = fetch(session.accessToken)
+        }
+        if (response.code !in 200..299) {
+            if (response.code == 413) throw ApiException(413, "Fayl 20 MB dan katta — Telegram chatga yuboring")
+            throw ApiException(response.code, parseMessage(String(response.bytes, Charsets.UTF_8), response.code))
+        }
+        val dir = File(context.cacheDir, "materials").apply { mkdirs() }
+        val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").take(100).ifBlank { "material" }
+        val file = File(dir, "${id}_$safeName")
+        withContext(Dispatchers.IO) { file.writeBytes(response.bytes) }
+        return FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.fileprovider", file)
+    }
+
+
+    /** Maktab backup faylini avval tekshiradi, so'ng tasdiqlansa tiklaydi. */
+    suspend fun restoreOrganization(context: Context, uri: Uri, orgId: String, apply: Boolean): String {
+        val resolver = context.contentResolver
+        val name = resolver.query(uri, null, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        } ?: "backup.json.gz"
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+        val bytes = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: throw ApiException(0, "Backup faylini o'qib bo'lmadi")
+        }
+        if (bytes.size > 50 * 1024 * 1024) throw ApiException(413, "Backup 50 MB dan katta")
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", name, bytes.toRequestBody(mime.toMediaType())).build()
+        suspend fun attempt(token: String?): Resp = withContext(Dispatchers.IO) {
+            val suffix = if (apply) "?apply=1" else ""
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/super/organizations/$orgId/restore$suffix")
+                .header("Accept", "application/json")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .post(body).build()
+            try {
+                client.newCall(request).execute().use { response -> Resp(response.code, response.body?.string().orEmpty(), token) }
+            } catch (e: IOException) { throw ApiException(0, "Backup serverga yuborilmadi") }
+        }
+        var response = attempt(session.accessToken)
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.sentToken)
+            response = attempt(session.accessToken)
+        }
+        if (response.code !in 200..299) throw ApiException(response.code, parseMessage(response.text, response.code))
+        return response.text
+    }
+
+    /** Material faylini Android Document Picker orqali backendga yuboradi. */
+    suspend fun uploadMaterial(context: Context, uri: Uri): MaterialFileDto {
+        val resolver = context.contentResolver
+        val metadata = resolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) null else {
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                (if (nameIndex >= 0) cursor.getString(nameIndex) else null) to
+                    (if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) cursor.getLong(sizeIndex) else -1L)
+            }
+        }
+        val name = metadata?.first ?: "material"
+        if ((metadata?.second ?: -1L) > 45L * 1024 * 1024) throw ApiException(413, "Fayl hajmi 45 MB dan oshmasligi kerak")
+        val mime = resolver.getType(uri) ?: "application/octet-stream"
+        val bytes = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.use { it.readBytes() }
+                ?: throw ApiException(0, "Tanlangan faylni o'qib bo'lmadi")
+        }
+        if (bytes.size > 45 * 1024 * 1024) throw ApiException(413, "Fayl hajmi 45 MB dan oshmasligi kerak")
+        val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", name, bytes.toRequestBody(mime.toMediaType()))
+            .build()
+        suspend fun attempt(): Resp = withContext(Dispatchers.IO) {
+            val token = session.accessToken
+            val request = Request.Builder().url(BuildConfig.API_URL + "/api/v1/materials/files")
+                .header("Accept", "application/json")
+                .apply { token?.let { header("Authorization", "Bearer $it") } }
+                .post(requestBody).build()
+            try {
+                client.newCall(request).execute().use { response ->
+                    Resp(response.code, response.body?.string().orEmpty(), token)
+                }
+            } catch (e: IOException) {
+                throw ApiException(0, "Fayl yuklanmadi. Internetni tekshiring")
+            }
+        }
+        var response = attempt()
+        if (response.code == 401 && session.refreshToken != null) {
+            refresh(response.sentToken)
+            response = attempt()
+        }
+        if (response.code !in 200..299) throw ApiException(response.code, parseMessage(response.text, response.code))
+        return AppJson.decodeFromString(MaterialFileDto.serializer(), response.text)
+    }
+
 
     // ---- Kirish (Telegram bot orqali) ----
     suspend fun loginStart(): LoginStart =

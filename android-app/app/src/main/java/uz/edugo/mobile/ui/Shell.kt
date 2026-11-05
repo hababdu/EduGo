@@ -57,20 +57,22 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     )
     Role.TEACHER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
-        Tab("materials", "Materiallar", Icons.Rounded.MenuBook), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("materials", "Materiallar", Icons.Rounded.MenuBook), Tab("teacher-tests", "Testlar", Icons.Rounded.Quiz),
     )
     Role.ADMIN -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "O'quvchilar", Icons.Rounded.People),
-        Tab("groups", "Guruhlar", Icons.Rounded.Groups), Tab("ai", "AI", Icons.Rounded.AutoAwesome),
+        Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "Foydalanuvchilar", Icons.Rounded.People),
+        Tab("admin-groups", "Guruhlar", Icons.Rounded.Groups), Tab("payments", "To'lov", Icons.Rounded.Assignment),
+        Tab("leads", "Qabul", Icons.Rounded.People),
     )
     Role.SUPER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
-        Tab("ai", "AI", Icons.Rounded.AutoAwesome), Tab("profile", "Profil", Icons.Rounded.Person),
+        Tab("billing", "Obuna", Icons.Rounded.Assignment), Tab("audit", "Audit", Icons.Rounded.People),
+        Tab("ai-settings", "AI sozlama", Icons.Rounded.AutoAwesome),
     )
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
 
-private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/")
+private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/", "payments-group/", "admin-group/")
 
 @Composable
 fun MainShell(user: AuthUser) {
@@ -141,12 +143,28 @@ fun MainShell(user: AuthUser) {
                 composable("ranking") { RankingScreen() }
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
                 composable("materials") { TeacherMaterialsScreen() }
-                composable("students") { AdminStudents() }
+                composable("teacher-tests") { TeacherTestsScreen() }
+                composable("students") { AdminUsersScreen() }
+                composable("admin-groups") { AdminGroupsScreen { nav.navigate("admin-group/$it") } }
+                composable("admin-group/{id}") { AdminGroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
+                composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
+                composable("payments-group/{id}/{month}") { entry ->
+                    AdminGroupPaymentsScreen(entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("month").orEmpty()) { nav.popBackStack() }
+                }
+                composable("leads") { AdminLeadsScreen() }
+                composable("billing") { SuperBillingScreen() }
+                composable("audit") { SuperAuditScreen() }
+                composable("ai-settings") { SuperAiSettingsScreen() }
                 composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
-                composable("group/{id}") { GroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
+                composable("group/{id}") {
+                    val groupId = it.arguments?.getString("id").orEmpty()
+                    if (role == Role.STUDENT) StudentGroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openLesson = { nav.navigate("lesson/$it") })
+                    else GroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openAssignment = { nav.navigate("homework-review/$it") })
+                }
+                composable("homework-review/{id}") { TeacherHomeworkReviewScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("child/{id}") { ChildScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
             }
           }

@@ -26,6 +26,7 @@ data class LessonFile(
     val id: String = "",
     val fileName: String = "",
     val kind: String = "FILE",
+    val mimeType: String = "application/octet-stream",
     val sizeBytes: Long = 0,
     val previewable: Boolean = false,
 )

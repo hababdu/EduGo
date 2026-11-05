@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.LessonItem
 
 private val lessonFilters = listOf("BARCHA", "LESSON", "HOMEWORK", "RESOURCE")
@@ -133,6 +135,11 @@ fun StudentLessons(openLesson: (String) -> Unit) {
 fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -> Unit) {
     val p = P
     val context = LocalContext.current
+    val api = LocalApi.current
+    val scope = rememberCoroutineScope()
+    var sendingFile by remember { mutableStateOf<String?>(null) }
+    var openingFile by remember { mutableStateOf<String?>(null) }
+    var fileMessage by remember { mutableStateOf<String?>(null) }
     val remote = rememberRemote("/api/v1/dashboard/assignments/$id", LessonItem.serializer())
     RefreshColumn(listOf(remote)) {
         BackHeader("Material") { onBack() }
@@ -174,13 +181,55 @@ fun StudentLessonDetail(id: String, onBack: () -> Unit, openHomework: (String) -
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         SectionTitle("Biriktirilgan fayllar · ${item.files.size}")
                         item.files.forEach { file ->
-                            Text(
-                                "📎 ${file.fileName.ifBlank { "Fayl" }} · ${file.kind}",
-                                color = p.ink,
-                                fontSize = 13.sp,
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text("📎 ${file.fileName.ifBlank { "Fayl" }}", color = p.ink, fontSize = 13.sp)
+                                        Text("${file.kind} · ${file.sizeBytes / 1024} KB", color = p.faint, fontSize = 11.sp)
+                                    }
+                                    Text(
+                                        if (openingFile == file.id) "Ochilmoqda…" else "Ochish / yuklab olish",
+                                        color = p.accent,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier.pressable {
+                                            if (openingFile == null) {
+                                                openingFile = file.id
+                                                fileMessage = null
+                                                scope.launch {
+                                                    fileMessage = runCatching {
+                                                        val uri = api.materialFileUri(context, file.id, file.fileName, file.mimeType)
+                                                        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, file.mimeType)
+                                                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                        context.startActivity(Intent.createChooser(intent, "Faylni ochish"))
+                                                        "Fayl ochish uchun ilova tanlandi"
+                                                    }.getOrElse { it.message ?: "Faylni ochib bo'lmadi" }
+                                                    openingFile = null
+                                                }
+                                            }
+                                        }.padding(start = 8.dp, top = 5.dp, bottom = 5.dp),
+                                    )
+                                }
+                                Text(
+                                    if (sendingFile == file.id) "Telegramga yuborilmoqda…" else "Telegramga yuborish",
+                                    color = p.muted,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.pressable {
+                                        if (sendingFile == null) {
+                                            sendingFile = file.id
+                                            fileMessage = null
+                                            scope.launch {
+                                                fileMessage = runCatching {
+                                                    api.raw("POST", "/api/v1/materials/files/${file.id}/send-to-chat", "{}")
+                                                    "Fayl Telegram chatga yuborildi"
+                                                }.getOrElse { it.message ?: "Faylni yuborib bo'lmadi" }
+                                                sendingFile = null
+                                            }
+                                        }
+                                    }.padding(vertical = 3.dp),
+                                )
+                            }
                         }
-                        Text("Fayllarni ko'rish va yuklab olish funksiyasi keyingi integratsiya bosqichida ulanadi.", color = p.muted, fontSize = 11.sp)
+                        fileMessage?.let { Text(it, color = if (it.startsWith("Fayl Telegram")) p.teal else p.coral, fontSize = 11.sp) }
                     }
                 }
             }

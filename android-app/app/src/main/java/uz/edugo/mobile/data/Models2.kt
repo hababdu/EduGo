@@ -64,6 +64,7 @@ data class SubmitResult(
 @Serializable
 data class HwAssignment(
     val id: String = "",
+    val title: String = "",
     val dueAt: String? = null,
     val maxScore: Int = 0,
     val gradingStatus: String = "PENDING",
@@ -81,6 +82,7 @@ data class HwSubmission(
     val improvements: List<String> = emptyList(),
     val gradedBy: String? = null,
     val returnNote: String? = null,
+    val files: List<MaterialFileDto> = emptyList(),
 )
 
 @Serializable
@@ -91,7 +93,7 @@ data class HwMine(
     val submission: HwSubmission? = null,
 )
 
-@Serializable data class HwBody(val textAnswer: String?)
+@Serializable data class HwBody(val textAnswer: String?, val fileIds: List<String> = emptyList())
 
 /* ---------- AI yordamchi ---------- */
 @Serializable data class ChatTurn(val role: String, val content: String)
@@ -121,3 +123,5 @@ data class ChatEvent(
 )
 
 @Serializable data class ActionResult(val id: String = "", val status: String = "", val message: String? = null)
+
+@Serializable data class ParentInviteData(val code: String = "", val link: String? = null, val expiresAt: String? = null)
