@@ -71,3 +71,10 @@ import kotlinx.serialization.Serializable
     val username: String? = null, val phone: String? = null, val role: String = "STUDENT",
 )
 @Serializable data class AdminGroupMember(val id: String = "", val student: AdminGroupStudentRef = AdminGroupStudentRef())
+
+@kotlinx.serialization.Serializable data class UpdateAdminGroupSettingsBody(
+    val monthlyFee: Int? = null, val maxCapacity: Int? = null,
+    val lessonDays: List<Int>? = null, val lessonStartTime: String? = null,
+    val lessonEndTime: String? = null, val room: String? = null,
+    val telegramChatUrl: String? = null,
+)
