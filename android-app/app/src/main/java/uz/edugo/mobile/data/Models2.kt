@@ -128,3 +128,7 @@ data class ChatEvent(
 
 @kotlinx.serialization.Serializable data class LessonLogItem(val id: String = "", val date: String = "", val topic: String = "", val homework: String? = null)
 @kotlinx.serialization.Serializable data class UpsertLessonLogBody(val date: String, val topic: String, val homework: String? = null)
+
+@kotlinx.serialization.Serializable data class CertificateMineItem(val id: String = "", val code: String = "", val title: String = "", val groupName: String = "", val issuedAt: String = "")
+@kotlinx.serialization.Serializable data class ActivityDayData(val date: String = "", val xp: Int = 0, val count: Int = 0)
+@kotlinx.serialization.Serializable data class StudentActivityData(val days: List<ActivityDayData> = emptyList(), val activeDays: Int = 0)
