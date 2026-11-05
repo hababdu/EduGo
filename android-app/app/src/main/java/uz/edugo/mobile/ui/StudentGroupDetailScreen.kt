@@ -28,7 +28,7 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
     RefreshColumn(listOf(group, assignments, standing)) {
         BackHeader("Guruh", onBack)
         Section(group) { g ->
-            Hero("Mening guruhim", g.name, g.description)
+            Hero("MENING TA'LIM GURUHIM", g.name, g.description)
             KpiRow(listOf(
                 Triple("A'zolar", g.memberCount, p.accent),
                 Triple("Materiallar", (assignments.state as? UiState.Ready)?.value?.count { it.groupId == groupId } ?: 0, p.teal),
@@ -65,19 +65,19 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
         }
         Section(standing) { rows ->
             rows.firstOrNull { it.groupId == groupId }?.let {
-                SectionTitle("Davomat va to'lov")
+                SectionTitle("O'QISH HOLATI")
                 StandingList(listOf(it))
             }
         }
         Section(assignments) { all ->
             val items = all.filter { it.groupId == groupId }
-            SectionTitle("Materiallar · ${items.size}")
+            SectionTitle("GURUH MATERIALLARI · ${items.size}")
             if (items.isEmpty()) EmptyText("Guruhda hali material yo'q")
             items.forEachIndexed { index, item ->
                 Panel(Modifier.stagger(index).pressable { openLesson(item.id) }) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(item.title, color = p.ink, fontWeight = FontWeight.SemiBold)
+                            Text(item.title, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             Text(item.category, color = p.muted, fontSize = 11.sp)
                         }
                         Text("Ochish →", color = p.accent, fontSize = 12.sp)
