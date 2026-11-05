@@ -73,10 +73,13 @@ import kotlinx.serialization.Serializable
 @Serializable data class AdminGroupMember(val id: String = "", val student: AdminGroupStudentRef = AdminGroupStudentRef())
 
 @kotlinx.serialization.Serializable data class UpdateAdminGroupSettingsBody(
-    val monthlyFee: Int? = null, val maxCapacity: Int? = null,
-    val lessonDays: List<Int>? = null, val lessonStartTime: String? = null,
-    val lessonEndTime: String? = null, val room: String? = null,
-    val telegramChatUrl: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val monthlyFee: Int? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val maxCapacity: Int? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val lessonDays: List<Int>? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val lessonStartTime: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val lessonEndTime: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val room: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val telegramChatUrl: String? = null,
 )
 
 @kotlinx.serialization.Serializable data class AdminStudentProfileDetail(val totalScore: Int = 0, val level: Int = 1)
