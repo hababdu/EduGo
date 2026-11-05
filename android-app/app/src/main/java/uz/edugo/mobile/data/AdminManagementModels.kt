@@ -61,7 +61,7 @@ import kotlinx.serialization.Serializable
     val lessonDays: List<Int>? = null, val lessonStartTime: String? = null,
     val lessonEndTime: String? = null, val room: String? = null,
 )
-@Serializable data class AssignGroupTeacherBody(val teacherId: String)
+@Serializable data class AssignGroupTeacherBody(val teacherId: String?)
 
 @Serializable data class UpdateAdminRoleBody(val role: String)
 
