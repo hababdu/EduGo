@@ -38,10 +38,13 @@ fun GroupLessonLogPanel(groupId: String, canEdit: Boolean = true) {
     var saving by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     val validDate = runCatching { LocalDate.parse(date) }.isSuccess
-    RefreshColumn(listOf(logs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            SectionTitle("Dars jurnali")
+            Text("Yangilash", color = p.accent, fontSize = 11.sp, modifier = Modifier.pressable { logs.reload() }.padding(5.dp))
+        }
         if (canEdit) Panel {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionTitle("Dars jurnali")
                 BasicTextField(date, { date = it.take(10) }, singleLine = true,
                     textStyle = TextStyle(color = p.ink, fontSize = 13.sp), cursorBrush = SolidColor(p.accent),
                     modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(10.dp)).padding(11.dp),
