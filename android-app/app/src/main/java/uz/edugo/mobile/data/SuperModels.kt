@@ -59,8 +59,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable data class CreateSuperOrgBody(val name: String, val storageChatId: String, val note: String? = null)
 @Serializable data class UpdateSuperOrgBody(
-    val name: String? = null, val note: String? = null, val status: String? = null,
-    val monthlyPlanFee: Long? = null, val storageChatId: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val name: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val note: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val status: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val monthlyPlanFee: Long? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.ALWAYS) val storageChatId: String? = null,
 )
 @Serializable data class AssignSuperAdminBody(val userId: String)
 @Serializable data class SuperAdminCandidate(val id: String = "", val name: String = "", val username: String? = null, val role: String = "", val organization: SuperCandidateOrg? = null)
