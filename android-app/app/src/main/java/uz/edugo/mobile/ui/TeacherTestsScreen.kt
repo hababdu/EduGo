@@ -31,6 +31,8 @@ private data class TestQuestionForm(
     val text: String = "",
     val optionA: String = "",
     val optionB: String = "",
+    val optionC: String = "",
+    val optionD: String = "",
     val correct: Int = 0,
 )
 
@@ -95,8 +97,10 @@ fun TeacherTestsScreen() {
                                 TeacherTestField(q.text, { value -> questions = questions.mapIndexed { i, old -> if (i == index) old.copy(text = value) else old } }, "Savol matni")
                                 TeacherTestField(q.optionA, { value -> questions = questions.mapIndexed { i, old -> if (i == index) old.copy(optionA = value) else old } }, "A varianti")
                                 TeacherTestField(q.optionB, { value -> questions = questions.mapIndexed { i, old -> if (i == index) old.copy(optionB = value) else old } }, "B varianti")
+                                TeacherTestField(q.optionC, { value -> questions = questions.mapIndexed { i, old -> if (i == index) old.copy(optionC = value) else old } }, "C varianti")
+                                TeacherTestField(q.optionD, { value -> questions = questions.mapIndexed { i, old -> if (i == index) old.copy(optionD = value) else old } }, "D varianti")
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    listOf("A to'g'ri" to 0, "B to'g'ri" to 1).forEach { (label, answer) ->
+                                    listOf("A to'g'ri" to 0, "B to'g'ri" to 1, "C to'g'ri" to 2, "D to'g'ri" to 3).forEach { (label, answer) ->
                                         val on = q.correct == answer
                                         Text(label, color = if (on) p.base else p.muted, fontSize = 12.sp,
                                             modifier = Modifier.background(if (on) p.accent else p.raised, RoundedCornerShape(20.dp))
@@ -114,7 +118,7 @@ fun TeacherTestsScreen() {
                         if (saving) "Yaratilmoqda…" else "Test yaratish va guruhlarga biriktirish",
                         enabled = !saving && title.isNotBlank() && duration.toIntOrNull()?.let { it in 10..21600 } == true &&
                             passing.toIntOrNull()?.let { it in 1..100 } == true && selectedGroups.isNotEmpty() &&
-                            questions.isNotEmpty() && questions.all { it.text.isNotBlank() && it.optionA.isNotBlank() && it.optionB.isNotBlank() },
+                            questions.isNotEmpty() && questions.all { it.text.isNotBlank() && listOf(it.optionA, it.optionB, it.optionC, it.optionD).all(String::isNotBlank) },
                         modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             saving = true; message = null
@@ -126,7 +130,7 @@ fun TeacherTestsScreen() {
                                         durationSeconds = duration.toInt(),
                                         passingScore = passing.toInt(),
                                         groupIds = selectedGroups.toList(),
-                                        questions = questions.map { TeacherQuestionDraft(it.text.trim(), options = listOf(it.optionA.trim(), it.optionB.trim()), correctAnswerIndex = it.correct) },
+                                        questions = questions.map { TeacherQuestionDraft(it.text.trim(), options = listOf(it.optionA.trim(), it.optionB.trim(), it.optionC.trim(), it.optionD.trim()), correctAnswerIndex = it.correct) },
                                     )
                                     api.send("POST", "/api/v1/tests", CreateTeacherTest.serializer(), body)
                                     tests.reload()
