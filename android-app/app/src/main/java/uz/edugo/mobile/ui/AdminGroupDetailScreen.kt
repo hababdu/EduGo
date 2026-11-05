@@ -152,7 +152,7 @@ fun AdminGroupDetailScreen(groupId: String, onBack: () -> Unit) {
                 Text("O'qituvchini olib tashlash", color = p.coral, fontSize = 11.sp, modifier = Modifier.pressable {
                     scope.launch {
                         runCatching {
-                            api.send("PATCH", "/api/v1/groups/$groupId/teacher", AssignGroupTeacherBody.serializer(), AssignGroupTeacherBody(""))
+                            api.send("PATCH", "/api/v1/groups/$groupId/teacher", AssignGroupTeacherBody.serializer(), AssignGroupTeacherBody(null))
                             group.reload(); assigningTeacher = false
                         }.onFailure { message = it.message ?: "O'qituvchi olib tashlanmadi" }
                     }
