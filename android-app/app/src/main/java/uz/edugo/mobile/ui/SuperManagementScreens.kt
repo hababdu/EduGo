@@ -227,7 +227,8 @@ fun SuperAiSettingsScreen() {
                         }
                     }
                     Text("0 — cheklanmagan. API kalitlar server muhit o'zgaruvchilarida saqlanadi.", color = p.faint, fontSize = 10.sp)
-                    PrimaryButton(if (saving) "Saqlanmoqda…" else "AI sozlamalarini saqlash", enabled = !saving && limits.values.all { it.toIntOrNull() != null }, modifier = Modifier.fillMaxWidth(), onClick = {
+                    val modelsValid = models.values.all { provider -> provider.values.all { Regex("^[A-Za-z0-9._\\-/:]{0,80}$").matches(it.trim()) } }
+                    PrimaryButton(if (saving) "Saqlanmoqda…" else "AI sozlamalarini saqlash", enabled = !saving && limits.values.all { it.toIntOrNull() != null } && modelsValid, modifier = Modifier.fillMaxWidth(), onClick = {
                         saving = true; message = null
                         scope.launch {
                             try {
