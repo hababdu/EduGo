@@ -48,7 +48,7 @@ fun StudentTests(openTest: (String) -> Unit) {
     val p = P
     val r = rememberRemoteList("/api/v1/tests/assigned/me", AssignedTest.serializer())
     RefreshColumn(listOf(r)) {
-        Hero("Testlar", "Testlarim", "Vaqt cheklangan, javoblar avtomatik saqlanadi")
+        Hero("BILIMINGIZNI SINANG", "Testlarim", "Bilimingizni tekshiring va natijalaringizni kuzating")
         Section(r) { list ->
             if (list.isEmpty()) EmptyText("Hozircha test biriktirilmagan")
             list.forEachIndexed { i, t ->
@@ -57,9 +57,9 @@ fun StudentTests(openTest: (String) -> Unit) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Text(t.title, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                Text(t.title, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                                 val meta = listOfNotNull("${t.durationSeconds / 60} daqiqa", t.deadline?.let { "muddat ${fmtDue(it)}" }).joinToString(" · ")
-                                Text(meta, color = p.muted, fontSize = 12.sp)
+                                Text("⏱  $meta", color = p.muted, fontSize = 12.sp)
                             }
                             when (t.status) {
                                 "COMPLETED" -> Pill(
@@ -70,7 +70,7 @@ fun StudentTests(openTest: (String) -> Unit) {
                                 else -> Pill("Kutilmoqda", p.gold)
                             }
                         }
-                        if (canStart) PrimaryButton(if (t.status == "PENDING") "Boshlash" else "Qayta topshirish", { openTest(t.testId) }, Modifier.fillMaxWidth())
+                        if (canStart) PrimaryButton(if (t.status == "PENDING") "Testni boshlash  →" else "Qayta topshirish  →", { openTest(t.testId) }, Modifier.fillMaxWidth())
                     }
                 }
             }
