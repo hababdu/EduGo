@@ -214,6 +214,7 @@ fun AdminGroupDetailScreen(groupId: String, onBack: () -> Unit) {
                 }
             }
         }
+        Panel { GroupLessonLogPanel(groupId, canEdit = true) }
     }
     deleteTarget?.let { member ->
         AlertDialog(
