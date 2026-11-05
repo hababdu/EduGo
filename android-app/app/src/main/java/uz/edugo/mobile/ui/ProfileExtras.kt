@@ -27,11 +27,12 @@ fun StudentProfileExtras() {
             if (items.isNotEmpty()) {
                 Panel {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionTitle("Sertifikatlarim · ${items.size}")
+                        SectionTitle("YUTUQLAR VA SERTIFIKATLAR")
+                        Pill("${items.size} ta sertifikat", p.gold)
                         items.forEach { item ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(item.title, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                    Text(item.title, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     Text("${item.groupName} · ${fmtDue(item.issuedAt)}", color = p.muted, fontSize = 10.sp)
                                 }
                                 Pill(item.code, p.gold)
@@ -46,7 +47,7 @@ fun StudentProfileExtras() {
             val totalXp = days.sumOf { it.xp }
             Panel {
                 Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    SectionTitle("O'qish faolligi")
+                    SectionTitle("120 KUNLIK O'QISH FAOLLIGI")
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("${data.activeDays} faol kun", color = p.teal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         Text("${totalXp} XP · 120 kun", color = p.gold, fontSize = 12.sp)
@@ -62,11 +63,11 @@ fun StudentProfileExtras() {
                                     day.xp >= 10 -> 0.5f
                                     else -> 0.28f
                                 }
-                                Column(Modifier.weight(1f).background(p.gold.copy(alpha = alpha), RoundedCornerShape(4.dp)).padding(vertical = 8.dp)) {}
+                                Column(Modifier.weight(1f).background(p.gold.copy(alpha = alpha), RoundedCornerShape(6.dp)).padding(vertical = 10.dp)) {}
                             }
                         }
                     }
-                    Text("Rang qanchalik yorqin bo'lsa, shu kundagi faollik shunchalik yuqori.", color = p.faint, fontSize = 10.sp)
+                    Text("Har bir katak — bir kunlik o'quv faolligingiz. Yorqin rang yuqori faollikni bildiradi.", color = p.faint, fontSize = 10.sp)
                 }
             }
         }
