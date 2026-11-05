@@ -144,7 +144,8 @@ fun MainShell(user: AuthUser) {
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
-                composable("students") { AdminUsersScreen() }
+                composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
+                composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("admin-groups") { AdminGroupsScreen { nav.navigate("admin-group/$it") } }
                 composable("admin-group/{id}") { AdminGroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
