@@ -171,7 +171,7 @@ fun RankingScreen() {
     val r = rememberRemote("/api/v1/ranking/global", RankingData.serializer())
     RefreshColumn(listOf(r)) {
         Section(r) { d ->
-            Hero("Reyting", d.yourRank?.let { "Siz $it-o'rindasiz" } ?: "Umumiy reyting", "Eng yaxshi o'quvchilar")
+            Hero("EDUGO LIDERLAR JADVALI", d.yourRank?.let { "Siz $it-o'rindasiz" } ?: "Umumiy reyting", "Faollik va bilim natijalari bo'yicha eng yaxshi o'quvchilar")
             d.top.forEachIndexed { i, e ->
                 val mine = d.yourRank != null && e.rank == d.yourRank
                 Panel(Modifier.stagger(i)) {
@@ -180,7 +180,7 @@ fun RankingScreen() {
                         Text(medal, color = p.muted, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 2.dp).then(Modifier))
                         Avatar(e.firstName, size = 38.dp)
                         Column(Modifier.weight(1f)) {
-                            Text(e.firstName, color = if (mine) p.accent else p.ink, fontWeight = FontWeight.SemiBold)
+                            Text(e.firstName, color = if (mine) p.accent else p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             e.username?.let { Text("@$it", color = p.faint, fontSize = 11.sp) }
                         }
                         Pill("${e.totalScore} ball", p.gold)
