@@ -90,7 +90,7 @@ fun MainShell(user: AuthUser) {
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                if (tabs.size > 1 && !isDetail) NavigationBar(modifier = Modifier.navigationBarsPadding(), containerColor = p.surface.copy(alpha = if (p.dark) 0.88f else 0.95f)) {
+                if (tabs.size > 1 && !isDetail) NavigationBar(modifier = Modifier.navigationBarsPadding(), containerColor = p.surface) {
                     tabs.forEach { t ->
                         NavigationBarItem(
                             selected = current == t.route,
