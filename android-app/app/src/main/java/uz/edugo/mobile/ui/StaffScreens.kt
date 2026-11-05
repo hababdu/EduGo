@@ -138,7 +138,7 @@ fun GroupDetailScreen(groupId: String, onBack: () -> Unit, openAssignment: (Stri
     Column {
         BackHeader((group.state as? UiState.Ready)?.value?.name ?: "Guruh", onBack)
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf("Davomat", "O'quvchilar", "Vazifalar").forEachIndexed { i, label ->
+            listOf("Davomat", "O'quvchilar", "Vazifalar", "Jurnal").forEachIndexed { i, label ->
                 val on = tab == i
                 Text(
                     label,
@@ -154,7 +154,8 @@ fun GroupDetailScreen(groupId: String, onBack: () -> Unit, openAssignment: (Stri
         when (tab) {
             0 -> AttendanceEditor(groupId)
             1 -> GroupStudents(groupId)
-            else -> TeacherGroupAssignments(groupId, openAssignment)
+            2 -> TeacherGroupAssignments(groupId, openAssignment)
+            else -> GroupLessonLogPanel(groupId, canEdit = true)
         }
     }
 }
