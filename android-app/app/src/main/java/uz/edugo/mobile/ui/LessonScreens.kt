@@ -58,7 +58,7 @@ fun StudentLessons(openLesson: (String) -> Unit) {
     }
 
     RefreshColumn(listOf(remote)) {
-        Hero("O'quv materiallari", "Darslarim", "Dars, uy vazifasi va qo'shimcha resurslar")
+        Hero("O'QUV MARKAZI", "Darslarim", "Barcha darslar va o'quv materiallaringiz bir joyda")
         BasicTextField(
             value = search,
             onValueChange = { search = it },
@@ -111,7 +111,7 @@ fun StudentLessons(openLesson: (String) -> Unit) {
                                 })
                                 Pill(lessonTypeLabel(item.type), p.muted)
                             }
-                            Text(item.title, color = p.ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(item.title, color = p.ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             Text(
                                 listOfNotNull(item.group?.name, item.teacher?.let { teacher ->
                                     listOfNotNull(teacher.firstName, teacher.lastName).joinToString(" ").ifBlank { teacher.username.orEmpty() }
