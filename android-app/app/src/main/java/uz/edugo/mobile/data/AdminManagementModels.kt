@@ -78,3 +78,20 @@ import kotlinx.serialization.Serializable
     val lessonEndTime: String? = null, val room: String? = null,
     val telegramChatUrl: String? = null,
 )
+
+@kotlinx.serialization.Serializable data class AdminStudentProfileDetail(val totalScore: Int = 0, val level: Int = 1)
+@kotlinx.serialization.Serializable data class AdminStudentStreakDetail(val currentStreak: Int = 0)
+@kotlinx.serialization.Serializable data class AdminStudentTestRef(val title: String = "")
+@kotlinx.serialization.Serializable data class AdminStudentAttempt(
+    val id: String = "", val test: AdminStudentTestRef = AdminStudentTestRef(),
+    val score: Double = 0.0, val maxScore: Double = 0.0,
+    val passed: Boolean = false, val createdAt: String = "",
+)
+@kotlinx.serialization.Serializable data class AdminStudentDetailData(
+    val id: String = "", val firstName: String = "", val lastName: String? = null,
+    val username: String? = null, val status: String = "ACTIVE",
+    val studentProfile: AdminStudentProfileDetail? = null,
+    val streak: AdminStudentStreakDetail? = null,
+    val testAttempts: List<AdminStudentAttempt> = emptyList(),
+)
+@kotlinx.serialization.Serializable data class AdjustStudentScoreBody(val amount: Int, val reason: String)
