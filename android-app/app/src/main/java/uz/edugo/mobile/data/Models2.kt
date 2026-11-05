@@ -125,3 +125,6 @@ data class ChatEvent(
 @Serializable data class ActionResult(val id: String = "", val status: String = "", val message: String? = null)
 
 @Serializable data class ParentInviteData(val code: String = "", val link: String? = null, val expiresAt: String? = null)
+
+@kotlinx.serialization.Serializable data class LessonLogItem(val id: String = "", val date: String = "", val topic: String = "", val homework: String? = null)
+@kotlinx.serialization.Serializable data class UpsertLessonLogBody(val date: String, val topic: String, val homework: String? = null)
