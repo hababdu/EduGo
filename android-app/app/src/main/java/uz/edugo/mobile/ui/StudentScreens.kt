@@ -1,12 +1,21 @@
 package uz.edugo.mobile.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -57,43 +66,74 @@ fun StudentHome(user: AuthUser, openTask: (String) -> Unit, openRanking: () -> U
     val standing = rememberRemoteList("/api/v1/dashboard/standing", Standing.serializer())
 
     RefreshColumn(listOf(dash, today, tasks, standing)) {
-        Hero("O'quvchi paneli", "Salom, ${user.firstName}!", "Bugungi darslar, vazifalar va natijalar bir joyda")
-        Section(dash) { d ->
-            KpiRow(listOf(Triple("Ball", d.stats.totalScore, p.gold), Triple("Daraja", d.stats.level, p.accent), Triple("Reyting", d.student.rank, p.sky)))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Reytingni ko'rish →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f).pressable(openRanking).padding(vertical = 6.dp))
-                Text("Barcha vazifalar →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.pressable(openTasks).padding(vertical = 6.dp))
+        // Welcome panel — international EdTech dashboard hierarchy.
+        Column(
+            Modifier.fillMaxWidth()
+                .background(Brush.linearGradient(listOf(p.accent, p.accent2)), RoundedCornerShape(28.dp))
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text("EDUGO • O'QUVCHI", color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+            Text("Salom, ${user.firstName}!", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.ExtraBold)
+            Text("Bugun yangi bilimlar sari yana bir qadam.", color = Color.White.copy(alpha = 0.88f), fontSize = 13.sp)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.background(Color.White.copy(alpha = 0.18f), CircleShape).padding(horizontal = 12.dp, vertical = 7.dp)) {
+                    Text("✦  O'rganishni davom eting", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
+        }
+        Section(dash) { d ->
+            SectionTitle("Sizning natijalaringiz")
+            KpiRow(listOf(
+                Triple("Jami ball", d.stats.totalScore, p.gold),
+                Triple("Daraja", d.stats.level, p.accent),
+                Triple("Reyting", d.student.rank, p.sky),
+            ))
             Panel {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Keyingi darajagacha", color = p.muted, fontSize = 12.sp)
-                        Text("${d.stats.xpIntoLevel}/${d.stats.xpForNextLevel} XP", color = p.ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Keyingi bosqich", color = p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("Maqsad sari har kuni intiling", color = p.muted, fontSize = 11.sp)
+                        }
+                        Text("${d.stats.xpIntoLevel}/${d.stats.xpForNextLevel} XP", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
-                    AnimatedProgress(d.stats.xpIntoLevel.toFloat() / d.stats.xpForNextLevel.coerceAtLeast(1), p.gold)
-                    if (d.student.streak > 0) Text("🔥 ${d.student.streak} kunlik seriya", color = p.gold, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    AnimatedProgress(d.stats.xpIntoLevel.toFloat() / d.stats.xpForNextLevel.coerceAtLeast(1), p.accent)
+                    if (d.student.streak > 0) {
+                        Text("🔥  ${d.student.streak} kunlik uzluksiz o'qish", color = p.gold, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
             d.continueLesson?.let { c ->
                 Panel {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Davom eting", color = p.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        Text(c.subjectTitle, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("DAVOM ETING", color = p.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                            Pill("${c.progressPercent.toInt()}% bajarildi", p.teal)
+                        }
+                        Text(c.subjectTitle, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                         AnimatedProgress((c.progressPercent / 100.0).toFloat(), p.teal)
                     }
                 }
             }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text("Reytingni ko'rish  →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).pressable(openRanking).background(p.accent.copy(alpha = 0.09f), RoundedCornerShape(14.dp)).padding(12.dp))
+                Text("Barcha vazifalar  →", color = p.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f).pressable(openTasks).background(p.accent.copy(alpha = 0.09f), RoundedCornerShape(14.dp)).padding(12.dp))
+            }
         }
+        SectionTitle("Bugungi reja")
         TodayLessonsSection(today)
         Section(tasks) { list ->
             val active = list.filter { it.state == "PENDING" || it.state == "RETURNED" }
-            SectionTitle(if (active.isEmpty()) "Vazifalar" else "Vazifalar (${active.size} ta kutmoqda)")
+            SectionTitle(if (active.isEmpty()) "Vazifalar" else "Vazifalar • ${active.size} ta kutilmoqda")
             if (list.isEmpty()) Panel { Text("Hozircha vazifa yo'q", color = p.muted, fontSize = 14.sp) }
             TaskList(list.take(4), openTask)
         }
         Section(standing) { list ->
             if (list.isNotEmpty()) {
-                SectionTitle("Davomat va to'lov")
+                SectionTitle("Guruhlar holati")
                 StandingList(list)
             }
         }
@@ -103,7 +143,7 @@ fun StudentHome(user: AuthUser, openTask: (String) -> Unit, openRanking: () -> U
                 d.recentResults.take(5).forEachIndexed { i, r ->
                     Panel(Modifier.stagger(i)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(r.testTitle, color = p.ink, modifier = Modifier.weight(1f), fontSize = 14.sp)
+                            Text(r.testTitle, color = p.ink, modifier = Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                             Pill("${r.percent.toInt()}%", if (r.passed) p.teal else p.coral)
                         }
                     }
