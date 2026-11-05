@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +64,6 @@ fun StudentProfileExtras() {
                                 }
                                 Column(Modifier.weight(1f).background(p.gold.copy(alpha = alpha), RoundedCornerShape(4.dp)).padding(vertical = 8.dp)) {}
                             }
-                            repeat(12 - chunk.size) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                     Text("Rang qanchalik yorqin bo'lsa, shu kundagi faollik shunchalik yuqori.", color = p.faint, fontSize = 10.sp)
