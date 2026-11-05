@@ -99,8 +99,8 @@ fun Panel(modifier: Modifier = Modifier, padding: Dp = 16.dp, content: @Composab
     Box(
         modifier
             .fillMaxWidth()
-            .background(p.surface.copy(alpha = if (p.dark) 0.62f else 0.9f), RoundedCornerShape(22.dp))
-            .border(1.dp, p.ink.copy(alpha = 0.08f), RoundedCornerShape(22.dp))
+            .background(p.surface, RoundedCornerShape(22.dp))
+            .border(1.dp, p.ink.copy(alpha = if (p.dark) 0.10f else 0.055f), RoundedCornerShape(22.dp))
             .padding(padding),
     ) { content() }
 }
@@ -111,14 +111,14 @@ fun Hero(eyebrow: String, title: String, subtitle: String? = null, modifier: Mod
     Column(
         modifier
             .fillMaxWidth()
-            .background(Brush.linearGradient(listOf(p.accent.copy(alpha = 0.28f), p.surface.copy(alpha = 0.55f))), RoundedCornerShape(26.dp))
-            .border(1.dp, p.ink.copy(alpha = 0.10f), RoundedCornerShape(26.dp))
+            .background(Brush.linearGradient(listOf(p.accent, p.accent2)), RoundedCornerShape(26.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(26.dp))
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(eyebrow.uppercase(), color = p.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-        Text(title, color = p.ink, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        if (subtitle != null) Text(subtitle, color = p.muted, fontSize = 13.sp)
+        Text(eyebrow.uppercase(), color = Color.White.copy(alpha = 0.82f), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+        Text(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        if (subtitle != null) Text(subtitle, color = Color.White.copy(alpha = 0.84f), fontSize = 13.sp)
     }
 }
 
