@@ -165,6 +165,7 @@ fun SuperAiSettingsScreen() {
     var primary by remember { mutableStateOf("gemini") }
     var fallback by remember { mutableStateOf("none") }
     var limits by remember { mutableStateOf(mapOf("STUDENT" to "0", "TEACHER" to "0", "ADMIN" to "0")) }
+    var models by remember { mutableStateOf<Map<String, Map<String, String>>>(emptyMap()) }
     var saving by remember { mutableStateOf(false) }
     var initialized by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -175,6 +176,9 @@ fun SuperAiSettingsScreen() {
             primary = data.settings.primary
             fallback = data.settings.fallback ?: "none"
             limits = listOf("STUDENT", "TEACHER", "ADMIN").associateWith { data.settings.limits[it]?.toString() ?: "0" }
+            models = listOf("gemini", "groq", "anthropic").associateWith { provider ->
+                mapOf("fast" to data.settings.models[provider]?.get("fast").orEmpty(), "smart" to data.settings.models[provider]?.get("smart").orEmpty())
+            }
             initialized = true
         }
     }
@@ -200,6 +204,19 @@ fun SuperAiSettingsScreen() {
                         Text("${if (fallback == id) "●" else "○"} $label", color = if (fallback == id) p.accent else p.ink, fontSize = 12.sp,
                             modifier = Modifier.pressable { fallback = id }.padding(vertical = 4.dp))
                     }
+                    SectionTitle("Model nomlari (ixtiyoriy)")
+                    listOf("gemini" to "Gemini", "groq" to "Groq", "anthropic" to "Claude").forEach { (provider, label) ->
+                        Text(label, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        listOf("fast" to "Tez model", "smart" to "Aqlli model").forEach { (kind, title) ->
+                            val value = models[provider]?.get(kind).orEmpty()
+                            BasicTextField(value, { next ->
+                                models = models + (provider to ((models[provider] ?: emptyMap()) + (kind to next.take(80))))
+                            }, singleLine = true, textStyle = TextStyle(color = p.ink, fontSize = 12.sp), cursorBrush = SolidColor(p.accent),
+                                modifier = Modifier.fillMaxWidth().background(p.raised, RoundedCornerShape(9.dp)).padding(10.dp),
+                                decorationBox = { inner -> if (value.isEmpty()) Text("$title · standart", color = p.faint, fontSize = 11.sp); inner() })
+                        }
+                    }
+                    Text("Bo'sh qiymat — provayderning standart modeli. API kalitlar faqat serverda saqlanadi.", color = p.faint, fontSize = 10.sp)
                     SectionTitle("Kunlik token limiti")
                     limits.forEach { (role, value) ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -214,7 +231,7 @@ fun SuperAiSettingsScreen() {
                         saving = true; message = null
                         scope.launch {
                             try {
-                                val body = UpdateSuperAiBody(enabled, limits.mapValues { it.value.toInt() }, primary, fallback)
+                                val body = UpdateSuperAiBody(enabled, limits.mapValues { it.value.toInt() }, primary, fallback, models)
                                 api.send("PUT", "/api/v1/super/ai", UpdateSuperAiBody.serializer(), body)
                                 remote.reload(); message = "AI sozlamalari saqlandi"
                             } catch (e: Exception) { message = e.message ?: "Sozlamalar saqlanmadi" }
