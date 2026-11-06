@@ -139,9 +139,9 @@ export function IslandBot({ mood = 'idle', outfit = 'none', size = 64, track = t
   return (
     <svg
       ref={svgRef}
-      viewBox="0 -16 120 88"
+      viewBox="0 -20 120 92"
       width={size}
-      height={(size * 88) / 120}
+      height={(size * 92) / 120}
       role="img"
       aria-label="AI yordamchi"
       className={`bot ${cfg.bounce ? 'bot-bounce' : ''} ${className}`}
