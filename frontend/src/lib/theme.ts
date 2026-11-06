@@ -1,13 +1,31 @@
 import { useSyncExternalStore } from 'react';
 
-/* Mavzu: 'auto' (Telegram yoki telefon sozlamasiga ergashadi) | 'dark' | 'light'. */
+/* Rang rejimi va vizual presetlar mustaqil boshqariladi. */
 export type ThemePref = 'auto' | 'dark' | 'light';
 export type Theme = 'dark' | 'light';
+export type DesignPreset =
+  | 'modern-minimal'
+  | 'premium-dark'
+  | 'gamified'
+  | 'apple'
+  | 'saas'
+  | 'futuristic-glass';
 
-const KEY = 'edugo.theme';
+export const DESIGN_PRESETS: { id: DesignPreset; label: string; description: string }[] = [
+  { id: 'modern-minimal', label: 'Modern Minimal', description: 'Sodda, toza va muvozanatli' },
+  { id: 'premium-dark', label: 'Premium Dark', description: 'To‘q ranglar va nafis aksentlar' },
+  { id: 'gamified', label: 'Gamified Education', description: 'Jonli va rag‘batlantiruvchi' },
+  { id: 'apple', label: 'Apple Inspired', description: 'Yengil, sokin va ravon' },
+  { id: 'saas', label: 'Professional SaaS', description: 'Aniq va ishchan interfeys' },
+  { id: 'futuristic-glass', label: 'Futuristic Glass', description: 'Shisha effektlari va yorug‘lik' },
+];
+
+const THEME_KEY = 'edugo.theme';
+const PRESET_KEY = 'edugo.design-preset';
 const BG: Record<Theme, string> = { dark: '#0B0D19', light: '#F6F4EE' };
 const listeners = new Set<() => void>();
 let pref: ThemePref | null = null;
+let preset: DesignPreset | null = null;
 
 function tg(): any {
   return (window as any).Telegram?.WebApp;
@@ -16,10 +34,19 @@ function tg(): any {
 export function getThemePref(): ThemePref {
   if (pref === null) {
     let v: string | null = null;
-    try { v = localStorage.getItem(KEY); } catch { /* ruxsat yo'q */ }
+    try { v = localStorage.getItem(THEME_KEY); } catch { /* ruxsat yo‘q */ }
     pref = v === 'dark' || v === 'light' ? v : 'auto';
   }
   return pref;
+}
+
+export function getDesignPreset(): DesignPreset {
+  if (preset === null) {
+    let v: string | null = null;
+    try { v = localStorage.getItem(PRESET_KEY); } catch { /* ruxsat yo‘q */ }
+    preset = DESIGN_PRESETS.some((item) => item.id === v) ? (v as DesignPreset) : 'modern-minimal';
+  }
+  return preset;
 }
 
 function system(): Theme {
@@ -36,7 +63,6 @@ export function resolveTheme(p: ThemePref = getThemePref()): Theme {
   return p === 'auto' ? system() : p;
 }
 
-/** Hujjatga mavzuni qo'llaydi: data-theme, brauzer va Telegram sarlavha ranglari */
 export function applyTheme(animate = false) {
   const t = resolveTheme();
   const root = document.documentElement;
@@ -45,6 +71,7 @@ export function applyTheme(animate = false) {
     setTimeout(() => root.classList.remove('theme-fade'), 350);
   }
   root.dataset.theme = t;
+  root.dataset.preset = getDesignPreset();
   let meta = document.querySelector('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement('meta');
@@ -60,18 +87,23 @@ export function applyTheme(animate = false) {
 
 export function setThemePref(p: ThemePref) {
   pref = p;
-  try { localStorage.setItem(KEY, p); } catch { /* ruxsat yo'q */ }
+  try { localStorage.setItem(THEME_KEY, p); } catch { /* ruxsat yo‘q */ }
   applyTheme(true);
   listeners.forEach((l) => l());
 }
 
-/** Avto → Qorong'i → Yorug' → Avto */
+export function setDesignPreset(p: DesignPreset) {
+  preset = p;
+  try { localStorage.setItem(PRESET_KEY, p); } catch { /* ruxsat yo‘q */ }
+  applyTheme(true);
+  listeners.forEach((l) => l());
+}
+
 export function cycleTheme() {
   const order: ThemePref[] = ['auto', 'dark', 'light'];
   setThemePref(order[(order.indexOf(getThemePref()) + 1) % order.length]);
 }
 
-/** Ilova ochilganda bir marta chaqiriladi; tizim/Telegram mavzusi o'zgarsa 'avto'da yangilanadi */
 export function initTheme() {
   applyTheme();
   const refresh = () => {
@@ -84,23 +116,27 @@ export function initTheme() {
   try { tg()?.onEvent?.('themeChanged', refresh); } catch { /* ixtiyoriy */ }
 }
 
-export function useTheme(): { pref: ThemePref; theme: Theme } {
+export function useTheme(): { pref: ThemePref; theme: Theme; preset: DesignPreset } {
   const p = useSyncExternalStore(
     (l) => { listeners.add(l); return () => { listeners.delete(l); }; },
     getThemePref,
     () => 'auto' as ThemePref,
   );
-  return { pref: p, theme: resolveTheme(p) };
+  const selectedPreset = useSyncExternalStore(
+    (l) => { listeners.add(l); return () => { listeners.delete(l); }; },
+    getDesignPreset,
+    () => 'modern-minimal' as DesignPreset,
+  );
+  return { pref: p, theme: resolveTheme(p), preset: selectedPreset };
 }
 
 export const THEME_LABEL: Record<ThemePref, string> = { auto: 'Avto', dark: "Qorong'i", light: "Yorug'" };
 export const THEME_ICON: Record<ThemePref, string> = { auto: '🌓', dark: '🌙', light: '☀️' };
 
-/** Rol aksentini qo'llaydi: <html data-role="teacher"> → CSS'dagi --c-accent almashadi. */
 export function applyRole(role?: string | null) {
   const map: Record<string, string> = { TEACHER: 'teacher', ADMIN: 'admin', SUPER_ADMIN: 'super', PARENT: 'parent' };
   const v = role ? map[role] : undefined;
   const root = document.documentElement;
   if (v) root.dataset.role = v;
-  else delete root.dataset.role; // o'quvchi (standart)
+  else delete root.dataset.role;
 }
