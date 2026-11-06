@@ -440,3 +440,14 @@ nav[aria-label='Asosiy navigatsiya'] {
 .edugo-card :is(button, input, select, textarea) {
   border-radius: var(--edugo-radius-control, .9rem);
 }
+
+/* AI Ustoz capsule identity: soft ear motion and restrained four-colour mark. */
+@keyframes bot-ear-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-2deg); }
+}
+.bot-ears { animation: bot-ear-sway 4.8s ease-in-out infinite; }
+.bot-brand-mark { filter: drop-shadow(0 0 3px rgb(255 255 255 / .28)); }
+@media (prefers-reduced-motion: reduce) {
+  .bot-ears { animation: none; }
+}
