@@ -160,6 +160,14 @@ export function IslandBot({ mood = 'idle', outfit = 'none', size = 64, track = t
 
       <ellipse cx={60} cy={38} rx={74} ry={50} fill={`url(#g${gid})`} className="bot-glow" />
 
+      {/* Quloqchali siluet: oq-kulrang yumshoq qobiq, kapsula orqasidan ko‘tariladi */}
+      <g className="bot-ears" style={{ transformBox: 'fill-box', transformOrigin: '50% 100%' }}>
+        <path d="M38 18 C34 8 33 -5 38 -13 C42 -18 49 -14 50 -7 L53 17Z" fill="#F5F4F0" stroke="#C9CDD5" strokeWidth="1.5" />
+        <path d="M82 18 C86 8 87 -5 82 -13 C78 -18 71 -14 70 -7 L67 17Z" fill="#F5F4F0" stroke="#C9CDD5" strokeWidth="1.5" />
+        <path d="M40 10 C38 2 38 -6 40 -10 C43 -12 45 -9 46 -5 L48 10Z" fill="#D9DDE5" opacity=".8" />
+        <path d="M80 10 C82 2 82 -6 80 -10 C77 -12 75 -9 74 -5 L72 10Z" fill="#D9DDE5" opacity=".8" />
+      </g>
+
       <g style={{ transformBox: 'fill-box', transformOrigin: '50% 100%', transform: `rotate(${cfg.tilt ?? 0}deg)`, transition: 'transform .3s cubic-bezier(.34,1.5,.64,1)' }}>
         {mood === 'box' ? (
           <Box />
@@ -169,6 +177,13 @@ export function IslandBot({ mood = 'idle', outfit = 'none', size = 64, track = t
             <rect x={112} y={30} width={5} height={16} rx={2.5} fill="#2B3659" />
             <rect x={6} y={8} width={108} height={60} rx={30} fill={`url(#h${gid})`} stroke="#FFFFFF" strokeOpacity={0.12} strokeWidth={1.5} />
             <rect x={14} y={14} width={92} height={48} rx={24} fill="#0B1020" fillOpacity={0.55} />
+            {/* EduGo to‘rt rangli belgisi — ko‘zlardan yuqorida ixcham identifikator */}
+            <g className="bot-brand-mark">
+              <circle cx={56} cy={23} r={2.2} fill="#F15B5A" />
+              <circle cx={64} cy={23} r={2.2} fill="#F6C453" />
+              <circle cx={56} cy={29} r={2.2} fill="#55B7E8" />
+              <circle cx={64} cy={29} r={2.2} fill="#57C68B" />
+            </g>
             {EYE_X.map((x, i) => (
               <g
                 key={x}
