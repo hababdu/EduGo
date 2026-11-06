@@ -431,3 +431,12 @@ nav[aria-label='Asosiy navigatsiya'] {
 @media (min-width: 768px) {
   body { text-rendering: optimizeLegibility; }
 }
+
+.edugo-card {
+  border-radius: var(--edugo-radius-card, 1.35rem);
+  border-color: var(--edugo-border);
+  box-shadow: var(--edugo-shadow-card);
+}
+.edugo-card :is(button, input, select, textarea) {
+  border-radius: var(--edugo-radius-control, .9rem);
+}
