@@ -3,6 +3,7 @@ import { Wallet, Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Lay
 import { useAdminOverview, useMySubscription } from '../../hooks/useAdmin';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
 import { IMAGES } from '../../design/images';
+import { DesignPresetPicker } from '../../components/profile/DesignPresetPicker';
 import { AdminInsights } from '../../components/staff/AdminInsights';
 import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
@@ -53,6 +54,8 @@ export function AdminOverview() {
           <b className="text-gold">{monthLabel(sub.currentMonth)}</b> uchun «{sub.name}» obuna to'lovi hali belgilanmagan: <b>{formatMoney(sub.fee)}</b>. To'lovni super adminga topshiring.
         </div>
       ) : null}
+      <DesignPresetPicker />
+
       <StaffHero
         accent="sky"
         image={IMAGES.hero}
