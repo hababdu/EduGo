@@ -8,6 +8,7 @@ import { ListRow, EmptyState, Skeleton, CardList } from '../../components/ui';
 import { StaffHero, Panel, PanelLink, KpiCard, MiniBars, Avatar, TodayLessons } from '../../components/staff';
 import { TeacherTodo } from '../../components/staff/TeacherTodo';
 import { IMAGES } from '../../design/images';
+import { DesignPresetPicker } from '../../components/profile/DesignPresetPicker';
 import {
   Users,
   FileText,
@@ -103,6 +104,8 @@ export function TeacherOverview() {
 
   return (
     <div className={PAGE_WIDE}>
+      <DesignPresetPicker />
+
       <StaffHero
         accent="gold"
         image={IMAGES.sciencePhysics}
