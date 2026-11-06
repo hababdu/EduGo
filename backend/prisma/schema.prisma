@@ -98,6 +98,8 @@ model User {
   lastName        String?
   profilePhotoUrl String?
   role            RoleName      @default(STUDENT)
+  /// Faqat SUPER_ADMIN uchun: botdan tanlangan "ko'rish" roli (null = o'z roli). Haqiqiy rol `role` da qoladi.
+  activeRole      RoleName?
   status          AccountStatus @default(ACTIVE)
   registeredAt    DateTime      @default(now())
   lastActiveAt    DateTime      @default(now())

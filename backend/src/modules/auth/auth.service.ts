@@ -7,7 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { superAdminIds } from '../../common/super-admin.util';
+import { effectiveRole, superAdminIds } from '../../common/super-admin.util';
 import { verifyTelegramInitData } from './utils/telegram-verify.util';
 import { AuthTokensResponse } from './dto/telegram-auth.dto';
 
@@ -124,7 +124,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName ?? undefined,
         username: user.username ?? undefined,
-        role: user.role,
+        role: effectiveRole(user.role, (user as any).activeRole),
         profilePhotoUrl: user.profilePhotoUrl ?? undefined,
       },
     };
@@ -181,7 +181,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName ?? undefined,
         username: user.username ?? undefined,
-        role: user.role,
+        role: effectiveRole(user.role, (user as any).activeRole),
         profilePhotoUrl: user.profilePhotoUrl ?? undefined,
       },
     };

@@ -1,5 +1,6 @@
 // src/services/api-client.ts
 import fetch, { RequestInit } from 'node-fetch';
+import FormData from 'form-data';
 
 // Production'da BACKEND_API_URL majburiy (backend manzili — botning o'zi emas).
 const BACKEND_API_URL = (
@@ -81,7 +82,10 @@ export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN' | 'SUPER_ADMIN' | 'PARENT
 
 export interface UserRoleInfo {
   id: string;
+  /** Amaldagi rol (super admin boshqa rolni kiyib ko'rayotgan bo'lsa — o'sha rol) */
   role: UserRole;
+  /** Haqiqiy rol */
+  realRole?: UserRole;
   status: 'ACTIVE' | 'BLOCKED' | 'PENDING';
   firstName: string;
   lastName?: string;
@@ -145,6 +149,79 @@ export interface AdminOverview {
   courses: number;
   tests: number;
   totalScoreIssued: number;
+}
+
+export interface SwitchOptions {
+  activeRole: UserRole;
+  organizationId: string | null;
+  organizationName: string | null;
+  orgs: { id: string; name: string }[];
+}
+
+export interface HomeworkTask {
+  id: string;
+  title: string;
+  groupName: string;
+  dueAt: string | null;
+  maxScore: number;
+  state: 'PENDING' | 'RETURNED' | string;
+  overdue?: boolean;
+}
+
+export interface HomeworkDetail {
+  assignment: { id: string; title: string; dueAt: string | null; maxScore: number; gradingStatus: string };
+  canSubmit: boolean;
+  closedReason: string | null;
+  submission: null | {
+    status: string;
+    score: number | null;
+    maxScore: number;
+    feedback: string | null;
+    returnNote?: string | null;
+  };
+}
+
+export interface UploadedFile {
+  id: string;
+  fileName: string;
+  kind: string;
+}
+
+/** Backend xabarini (Nest `message`) odam o'qiydigan matnga aylantiradi. */
+export function apiErrorText(err: unknown, fallback = 'Xatolik yuz berdi'): string {
+  if (err instanceof BotApiError) {
+    if (typeof err.body === 'string') {
+      try {
+        const j = JSON.parse(err.body);
+        const m = Array.isArray(j?.message) ? j.message[0] : j?.message;
+        if (typeof m === 'string' && m) return m;
+      } catch {
+        /* noop */
+      }
+    }
+    if (err.status === 0) return "Server bilan aloqa yo'q";
+  }
+  if (err instanceof NotRegisteredError) return 'Topilmadi';
+  return fallback;
+}
+
+/** Multipart (fayl) yuborish. */
+async function internalUpload<T>(path: string, form: FormData): Promise<T> {
+  const url = `${BACKEND_API_URL}${path}`;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      body: form as any,
+      headers: { 'x-internal-secret': BOT_INTERNAL_SECRET, ...form.getHeaders() },
+      timeout: 60_000,
+    });
+    if (!res.ok) throw new BotApiError(res.status, `Backend xatosi: ${res.status}`, await res.text());
+    return (await res.json()) as T;
+  } catch (err) {
+    if (err instanceof BotApiError) throw err;
+    console.error(`[api-client] Upload error for ${url}:`, err);
+    throw new BotApiError(0, "Backend bilan aloqa yo'q");
+  }
 }
 
 /* ============================================================
@@ -217,5 +294,42 @@ export const api = {
   getAdminOverview: (telegramId: string) =>
     internalGet<AdminOverview>(
       `/api/v1/internal/admins/by-telegram/${telegramId}/overview`,
+    ),
+
+  /* ---------- SUPER ADMIN: rol almashtirish ---------- */
+  getSwitchOptions: (telegramId: string) =>
+    internalGet<SwitchOptions>(`/api/v1/internal/users/by-telegram/${telegramId}/switch-options`),
+
+  switchRole: (telegramId: string, role: string, organizationId?: string) =>
+    internalGet<UserRoleInfo>(`/api/v1/internal/users/by-telegram/${telegramId}/switch-role`, {
+      method: 'POST',
+      body: JSON.stringify({ role, organizationId }),
+    }),
+
+  /* ---------- O'QUVCHI: vazifa topshirish ---------- */
+  listHomework: (telegramId: string) =>
+    internalGet<HomeworkTask[]>(`/api/v1/internal/students/by-telegram/${telegramId}/homework`),
+
+  getHomework: (telegramId: string, assignmentId: string) =>
+    internalGet<HomeworkDetail>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/homework/${encodeURIComponent(assignmentId)}`,
+    ),
+
+  uploadHomeworkFile: (telegramId: string, file: { buffer: Buffer; fileName: string; mimeType: string }) => {
+    const form = new FormData();
+    form.append('file', file.buffer, { filename: file.fileName, contentType: file.mimeType });
+    return internalUpload<UploadedFile>(`/api/v1/internal/students/by-telegram/${telegramId}/homework-files`, form);
+  },
+
+  deleteHomeworkFile: (telegramId: string, fileId: string) =>
+    internalGet<{ ok: boolean }>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/homework-files/${encodeURIComponent(fileId)}/delete`,
+      { method: 'POST', body: '{}' },
+    ),
+
+  submitHomework: (telegramId: string, assignmentId: string, body: { textAnswer?: string; fileIds: string[] }) =>
+    internalGet<HomeworkDetail>(
+      `/api/v1/internal/students/by-telegram/${telegramId}/homework/${encodeURIComponent(assignmentId)}/submit`,
+      { method: 'POST', body: JSON.stringify(body) },
     ),
 };

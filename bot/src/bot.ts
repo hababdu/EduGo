@@ -91,11 +91,13 @@ bot.command('start', async (ctx: Context) => {
 
   const telegramId = String(ctx.from?.id);
   let role = 'STUDENT';
+  let realRole: string | undefined;
   let firstName = ctx.from?.first_name ?? "do'stim";
 
   try {
     const info = await api.getUserRole(telegramId);
     role = info.role;
+    realRole = info.realRole;
     firstName = info.firstName || firstName;
 
     console.log(`[bot] /start: ${firstName} (${role})`);
@@ -104,7 +106,7 @@ bot.command('start', async (ctx: Context) => {
     console.log(`[bot] /start: yangi foydalanuvchi (${firstName})`);
   }
 
-  const menu = getMenuForRole(role);
+  const menu = getMenuForRole(role, realRole);
 
   const greeting: Record<string, string> = {
     STUDENT:
@@ -124,7 +126,10 @@ bot.command('start', async (ctx: Context) => {
       `👨‍👩‍👧 Ota-ona paneli — farzandingiz natijalarini "Ochish" tugmasi orqali ko'ring:`,
   };
 
-  await ctx.reply(greeting[role] ?? greeting.STUDENT, {
+  const viewing = realRole === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN'
+    ? `\n\n🔁 Siz hozir ${role} rolida ko'ryapsiz. Qaytish: "🔁 Rolni almashtirish".`
+    : '';
+  await ctx.reply((greeting[role] ?? greeting.STUDENT) + viewing, {
     reply_markup: menu,
   });
 });
@@ -135,10 +140,12 @@ bot.command('start', async (ctx: Context) => {
 bot.command('help', async (ctx: Context) => {
   const telegramId = String(ctx.from?.id);
   let role = 'STUDENT';
+  let realRole: string | undefined;
 
   try {
     const info = await api.getUserRole(telegramId);
     role = info.role;
+    realRole = info.realRole;
   } catch {
     /* noop */
   }
@@ -151,7 +158,7 @@ bot.command('help', async (ctx: Context) => {
       'Yoki quyidagi menyudan foydalaning 👇',
     {
       parse_mode: 'Markdown',
-      reply_markup: getMenuForRole(role),
+      reply_markup: getMenuForRole(role, realRole),
     },
   );
 });
@@ -192,16 +199,18 @@ registerMenuHandlers(bot);
 bot.on('message:text', async (ctx: Context) => {
   const telegramId = String(ctx.from?.id);
   let role = 'STUDENT';
+  let realRole: string | undefined;
 
   try {
     const info = await api.getUserRole(telegramId);
     role = info.role;
+    realRole = info.realRole;
   } catch {
     /* noop */
   }
 
   await ctx.reply('Iltimos, menyudan foydalaning 👇', {
-    reply_markup: getMenuForRole(role),
+    reply_markup: getMenuForRole(role, realRole),
   });
 });
 

@@ -10,6 +10,8 @@ import {
   NotRegisteredError,
   BotApiError,
 } from '../services/api-client';
+import { registerHomeworkHandlers } from './homework.handler';
+import { registerRoleSwitchHandlers } from './role-switch.handler';
 
 const NOT_REGISTERED_MSG =
   '⚠️ Siz hali platformaga kirmagansiz.\n\n' +
@@ -47,13 +49,13 @@ function escapeMd(text: string): string {
   return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, '\\$&');
 }
 
-async function getUserRole(ctx: Context): Promise<string> {
+async function getUserRole(ctx: Context): Promise<{ role: string; realRole?: string }> {
   const telegramId = String(ctx.from?.id);
   try {
     const info = await api.getUserRole(telegramId);
-    return info.role;
+    return { role: info.role, realRole: info.realRole };
   } catch {
-    return 'STUDENT';
+    return { role: 'STUDENT' };
   }
 }
 
@@ -336,7 +338,7 @@ export function registerMenuHandlers(bot: Bot) {
   );
 
   bot.hears(MENU_LABELS.HELP, async (ctx) => {
-    const role = await getUserRole(ctx);
+    const { role, realRole } = await getUserRole(ctx);
 
     const helpText: Record<string, string> = {
       STUDENT:
@@ -344,6 +346,7 @@ export function registerMenuHandlers(bot: Bot) {
         '📚 Darsni boshlash — platformaga kirish\n' +
         '👤 Profilim — shaxsiy ma\'lumotlar\n' +
         '🏆 Ballarim — umumiy ball\n' +
+        '📝 Vazifalarim — vazifani shu yerning o\'zida topshirish (matn, rasm, fayl)\n' +
         '📊 Natijalarim — test tarixi\n' +
         '🏅 Yutuqlarim — badge\'lar\n' +
         '🏆 Reyting — TOP-10\n' +
@@ -371,7 +374,14 @@ export function registerMenuHandlers(bot: Bot) {
 
     await ctx.reply(helpText[role] ?? helpText.STUDENT, {
       parse_mode: 'Markdown',
-      reply_markup: getMenuForRole(role),
+      reply_markup: getMenuForRole(role, realRole),
     });
   });
+
+  /* ============================================================
+     VAZIFA TOPSHIRISH (bot orqali) va SUPER ADMIN ROL ALMASHTIRISH
+     Eslatma: matn/fayl yig'uvchi handler hears'lardan KEYIN turishi shart.
+     ============================================================ */
+  registerRoleSwitchHandlers(bot);
+  registerHomeworkHandlers(bot);
 }

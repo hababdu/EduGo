@@ -13,7 +13,9 @@ export const studentMenuKeyboard = new Keyboard()
   .text('👤 Profilim')
   .text('🏆 Ballarim')
   .row()
+  .text('📝 Vazifalarim')
   .text('📊 Natijalarim')
+  .row()
   .text('🏅 Yutuqlarim')
   .row()
   .text('🏆 Reyting')
@@ -81,7 +83,9 @@ export const MENU_LABELS = {
   // Student
   PROFILE: '👤 Profilim',
   SCORES: '🏆 Ballarim',
+  HOMEWORK: '📝 Vazifalarim',
   RESULTS: '📊 Natijalarim',
+  SWITCH_ROLE: '🔁 Rolni almashtirish',
   ACHIEVEMENTS: '🏅 Yutuqlarim',
 
   // Teacher
@@ -103,7 +107,16 @@ export const MENU_LABELS = {
 /* ============================================================
    ROLE → KEYBOARD
    ============================================================ */
-export function getMenuForRole(role: string): Keyboard {
+export function getMenuForRole(role: string, realRole?: string): Keyboard {
+  const base = baseMenuForRole(role);
+  // Super admin istalgan rolda "kiyib" ko'rganda ham qaytish/almashtirish tugmasi turadi
+  if (realRole === 'SUPER_ADMIN') {
+    return new Keyboard(base.keyboard.map((row) => [...row])).row().text(MENU_LABELS.SWITCH_ROLE).resized();
+  }
+  return base;
+}
+
+function baseMenuForRole(role: string): Keyboard {
   switch (role) {
     case 'TEACHER':
       return teacherMenuKeyboard;

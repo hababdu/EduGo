@@ -1,4 +1,4 @@
-import { superAdminIds } from '../../../common/super-admin.util';
+import { effectiveRole, superAdminIds } from '../../../common/super-admin.util';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
@@ -52,6 +52,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (role !== 'SUPER_ADMIN' && user.organization?.status === 'SUSPENDED') {
       throw new UnauthorizedException("Tashkilot faoliyati to'xtatilgan. Administratorga murojaat qiling.");
     }
+
+    // Super admin botdan boshqa rolni tanlagan bo'lsa — shu rol sifatida ishlaydi (tashkilot tekshiruvi haqiqiy rol bo'yicha o'tdi)
+    role = effectiveRole(role, user.activeRole as string | null);
 
     // Bu obyekt @CurrentUser() decorator orqali controller'larda ishlatiladi
     return {

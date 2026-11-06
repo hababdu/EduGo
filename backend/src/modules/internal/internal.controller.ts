@@ -1,5 +1,8 @@
 // src/modules/internal/internal.controller.ts
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { MAX_UPLOAD_BYTES } from '../materials/material-file.util';
 import { Public } from '../../common/decorators/public.decorator';
 import { InternalAuthGuard } from './guards/internal-auth.guard';
 import { AppLoginService } from '../auth/app-login.service';
@@ -99,5 +102,58 @@ export class InternalController {
   @Get('admins/by-telegram/:telegramId/overview')
   getAdminOverview(@Param('telegramId') telegramId: string) {
     return this.internalService.getAdminOverview(telegramId);
+  }
+
+  /* ============================================================
+     SUPER ADMIN: rol almashtirish
+     ============================================================ */
+  @Get('users/by-telegram/:telegramId/switch-options')
+  switchOptions(@Param('telegramId') telegramId: string) {
+    return this.internalService.switchOptions(telegramId);
+  }
+
+  @Post('users/by-telegram/:telegramId/switch-role')
+  @HttpCode(200)
+  switchRole(@Param('telegramId') telegramId: string, @Body() body: { role: string; organizationId?: string }) {
+    return this.internalService.switchRole(telegramId, body);
+  }
+
+  /* ============================================================
+     O'QUVCHI: vazifa topshirish (bot orqali)
+     ============================================================ */
+  @Get('students/by-telegram/:telegramId/homework')
+  listHomework(@Param('telegramId') telegramId: string) {
+    return this.internalService.listHomework(telegramId);
+  }
+
+  @Get('students/by-telegram/:telegramId/homework/:assignmentId')
+  homeworkDetail(@Param('telegramId') telegramId: string, @Param('assignmentId') assignmentId: string) {
+    return this.internalService.homeworkDetail(telegramId, assignmentId);
+  }
+
+  @Post('students/by-telegram/:telegramId/homework-files')
+  @HttpCode(200)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 } }))
+  uploadHomeworkFile(
+    @Param('telegramId') telegramId: string,
+    @UploadedFile() file: { originalname: string; mimetype: string; buffer: Buffer },
+  ) {
+    return this.internalService.uploadHomeworkFile(telegramId, file);
+  }
+
+  @Post('students/by-telegram/:telegramId/homework-files/:fileId/delete')
+  @HttpCode(200)
+  removeHomeworkFile(@Param('telegramId') telegramId: string, @Param('fileId') fileId: string) {
+    return this.internalService.removeHomeworkFile(telegramId, fileId);
+  }
+
+  @Post('students/by-telegram/:telegramId/homework/:assignmentId/submit')
+  @HttpCode(200)
+  submitHomework(
+    @Param('telegramId') telegramId: string,
+    @Param('assignmentId') assignmentId: string,
+    @Body() body: { textAnswer?: string; fileIds?: string[] },
+  ) {
+    return this.internalService.submitHomework(telegramId, assignmentId, body);
   }
 }

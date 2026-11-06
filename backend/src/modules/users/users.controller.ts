@@ -19,7 +19,9 @@ export class UsersController {
   /** Har doim TOKEN'dagi id orqali — bu eng xavfsiz "o'zim" endpointi */
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload) {
-    return this.usersService.getProfileFor(user.id, user);
+    const profile = await this.usersService.getProfileFor(user.id, user);
+    // Super admin botdan rol tanlagan bo'lsa — amaldagi rol ko'rinadi
+    return profile && typeof profile === 'object' ? { ...profile, role: user.role } : profile;
   }
 
   /** O'z ma'lumotlarini yuklab olish (JSON) */
