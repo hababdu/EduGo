@@ -1,305 +1,244 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+// src/pages/student/ProfilePage.tsx
+import { replayOnboarding } from '../../components/layout/Onboarding';
+import { ThemeToggle } from '../../components/layout/ThemeToggle';
+import { SoundToggle } from '../../components/layout/Effects';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { apiFetch } from '../../lib/api-client';
+import { PrivacyCard } from '../../components/profile/PrivacyCard';
+import { MyCertificates } from '../../components/profile/MyCertificates';
+import { ParentInviteCard } from '../../components/group/ParentInviteCard';
+import { useTelegram } from '../../hooks/useTelegram';
+import { ActivityMatrix, ActivityDay } from '../../components/dashboard/ActivityMatrix';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-* {
-  -webkit-tap-highlight-color: transparent;
+interface UserProfileResponse {
+  id: string;
+  firstName: string;
+  lastName?: string;
+  username?: string;
+  phone?: string;
+  role: string;
+  studentProfile?: {
+    totalScore: number;
+    level: number;
+    xp: number;
+  } | null;
+  streak?: {
+    currentStreak: number;
+    longestStreak: number;
+  } | null;
 }
 
-html,
-body,
-#root {
-  height: 100%;
+function useProfile() {
+  return useQuery({
+    queryKey: ['student', 'profile'],
+    queryFn: () => apiFetch<UserProfileResponse>('/api/v1/users/me'),
+    staleTime: 60_000,
+  });
 }
 
-/* Yorug' mavzu */
-:root[data-theme='light'] {
-  /* Ko'zga yumshoq: oq emas, sovuq kulrang-ko'k fon; kartalar shaffof "suyuq" shisha */
-  --c-base: 223 228 240;
-  --c-surface: 255 255 255;
-  --c-raised: 208 216 234;
-  --c-tint: 30 36 66;
-  --c-ink: 28 33 58;
-  --c-muted: 84 92 124;
-  --c-faint: 140 148 178;
-  --c-gold: 200 124 0;
-  --c-gold-soft: 250 228 186;
-  --c-teal: 14 146 110;
-  --c-teal-soft: 200 238 226;
-  --c-coral: 210 68 46;
-  --c-sky: 8 128 186;
-  --glass-bg: 255 255 255;
-  --glass-a: 0.5;
-  --c-accent: 200 124 0;
-  --c-accent-soft: 250 228 186;
-  --c-accent-2: 14 146 110;
-  color-scheme: light;
+function useActivity() {
+  return useQuery({
+    queryKey: ['student', 'activity', 120],
+    queryFn: () => apiFetch<{ days: ActivityDay[]; activeDays: number }>('/api/v1/dashboard/activity?days=120'),
+    staleTime: 5 * 60_000,
+  });
 }
 
-/* Yorug' mavzuda kartalar yarim shaffof va xira (frosted glass) */
-:root[data-theme='light'] .bg-surface,
-:root[data-theme='light'] [class*='bg-surface/'] {
-  -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  backdrop-filter: blur(18px) saturate(1.35);
-}
-:root[data-theme='light'] .bg-surface {
-  background-color: rgb(255 255 255 / 0.55);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 8px 28px -14px rgb(40 52 100 / 0.22);
-}
-:root[data-theme='light'] .glass {
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6);
-}
-:root[data-theme='light'] .bg-aurora {
-  background-image:
-    radial-gradient(60% 45% at 90% -5%, rgb(255 190 120 / 0.55), transparent 70%),
-    radial-gradient(55% 45% at 0% 20%, rgb(160 180 255 / 0.55), transparent 70%),
-    radial-gradient(55% 45% at 100% 75%, rgb(150 225 205 / 0.5), transparent 70%),
-    radial-gradient(50% 40% at 10% 95%, rgb(225 175 230 / 0.4), transparent 70%);
-}
+export function ProfilePage() {
+  const navigate = useNavigate();
+  const { haptic, user: tgUser } = useTelegram();
+  const { data, isLoading, error } = useProfile();
+  const { data: activity } = useActivity();
 
-/* Mavzu almashganda yumshoq o'tish */
-html.theme-fade, html.theme-fade * { transition: background-color .25s, border-color .25s, color .25s !important; }
+  if (isLoading) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto space-y-4 pb-24">
+        <div className="h-40 bg-surface/30 rounded-3xl animate-pulse" />
+        <div className="h-32 bg-surface/20 rounded-3xl animate-pulse border border-tint/5" />
+      </div>
+    );
+  }
 
-:root {
-  /* ===== Mavzu ranglari (RGB kanallari) — qorong'i (standart) ===== */
-  --c-base: 11 13 25;
-  --c-surface: 18 22 42;
-  --c-raised: 30 36 71;
-  --c-tint: 255 255 255;
-  --c-ink: 245 243 237;
-  --c-muted: 156 163 196;
-  --c-faint: 91 95 130;
-  --c-gold: 255 176 32;
-  --c-gold-soft: 74 58 26;
-  --c-teal: 52 208 160;
-  --c-teal-soft: 21 59 51;
-  --c-coral: 240 101 75;
-  --c-sky: 56 189 248;
-  --glass-bg: 18 22 42;
-  --glass-a: 0.72;
-  /* Rol aksenti (standart = o'quvchi). Pastdagi [data-role] bloklari almashtiradi */
-  --c-accent: 255 176 32;
-  --c-accent-soft: 74 58 26;
-  --c-accent-2: 52 208 160;
-  color-scheme: dark;
+  if (error || !data) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto pb-24">
+        <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5">
+          <p className="text-sm font-semibold text-ink">Xatolik</p>
+          <p className="text-xs text-ink-muted mt-2">
+            {(error as any)?.message || "Server bilan bog'lanishda muammo"}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  /* iPhone dinamik oroli (env) va Telegram to'liq ekran sarlavhasi (--tg-*) ostida qolish uchun */
-  --island-safe: max(
-    env(safe-area-inset-top, 0px),
-    calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))
+  const fullName =
+    `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Talaba';
+  const initial = fullName[0]?.toUpperCase() || 'T';
+
+  const totalScore = data.studentProfile?.totalScore ?? 0;
+  const level = data.studentProfile?.level ?? 1;
+  const xp = data.studentProfile?.xp ?? 0;
+  const currentStreak = data.streak?.currentStreak ?? 0;
+  const longestStreak = data.streak?.longestStreak ?? 0;
+
+  return (
+    <div className="p-4 max-w-2xl mx-auto space-y-5 pb-24">
+      {/* Profile card */}
+      <div className="bg-surface/20 p-5 rounded-3xl border border-tint/5 space-y-4 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+          {tgUser?.photo_url ? (
+            <img
+              src={tgUser.photo_url}
+              alt=""
+              className="w-16 h-16 rounded-3xl object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-3xl bg-gold/10 text-gold flex items-center justify-center font-display text-2xl shrink-0">
+              {initial}
+            </div>
+          )}
+          <div className="min-w-0">
+            <h1 className="font-display text-xl text-ink truncate">
+              {fullName}
+            </h1>
+            <p className="text-xs text-ink-muted truncate">
+              {data.username ? `@${data.username}` : 'Telegram foydalanuvchi'}
+            </p>
+          </div>
+        </div>
+
+        {/* Level bar */}
+        <div className="pt-4 border-t border-tint/5">
+          <div className="flex items-center justify-between text-xs text-ink-muted mb-1.5">
+            <span className="text-gold font-semibold">{level}-daraja</span>
+            <span>{xp} XP</span>
+          </div>
+          <div className="h-2 rounded-full bg-surface overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gold transition-all duration-700"
+              style={{ width: `${Math.min(100, xp % 100)}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
+          <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
+            Umumiy ball
+          </span>
+          <p className="text-2xl font-display text-gold mt-1 tabular-nums">
+            {totalScore.toLocaleString('uz-UZ')}
+          </p>
+        </div>
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
+          <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
+            Daraja
+          </span>
+          <p className="text-2xl font-display text-teal mt-1 tabular-nums">
+            {level}
+          </p>
+        </div>
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
+          <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
+            🔥 Streak
+          </span>
+          <p className="text-2xl font-display text-coral mt-1 tabular-nums">
+            {currentStreak}
+            <span className="text-ink-muted text-base"> kun</span>
+          </p>
+        </div>
+        <div className="bg-surface/20 p-4 rounded-3xl border border-tint/5">
+          <span className="text-[10px] text-ink-muted uppercase tracking-wider block">
+            Eng uzun streak
+          </span>
+          <p className="text-2xl font-display text-ink mt-1 tabular-nums">
+            {longestStreak}
+          </p>
+        </div>
+      </div>
+
+      <MyCertificates />
+
+      <ParentInviteCard />
+
+      <PrivacyCard />
+
+      {activity && <ActivityMatrix days={activity.days} activeDays={activity.activeDays} />}
+
+      {/* Actions */}
+      <div className="bg-surface/20 rounded-3xl border border-tint/5 divide-y divide-tint/5 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            navigate('/ranking');
+          }}
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
+        >
+          <span className="text-sm text-ink">🏆 Reyting</span>
+          <span className="text-ink-muted text-xs">›</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            navigate('/notifications');
+          }}
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
+        >
+          <span className="text-sm text-ink">🔔 Bildirishnomalar</span>
+          <span className="text-ink-muted text-xs">›</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            haptic('light');
+            const tg = (window as any).Telegram?.WebApp;
+            if (tg?.close) tg.close();
+          }}
+          className="w-full text-left p-4 hover:bg-tint/[0.02] transition-colors flex items-center justify-between"
+        >
+          <span className="text-sm text-red-400">🚪 Yopish</span>
+          <span className="text-ink-muted text-xs">›</span>
+        </button>
+      </div>
+      <SoundToggle />
+      <ThemeToggle className="mt-3" />
+      <button onClick={replayOnboarding} className="w-full mt-3 py-3 rounded-xl bg-tint/5 text-sm text-ink-muted active:scale-[0.99] transition">Tanishuvni qayta ko'rish</button>
+    </div>
   );
-  --island-top: calc(var(--island-safe) + 8px);
 }
 
+export default ProfilePage;
 
 /* ============================================================
-   ROL RANGLARI (docs/DESIGN.md dagi jadval bilan bir xil).
-   Semantik ranglar HAMMA rolda bir xil: teal = muvaffaqiyat, gold = ball/kutilmoqda,
-   coral = xavf/qarz, sky = ma'lumot. Faqat ACCENT (asosiy tugma, faol belgi, fokus) rolga qarab o'zgaradi.
+   EduGo design presets — theme mode (light/dark) bilan mustaqil.
+   Mavjud semantik ranglar va role aksentlari saqlanadi.
    ============================================================ */
-:root[data-role='teacher'] { --c-accent: 45 212 140; --c-accent-soft: 20 62 48; --c-accent-2: 56 189 248; }
-:root[data-role='admin']   { --c-accent: 129 140 248; --c-accent-soft: 40 44 92; --c-accent-2: 255 176 32; }
-:root[data-role='super']   { --c-accent: 192 132 252; --c-accent-soft: 56 36 84; --c-accent-2: 56 189 248; }
-:root[data-role='parent']  { --c-accent: 34 211 238; --c-accent-soft: 16 60 70; --c-accent-2: 255 176 32; }
-:root[data-theme='light'][data-role='teacher'] { --c-accent: 5 150 105; --c-accent-soft: 200 238 226; --c-accent-2: 8 128 186; }
-:root[data-theme='light'][data-role='admin']   { --c-accent: 79 70 229; --c-accent-soft: 224 226 252; --c-accent-2: 200 124 0; }
-:root[data-theme='light'][data-role='super']   { --c-accent: 126 34 206; --c-accent-soft: 237 221 253; --c-accent-2: 8 128 186; }
-:root[data-theme='light'][data-role='parent']  { --c-accent: 8 145 178; --c-accent-soft: 207 240 248; --c-accent-2: 200 124 0; }
+:root[data-preset='modern-minimal'] { --c-accent: 99 102 241; --c-accent-soft: 43 43 91; --c-accent-2: 56 189 248; }
+:root[data-theme='light'][data-preset='modern-minimal'] { --c-accent: 79 70 229; --c-accent-soft: 224 226 252; --c-accent-2: 8 128 186; }
 
-body {
-  @apply bg-base text-ink font-sans antialiased;
-  /* AI orol tepa markazda turadi: iPhone "oroli"/Telegram sarlavhasidan pastda, kontent esa undan pastda */
-  padding-top: calc(var(--island-safe) + 22px);
-}
+:root[data-preset='premium-dark'] { --c-base: 9 11 18; --c-surface: 20 23 34; --c-raised: 31 36 51; --c-accent: 168 130 255; --c-accent-soft: 54 39 83; --c-accent-2: 91 190 220; }
+:root[data-theme='light'][data-preset='premium-dark'] { --c-base: 242 241 247; --c-surface: 255 255 255; --c-raised: 229 226 239; --c-accent: 124 82 210; --c-accent-soft: 231 220 250; --c-accent-2: 36 145 177; }
 
-/* Klaviatura fokusi — accessibility uchun har doim ko'rinadi */
-:focus-visible {
-  outline: 2px solid rgb(var(--c-accent));
-  outline-offset: 2px;
-}
+:root[data-preset='gamified'] { --c-accent: 255 176 32; --c-accent-soft: 74 58 26; --c-accent-2: 52 208 160; }
+:root[data-theme='light'][data-preset='gamified'] { --c-accent: 205 127 0; --c-accent-soft: 250 228 186; --c-accent-2: 14 146 110; }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
-}
+:root[data-preset='apple'] { --c-base: 14 16 22; --c-surface: 28 31 39; --c-raised: 43 47 57; --c-accent: 10 132 255; --c-accent-soft: 24 57 91; --c-accent-2: 94 200 160; }
+:root[data-theme='light'][data-preset='apple'] { --c-base: 245 245 247; --c-surface: 255 255 255; --c-raised: 235 235 240; --c-ink: 28 28 30; --c-muted: 105 105 110; --c-accent: 0 122 255; --c-accent-soft: 218 235 255; --c-accent-2: 48 170 120; }
 
-.no-scrollbar {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-@layer base {
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
+:root[data-preset='saas'] { --c-base: 12 18 31; --c-surface: 23 32 51; --c-raised: 34 46 69; --c-accent: 56 139 253; --c-accent-soft: 28 55 95; --c-accent-2: 45 212 191; }
+:root[data-theme='light'][data-preset='saas'] { --c-base: 241 245 249; --c-surface: 255 255 255; --c-raised: 226 232 240; --c-ink: 30 41 59; --c-muted: 100 116 139; --c-accent: 37 99 235; --c-accent-soft: 219 234 254; --c-accent-2: 13 148 136; }
 
-  html, body {
-    overscroll-behavior-y: none;
-    -webkit-font-smoothing: antialiased;
-  }
+:root[data-preset='futuristic-glass'] { --c-base: 10 15 29; --c-surface: 22 31 55; --c-raised: 34 48 78; --c-accent: 79 209 197; --c-accent-soft: 20 68 75; --c-accent-2: 129 140 248; --glass-a: 0.62; }
+:root[data-theme='light'][data-preset='futuristic-glass'] { --c-base: 230 239 250; --c-surface: 255 255 255; --c-raised: 210 225 244; --c-ink: 24 39 65; --c-muted: 79 99 128; --c-accent: 13 148 136; --c-accent-soft: 199 238 233; --c-accent-2: 99 102 241; --glass-a: 0.64; }
 
-  button, a, [role='button'] {
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  input, textarea, select {
-    font-size: 16px; /* iOS zoom oldini oladi */
-  }
-}
-
-/* Safe area — bottom nav yoki MainButton uchun */
-.pb-safe {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
-}
-
-/* Animatsiyalar */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slide-in-from-top {
-  from { transform: translate(-50%, -20px); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-.animate-in.fade-in { animation: fade-in 0.2s ease-out; }
-.animate-in.slide-in-from-top { animation: slide-in-from-top 0.25s ease-out; }
-
-/* ============================================================
-   Fon effektlari (sof CSS — qo'shimcha rasm yuklanmaydi)
-   ============================================================ */
-@layer utilities {
-  /* Yumshoq "aurora": oltin va teal yorug'lik dog'lari */
-  .bg-aurora {
-    background-image:
-      radial-gradient(60% 45% at 85% -5%, rgb(var(--c-accent) / 0.16), transparent 70%),
-      radial-gradient(55% 40% at 0% 25%, rgb(var(--c-accent-2) / 0.10), transparent 70%),
-      radial-gradient(50% 40% at 100% 80%, rgb(var(--c-sky) / 0.08), transparent 70%);
-    background-repeat: no-repeat;
-  }
-
-  /* Nozik nuqtali to'r (kartalar orqasi uchun) */
-  .bg-dots {
-    background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
-    background-size: 18px 18px;
-  }
-
-  /* Shisha ko'rinish (navigatsiya, panel) */
-  .glass {
-    background-color: rgb(var(--glass-bg) / var(--glass-a));
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
-  }
-}
-
-
-/* ============================================================
-   SUYUQ ANIMATSIYALAR (faqat transform/opacity — telefon va Telegram WebView'da yengil)
-   ============================================================ */
-/* Orqa fondagi sekin suzuvchi yorug'lik dog'lari (rol aksentida) */
-@keyframes blob-drift-a { from { transform: translate3d(-6%, -4%, 0) scale(1); } to { transform: translate3d(8%, 10%, 0) scale(1.18); } }
-@keyframes blob-drift-b { from { transform: translate3d(6%, 8%, 0) scale(1.1); } to { transform: translate3d(-10%, -6%, 0) scale(0.92); } }
-.blob { position: absolute; border-radius: 9999px; will-change: transform; }
-.blob-a { animation: blob-drift-a 26s ease-in-out infinite alternate; }
-.blob-b { animation: blob-drift-b 32s ease-in-out infinite alternate; }
-
-/* Ro'yxat elementlari birin-ketin "ko'tarilib" chiqadi: <ul className="stagger"> */
-@keyframes rise-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
-.stagger > * { animation: rise-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-.stagger > *:nth-child(1) { animation-delay: 0ms; }
-.stagger > *:nth-child(2) { animation-delay: 55ms; }
-.stagger > *:nth-child(3) { animation-delay: 110ms; }
-.stagger > *:nth-child(4) { animation-delay: 165ms; }
-.stagger > *:nth-child(5) { animation-delay: 220ms; }
-.stagger > *:nth-child(6) { animation-delay: 275ms; }
-.stagger > *:nth-child(7) { animation-delay: 330ms; }
-.stagger > *:nth-child(8) { animation-delay: 385ms; }
-.stagger > *:nth-child(n+9) { animation-delay: 440ms; }
-
-/* Karta ustiga olib borilganda yumshoq ko'tariladi va aksent nuri paydo bo'ladi */
-@media (hover: hover) {
-  .lift { transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s ease, border-color 0.25s; }
-  .lift:hover { transform: translateY(-3px); box-shadow: 0 16px 32px -16px rgb(var(--c-accent) / 0.5); border-color: rgb(var(--c-accent) / 0.35); }
-}
-
-/* Yuklanish skeleti: pulsatsiya o'rniga o'tib turuvchi yorug'lik */
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.shimmer {
-  background-image: linear-gradient(100deg, transparent 30%, rgb(var(--c-tint) / 0.09) 50%, transparent 70%);
-  background-size: 200% 100%;
-  animation: shimmer 1.6s linear infinite;
-}
-
-/* Aksent nuri (asosiy tugma): bosilganda tarqaladigan halqa */
-@keyframes accent-ping { 0% { box-shadow: 0 0 0 0 rgb(var(--c-accent) / 0.45); } 100% { box-shadow: 0 0 0 14px rgb(var(--c-accent) / 0); } }
-.ping-accent { animation: accent-ping 1.8s ease-out infinite; }
-
-/* Raqam/belgi paydo bo'lishi */
-@keyframes pop-in { 0% { opacity: 0; transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
-.pop-in { animation: pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
-
-/* ===== O'tish va bosish effektlari ===== */
-@keyframes page-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.985); }
-  to { opacity: 1; transform: none; }
-}
-.page-in { animation: page-in 0.38s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
-
-/* `scale` alohida xossa — mavjud transform (translate) bilan to'qnashmaydi */
-button:not(:disabled), a[href], [role='button'] { transition: scale 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
-button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 0.96; transition-duration: 0.08s; }
-
-/* Pastki navigatsiya: sirg'aluvchi indikator va ikonka "sakrashi" */
-.nav-indicator { transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1); }
-@keyframes nav-pop {
-  0% { transform: scale(0.7) translateY(2px); }
-  55% { transform: scale(1.28) translateY(-3px); }
-  100% { transform: scale(1) translateY(0); }
-}
-.nav-pop { animation: nav-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-/* ===== AI robot ===== */
-@keyframes bot-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
-.bot-blink { animation: bot-blink 5.2s infinite; }
-@keyframes bot-float { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-16px); opacity: 0; } }
-.bot-float { animation: bot-float 1.8s ease-out infinite; }
-@keyframes bot-spin { to { transform: rotate(360deg); } }
-.bot-spin { animation: bot-spin 1s linear infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes bot-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
-.bot-beat { animation: bot-beat 0.7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes bot-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-.bot-bounce { animation: bot-bounce 0.9s ease-in-out infinite; }
-@keyframes bot-wobble { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
-.bot-wobble { animation: bot-wobble 0.5s ease-in-out infinite; }
-@keyframes bot-dot { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
-.bot-dot { animation: bot-dot 0.9s ease-in-out infinite; }
-.bot-glow { transition: opacity 0.4s; }
-
-/* AI orol: tepa markazdagi "ilon" kapsula va ochilgan oyna */
-@keyframes island-open {
-  from { opacity: 0; transform: translateY(-12px) scale(0.55); border-radius: 999px; }
-  to { opacity: 1; transform: none; }
-}
-.island-open { animation: island-open 0.38s cubic-bezier(0.34, 1.3, 0.64, 1); transform-origin: top center; }
-@keyframes island-fade { from { opacity: 0; } to { opacity: 1; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .bot-blink, .bot-float, .bot-spin, .bot-beat, .bot-bounce, .bot-wobble, .bot-dot, .island-open { animation: none; }
-  .nav-indicator { transition: none; }
-  .nav-pop { animation: none; }
-  .page-in { animation: none; }
-  .blob-a, .blob-b, .shimmer, .ping-accent, .pop-in { animation: none; }
-  .stagger > * { animation: none; }
-  .lift:hover { transform: none; }
-  button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 1; }
+:root[data-preset='futuristic-glass'] .bg-surface,
+:root[data-preset='futuristic-glass'] [class*='bg-surface/'] {
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  backdrop-filter: blur(20px) saturate(1.3);
 }
