@@ -54,8 +54,37 @@ model Organization {
   users    User[]
   groups   Group[]
   payments OrgPayment[]
+  memberships OrganizationMembership[]
 
   @@index([status])
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  REMOVED
+}
+
+/// Foydalanuvchining maktabdagi a'zoligi: qo'shilish so'rovi → tasdiq → rol. Bitta foydalanuvchi + maktab = bitta yozuv.
+/// Faol maktab hozircha `User.organizationId` da (a'zolik tasdiqlanganda sinxronlanadi).
+model OrganizationMembership {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation("MembershipUser", fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           RoleName         @default(STUDENT)
+  status         MembershipStatus @default(PENDING)
+  message        String?
+  requestedAt    DateTime         @default(now())
+  decidedAt      DateTime?
+  decidedById    String?
+  decidedBy      User?            @relation("MembershipDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, status])
+  @@index([userId, status])
 }
 
 /// Maktab → super admin: oylik obuna to'lovi belgisi (o'quvchilarning guruh to'lovlari — `Payment` — bundan butunlay alohida).
@@ -104,6 +133,9 @@ model User {
   registeredAt    DateTime      @default(now())
   lastActiveAt    DateTime      @default(now())
   deletedAt       DateTime? // soft delete
+
+  memberships    OrganizationMembership[] @relation("MembershipUser")
+  decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
 
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?

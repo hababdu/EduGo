@@ -30,6 +30,7 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { HealthModule } from './modules/health/health.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
+import { MembershipsModule } from './modules/memberships/memberships.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 @Module({
@@ -57,6 +58,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     AssignmentsModule, // <-- 2. IMPORTS MASSIVIGA QO'SHISH
     AiModule,
     SuperAdminModule,
+    MembershipsModule,
     ParentsModule,
     CertificatesModule,
     HealthModule,
