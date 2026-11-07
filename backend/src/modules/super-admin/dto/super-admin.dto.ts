@@ -33,6 +33,18 @@ export class MoveAdminDto {
   @IsString() @MinLength(5) @MaxLength(40) organizationId!: string;
 }
 
+export class AllUsersQueryDto {
+  @IsOptional() @IsString() @MaxLength(60) search?: string;
+  @IsOptional() @IsIn(['STUDENT', 'TEACHER', 'ADMIN', 'SUPER_ADMIN']) role?: string;
+  @IsOptional() @IsNumberString() page?: string;
+}
+
+export class ChangeRoleDto {
+  @IsIn(['STUDENT', 'TEACHER', 'ADMIN']) role!: 'STUDENT' | 'TEACHER' | 'ADMIN';
+  /** Foydalanuvchi hali maktabga biriktirilmagan bo'lsa majburiy */
+  @IsOptional() @IsString() @MinLength(5) @MaxLength(40) organizationId?: string;
+}
+
 export class UserSearchDto {
   @IsOptional() @IsString() @MaxLength(60) search?: string;
 }

@@ -9,7 +9,7 @@ import { AiService } from '../ai/ai.service';
 import { AiSettingsService, LIMIT_ROLES } from '../ai/ai-settings.service';
 import { AiUsageService } from '../ai/ai-usage.service';
 import { currentMonth } from '../groups/payments.service';
-import { AssignAdminDto, CreateOrgDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
+import { AllUsersQueryDto, ChangeRoleDto, AssignAdminDto, CreateOrgDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
 
 const PAGE = 30;
 const nameOf = (u: { firstName: string; lastName: string | null; username: string | null }) =>
@@ -205,6 +205,55 @@ export class SuperAdminService {
       select: { id: true, firstName: true, lastName: true, username: true, role: true, organization: { select: { id: true, name: true } } },
     });
     return users.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, role: u.role, organization: u.organization }));
+  }
+
+  /* ───────── Barcha foydalanuvchilar ───────── */
+  async allUsers(q: AllUsersQueryDto) {
+    const take = 30;
+    const page = Math.max(1, Number(q.page) || 1);
+    const s = q.search?.trim();
+    const where: any = {
+      deletedAt: null,
+      ...(q.role ? { role: q.role } : {}),
+      ...(s ? { OR: [
+        { firstName: { contains: s, mode: 'insensitive' } },
+        { lastName: { contains: s, mode: 'insensitive' } },
+        { username: { contains: s, mode: 'insensitive' } },
+        ...(/^\d{5,}$/.test(s) ? [{ telegramId: s }] : []),
+      ] } : {}),
+    };
+    const [total, rows] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where, orderBy: [{ registeredAt: 'desc' }], skip: (page - 1) * take, take,
+        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true, organization: { select: { id: true, name: true } } },
+      }),
+    ]);
+    return {
+      total, page, pages: Math.max(1, Math.ceil(total / take)),
+      items: rows.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, role: u.role, status: u.status, lastActiveAt: u.lastActiveAt, organization: u.organization })),
+    };
+  }
+
+  /** Foydalanuvchi rolini o'zgartirish (STUDENT / TEACHER / ADMIN). Super adminlar tegilmaydi. */
+  async changeRole(actor: CurrentUserPayload, userId: string, dto: ChangeRoleDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.deletedAt) throw new NotFoundException('Foydalanuvchi topilmadi');
+    if (user.role === 'SUPER_ADMIN' || user.id === actor.id || superAdminIds(this.cfg.get<string>('SUPER_ADMIN_TELEGRAM_IDS')).includes(user.telegramId)) {
+      throw new BadRequestException("Super adminning rolini o'zgartirib bo'lmaydi");
+    }
+    if (user.role === dto.role && (!dto.organizationId || dto.organizationId === user.organizationId)) return { ok: true };
+    const orgId = dto.organizationId ?? user.organizationId;
+    if (!orgId) throw new BadRequestException('Maktabni tanlang: foydalanuvchi hali maktabga biriktirilmagan');
+    const org = await this.prisma.organization.findFirst({ where: { id: orgId, status: 'ACTIVE' }, select: { id: true } });
+    if (!org) throw new NotFoundException('Maktab topilmadi yoki faol emas');
+    // Sahifalar profil yozuvlarini kutadi — yo'q bo'lsa bo'sh profil yaratamiz
+    if (dto.role === 'STUDENT') await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+    if (dto.role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+    if (dto.role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+    await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role, organizationId: orgId } });
+    await this.audit(actor, 'USER_ROLE_CHANGE', 'User', userId, { role: user.role, organizationId: user.organizationId }, { role: dto.role, organizationId: orgId });
+    return { ok: true };
   }
 
   /* ───────── Adminlar ───────── */

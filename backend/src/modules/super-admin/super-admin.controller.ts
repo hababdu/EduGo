@@ -5,7 +5,7 @@ import { memoryStorage } from 'multer';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { OrgBillingService } from './org-billing.service';
-import { MoveAdminDto, MarkOrgPaymentDto, AssignAdminDto, AuditQueryDto, CreateOrgDto, UserSearchDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
+import { MoveAdminDto, AllUsersQueryDto, ChangeRoleDto, MarkOrgPaymentDto, AssignAdminDto, AuditQueryDto, CreateOrgDto, UserSearchDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
 import { SuperAdminService } from './super-admin.service';
 
 /** Faqat SUPER_ADMIN (RolesGuard: ADMIN ham kira olmaydi). */
@@ -42,6 +42,8 @@ export class SuperAdminController {
   @Delete('organizations/:id/admins/:userId') unassign(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Param('userId') userId: string) { return this.svc.removeAdmin(u, id, userId); }
 
   @Get('users') users(@Query() q: UserSearchDto) { return this.svc.candidates(q.search); }
+  @Get('all-users') allUsers(@Query() q: AllUsersQueryDto) { return this.svc.allUsers(q); }
+  @Patch('users/:id/role') changeRole(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: ChangeRoleDto) { return this.svc.changeRole(u, id, dto); }
   @Get('admins') admins() { return this.svc.listAdmins(); }
   @Patch('users/:id/block') block(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body('blocked', ParseBoolPipe) blocked: boolean) { return this.svc.setBlocked(u, id, blocked); }
 

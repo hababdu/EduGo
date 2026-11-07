@@ -62,8 +62,8 @@ export interface AssistantWriteTool<I = any> {
   execute(user: CurrentUserPayload, input: I): Promise<unknown>;
 }
 
-export function defineWriteTool<I>(tool: AssistantWriteTool<I>): AssistantWriteTool<I> {
-  return tool;
+export function defineWriteTool<I>(tool: AssistantWriteTool<I>): AssistantWriteTool {
+  return tool as AssistantWriteTool;
 }
 
 /** Klientga SSE orqali yuboriladigan hodisalar */

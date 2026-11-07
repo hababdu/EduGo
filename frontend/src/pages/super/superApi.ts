@@ -20,6 +20,7 @@ export interface AdminRow {
   id: string; name: string; username: string | null; telegramId: string; role: string; status: string;
   lastActiveAt: string; organization: { id: string; name: string } | null;
 }
+export interface UsersPage { total: number; page: number; pages: number; items: AdminRow[] }
 export type AiProviderId = 'gemini' | 'groq' | 'anthropic';
 export interface AiInfo {
   settings: { enabled: boolean; limits: Record<string, number>; primary: AiProviderId; fallback: AiProviderId | null; models: Record<AiProviderId, { fast: string; smart: string }> };
@@ -54,6 +55,12 @@ export const useCandidates = (search: string, enabled: boolean) =>
     enabled,
     placeholderData: (p) => p,
   });
+export const useAllUsers = (search: string, role: string, page: number) =>
+  useQuery({
+    queryKey: ['super', 'all-users', search, role, page],
+    queryFn: () => apiFetch<UsersPage>(`${b}/all-users?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}${role ? `&role=${role}` : ''}`),
+    placeholderData: (p) => p,
+  });
 export const useSuperAdmins = () => useQuery({ queryKey: ['super', 'admins'], queryFn: () => apiFetch<AdminRow[]>(`${b}/admins`) });
 export const useSuperAi = () => useQuery({ queryKey: ['super', 'ai'], queryFn: () => apiFetch<AiInfo>(`${b}/ai`) });
 export const useSuperAudit = (page: number, action: string) =>
@@ -85,6 +92,7 @@ export const sapi = {
     return apiFetch<RestoreResult>(`${b}/organizations/${v.id}/restore${v.apply ? '?apply=1' : ''}`, { method: 'POST', body: form });
   },
   moveAdmin: (v: { userId: string; organizationId: string }) => apiFetch(`${b}/admins/${v.userId}/organization`, { method: 'PATCH', body: JSON.stringify({ organizationId: v.organizationId }) }),
+  changeRole: (v: { id: string; role: string; organizationId?: string }) => apiFetch(`${b}/users/${v.id}/role`, { method: 'PATCH', body: JSON.stringify({ role: v.role, organizationId: v.organizationId }) }),
   block: (v: { id: string; blocked: boolean }) => apiFetch(`${b}/users/${v.id}/block`, { method: 'PATCH', body: JSON.stringify({ blocked: v.blocked }) }),
   saveAi: (v: { enabled?: boolean; limits?: Record<string, number>; primary?: AiProviderId; fallback?: AiProviderId | 'none'; models?: Partial<Record<AiProviderId, { fast?: string; smart?: string }>> }) => apiFetch(`${b}/ai`, { method: 'PUT', body: JSON.stringify(v) }),
 };

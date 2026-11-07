@@ -80,3 +80,33 @@ describe('SuperAdminService', () => {
     await expect(b.svc.setBlocked(actor, 'x', true)).rejects.toBeInstanceOf(BadRequestException);
   });
 });
+
+describe('SuperAdminService.changeRole', () => {
+  const actor: any = { id: 's1', role: 'SUPER_ADMIN' };
+  const mk = (user: any) => {
+    const prisma: any = {
+      organization: { findFirst: jest.fn().mockResolvedValue({ id: 'o1' }) },
+      user: { findUnique: jest.fn().mockResolvedValue(user), update: jest.fn().mockResolvedValue({}) },
+      studentProfile: { upsert: jest.fn() }, teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() },
+      adminActionLog: { create: jest.fn().mockResolvedValue({}) },
+    };
+    const cfg: any = { get: jest.fn().mockReturnValue('999999') };
+    return { prisma, svc: new SuperAdminService(prisma, cfg, {} as any, {} as any, {} as any, {} as any, {} as any) };
+  };
+  const u = (o: any = {}) => ({ id: 'u1', role: 'STUDENT', telegramId: '111111', organizationId: 'o1', deletedAt: null, ...o });
+
+  it("talabani o'qituvchi qiladi va profil yaratadi", async () => {
+    const { svc, prisma } = mk(u());
+    await svc.changeRole(actor, 'u1', { role: 'TEACHER' });
+    expect(prisma.teacherProfile.upsert).toHaveBeenCalled();
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { role: 'TEACHER', organizationId: 'o1' } });
+    expect(prisma.adminActionLog.create).toHaveBeenCalled();
+  });
+  it("super adminning rolini o'zgartirib bo'lmaydi", async () => {
+    await expect(mk(u({ role: 'SUPER_ADMIN' })).svc.changeRole(actor, 'u1', { role: 'ADMIN' })).rejects.toBeInstanceOf(BadRequestException);
+    await expect(mk(u({ telegramId: '999999' })).svc.changeRole(actor, 'u1', { role: 'ADMIN' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+  it("maktabsiz foydalanuvchi uchun maktab majburiy", async () => {
+    await expect(mk(u({ organizationId: null })).svc.changeRole(actor, 'u1', { role: 'ADMIN' })).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
