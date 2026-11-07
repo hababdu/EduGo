@@ -1,3 +1,4 @@
+import { syncMembership } from '../../common/membership-sync';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -159,6 +160,7 @@ export class SuperAdminService {
     if (!org) throw new NotFoundException('Maktab topilmadi');
     if (user.organizationId === orgId) return { ok: true };
     await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+    await syncMembership(this.prisma, userId, orgId, 'ADMIN', user.organizationId);
     await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: user.organizationId }, { organizationId: orgId });
     return { ok: true };
   }
@@ -174,6 +176,7 @@ export class SuperAdminService {
       throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan");
     }
     const updated = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN', organizationId: orgId } });
+    await syncMembership(this.prisma, user.id, orgId, 'ADMIN');
     await this.audit(actor, 'ADMIN_ASSIGN', 'User', user.id, { role: user.role, organizationId: user.organizationId }, { role: 'ADMIN', organizationId: orgId });
     return { id: updated.id, name: nameOf(updated) };
   }
@@ -182,6 +185,7 @@ export class SuperAdminService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.organizationId !== orgId || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
     await this.prisma.user.update({ where: { id: userId }, data: { role: 'TEACHER' } });
+    await syncMembership(this.prisma, userId, orgId, 'TEACHER');
     await this.audit(actor, 'ADMIN_REMOVE', 'User', userId, { role: 'ADMIN' }, { role: 'TEACHER' });
     return { ok: true };
   }
@@ -252,6 +256,7 @@ export class SuperAdminService {
     if (dto.role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role, organizationId: orgId } });
+    await syncMembership(this.prisma, userId, orgId, dto.role, user.organizationId);
     await this.audit(actor, 'USER_ROLE_CHANGE', 'User', userId, { role: user.role, organizationId: user.organizationId }, { role: dto.role, organizationId: orgId });
     return { ok: true };
   }

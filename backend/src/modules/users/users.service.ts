@@ -1,3 +1,4 @@
+import { syncMembership } from '../../common/membership-sync';
 import { sameOrg } from '../../common/org-scope';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -138,6 +139,7 @@ export class UsersService {
     }
     const updated = await this.prisma.user.update({ where: { id: userId }, data: { role: role as any, ...adopt }, select });
 
+    await syncMembership(this.prisma, userId, (adopt as any).organizationId ?? user.organizationId, role);
     await this.prisma.adminActionLog.create({
       data: {
         actorId: actor.id,

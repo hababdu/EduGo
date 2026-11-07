@@ -1,4 +1,4 @@
-import { Home, BookOpen, ClipboardList, Users, User } from 'lucide-react';
+import { Home, BookOpen, ClipboardList, Users, User, School } from 'lucide-react';
 import { StaffNav, StaffNavItem } from '../staff/StaffNav';
 
 const items: StaffNavItem[] = [
@@ -6,6 +6,7 @@ const items: StaffNavItem[] = [
   { to: '/lessons', Icon: BookOpen, label: 'Darslar' },
   { to: '/tests', Icon: ClipboardList, label: 'Testlar' },
   { to: '/groups', Icon: Users, label: 'Guruhlar' },
+  { to: '/schools', Icon: School, label: 'Maktab' },
   { to: '/profile', Icon: User, label: 'Profil' },
 ];
 
