@@ -12,7 +12,7 @@ export function SuperAdmins() {
   const move = useSuperMutation(sapi.moveAdmin, "Admin ko'chirildi");
   return (
     <div className={PAGE}>
-      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="SUPER ADMIN · ADMINLAR" title="Adminlar" subtitle="Tayinlash «Maktablar» bo'limida. Bu yerda holatini boshqarasiz va boshqa maktabga ko'chirasiz." />
+      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="SUPER ADMIN · ADMINLAR" title="Adminlar" subtitle="Har bir admin aniq bitta maktabga biriktiriladi. Maktabini shu yerdan tanlang yoki o'zgartiring." />
       <Panel title="Ro'yxat" icon={ShieldCheck} accent="sky" flush>
         {isLoading ? <div className="p-5"><Skeleton className="h-24" /></div> : !data?.length ? (
           <p className="p-8 text-center text-sm text-ink-muted">Adminlar yo'q</p>
