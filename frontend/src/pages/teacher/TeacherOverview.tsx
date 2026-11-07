@@ -32,6 +32,8 @@ interface OverviewData {
   assignmentsCount: number;
   totalAttempts: number;
   averageScore: number;
+  attendanceSummary?: { total: number; present: number; rate: number };
+  pendingReviewCount?: number;
   groups: { id: string; name: string; studentsCount: number }[];
   recentAssignments: {
     id: string;
@@ -129,6 +131,8 @@ export function TeacherOverview() {
         <KpiCard label="Talabalar" value={data.studentsCount} icon={Users} accent="teal" hint="faol tinglovchilar" />
         <KpiCard label="Biriktirilgan testlar" value={data.assignedTestsCount} icon={FileText} accent="sky" />
         <KpiCard label="O'rtacha natija" value={`${data.averageScore}%`} icon={BarChart3} accent="coral" hint={`${data.totalAttempts} ta urinish`} />
+        <KpiCard label="Davomat (7 kun)" value={`${data.attendanceSummary?.rate ?? 0}%`} icon={Users} accent="teal" hint={`${data.attendanceSummary?.present ?? 0} / ${data.attendanceSummary?.total ?? 0} belgi`} />
+        <KpiCard label="Tekshirish kutilmoqda" value={data.pendingReviewCount ?? 0} icon={FileText} accent="coral" hint="topshiriqlar navbati" onClick={() => navigate('/teacher/assignments')} />
       </div>
 
       <TodayLessons basePath="/teacher/groups" openAttendanceTab />
