@@ -31,8 +31,8 @@ export class MembershipsService {
     const existing = await this.prisma.organizationMembership.findUnique({
       where: { userId_organizationId_role: { userId, organizationId, role } },
     });
-    if (existing?.status === MembershipStatus.ACTIVE) throw new ConflictException('Siz ushbu maktab a'zosisiz');
-    if (existing && [MembershipStatus.REQUESTED, MembershipStatus.INVITED].includes(existing.status)) {
+    if (existing?.status === MembershipStatus.ACTIVE) throw new ConflictException("Siz ushbu maktab a'zosisiz");
+    if (existing && (existing.status === MembershipStatus.REQUESTED || existing.status === MembershipStatus.INVITED)) {
       throw new ConflictException('A’zolik so‘rovingiz allaqachon mavjud');
     }
 
