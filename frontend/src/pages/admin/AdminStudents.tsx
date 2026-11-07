@@ -137,8 +137,9 @@ export function AdminStudents() {
                 <div key={s.id} className="flex items-center gap-2 px-3 sm:px-5 py-3.5 hover:bg-tint/[0.03] transition-colors group">
                   <button
                     type="button"
+                    disabled={s.isUnassigned}
                     onClick={() => navigate(`/admin/students/${s.id}`)}
-                    className="min-w-0 flex-1 flex items-center gap-3 text-left"
+                    className="min-w-0 flex-1 flex items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-70"
                   >
                   <span className="w-5 text-center text-[11px] font-semibold text-ink-faint tabular-nums">
                     {(page - 1) * 20 + idx + 1}
