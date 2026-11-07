@@ -1,7 +1,6 @@
 -- Create organization-scoped memberships while keeping legacy User.organizationId/User.role intact.
--- Existing school-scoped roles are copied as ACTIVE memberships.
--- SUPER_ADMIN remains global; PARENT is intentionally excluded and continues using ParentLink
--- until the dedicated guardian-link migration is implemented.
+-- No existing user or school records are imported. New memberships are created through onboarding/admin flows.
+-- Global platform roles are intentionally outside OrganizationMembership.
 
 CREATE TYPE "OrganizationRole" AS ENUM ('STUDENT', 'TEACHER', 'ADMIN');
 CREATE TYPE "MembershipStatus" AS ENUM (
