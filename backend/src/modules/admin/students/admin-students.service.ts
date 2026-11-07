@@ -1,5 +1,5 @@
 import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
-import { orgWhere, sameOrg } from '../../../common/org-scope';
+import { sameOrg } from '../../../common/org-scope';
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
