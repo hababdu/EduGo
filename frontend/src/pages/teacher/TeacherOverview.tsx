@@ -132,7 +132,7 @@ export function TeacherOverview() {
         <KpiCard label="Biriktirilgan testlar" value={data.assignedTestsCount} icon={FileText} accent="sky" />
         <KpiCard label="O'rtacha natija" value={`${data.averageScore}%`} icon={BarChart3} accent="coral" hint={`${data.totalAttempts} ta urinish`} />
         <KpiCard label="Davomat (7 kun)" value={`${data.attendanceSummary?.rate ?? 0}%`} icon={Users} accent="teal" hint={`${data.attendanceSummary?.present ?? 0} / ${data.attendanceSummary?.total ?? 0} belgi`} />
-        <KpiCard label="Tekshirish kutilmoqda" value={data.pendingReviewCount ?? 0} icon={FileText} accent="coral" hint="topshiriqlar navbati" onClick={() => navigate('/teacher/assignments')} />
+        <KpiCard label="Tekshirish kutilmoqda" value={data.pendingReviewCount ?? 0} icon={FileText} accent="coral" hint="topshiriqlar navbati" onClick={() => navigate('/teacher/content/courses')} />
       </div>
 
       <TodayLessons basePath="/teacher/groups" openAttendanceTab />
