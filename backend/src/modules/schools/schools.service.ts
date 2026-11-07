@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SchoolQueryDto } from './dto/school-query.dto';
@@ -39,6 +39,7 @@ export class SchoolsService {
   }
 
   async create(actorId: string, dto: CreateSchoolDto) {
+    await this.assertSuperAdmin(actorId);
     const base = this.slugify(dto.name);
     const slug = base ? `${base}-${Math.random().toString(36).slice(2, 8)}` : undefined;
     return this.prisma.organization.create({
@@ -48,14 +49,17 @@ export class SchoolsService {
   }
 
   async publish(actorId: string, organizationId: string, publiclyListed: boolean) {
-    const actor = await this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true, status: true, deletedAt: true } });
-    if (!actor || actor.role !== 'SUPER_ADMIN' || actor.status !== 'ACTIVE' || actor.deletedAt) {
-      const { ForbiddenException } = await import('@nestjs/common');
-      throw new ForbiddenException('Faqat faol Super Admin maktab katalogini nashr qilishi mumkin');
-    }
+    await this.assertSuperAdmin(actorId);
     const school = await this.prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true } });
     if (!school) throw new NotFoundException('Maktab topilmadi');
     return this.prisma.organization.update({ where: { id: organizationId }, data: { publiclyListed }, select: { id: true, name: true, publiclyListed: true } });
+  }
+
+  private async assertSuperAdmin(actorId: string) {
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId }, select: { role: true, status: true, deletedAt: true } });
+    if (!actor || actor.role !== 'SUPER_ADMIN' || actor.status !== 'ACTIVE' || actor.deletedAt) {
+      throw new ForbiddenException('Faqat faol Super Admin maktab yaratishi yoki katalogda nashr qilishi mumkin');
+    }
   }
 
   private slugify(value: string) {
