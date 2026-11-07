@@ -2,7 +2,6 @@ import { IsEnum, IsString, MinLength } from 'class-validator';
 
 export enum RequestedOrganizationRole {
   STUDENT = 'STUDENT',
-  TEACHER = 'TEACHER',
 }
 
 export class RequestMembershipDto {
