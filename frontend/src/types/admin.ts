@@ -15,6 +15,8 @@ export interface AdminOverview {
 
 export interface AdminStudentListItem {
   id: string;
+  organizationId?: string | null;
+  isUnassigned?: boolean;
   firstName: string;
   lastName: string | null;
   username: string | null;
