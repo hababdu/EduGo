@@ -170,8 +170,8 @@ export class SuperAdminService {
     if (!user || user.deletedAt) throw new NotFoundException('Foydalanuvchi topilmadi');
     if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo\'lmaydi');
     if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni maktabga biriktirib bo'lmaydi");
-    if (user.organizationId && user.organizationId !== orgId && user.role !== 'STUDENT') {
-      throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan");
+    if (user.organizationId && user.organizationId !== orgId) {
+      throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan. Avval uni o'sha maktabdan ajrating yoki ko'chiring");
     }
     const updated = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN', organizationId: orgId } });
     await this.audit(actor, 'ADMIN_ASSIGN', 'User', user.id, { role: user.role, organizationId: user.organizationId }, { role: 'ADMIN', organizationId: orgId });
