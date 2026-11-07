@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -10,7 +11,7 @@ export class CatalogController {
   @Get() list(@Query() q: CatalogQueryDto) { return this.svc.list(q); }
   @Get('cities') cities() { return this.svc.cities(); }
   @Get(':id') detail(@Param('id') id: string) { return this.svc.detail(id); }
-  @Post(':id/reviews') review(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: ReviewDto) { return this.svc.review(u, id, dto.rating, dto.comment); }
+  @Throttle({ default: { limit: 10, ttl: 60_000 } }) @Post(':id/reviews') review(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: ReviewDto) { return this.svc.review(u, id, dto.rating, dto.comment); }
 }
 
 @Roles('ADMIN')

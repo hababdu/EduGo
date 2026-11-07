@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 
 /** Ota-ona (PARENT) faqat shu yo'llarga kira oladi — qolgan hamma narsa yopiq (oq ro'yxat). */
-const ALLOWED = ['/api/v1/auth', '/api/v1/parent', '/api/v1/notifications', '/api/v1/health'];
+const ALLOWED = ['/api/v1/auth', '/api/v1/parent', '/api/v1/notifications', '/api/v1/health', '/api/v1/trials', '/api/v1/catalog', '/api/v1/panel'];
 
 @Injectable()
 export class ParentScopeGuard implements CanActivate {

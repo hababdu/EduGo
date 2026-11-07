@@ -31,6 +31,7 @@ import { HealthModule } from './modules/health/health.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { PanelModule } from './modules/panel/panel.module';
 import { TrialsModule } from './modules/trials/trials.module';
 import { TeachingModule } from './modules/teaching/teaching.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
@@ -64,6 +65,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     MembershipsModule,
     TeachingModule,
     TrialsModule,
+    PanelModule,
     CatalogModule,
     ParentsModule,
     CertificatesModule,

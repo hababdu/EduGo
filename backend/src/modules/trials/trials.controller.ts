@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -8,7 +9,7 @@ import { TrialsService } from './trials.service';
 @Controller('api/v1/trials')
 export class TrialsController {
   constructor(private readonly svc: TrialsService) {}
-  @Post() request(@CurrentUser() u: CurrentUserPayload, @Body() dto: TrialRequestDto) { return this.svc.request(u, dto); }
+  @Throttle({ default: { limit: 5, ttl: 60_000 } }) @Post() request(@CurrentUser() u: CurrentUserPayload, @Body() dto: TrialRequestDto) { return this.svc.request(u, dto); }
   @Get('mine') mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.mine(u); }
   @Delete(':id') cancel(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.cancel(u, id); }
 }

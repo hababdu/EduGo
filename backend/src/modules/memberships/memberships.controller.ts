@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -11,7 +12,7 @@ export class MembershipsController {
 
   @Get('schools') schools(@Query() q: SchoolSearchDto) { return this.svc.schools(q.search); }
   @Get('mine') mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.mine(u); }
-  @Post('requests') request(@CurrentUser() u: CurrentUserPayload, @Body() dto: JoinRequestDto) { return this.svc.requestJoin(u, dto.organizationId, dto.role, dto.message); }
+  @Throttle({ default: { limit: 5, ttl: 60_000 } }) @Post('requests') request(@CurrentUser() u: CurrentUserPayload, @Body() dto: JoinRequestDto) { return this.svc.requestJoin(u, dto.organizationId, dto.role, dto.message); }
   @Delete('requests/:id') cancel(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.cancel(u, id); }
 }
 

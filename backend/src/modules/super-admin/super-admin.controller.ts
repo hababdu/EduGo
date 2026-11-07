@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import { SchoolBackupService } from './school-backup.service';
 import { Req, HttpCode, BadRequestException, Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -74,7 +75,7 @@ export class AdminSubscriptionController {
 @Controller('api/v1/billing')
 export class BillingWebhookController {
   constructor(private readonly invoices: OrgInvoiceService) {}
-  @Public() @HttpCode(200) @Post('webhook/:provider')
+  @Public() @Throttle({ default: { limit: 60, ttl: 60_000 } }) @HttpCode(200) @Post('webhook/:provider')
   hook(@Param('provider') provider: string, @Req() req: { rawBody?: Buffer; headers: Record<string, string | undefined> }, @Body() body: any) {
     return this.invoices.webhook(provider, req.rawBody, req.headers['x-signature'], body ?? {});
   }
