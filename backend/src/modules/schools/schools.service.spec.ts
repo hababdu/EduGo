@@ -11,12 +11,15 @@ describe('SchoolsService', () => {
   beforeEach(() => { jest.clearAllMocks(); service = new SchoolsService(prisma); });
 
   it('lists only active and published schools', async () => {
-    prisma.$transaction.mockResolvedValue([[{ id: 's1', name: 'School' }], 1]);
+    prisma.organization.findMany.mockReturnValue(Promise.resolve([{ id: 's1', name: 'School' }]));
+    prisma.organization.count.mockReturnValue(Promise.resolve(1));
+    prisma.$transaction.mockImplementation((operations: any[]) => Promise.all(operations));
     const result = await service.listPublic({ page: 1, limit: 12 });
     expect(result.pagination.total).toBe(1);
     expect(prisma.$transaction).toHaveBeenCalled();
-    const args = prisma.$transaction.mock.calls[0][0];
-    expect(args[0].where).toEqual(expect.objectContaining({ status: 'ACTIVE', publiclyListed: true }));
+    expect(prisma.organization.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: 'ACTIVE', publiclyListed: true }),
+    }));
   });
 
   it('does not reveal unpublished schools', async () => {
