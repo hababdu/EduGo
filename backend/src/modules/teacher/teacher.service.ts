@@ -113,9 +113,9 @@ export class TeacherService {
       recentAssignments,
       attemptsStats,
       dailyActivity,
-      topStudents,
       attendanceByStatus,
       pendingReviewCount,
+      topStudents,
     ] = await Promise.all([
       this.prisma.testAssignment.count({
         where: { assignedById: teacherId },
