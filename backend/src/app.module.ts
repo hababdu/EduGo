@@ -33,6 +33,7 @@ import { ParentsModule } from './modules/parents/parents.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
+import { SchoolsModule } from './modules/schools/schools.module';
 @Module({
   imports: [
     UploadModule,
@@ -64,6 +65,7 @@ import { MembershipsModule } from './modules/memberships/memberships.module';
     LeadsModule,
     SubmissionsModule,
     MembershipsModule,
+    SchoolsModule,
   ],
   providers: [
     {
