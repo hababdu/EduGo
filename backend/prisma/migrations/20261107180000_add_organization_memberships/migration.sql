@@ -47,23 +47,3 @@ ALTER TABLE "OrganizationMembership"
   ADD CONSTRAINT "OrganizationMembership_organizationId_fkey"
   FOREIGN KEY ("organizationId") REFERENCES "Organization"("id")
   ON DELETE CASCADE ON UPDATE CASCADE;
-
--- Deterministic legacy IDs make this backfill safe to rerun.
--- Only roles that have a direct organization-scoped equivalent are copied.
-INSERT INTO "OrganizationMembership" (
-  "id", "userId", "organizationId", "role", "status",
-  "joinedAt", "createdAt", "updatedAt"
-)
-SELECT
-  'legacy_' || md5(u."id" || ':' || u."organizationId" || ':' || u."role"::text),
-  u."id",
-  u."organizationId",
-  u."role"::text::"OrganizationRole",
-  'ACTIVE'::"MembershipStatus",
-  u."registeredAt",
-  CURRENT_TIMESTAMP,
-  CURRENT_TIMESTAMP
-FROM "User" u
-WHERE u."organizationId" IS NOT NULL
-  AND u."role"::text IN ('STUDENT', 'TEACHER', 'ADMIN')
-ON CONFLICT ("userId", "organizationId", "role") DO NOTHING;
