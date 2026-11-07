@@ -119,7 +119,7 @@ function OrgCard({ org }: { org: Org }) {
               </div>
               <ul className="max-h-64 divide-y divide-tint/5 overflow-y-auto">
                 {(cands ?? []).map((c: Candidate) => {
-                  const other = !!c.organization && c.organization.id !== org.id && c.role !== 'STUDENT';
+                  const other = !!c.organization && c.organization.id !== org.id;
                   const already = c.role === 'ADMIN' && c.organization?.id === org.id;
                   return (
                     <li key={c.id}>
