@@ -65,6 +65,8 @@ model Organization {
   teachingAssignments TeachingAssignment[]
   scheduleSlots ScheduleSlot[]
   reviews     SchoolReview[]
+  trialLessons TrialLesson[]
+  invoices    OrgInvoice[]
 
   @@index([status])
   @@index([status, isPublic, ratingAvg(sort: Desc)])
@@ -150,6 +152,8 @@ model User {
   decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
   teachingAssignmentsAsTeacher TeachingAssignment[] @relation("TeachingTeacher")
   schoolReviews SchoolReview[]
+  trialsAsStudent TrialLesson[] @relation("TrialStudent")
+  trialsRequested TrialLesson[] @relation("TrialRequester")
 
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
@@ -248,6 +252,7 @@ model Group {
   assignments        Assignment[]
   teacherAssignments TeacherAssignment[]
   teachingAssignments TeachingAssignment[]
+  trialLessons TrialLesson[]
   attendance         AttendanceRecord[]
   payments           Payment[]
   lessonLogs         LessonLog[]
@@ -1248,4 +1253,63 @@ model SchoolReview {
 
   @@unique([userId, organizationId])
   @@index([organizationId, createdAt(sort: Desc)])
+}
+
+
+enum TrialStatus {
+  REQUESTED
+  APPROVED
+  DECLINED
+  ATTENDED
+  NO_SHOW
+  CANCELLED
+  ADMITTED
+}
+
+/// Sinov darsi: maktabsiz o'quvchi (yoki uning ota-onasi) maktabga yoziladi → admin tasdiqlaydi → dars → qabul (admission).
+model TrialLesson {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  groupId        String?
+  group          Group?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  studentId      String
+  student        User         @relation("TrialStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  requestedById  String
+  requestedBy    User         @relation("TrialRequester", fields: [requestedById], references: [id], onDelete: Cascade)
+  preferredAt    DateTime?
+  scheduledAt    DateTime?
+  status         TrialStatus  @default(REQUESTED)
+  note           String?
+  decisionNote   String?
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId, status])
+  @@index([studentId, status])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+/// Maktabning super adminga oylik obuna hisobi. To'lov provayderi webhook orqali PAID qiladi (imzo bilan).
+model OrgInvoice {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  month          String
+  amount         Int
+  status         InvoiceStatus @default(PENDING)
+  provider       String?
+  externalId     String?       @unique
+  createdById    String
+  createdAt      DateTime      @default(now())
+  paidAt         DateTime?
+
+  @@index([organizationId, month])
 }

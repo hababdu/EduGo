@@ -159,4 +159,38 @@ export class ParentsService {
     await this.prisma.parentLink.delete({ where: { parentId_studentId: { parentId, studentId } } });
     return { ok: true };
   }
+
+  /* ───────────── ADMIN: ota-ona ↔ farzand bog'lash ───────────── */
+
+  /** Maktab admini (yoki super admin) ota-onani o'z maktabidagi o'quvchiga to'g'ridan-to'g'ri bog'laydi. */
+  async adminLink(actor: CurrentUserPayload, parentId: string, studentId: string) {
+    const [parent, student] = await Promise.all([
+      this.prisma.user.findFirst({ where: { id: parentId, deletedAt: null }, select: { id: true, role: true } }),
+      this.prisma.user.findFirst({ where: { id: studentId, deletedAt: null, role: 'STUDENT' }, select: { id: true, organizationId: true } }),
+    ]);
+    if (!parent || parent.role !== 'PARENT') throw new NotFoundException('Ota-ona topilmadi (u avval bot orqali PARENT bo\'lishi kerak)');
+    if (!student) throw new NotFoundException("O'quvchi topilmadi");
+    if (actor.role !== 'SUPER_ADMIN' && (!actor.organizationId || actor.organizationId !== student.organizationId)) throw new ForbiddenException("Bu o'quvchi sizning maktabingizniki emas");
+    await this.prisma.parentLink.upsert({ where: { parentId_studentId: { parentId, studentId } }, create: { parentId, studentId }, update: {} });
+    return { ok: true };
+  }
+
+  async adminUnlink(actor: CurrentUserPayload, parentId: string, studentId: string) {
+    const student = await this.prisma.user.findUnique({ where: { id: studentId }, select: { organizationId: true } });
+    if (!student) throw new NotFoundException("O'quvchi topilmadi");
+    if (actor.role !== 'SUPER_ADMIN' && (!actor.organizationId || actor.organizationId !== student.organizationId)) throw new ForbiddenException("Bu o'quvchi sizning maktabingizniki emas");
+    await this.prisma.parentLink.deleteMany({ where: { parentId, studentId } });
+    return { ok: true };
+  }
+
+  /** Maktab o'quvchilarining ota-onalari ro'yxati */
+  async adminLinks(actor: CurrentUserPayload) {
+    if (actor.role !== 'SUPER_ADMIN' && !actor.organizationId) throw new ForbiddenException('Maktab yo\'q');
+    const rows = await this.prisma.parentLink.findMany({
+      where: actor.role === 'SUPER_ADMIN' ? {} : { student: { organizationId: actor.organizationId } },
+      orderBy: { createdAt: 'desc' }, take: 200,
+      select: { parent: { select: { id: true, firstName: true, lastName: true, username: true } }, student: { select: { id: true, firstName: true, lastName: true } } },
+    });
+    return rows.map((r) => ({ parent: { id: r.parent.id, name: nameOf(r.parent), username: r.parent.username }, student: { id: r.student.id, name: nameOf(r.student) } }));
+  }
 }

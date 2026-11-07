@@ -36,3 +36,13 @@ export class ParentController {
     return this.parents.unlink(u.id, id);
   }
 }
+
+/** Maktab admini: ota-ona va farzandni qo'lda bog'lash */
+@Roles('ADMIN')
+@Controller('api/v1/admin/parents')
+export class AdminParentsController {
+  constructor(private readonly parents: ParentsService) {}
+  @Get('links') links(@CurrentUser() u: CurrentUserPayload) { return this.parents.adminLinks(u); }
+  @Post('links') link(@CurrentUser() u: CurrentUserPayload, @Body() b: { parentId: string; studentId: string }) { return this.parents.adminLink(u, String(b?.parentId ?? ''), String(b?.studentId ?? '')); }
+  @Post('links/remove') unlink(@CurrentUser() u: CurrentUserPayload, @Body() b: { parentId: string; studentId: string }) { return this.parents.adminUnlink(u, String(b?.parentId ?? ''), String(b?.studentId ?? '')); }
+}

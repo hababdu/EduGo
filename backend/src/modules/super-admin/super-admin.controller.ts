@@ -1,9 +1,11 @@
 import { SchoolBackupService } from './school-backup.service';
-import { BadRequestException, Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Req, HttpCode, BadRequestException, Body, Controller, Get, Param, ParseBoolPipe, Patch, Post, Put, Delete, Query, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { Public } from '../../common/decorators/public.decorator';
+import { OrgInvoiceService } from './org-invoice.service';
 import { OrgBillingService } from './org-billing.service';
 import { MoveAdminDto, AllUsersQueryDto, ChangeRoleDto, MarkOrgPaymentDto, AssignAdminDto, AuditQueryDto, CreateOrgDto, UserSearchDto, UpdateAiDto, UpdateOrgDto } from './dto/super-admin.dto';
 import { SuperAdminService } from './super-admin.service';
@@ -12,7 +14,7 @@ import { SuperAdminService } from './super-admin.service';
 @Roles('SUPER_ADMIN')
 @Controller('api/v1/super')
 export class SuperAdminController {
-  constructor(private readonly svc: SuperAdminService, private readonly billing: OrgBillingService, private readonly backup: SchoolBackupService) {}
+  constructor(private readonly svc: SuperAdminService, private readonly billing: OrgBillingService, private readonly backup: SchoolBackupService, private readonly invoices: OrgInvoiceService) {}
 
   @Post('organizations/:id/restore')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 50 * 1024 * 1024, files: 1 } }))
@@ -30,6 +32,10 @@ export class SuperAdminController {
   @Get('billing') billingOverview(@Query('month') month?: string) { return this.billing.overview(month); }
   @Get('billing/:orgId') billingHistory(@Param('orgId') orgId: string) { return this.billing.history(orgId); }
   @Put('billing/:orgId') billingMark(@CurrentUser() u: CurrentUserPayload, @Param('orgId') orgId: string, @Body() dto: MarkOrgPaymentDto) { return this.billing.mark(u, orgId, dto); }
+
+  @Get('billing/:orgId/invoices') invoiceList(@Param('orgId') orgId: string) { return this.invoices.list(orgId); }
+  @Post('billing/:orgId/invoices') invoiceCreate(@CurrentUser() u: CurrentUserPayload, @Param('orgId') orgId: string, @Body('month') month: string) { return this.invoices.create(u, orgId, String(month ?? '')); }
+  @Delete('billing/:orgId/invoices/:id') invoiceCancel(@Param('orgId') orgId: string, @Param('id') id: string) { return this.invoices.cancel(orgId, id); }
 
   @Get('overview') overview() { return this.svc.overview(); }
 
@@ -59,6 +65,17 @@ export class SuperAdminController {
 @Roles('ADMIN')
 @Controller('api/v1/admin/subscription')
 export class AdminSubscriptionController {
-  constructor(private readonly billing: OrgBillingService) {}
+  constructor(private readonly billing: OrgBillingService, private readonly invoices: OrgInvoiceService) {}
+  @Get('invoices') myInvoices(@CurrentUser() u: CurrentUserPayload) { return u.organizationId ? this.invoices.list(u.organizationId) : []; }
   @Get() mine(@CurrentUser() u: CurrentUserPayload) { return this.billing.mine(u); }
+}
+
+/** To'lov provayderi chaqiradi (JWT yo'q, HMAC imzo bilan himoyalangan) */
+@Controller('api/v1/billing')
+export class BillingWebhookController {
+  constructor(private readonly invoices: OrgInvoiceService) {}
+  @Public() @HttpCode(200) @Post('webhook/:provider')
+  hook(@Param('provider') provider: string, @Req() req: { rawBody?: Buffer; headers: Record<string, string | undefined> }, @Body() body: any) {
+    return this.invoices.webhook(provider, req.rawBody, req.headers['x-signature'], body ?? {});
+  }
 }

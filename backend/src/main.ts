@@ -41,7 +41,7 @@ function ensureUploadsDir(): string {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   // Render (va boshqa proksi) ortida haqiqiy mijoz IP'sini olish uchun. Busiz so'rov limiti (Throttler)
   // barcha foydalanuvchilarni BITTA IP (proksi) deb sanardi: biri limitga tushsa hamma bloklanardi.
