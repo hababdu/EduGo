@@ -20,6 +20,7 @@ export class MembershipsService {
   }
 
   async requestToJoin(userId: string, organizationId: string, role: OrganizationRole) {
+    if (role !== OrganizationRole.STUDENT) throw new ForbiddenException('O‘qituvchi va administrator rollari faqat tayinlash orqali beriladi');
     const [user, organization] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, status: true, deletedAt: true } }),
       this.prisma.organization.findUnique({ where: { id: organizationId }, select: { id: true, status: true } }),
@@ -51,7 +52,7 @@ export class MembershipsService {
 
   private async assertActiveSchoolAdmin(actorId: string, organizationId: string) {
     const admin = await this.prisma.organizationMembership.findFirst({
-      where: { userId: actorId, organizationId, role: OrganizationRole.ADMIN, status: MembershipStatus.ACTIVE },
+      where: { userId: actorId, organizationId, role: OrganizationRole.ADMIN, status: MembershipStatus.ACTIVE, organization: { status: 'ACTIVE' } },
       select: { id: true },
     });
     if (!admin) throw new ForbiddenException('Bu maktabda faol administrator huquqi talab qilinadi');
@@ -71,6 +72,7 @@ export class MembershipsService {
     const membership = await this.prisma.organizationMembership.findUnique({ where: { id: membershipId } });
     if (!membership) throw new NotFoundException('A’zolik so‘rovi topilmadi');
     await this.assertActiveSchoolAdmin(actorId, membership.organizationId);
+    if (membership.role !== OrganizationRole.STUDENT) throw new ForbiddenException('Faqat o‘quvchi so‘rovini tasdiqlash mumkin');
     if (membership.status !== MembershipStatus.REQUESTED) throw new ConflictException('So‘rov REQUESTED holatida emas');
     return this.prisma.organizationMembership.update({
       where: { id: membershipId },
