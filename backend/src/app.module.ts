@@ -34,6 +34,7 @@ import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
 import { SchoolsModule } from './modules/schools/schools.module';
+import { TrialsModule } from './modules/trials/trials.module';
 @Module({
   imports: [
     UploadModule,
@@ -66,6 +67,7 @@ import { SchoolsModule } from './modules/schools/schools.module';
     SubmissionsModule,
     MembershipsModule,
     SchoolsModule,
+    TrialsModule,
   ],
   providers: [
     {
