@@ -50,7 +50,7 @@ export class TrialsService {
     if (!trial) throw new NotFoundException('Sinov darsi topilmadi');
     await this.assertSchoolAdmin(actorId, trial.organizationId);
     if (trial.status !== TrialLessonStatus.REQUESTED) throw new ConflictException('Faqat yangi so‘rovni ko‘rib chiqish mumkin');
-    return this.prisma.trialLesson.update({ where: { id: trialId }, data: { status: dto.decision, reviewedById: actorId, reviewedAt: new Date() } });
+    return this.prisma.trialLesson.update({ where: { id: trialId }, data: { status: dto.decision === 'APPROVED' ? TrialLessonStatus.APPROVED : TrialLessonStatus.REJECTED, reviewedById: actorId, reviewedAt: new Date() } });
   }
 
   async markAttendance(actorId: string, trialId: string, attended: boolean) {
