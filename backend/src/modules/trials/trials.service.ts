@@ -57,11 +57,13 @@ export class TrialsService {
     const trial = await this.prisma.trialLesson.findUnique({ where: { id: trialId } });
     if (!trial) throw new NotFoundException('Sinov darsi topilmadi');
     if (trial.status !== TrialLessonStatus.APPROVED) throw new ConflictException('Davomat faqat tasdiqlangan sinov darsi uchun belgilanadi');
-    const [admin, group] = await Promise.all([
+    const [admin, group, teacherMembership] = await Promise.all([
       this.prisma.organizationMembership.findFirst({ where: { userId: actorId, organizationId: trial.organizationId, role: OrganizationRole.ADMIN, status: MembershipStatus.ACTIVE }, select: { id: true } }),
       this.prisma.group.findUnique({ where: { id: trial.groupId }, select: { teacherId: true } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId: actorId, organizationId: trial.organizationId, role: OrganizationRole.TEACHER, status: MembershipStatus.ACTIVE }, select: { id: true } }),
     ]);
-    if (!admin && group?.teacherId !== actorId) throw new ForbiddenException('Davomatni faqat shu maktab administratori yoki guruh o‘qituvchisi belgilaydi');
+    const isAssignedTeacher = group?.teacherId === actorId && !!teacherMembership;
+    if (!admin && !isAssignedTeacher) throw new ForbiddenException('Davomatni faqat shu maktab administratori yoki faol tayinlangan guruh o‘qituvchisi belgilaydi');
     return this.prisma.trialLesson.update({ where: { id: trialId }, data: { status: attended ? TrialLessonStatus.ATTENDED : TrialLessonStatus.NO_SHOW, attendedAt: attended ? new Date() : null } });
   }
 
