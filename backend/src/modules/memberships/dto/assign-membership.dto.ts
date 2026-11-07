@@ -1,5 +1,4 @@
 import { IsEnum, IsString, MinLength } from 'class-validator';
-import { RequestedOrganizationRole } from './request-membership.dto';
 
 export enum AssignableOrganizationRole {
   STUDENT = 'STUDENT',
