@@ -14,6 +14,11 @@ export class AdminStudentsController {
     return this.service.list(query, actor);
   }
 
+  @Patch(':id/assign')
+  assignToOrganization(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
+    return this.service.assignToOrganization(id, actor);
+  }
+
   @Get(':id')
   getDetail(@Param('id') id: string, @CurrentUser() actor: CurrentUserPayload) {
     return this.service.getDetail(id, actor);
