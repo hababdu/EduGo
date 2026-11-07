@@ -1,6 +1,6 @@
 import { CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
-import { orgWhere, sameOrg } from '../../../common/org-scope';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { sameOrg } from '../../../common/org-scope';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -15,14 +15,23 @@ export class AdminStudentsService {
   ) {}
 
   async list(query: ListStudentsQueryDto, actor: CurrentUserPayload) {
-    const where: any = { role: 'STUDENT', deletedAt: null, ...orgWhere(actor) };
+    const where: any = { role: 'STUDENT', deletedAt: null };
+    // Maktab admini o'z maktabidagi va hali maktab tanlanmagan yangi studentlarni ko'radi.
+    if (actor.role !== 'SUPER_ADMIN') {
+      where.OR = [
+        { organizationId: actor.organizationId ?? '__no_org__' },
+        { organizationId: null },
+      ];
+    }
 
     if (query.search) {
-      where.OR = [
-        { firstName: { contains: query.search, mode: 'insensitive' } },
-        { lastName: { contains: query.search, mode: 'insensitive' } },
-        { username: { contains: query.search, mode: 'insensitive' } },
-      ];
+      where.AND = [{
+        OR: [
+          { firstName: { contains: query.search, mode: 'insensitive' } },
+          { lastName: { contains: query.search, mode: 'insensitive' } },
+          { username: { contains: query.search, mode: 'insensitive' } },
+        ],
+      }];
     }
     if (query.status) {
       where.status = query.status;
@@ -45,6 +54,8 @@ export class AdminStudentsService {
     return {
       items: items.map((u) => ({
         id: u.id,
+        organizationId: u.organizationId,
+        isUnassigned: u.organizationId === null,
         firstName: u.firstName,
         lastName: u.lastName,
         username: u.username,
@@ -59,6 +70,31 @@ export class AdminStudentsService {
       total,
       totalPages: Math.ceil(total / query.pageSize),
     };
+  }
+
+  /** Yangi ro'yxatdan o'tgan, hali maktabga biriktirilmagan studentni joriy maktabga qabul qilish. */
+  async assignToOrganization(studentId: string, actor: CurrentUserPayload) {
+    if (actor.role !== 'ADMIN' || !actor.organizationId) {
+      throw new ForbiddenException("Faqat maktabga biriktirilgan admin yangi studentni qabul qilishi mumkin");
+    }
+    const student = await this.prisma.user.findUnique({ where: { id: studentId } });
+    if (!student || student.role !== 'STUDENT' || student.deletedAt) {
+      throw new NotFoundException('Student topilmadi');
+    }
+    if (student.organizationId && student.organizationId !== actor.organizationId) {
+      throw new NotFoundException('Student topilmadi');
+    }
+    if (student.organizationId === actor.organizationId) return { id: student.id, organizationId: actor.organizationId };
+    await this.prisma.user.update({ where: { id: studentId }, data: { organizationId: actor.organizationId } });
+    await this.audit.log({
+      actorId: actor.id,
+      action: 'STUDENT_ASSIGN_ORG',
+      targetType: 'User',
+      targetId: studentId,
+      oldValue: { organizationId: null },
+      newValue: { organizationId: actor.organizationId },
+    });
+    return { id: studentId, organizationId: actor.organizationId };
   }
 
   /** 55-band — to'liq admin ko'rinishidagi student profili */

@@ -1,4 +1,6 @@
 import { useState, useMemo } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiFetch } from '../../lib/api-client';
 import { useNavigate } from 'react-router-dom';
 import { useAdminStudents } from '../../hooks/useAdmin';
 import { StaffHero, Panel, Avatar } from '../../components/staff';
@@ -17,6 +19,11 @@ export function AdminStudents() {
   const [sortBy, setSortBy] = useState<'score_desc' | 'score_asc' | 'level'>('score_desc');
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const assignStudent = useMutation({
+    mutationFn: (id: string) => apiFetch(`/api/v1/admin/students/${id}/assign`, { method: 'PATCH' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'students'] }),
+  });
 
   const { data, isLoading } = useAdminStudents({ 
     search, 
@@ -127,11 +134,13 @@ export function AdminStudents() {
               const isBlocked = s.status === 'BLOCKED';
               const name = `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim() || 'Student';
               return (
-                <button
-                  key={s.id}
-                  onClick={() => navigate(`/admin/students/${s.id}`)}
-                  className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-tint/[0.03] active:bg-tint/[0.05] transition-colors group"
-                >
+                <div key={s.id} className="flex items-center gap-2 px-3 sm:px-5 py-3.5 hover:bg-tint/[0.03] transition-colors group">
+                  <button
+                    type="button"
+                    disabled={s.isUnassigned}
+                    onClick={() => navigate(`/admin/students/${s.id}`)}
+                    className="min-w-0 flex-1 flex items-center gap-3 text-left disabled:cursor-not-allowed disabled:opacity-70"
+                  >
                   <span className="w-5 text-center text-[11px] font-semibold text-ink-faint tabular-nums">
                     {(page - 1) * 20 + idx + 1}
                   </span>
@@ -153,7 +162,20 @@ export function AdminStudents() {
                     <p className="text-sm font-bold tabular-nums text-gold">{s.totalScore}</p>
                     <p className="text-[10px] text-ink-muted mt-0.5">{s.level}-daraja</p>
                   </div>
-                </button>
+                  </button>
+                  {s.isUnassigned && (
+                    <button
+                      type="button"
+                      disabled={assignStudent.isPending}
+                      onClick={() => {
+                        if (window.confirm(`${name} ushbu maktabga biriktirilsinmi?`)) assignStudent.mutate(s.id);
+                      }}
+                      className="shrink-0 rounded-xl bg-teal/10 px-2.5 py-2 text-[10px] sm:text-xs font-semibold text-teal disabled:opacity-50"
+                    >
+                      {assignStudent.isPending ? '...' : 'Maktabga qabul'}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>

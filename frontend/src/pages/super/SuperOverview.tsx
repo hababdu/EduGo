@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { StaffHero, Panel, KpiCard } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
+import { DesignPresetPicker } from '../../components/profile/DesignPresetPicker';
 import { PAGE } from '../../design/tokens';
 import { School, Users, FolderOpen, Sparkles, Activity, FileText } from '../../design/icons';
 import { formatBytes } from '../../lib/material-files';
@@ -26,6 +27,8 @@ export function SuperOverview() {
 
   return (
     <div className={PAGE}>
+      <DesignPresetPicker />
+
       <StaffHero accent="gold" image={IMAGES.hero} eyebrow="EduGo · Super admin" title="Boshqaruv markazi" subtitle="Maktablar, adminlar, AI va tizim holati — bir joyda." />
 
       {!o ? <Skeleton className="h-40" /> : (

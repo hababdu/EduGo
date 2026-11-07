@@ -3,6 +3,7 @@ import { Wallet, Users, GraduationCap, FolderOpen, ClipboardCheck, BookOpen, Lay
 import { useAdminOverview, useMySubscription } from '../../hooks/useAdmin';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
 import { IMAGES } from '../../design/images';
+import { DesignPresetPicker } from '../../components/profile/DesignPresetPicker';
 import { AdminInsights } from '../../components/staff/AdminInsights';
 import { StaffHero, Panel, KpiCard, MiniBars, ProgressBar, TodayLessons } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
@@ -53,6 +54,8 @@ export function AdminOverview() {
           <b className="text-gold">{monthLabel(sub.currentMonth)}</b> uchun «{sub.name}» obuna to'lovi hali belgilanmagan: <b>{formatMoney(sub.fee)}</b>. To'lovni super adminga topshiring.
         </div>
       ) : null}
+      <DesignPresetPicker />
+
       <StaffHero
         accent="sky"
         image={IMAGES.hero}
@@ -91,6 +94,20 @@ export function AdminOverview() {
       <TodayLessons basePath="/admin/groups" />
 
       <AdminInsights />
+
+      <Panel title="Kurs yakunlanish darajasi" icon={Award} accent="teal">
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="font-display text-3xl font-extrabold text-ink tabular-nums">{charts?.courseCompletion?.rate ?? 0}%</p>
+              <p className="text-xs text-ink-muted">Sertifikat olgan studentlar ulushi</p>
+            </div>
+            <p className="text-xs text-ink-muted tabular-nums">{charts?.courseCompletion?.completedStudents ?? 0} / {charts?.courseCompletion?.totalStudents ?? totals.students}</p>
+          </div>
+          <ProgressBar value={charts?.courseCompletion?.rate ?? 0} tone="teal" />
+          <p className="text-[11px] text-ink-muted">Yakunlangan deb sertifikati berilgan studentlar hisoblanadi.</p>
+        </div>
+      </Panel>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>

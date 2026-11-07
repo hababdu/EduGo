@@ -113,6 +113,8 @@ export class TeacherService {
       recentAssignments,
       attemptsStats,
       dailyActivity,
+      attendanceByStatus,
+      pendingReviewCount,
       topStudents,
     ] = await Promise.all([
       this.prisma.testAssignment.count({
@@ -144,6 +146,20 @@ export class TeacherService {
       studentIds.length > 0
         ? this.getDailyActivity(studentIds, sevenDaysAgo)
         : Promise.resolve([]),
+
+      this.prisma.attendanceRecord.groupBy({
+        by: ['status'],
+        where: { date: { gte: sevenDaysAgo }, group: { teacherId, deletedAt: null } },
+        _count: { _all: true },
+      }),
+
+      this.prisma.assignmentSubmission.count({
+        where: {
+          status: { in: ['SUBMITTED', 'NEEDS_REVIEW', 'FAILED'] },
+          teacherScore: null,
+          assignment: { teacherId, deletedAt: null, category: 'HOMEWORK' },
+        },
+      }),
 
       studentIds.length > 0
         ? this.prisma.user.findMany({
@@ -188,6 +204,12 @@ export class TeacherService {
         assignedAt: a.assignedAt,
       })),
       charts: { dailyActivity },
+      attendanceSummary: (() => {
+        const total = attendanceByStatus.reduce((sum, row) => sum + row._count._all, 0);
+        const present = attendanceByStatus.find((row) => row.status === 'PRESENT')?._count._all ?? 0;
+        return { total, present, rate: total ? Math.round((present / total) * 100) : 0 };
+      })(),
+      pendingReviewCount,
       topStudents: topStudents.map((s) => ({
         id: s.id,
         firstName: s.firstName,

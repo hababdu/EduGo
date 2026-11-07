@@ -303,3 +303,151 @@ button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 0.
   .lift:hover { transform: none; }
   button:not(:disabled):active, a[href]:active, [role='button']:active { scale: 1; }
 }
+
+
+/* EduGo visual presets; theme mode remains independently selectable. */
+:root[data-preset='modern-minimal'] { --c-accent: 99 102 241; --c-accent-soft: 43 43 91; --c-accent-2: 56 189 248; }
+:root[data-theme='light'][data-preset='modern-minimal'] { --c-accent: 79 70 229; --c-accent-soft: 224 226 252; --c-accent-2: 8 128 186; }
+:root[data-preset='premium-dark'] { --c-base: 9 11 18; --c-surface: 20 23 34; --c-raised: 31 36 51; --c-accent: 168 130 255; --c-accent-soft: 54 39 83; --c-accent-2: 91 190 220; }
+:root[data-theme='light'][data-preset='premium-dark'] { --c-base: 242 241 247; --c-surface: 255 255 255; --c-raised: 229 226 239; --c-accent: 124 82 210; --c-accent-soft: 231 220 250; --c-accent-2: 36 145 177; }
+:root[data-preset='gamified'] { --c-accent: 255 176 32; --c-accent-soft: 74 58 26; --c-accent-2: 52 208 160; }
+:root[data-theme='light'][data-preset='gamified'] { --c-accent: 205 127 0; --c-accent-soft: 250 228 186; --c-accent-2: 14 146 110; }
+:root[data-preset='apple'] { --c-base: 14 16 22; --c-surface: 28 31 39; --c-raised: 43 47 57; --c-accent: 10 132 255; --c-accent-soft: 24 57 91; --c-accent-2: 94 200 160; }
+:root[data-theme='light'][data-preset='apple'] { --c-base: 245 245 247; --c-surface: 255 255 255; --c-raised: 235 235 240; --c-ink: 28 28 30; --c-muted: 105 105 110; --c-accent: 0 122 255; --c-accent-soft: 218 235 255; --c-accent-2: 48 170 120; }
+:root[data-preset='saas'] { --c-base: 12 18 31; --c-surface: 23 32 51; --c-raised: 34 46 69; --c-accent: 56 139 253; --c-accent-soft: 28 55 95; --c-accent-2: 45 212 191; }
+:root[data-theme='light'][data-preset='saas'] { --c-base: 241 245 249; --c-surface: 255 255 255; --c-raised: 226 232 240; --c-ink: 30 41 59; --c-muted: 100 116 139; --c-accent: 37 99 235; --c-accent-soft: 219 234 254; --c-accent-2: 13 148 136; }
+:root[data-preset='futuristic-glass'] { --c-base: 10 15 29; --c-surface: 22 31 55; --c-raised: 34 48 78; --c-accent: 79 209 197; --c-accent-soft: 20 68 75; --c-accent-2: 129 140 248; --glass-a: 0.62; }
+:root[data-theme='light'][data-preset='futuristic-glass'] { --c-base: 230 239 250; --c-surface: 255 255 255; --c-raised: 210 225 244; --c-ink: 24 39 65; --c-muted: 79 99 128; --c-accent: 13 148 136; --c-accent-soft: 199 238 233; --c-accent-2: 99 102 241; --glass-a: 0.64; }
+:root[data-preset='futuristic-glass'] .bg-surface,
+:root[data-preset='futuristic-glass'] [class*='bg-surface/'] { -webkit-backdrop-filter: blur(20px) saturate(1.3); backdrop-filter: blur(20px) saturate(1.3); }
+
+
+/* ============================================================
+   CANVA UI SYSTEM — shared finish across Student / Teacher / Admin
+   Existing page logic and component structure stay untouched.
+   ============================================================ */
+:root {
+  --edugo-radius-card: 1.35rem;
+  --edugo-radius-control: .9rem;
+  --edugo-shadow-card: 0 14px 38px -26px rgb(0 0 0 / .72);
+  --edugo-border: rgb(var(--c-tint) / .085);
+}
+:root[data-preset='modern-minimal'] {
+  --edugo-radius-card: 1.15rem;
+  --edugo-shadow-card: 0 10px 30px -24px rgb(0 0 0 / .55);
+}
+:root[data-preset='premium-dark'] {
+  --edugo-radius-card: 1.25rem;
+  --edugo-shadow-card: 0 18px 42px -24px rgb(0 0 0 / .82);
+}
+:root[data-preset='gamified'] {
+  --edugo-radius-card: 1.55rem;
+  --edugo-radius-control: 1.1rem;
+  --edugo-shadow-card: 0 12px 30px -18px rgb(var(--c-accent) / .22);
+}
+:root[data-preset='apple'] {
+  --edugo-radius-card: 1.4rem;
+  --edugo-radius-control: 1rem;
+  --edugo-shadow-card: 0 12px 32px -24px rgb(0 0 0 / .3);
+}
+:root[data-preset='saas'] {
+  --edugo-radius-card: 1rem;
+  --edugo-radius-control: .7rem;
+  --edugo-shadow-card: 0 8px 26px -20px rgb(0 0 0 / .5);
+}
+:root[data-preset='futuristic-glass'] {
+  --edugo-radius-card: 1.5rem;
+  --edugo-radius-control: 1rem;
+  --edugo-border: rgb(var(--c-accent) / .16);
+  --edugo-shadow-card: 0 16px 44px -24px rgb(var(--c-accent) / .24);
+}
+
+/* Shared surfaces: dashboards, lists, dialogs and content cards. */
+.rounded-3xl.border,
+.rounded-2xl.border,
+.bg-surface\/20.border,
+.bg-surface\/30.border,
+.bg-surface\/40.border {
+  border-color: var(--edugo-border);
+  box-shadow: var(--edugo-shadow-card);
+}
+:root[data-preset='futuristic-glass'] .bg-surface\/20,
+:root[data-preset='futuristic-glass'] .bg-surface\/30,
+:root[data-preset='futuristic-glass'] .bg-surface\/40 {
+  background-color: rgb(var(--c-surface) / .48);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  backdrop-filter: blur(22px) saturate(1.35);
+}
+:root[data-theme='light'] .bg-surface\/20,
+:root[data-theme='light'] .bg-surface\/30,
+:root[data-theme='light'] .bg-surface\/40 {
+  border-color: rgb(50 62 95 / .09);
+}
+:root[data-preset='apple'] .bg-surface\/20,
+:root[data-preset='apple'] .bg-surface\/30 {
+  background-color: rgb(var(--c-surface) / .82);
+}
+
+/* Consistent controls without overriding semantic danger/success states. */
+input:not([type='checkbox']):not([type='radio']),
+select,
+textarea {
+  accent-color: rgb(var(--c-accent));
+}
+input:not([type='checkbox']):not([type='radio']):focus,
+select:focus,
+textarea:focus {
+  border-color: rgb(var(--c-accent) / .62);
+  box-shadow: 0 0 0 3px rgb(var(--c-accent) / .12);
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Navigation adapts to safe-area devices and keeps the selected destination legible. */
+nav[aria-label$='navigatsiyasi'],
+nav[aria-label='Asosiy navigatsiya'] {
+  background: rgb(var(--c-surface) / .84);
+  -webkit-backdrop-filter: blur(24px) saturate(1.45);
+  backdrop-filter: blur(24px) saturate(1.45);
+  border-color: var(--edugo-border);
+  box-shadow: 0 -10px 34px -28px rgb(0 0 0 / .7);
+}
+:root[data-theme='light'] nav[aria-label$='navigatsiyasi'],
+:root[data-theme='light'] nav[aria-label='Asosiy navigatsiya'] {
+  background: rgb(255 255 255 / .88);
+}
+
+/* Readability and layout rhythm on compact phones. */
+@media (max-width: 380px) {
+  .font-display.text-2xl { font-size: 1.35rem; line-height: 1.2; }
+  nav[aria-label$='navigatsiyasi'] a,
+  nav[aria-label='Asosiy navigatsiya'] a { font-size: 10px; }
+}
+@media (min-width: 768px) {
+  body { text-rendering: optimizeLegibility; }
+}
+
+.edugo-card {
+  border-radius: var(--edugo-radius-card, 1.35rem);
+  border-color: var(--edugo-border);
+  box-shadow: var(--edugo-shadow-card);
+}
+.edugo-card :is(button, input, select, textarea) {
+  border-radius: var(--edugo-radius-control, .9rem);
+}
+
+/* AI Ustoz capsule identity: soft ear motion and restrained four-colour mark. */
+@keyframes bot-ear-sway {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-2deg); }
+}
+.bot-ears { animation: bot-ear-sway 4.8s ease-in-out infinite; }
+.bot-brand-mark { filter: drop-shadow(0 0 3px rgb(255 255 255 / .28)); }
+@media (prefers-reduced-motion: reduce) {
+  .bot-ears { animation: none; }
+}
