@@ -24,6 +24,21 @@ enum RoleName {
   PARENT
 }
 
+enum OrganizationRole {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum MembershipStatus {
+  REQUESTED
+  INVITED
+  ACTIVE
+  SUSPENDED
+  LEFT
+  REJECTED
+}
+
 enum AccountStatus {
   ACTIVE
   BLOCKED
@@ -51,7 +66,8 @@ model Organization {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  users    User[]
+  users    User[] // legacy relation; retained during staged migration
+  memberships OrganizationMembership[]
   groups   Group[]
   payments OrgPayment[]
 
@@ -105,6 +121,8 @@ model User {
   lastActiveAt    DateTime      @default(now())
   deletedAt       DateTime? // soft delete
 
+  organizationMemberships OrganizationMembership[]
+
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
   adminProfile   AdminProfile?
@@ -141,6 +159,32 @@ model User {
   @@index([telegramId])
   @@index([role])
   @@index([organizationId])
+}
+
+
+/// Tashkilotga a'zolik. User global identifikatsiya bo'lib qoladi;
+/// maktabdagi rol va holat faqat shu model orqali belgilanadi.
+model OrganizationMembership {
+  id             String           @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrganizationRole
+  status         MembershipStatus @default(REQUESTED)
+  invitedById    String?
+  approvedById   String?
+  joinedAt       DateTime?
+  leftAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId, role])
+  @@index([organizationId, status, role])
+  @@index([userId, status])
+  @@index([invitedById])
+  @@index([approvedById])
 }
 
 model StudentProfile {
