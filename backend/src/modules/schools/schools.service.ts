@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SchoolQueryDto } from './dto/school-query.dto';
 import { CreateSchoolDto } from './dto/create-school.dto';
@@ -41,7 +42,7 @@ export class SchoolsService {
   async create(actorId: string, dto: CreateSchoolDto) {
     await this.assertSuperAdmin(actorId);
     const base = this.slugify(dto.name);
-    const slug = base ? `${base}-${Math.random().toString(36).slice(2, 8)}` : undefined;
+    const slug = base ? `${base}-${randomBytes(3).toString('hex')}` : undefined;
     return this.prisma.organization.create({
       data: { ...dto, slug, publiclyListed: false },
       select: { id: true, name: true, slug: true, publiclyListed: true, createdAt: true },
