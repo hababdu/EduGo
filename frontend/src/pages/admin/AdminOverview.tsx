@@ -95,6 +95,20 @@ export function AdminOverview() {
 
       <AdminInsights />
 
+      <Panel title="Kurs yakunlanish darajasi" icon={Award} accent="teal">
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <p className="font-display text-3xl font-extrabold text-ink tabular-nums">{charts?.courseCompletion?.rate ?? 0}%</p>
+              <p className="text-xs text-ink-muted">Sertifikat olgan studentlar ulushi</p>
+            </div>
+            <p className="text-xs text-ink-muted tabular-nums">{charts?.courseCompletion?.completedStudents ?? 0} / {charts?.courseCompletion?.totalStudents ?? totals.students}</p>
+          </div>
+          <ProgressBar value={charts?.courseCompletion?.rate ?? 0} tone="teal" />
+          <p className="text-[11px] text-ink-muted">Yakunlangan deb sertifikati berilgan studentlar hisoblanadi.</p>
+        </div>
+      </Panel>
+
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <Panel title="Kunlik faollik" icon={Activity} accent="teal" className="lg:col-span-3" action={<span className="rounded-full bg-tint/5 px-2 py-0.5 text-[10px] text-ink-muted">So'nggi 7 kun</span>}>
           <MiniBars data={days} color="teal" />
