@@ -1,13 +1,13 @@
 # Organization membership migration runbook
 
-This migration is additive. It creates `OrganizationMembership` and copies legacy school-scoped roles into it. It deliberately does not remove or rewrite `User.organizationId`, `User.role`, `ParentLink`, or `ParentInvite`.
+This is an additive schema migration. It creates the organization-scoped membership table and enums. It intentionally does not import, rewrite, or delete existing user, school, group, parent, payment, or learning records. The new application flow should create memberships explicitly as users join schools or administrators are appointed.
 
 ## Before deployment
 
-1. Take and verify a PostgreSQL backup.
-2. Deploy during a maintenance window or ensure writes to legacy organization/role fields are paused while the migration runs.
-3. Confirm the target database is the intended environment and that the previous Prisma migrations are already applied.
-4. Review the migration SQL before applying it.
+1. Confirm this is the intended database/environment.
+2. Take a database backup even if historical records are not required; backups are a rollback safety measure, not a commitment to reuse old records.
+3. Review the migration SQL and coordinate deployment with the application release.
+4. Confirm the previous Prisma migrations are already applied.
 
 ## Apply
 
@@ -23,54 +23,28 @@ npm run build
 npm test -- --runInBand
 ```
 
-For a local disposable development database, `npx prisma migrate dev` may be used instead of `migrate deploy`. Do not run `migrate dev` against production.
+For a disposable local development database, `npx prisma migrate dev` may be used instead of `migrate deploy`. Do not run `migrate dev` against production.
 
-## Verify the backfill
-
-Run these read-only SQL checks against the same database:
+## Verify schema
 
 ```sql
--- Legacy users eligible for membership backfill
-SELECT COUNT(*) AS eligible_legacy_users
-FROM "User"
-WHERE "organizationId" IS NOT NULL
-  AND "role"::text IN ('STUDENT', 'TEACHER', 'ADMIN');
+SELECT to_regclass('"OrganizationMembership"') AS membership_table;
 
--- Membership rows created by the migration
-SELECT COUNT(*) AS active_memberships
-FROM "OrganizationMembership"
-WHERE "status" = 'ACTIVE';
-
--- Eligible legacy users still missing their matching role membership (must be 0)
-SELECT COUNT(*) AS missing_memberships
-FROM "User" u
-WHERE u."organizationId" IS NOT NULL
-  AND u."role"::text IN ('STUDENT', 'TEACHER', 'ADMIN')
-  AND NOT EXISTS (
-    SELECT 1
-    FROM "OrganizationMembership" m
-    WHERE m."userId" = u."id"
-      AND m."organizationId" = u."organizationId"
-      AND m."role"::text = u."role"::text
-  );
-
--- Global/guardian roles intentionally excluded from this backfill
-SELECT "role"::text AS role, COUNT(*) AS users
-FROM "User"
-WHERE "role"::text IN ('SUPER_ADMIN', 'PARENT')
-GROUP BY "role"::text;
+SELECT COUNT(*) AS membership_rows
+FROM "OrganizationMembership";
 ```
 
-The membership count may exceed the eligible legacy-user count if a user already has additional membership rows. Investigate any non-zero missing-membership count before enabling membership-based authorization.
+A newly installed membership table is expected to be empty. Membership records are created by the new onboarding and school-administration flows. Existing `User.organizationId` and `User.role` are not authoritative for the new authorization model.
 
-## Compatibility and rollout
+## Rollout requirements
 
-- Keep legacy fields until all API, bot, web, and mobile authorization paths read organization-scoped memberships.
-- Do not infer a guardian relationship from `User.role = PARENT`; review existing `ParentLink` data and migrate guardian access separately.
-- Keep `SUPER_ADMIN` global; it is not an `OrganizationRole`.
-- Do not switch guards to membership-only authorization until the backfill checks pass and all affected services have been migrated and tested.
-- During the transition, any write that changes legacy organization/role assignments must also be reflected in membership data by an explicit service-level transaction. Avoid dual writes scattered across controllers.
+- Do not enable membership-based authorization until the application has implemented and tested membership creation, school selection, invitation/approval, and active-organization context.
+- Keep legacy columns temporarily to avoid breaking unconverted modules. They are compatibility fields only and must not grant access in new endpoints.
+- `SUPER_ADMIN` remains a global platform role, not an organization membership.
+- Guardian access must be represented by an explicit verified guardian-child link, not by assigning a global `PARENT` role.
+- A school administrator must be appointed by a Super Admin and bound to exactly the target school in the membership record. Teachers must be appointed by an active administrator of that same school.
+- All service operations that create or change memberships must validate actor permissions and write audit metadata in a transaction.
 
 ## Rollback
 
-Do not drop `OrganizationMembership` as a routine rollback. The migration is additive and legacy fields remain available. If rollback is required, first stop new membership writes, export the membership table for audit, and prepare a reviewed reverse migration. Never delete membership data automatically in a production rollback.
+Do not drop `OrganizationMembership` as an automatic rollback. Stop new membership writes, preserve an audit export, and prepare a reviewed reverse migration if rollback is necessary. Never run destructive data cleanup automatically as part of application rollback.
