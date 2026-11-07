@@ -3,6 +3,7 @@ import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current
 import { Public } from '../../common/decorators/public.decorator';
 import { CreateSchoolDto } from './dto/create-school.dto';
 import { SchoolQueryDto } from './dto/school-query.dto';
+import { PublishSchoolDto } from './dto/publish-school.dto';
 import { SchoolsService } from './schools.service';
 
 @Controller('schools')
@@ -19,7 +20,7 @@ export class SchoolsController {
   create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateSchoolDto) { return this.schools.create(user.id, dto); }
 
   @Patch(':organizationId/publication')
-  publish(@CurrentUser() user: CurrentUserPayload, @Param('organizationId') organizationId: string, @Body('publiclyListed') publiclyListed: boolean) {
-    return this.schools.publish(user.id, organizationId, publiclyListed);
+  publish(@CurrentUser() user: CurrentUserPayload, @Param('organizationId') organizationId: string, @Body() dto: PublishSchoolDto) {
+    return this.schools.publish(user.id, organizationId, dto.publiclyListed);
   }
 }
