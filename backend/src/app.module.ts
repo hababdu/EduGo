@@ -32,6 +32,7 @@ import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { MembershipsModule } from './modules/memberships/memberships.module';
 @Module({
   imports: [
     UploadModule,
@@ -62,6 +63,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     HealthModule,
     LeadsModule,
     SubmissionsModule,
+    MembershipsModule,
   ],
   providers: [
     {
