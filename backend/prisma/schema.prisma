@@ -41,6 +41,12 @@ model Organization {
   name      String
   status    OrgStatus @default(ACTIVE)
   note      String?
+  /// Ochiq katalog ma'lumotlari
+  city      String?
+  about     String?
+  isPublic  Boolean   @default(true)
+  ratingAvg   Float   @default(0)
+  ratingCount Int     @default(0)
   /// Maktabning super adminga oylik obuna to'lovi (so'm). null = belgilanmagan.
   monthlyPlanFee Int?
   /// Maktabning YOPIQ Telegram kanali (-100…): maktab fayllari faqat shu yerda saqlanadi. Har maktabga alohida.
@@ -55,8 +61,14 @@ model Organization {
   groups   Group[]
   payments OrgPayment[]
   memberships OrganizationMembership[]
+  subjects    SchoolSubject[]
+  teachingAssignments TeachingAssignment[]
+  scheduleSlots ScheduleSlot[]
+  reviews     SchoolReview[]
 
   @@index([status])
+  @@index([status, isPublic, ratingAvg(sort: Desc)])
+  @@index([city])
 }
 
 enum MembershipStatus {
@@ -136,6 +148,8 @@ model User {
 
   memberships    OrganizationMembership[] @relation("MembershipUser")
   decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
+  teachingAssignmentsAsTeacher TeachingAssignment[] @relation("TeachingTeacher")
+  schoolReviews SchoolReview[]
 
   studentProfile StudentProfile?
   teacherProfile TeacherProfile?
@@ -233,6 +247,7 @@ model Group {
   testAssignments    TestAssignment[]
   assignments        Assignment[]
   teacherAssignments TeacherAssignment[]
+  teachingAssignments TeachingAssignment[]
   attendance         AttendanceRecord[]
   payments           Payment[]
   lessonLogs         LessonLog[]
@@ -1167,4 +1182,70 @@ model AssistantAction {
   @@index([userId, status])
   @@index([userId, fingerprint])
   @@index([expiresAt])
+}
+
+
+/// Maktab fanlari ro'yxati (kontent `Subject` dan alohida)
+model SchoolSubject {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  createdAt      DateTime     @default(now())
+
+  assignments TeachingAssignment[]
+
+  @@unique([organizationId, name])
+}
+
+/// O'qituvchi + fan + sinf (guruh). Bir sinfda bitta fanni bitta o'qituvchi o'tadi.
+model TeachingAssignment {
+  id             String        @id @default(cuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User          @relation("TeachingTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId      String
+  subject        SchoolSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  groupId        String
+  group          Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+
+  slots ScheduleSlot[]
+
+  @@unique([groupId, subjectId])
+  @@index([organizationId])
+  @@index([teacherId])
+}
+
+/// Haftalik dars jadvali yozuvi (Toshkent vaqti, "HH:mm")
+model ScheduleSlot {
+  id             String             @id @default(cuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignmentId   String
+  assignment     TeachingAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  /// ISO hafta kuni: 1=Dushanba … 7=Yakshanba
+  weekday        Int
+  startTime      String
+  endTime        String
+  room           String?
+
+  @@index([organizationId, weekday])
+  @@index([assignmentId])
+}
+
+model SchoolReview {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating         Int
+  comment        String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, createdAt(sort: Desc)])
 }

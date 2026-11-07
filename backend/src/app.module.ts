@@ -30,6 +30,8 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { HealthModule } from './modules/health/health.module';
 import { CertificatesModule } from './modules/certificates/certificates.module';
 import { ParentsModule } from './modules/parents/parents.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { TeachingModule } from './modules/teaching/teaching.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
@@ -59,6 +61,8 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     AiModule,
     SuperAdminModule,
     MembershipsModule,
+    TeachingModule,
+    CatalogModule,
     ParentsModule,
     CertificatesModule,
     HealthModule,

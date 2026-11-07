@@ -1,4 +1,4 @@
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CurrentUserPayload } from './decorators/current-user.decorator';
 
 /** Mavjud bo'lmagan tashkilot id — tashkilotsiz admin/o'qituvchi hech narsa ko'rmasligi uchun */
@@ -42,4 +42,15 @@ export function visibleCreatedBy(u: CurrentUserPayload): { createdBy?: { OR: { o
 export function canEditCreatedBy(u: CurrentUserPayload, creatorOrgId: string | null | undefined): boolean {
   if (isSuperAdmin(u)) return true;
   return !!u.organizationId && u.organizationId === creatorOrgId;
+}
+
+/** Maktab admini — o'z maktabi; SUPER_ADMIN — so'ralgan maktab (majburiy). */
+export function resolveOrgId(u: CurrentUserPayload, requested?: string): string {
+  if (isSuperAdmin(u)) {
+    if (!requested) throw new BadRequestException('Maktabni tanlang');
+    return requested;
+  }
+  if (!u.organizationId) throw new ForbiddenException('Siz hech qaysi maktabga biriktirilmagansiz');
+  if (requested && requested !== u.organizationId) throw new ForbiddenException('Bu boshqa maktab');
+  return u.organizationId;
 }
