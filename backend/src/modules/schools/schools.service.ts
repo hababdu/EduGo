@@ -22,7 +22,7 @@ export class SchoolsService {
       this.prisma.organization.findMany({
         where, skip: (query.page - 1) * query.limit, take: query.limit,
         orderBy: [{ name: 'asc' }],
-        select: { id: true, slug: true, name: true, description: true, city: true, address: true, phone: true, websiteUrl: true, logoUrl: true, coverImageUrl: true, educationLevels: true, createdAt: true },
+        select: { id: true, slug: true, name: true, description: true, city: true, address: true, phone: true, websiteUrl: true, logoUrl: true, coverImageUrl: true, educationLevels: true, createdAt: true, _count: { select: { memberships: { where: { role: 'STUDENT', status: 'ACTIVE' } } } } },
       }),
       this.prisma.organization.count({ where }),
     ]);
