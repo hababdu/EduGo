@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { RequestTrialDto } from './dto/request-trial.dto';
 import { ReviewTrialDto } from './dto/review-trial.dto';
+import { TrialAttendanceDto } from './dto/attendance.dto';
 import { TrialsService } from './trials.service';
 
 @Controller('trials')
@@ -21,8 +22,8 @@ export class TrialsController {
   }
 
   @Patch(':trialId/attendance')
-  attendance(@CurrentUser() user: CurrentUserPayload, @Param('trialId') trialId: string, @Body('attended') attended: boolean) {
-    return this.trials.markAttendance(user.id, trialId, attended);
+  attendance(@CurrentUser() user: CurrentUserPayload, @Param('trialId') trialId: string, @Body() dto: TrialAttendanceDto) {
+    return this.trials.markAttendance(user.id, trialId, dto.attended);
   }
 
   @Patch(':trialId/cancel') cancel(@CurrentUser() user: CurrentUserPayload, @Param('trialId') trialId: string) {
