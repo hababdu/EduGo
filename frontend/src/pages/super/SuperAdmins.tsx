@@ -31,11 +31,11 @@ export function SuperAdmins() {
                     </div>
                     <div className="truncate text-[11px] text-ink-muted">{a.organization?.name ?? 'Maktabsiz'} · ID {a.telegramId} · {when(a.lastActiveAt)}</div>
                   </div>
-                  {!sa && orgs && orgs.length > 1 && (
+                  {!sa && orgs && orgs.length > 0 && (
                     <select aria-label="Maktabga ko'chirish" disabled={move.isPending} value={a.organization?.id ?? ''}
                       onChange={(e) => { const to = e.target.value; const name = orgs.find((o) => o.id === to)?.name; if (to && to !== a.organization?.id && window.confirm(`${a.name} «${name}» maktabiga ko'chirilsinmi?`)) move.mutate({ userId: a.id, organizationId: to }); }}
                       className="max-w-[110px] shrink-0 rounded-xl bg-tint/5 px-2 py-1.5 text-xs text-ink-muted">
-                      {!a.organization && <option value="">Maktabsiz</option>}
+                      {!a.organization && <option value="" disabled>Maktab tanlang</option>}
                       {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </select>
                   )}
