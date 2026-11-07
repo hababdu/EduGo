@@ -83,6 +83,7 @@ model Organization {
   payments OrgPayment[]
 
   @@index([status])
+  @@index([publiclyListed, status, city])
 }
 
 /// Maktab → super admin: oylik obuna to'lovi belgisi (o'quvchilarning guruh to'lovlari — `Payment` — bundan butunlay alohida).
