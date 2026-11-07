@@ -25,6 +25,7 @@ export class OverviewService {
       todayTestAttempts,
       scoreSumAgg,
       dailyActivity,
+      completionGroups,
     ] = await Promise.all([
       this.prisma.user.count({ where: { role: 'STUDENT', deletedAt: null, ...org } }),
       this.prisma.user.count({
@@ -38,6 +39,10 @@ export class OverviewService {
       this.prisma.testAttempt.count({ where: { completedAt: { gte: todayStart }, student: org } }),
       this.prisma.scoreTransaction.aggregate({ _sum: { amount: true }, where: { student: org } }),
       this.getDailyActiveUsersLast7Days(org),
+      this.prisma.certificate.groupBy({
+        by: ['studentId'],
+        where: { revokedAt: null, ...(actor.role === 'SUPER_ADMIN' ? {} : { organizationId: actor.organizationId ?? '__no_org__' }) },
+      }),
     ]);
 
     return {
@@ -56,6 +61,11 @@ export class OverviewService {
       },
       charts: {
         dailyActiveUsers: dailyActivity,
+        courseCompletion: {
+          completedStudents: completionGroups.length,
+          totalStudents: totalStudents,
+          rate: totalStudents > 0 ? Math.round((completionGroups.length / totalStudents) * 100) : 0,
+        },
       },
     };
   }
