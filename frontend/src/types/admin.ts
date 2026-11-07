@@ -10,7 +10,10 @@ export interface AdminOverview {
     totalScoreIssued: number;
   };
   today: { testAttempts: number };
-  charts: { dailyActiveUsers: { date: string; count: number }[] };
+  charts: {
+    dailyActiveUsers: { date: string; count: number }[];
+    courseCompletion?: { completedStudents: number; totalStudents: number; rate: number };
+  };
 }
 
 export interface AdminStudentListItem {
