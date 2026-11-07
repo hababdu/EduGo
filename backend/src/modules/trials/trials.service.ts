@@ -70,7 +70,7 @@ export class TrialsService {
   async cancel(userId: string, trialId: string) {
     const trial = await this.prisma.trialLesson.findUnique({ where: { id: trialId } });
     if (!trial || trial.userId !== userId) throw new NotFoundException('Sinov darsi topilmadi');
-    if (![TrialLessonStatus.REQUESTED, TrialLessonStatus.APPROVED].includes(trial.status)) throw new ConflictException('Bu sinov darsini bekor qilib bo‘lmaydi');
+    if (trial.status !== TrialLessonStatus.REQUESTED && trial.status !== TrialLessonStatus.APPROVED) throw new ConflictException('Bu sinov darsini bekor qilib bo‘lmaydi');
     return this.prisma.trialLesson.update({ where: { id: trialId }, data: { status: TrialLessonStatus.CANCELLED } });
   }
 }
