@@ -118,3 +118,30 @@ describe('findAvailableStudents', () => {
     ]));
   });
 });
+
+
+describe('addStudentsToGroup', () => {
+  it('takroriy IDlarni olib tashlaydi va mos talabalarni qo\'shadi', async () => {
+    const a = build();
+    const addSpy = jest.spyOn(a.svc, 'addStudentToGroup').mockResolvedValue({ id: 'added' } as any);
+    const result = await a.svc.addStudentsToGroup('g', ['s1', 's1', 's2'], teacher);
+    expect(addSpy).toHaveBeenCalledTimes(2);
+    expect(result).toMatchObject({ requested: 2, addedCount: 2, skippedCount: 0 });
+  });
+
+  it('bitta talaba qo\'shilmasa, qolganlari davom etadi va sabab qaytariladi', async () => {
+    const a = build();
+    jest.spyOn(a.svc, 'addStudentToGroup')
+      .mockResolvedValueOnce({ id: 'added' } as any)
+      .mockRejectedValueOnce(new BadRequestException('Guruh to\'lgan'));
+    const result = await a.svc.addStudentsToGroup('g', ['s1', 's2'], teacher);
+    expect(result).toMatchObject({ requested: 2, addedCount: 1, skippedCount: 1 });
+    expect(result.skipped[0]).toMatchObject({ studentId: 's2', reason: "Guruh to'lgan" });
+  });
+
+  it('100 tadan ortiq IDni rad etadi', async () => {
+    const a = build();
+    await expect(a.svc.addStudentsToGroup('g', Array.from({ length: 101 }, (_, i) => String(i)), teacher))
+      .rejects.toBeInstanceOf(BadRequestException);
+  });
+});
