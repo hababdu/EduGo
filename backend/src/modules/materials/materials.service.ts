@@ -17,7 +17,7 @@ export class MaterialsService {
   ) {}
 
   /* ---------------- yuklash ---------------- */
-  async upload(actor: CurrentUserPayload, file: { originalname: string; mimetype: string; buffer: Buffer }) {
+  async upload(actor: CurrentUserPayload, file: { originalname: string; mimetype: string; buffer: Buffer }, groupId?: string) {
     if (!file) throw new BadRequestException('Fayl yuborilmadi');
     const v = validateUpload(file.originalname, file.mimetype, file.buffer);
 
@@ -35,12 +35,25 @@ export class MaterialsService {
       throw new BadRequestException("Biriktirilmagan fayllar ko'p. Avval materialni saqlang yoki keraksiz fayllarni o'chiring");
     }
 
-    // Har maktab fayli FAQAT o'z yopiq kanaliga tushadi; maktabsiz foydalanuvchi (platforma) — umumiy kanalga
+    // Talaba vazifa faylini aynan vazifa guruhining maktab kanaliga yuklaydi.
+    // actor.organizationId ko'p maktabli akkauntda boshqa/eskirgan maktabni ko'rsatishi mumkin.
+    let organizationId = actor.organizationId ?? null;
+    if (groupId) {
+      const group = await this.prisma.group.findFirst({
+        where: { id: groupId, deletedAt: null },
+        select: { organizationId: true, members: { where: { studentId: actor.id }, select: { id: true, studentId: true } } },
+      });
+      if (!group) throw new NotFoundException("Guruh topilmadi");
+      if (isStudent && !group.members.length) throw new ForbiddenException("Siz bu guruhga a'zo emassiz");
+      if (isStudent && !group.organizationId) throw new BadRequestException("Guruh maktabga biriktirilmagan");
+      if (group.organizationId) organizationId = group.organizationId;
+    }
+
     let chatId: string | null = null;
-    if (actor.organizationId) {
-      const org = await this.prisma.organization.findUnique({ where: { id: actor.organizationId }, select: { storageChatId: true } });
+    if (organizationId) {
+      const org = await this.prisma.organization.findUnique({ where: { id: organizationId }, select: { storageChatId: true } });
       if (!org?.storageChatId) {
-        throw new ServiceUnavailableException("Maktabingiz uchun yopiq kanal biriktirilmagan. Super adminga murojaat qiling. Hozircha havola (URL) bilan material yarating.");
+        throw new ServiceUnavailableException("Ushbu maktab uchun yopiq Telegram kanal sozlanmagan. Maktab administratoriga murojaat qiling.");
       }
       chatId = org.storageChatId;
     }
