@@ -73,6 +73,16 @@ export class GroupsController {
   }
 
   @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
+  @Post(':id/students/bulk')
+  async addStudentsToGroup(
+    @Param('id') id: string,
+    @Body() body: { studentIds: string[] },
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.addStudentsToGroup(id, body.studentIds, user);
+  }
+
+  @Roles('ADMIN', 'SUPER_ADMIN', 'TEACHER')
   @Post(':id/students')
   async addStudentToGroup(
     @Param('id') id: string,
