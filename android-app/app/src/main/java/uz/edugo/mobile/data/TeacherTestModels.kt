@@ -30,3 +30,16 @@ import kotlinx.serialization.Serializable
     val groupIds: List<String>,
     val questions: List<TeacherQuestionDraft>,
 )
+
+@Serializable data class AssignedTest(
+    val testId: String = "",
+    val groupId: String = "",
+    val groupName: String = "Umumiy",
+    val title: String = "",
+    val durationSeconds: Int = 0,
+    val deadline: String? = null,
+    val status: String = "PENDING",
+    val score: Int? = null,
+    val maxScore: Int? = null,
+    val passed: Boolean? = null,
+)
