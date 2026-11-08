@@ -114,6 +114,42 @@ export class GroupsService {
     });
   }
 
+  /**
+   * Guruhga qo'shish mumkin bo'lgan maktab talabalarini qaytaradi.
+   * Ko'p maktabli a'zolikda User.organizationId emas, maktab a'zoligi asosiy mezon.
+   */
+  async findAvailableStudents(groupId: string, user: CurrentUserPayload, search?: string) {
+    const group = await this.findOneOrThrow(groupId, user);
+    const q = search?.trim();
+    const where: any = {
+      role: 'STUDENT',
+      status: 'ACTIVE',
+      deletedAt: null,
+      groupMemberships: { none: { groupId } },
+      ...(group.organizationId ? {
+        OR: [
+          { organizationId: group.organizationId },
+          { memberships: { some: { organizationId: group.organizationId, role: 'STUDENT', status: 'ACTIVE' } } },
+        ],
+      } : {}),
+      ...(q ? { AND: [{ OR: [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { username: { contains: q, mode: 'insensitive' } },
+      ] }] } : {}),
+    };
+    const [total, items] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        select: { id: true, firstName: true, lastName: true, username: true, phone: true },
+        orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+        take: 50,
+      }),
+    ]);
+    return { items, total, limit: 50 };
+  }
+
   /* ============================================================
      CREATE GROUP — posterUrl bilan
      ============================================================ */
@@ -294,22 +330,27 @@ export class GroupsService {
   ) {
     const group = await this.findOneOrThrow(groupId, user);
 
-    // Student mavjudligini tekshirish
+    // Talaba guruh maktabiga bevosita yoki faol ko'p-maktabli a'zolik orqali tegishli bo'lishi kerak.
     const student = await this.prisma.user.findFirst({
-      where: {
-        id: studentId,
-        role: 'STUDENT',
-        deletedAt: null,
-      },
+      where: { id: studentId, role: 'STUDENT', status: 'ACTIVE', deletedAt: null },
+      select: { id: true, organizationId: true },
     });
-    if (!student) {
-      throw new BadRequestException('Student topilmadi');
+    if (!student) throw new BadRequestException("Faol talaba topilmadi");
+
+    const schoolMembership = group.organizationId
+      ? await this.prisma.organizationMembership.findFirst({
+          where: { userId: studentId, organizationId: group.organizationId, role: 'STUDENT', status: 'ACTIVE' },
+          select: { id: true },
+        })
+      : null;
+    const belongsToGroupSchool = !group.organizationId
+      || student.organizationId === group.organizationId
+      || !!schoolMembership;
+    if (!belongsToGroupSchool) {
+      throw new BadRequestException("Talaba ushbu maktabning faol a'zosi emas");
     }
-    // Talaba bitta tashkilotga tegishli: boshqasiniki bo'lsa — qo'shib bo'lmaydi; hech kimniki bo'lmasa — shu tashkilotga biriktiriladi
-    if (student.organizationId && student.organizationId !== group.organizationId) {
-      throw new BadRequestException("Bu talaba boshqa tashkilotga tegishli");
-    }
-    const adopt = !student.organizationId && !!group.organizationId;
+    // Boshqa maktabdagi asosiy organizationId ni o'zgartirmaymiz.
+    const adopt = !student.organizationId && !!group.organizationId && !!schoolMembership;
 
     // Allaqachon a'zo emasligini tekshirish
     const existing = await this.prisma.groupMember.findUnique({
