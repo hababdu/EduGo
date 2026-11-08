@@ -10,7 +10,7 @@ import { Edit3 } from '../../design/icons';
 import type { MaterialFileDto } from '../../lib/material-files';
 
 interface Mine {
-  assignment: { id: string; dueAt: string | null; maxScore: number; gradingStatus: 'PENDING' | 'RUNNING' | 'DONE' };
+  assignment: { id: string; groupId: string; dueAt: string | null; maxScore: number; gradingStatus: 'PENDING' | 'RUNNING' | 'DONE' };
   canSubmit: boolean;
   closedReason: string | null;
   submission: null | {
@@ -163,7 +163,7 @@ export function HomeworkSubmitPanel({ assignmentId }: { assignmentId: string }) 
               placeholder="Javobingizni shu yerga yozing…"
               className={inputCls}
             />
-            <FileUploader files={files} onChange={setFiles} onBusyChange={setBusy} deleteOnRemove={() => true} />
+            <FileUploader files={files} onChange={setFiles} onBusyChange={setBusy} deleteOnRemove={() => true} groupId={data.assignment.groupId} />
             <p className="text-[11px] text-ink-faint">AI faqat matn, PDF, DOCX va TXT fayllarni o'qiy oladi. Rasm bo'lsa — o'qituvchi tekshiradi.</p>
             <div className="flex gap-2">
               <button
