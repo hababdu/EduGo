@@ -9,6 +9,7 @@ function mk(over: any = {}) {
   const prisma: any = {
     parentLink: { findUnique: jest.fn().mockResolvedValue(over.link ?? null), findMany: jest.fn().mockResolvedValue([]) },
     user: { findFirst: jest.fn().mockResolvedValue(over.stu ?? { id: 'st1', organizationId: null }) },
+    organizationMembership: { findFirst: jest.fn().mockResolvedValue(over.membership ?? null) },
     organization: { findFirst: jest.fn().mockResolvedValue(over.org === undefined ? { id: 'o1' } : over.org) },
     group: { findFirst: jest.fn().mockResolvedValue(over.group === undefined ? { id: 'g1', maxCapacity: over.cap ?? null } : over.group) },
     groupMember: { count: jest.fn().mockResolvedValue(over.members ?? 0), upsert: jest.fn() },
@@ -36,6 +37,7 @@ describe('TrialsService', () => {
     await expect(mk({ open: [{ organizationId: 'o1' }] }).svc.request(student, { organizationId: 'o1' })).rejects.toBeInstanceOf(ConflictException);
     await expect(mk({ open: [{ organizationId: 'a' }, { organizationId: 'b' }, { organizationId: 'c' }] }).svc.request(student, { organizationId: 'o1' })).rejects.toBeInstanceOf(BadRequestException);
     await expect(mk({ stu: { id: 'st1', organizationId: 'o1' } }).svc.request(student, { organizationId: 'o1' })).rejects.toBeInstanceOf(ConflictException);
+    await expect(mk({ membership: { id: 'm1' } }).svc.request(student, { organizationId: 'o1' })).rejects.toBeInstanceOf(ConflictException);
     await expect(mk().svc.request({ ...student, role: 'TEACHER' }, { organizationId: 'o1' })).rejects.toBeInstanceOf(ForbiddenException);
   });
   it("holat o'tishlari tartibli; boshqa maktab so'rovi yopiq", async () => {
