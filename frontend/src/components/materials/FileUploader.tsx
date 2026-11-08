@@ -27,10 +27,12 @@ interface Props {
   deleteOnRemove?: (f: MaterialFileDto) => boolean;
   /** Yuklash jarayoni bor/yo'qligini ota komponentga bildiradi (saqlashni bloklash uchun) */
   onBusyChange?: (busy: boolean) => void;
+  /** Vazifa faylini tegishli maktabning yopiq kanaliga yo'naltirish uchun guruh ID */
+  groupId?: string;
 }
 
 /** Fayl tanlash/tashlash + har bir fayl uchun yuklash progressi. */
-export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusyChange }: Props) {
+export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusyChange, groupId }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<Pending[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -52,6 +54,8 @@ export function FileUploader({ files, onChange, disabled, deleteOnRemove, onBusy
       try {
         const dto = await uploadMaterialFile(file, (pct) =>
           setPending((p) => p.map((x) => (x.key === key ? { ...x, pct } : x))),
+          undefined,
+          groupId,
         );
         setPending((p) => p.filter((x) => x.key !== key));
         filesRef.current = [...filesRef.current, dto];
