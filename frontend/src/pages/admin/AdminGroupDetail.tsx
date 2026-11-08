@@ -12,7 +12,6 @@ import {
   useAssignGroupTeacher,
   useTeachersList,
 } from '../../hooks/useGroups';
-import { useAdminStudents } from '../../hooks/useAdmin';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
 import { CapacityBar } from '../../components/group/CapacityBar';
@@ -61,13 +60,15 @@ export function AdminGroupDetail() {
   });
 
   /* ---------- All students (for picker) ---------- */
-  const { data: allStudentsData } = useAdminStudents({ page: 1 });
-  const allStudents = Array.isArray(allStudentsData)
-    ? allStudentsData
-    : (allStudentsData as any)?.items ||
-      (allStudentsData as any)?.students ||
-      (allStudentsData as any)?.data ||
-      [];
+  const [studentSearch, setStudentSearch] = useState('');
+  const [showStudentPicker, setShowStudentPicker] = useState(false);
+  const { data: availableStudentsData, isLoading: availableStudentsLoading, isFetching: availableStudentsFetching, error: availableStudentsError, refetch: refetchAvailableStudents } = useQuery({
+    queryKey: ['group-available-students', id, studentSearch.trim()],
+    queryFn: () => apiFetch<{ items: any[]; total: number }>(`/api/v1/groups/${id}/available-students${studentSearch.trim() ? `?search=${encodeURIComponent(studentSearch.trim())}` : ''}`),
+    enabled: !!id && showStudentPicker,
+    staleTime: 15_000,
+  });
+  const availableStudents = availableStudentsData?.items ?? [];
 
   /* ---------- Teachers list ---------- */
   const { data: teachers, isLoading: teachersLoading } = useTeachersList();
@@ -119,6 +120,8 @@ export function AdminGroupDetail() {
           hapticNotify('success');
           toast('success', "Talaba guruhga qo'shildi!");
           setSelectedStudentId('');
+          setStudentSearch('');
+          refetchAvailableStudents();
           refetchStudents();
           refetchGroup();
         },
@@ -333,44 +336,33 @@ export function AdminGroupDetail() {
         </form>
 
         {/* ============ ADD STUDENT ============ */}
-        <form onSubmit={handleAddStudent}>
-          <Panel title="Guruhga talaba qo'shish" icon={Plus} accent="teal" className="h-full">
+        <Panel title="Guruhga talaba qo'shish" icon={Plus} accent="teal" className="h-full">
+          <div className="space-y-3">
+            <p className="text-xs text-ink-muted">Faqat ushbu maktabga faol a'zo bo'lgan va hali guruhga kiritilmagan talabalar ko'rsatiladi.</p>
             <div className="flex flex-col sm:flex-row gap-2">
-              <select
-                value={selectedStudentId}
-                onChange={(e) => setSelectedStudentId(e.target.value)}
-                className={`${CONTROL.select} flex-1`}
-              >
-                <option value="">Talabani tanlang...</option>
-                {availableStudents.length === 0 ? (
-                  <option disabled>
-                    {allStudents.length === 0
-                      ? "Talabalar ro'yxati yuklanmoqda..."
-                      : "Barcha talabalar qo'shilgan"}
-                  </option>
-                ) : (
-                  availableStudents.map((s: any) => {
-                    const sId = s.id || s._id || s.studentId;
-                    return (
-                      <option key={sId} value={sId}>
-                        {s.firstName || 'Talaba'} {s.lastName || ''}{' '}
-                        {s.username ? `(@${s.username})` : ''}
-                      </option>
-                    );
-                  })
-                )}
-              </select>
-
-              <button
-                type="submit"
-                disabled={addStudent.isPending || !selectedStudentId}
-                className={`${CONTROL.buttonPrimary} shrink-0 disabled:opacity-50`}
-              >
-                {addStudent.isPending ? "Qo'shilmoqda..." : "Qo'shish"}
-              </button>
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                <input value={studentSearch} onChange={e => { setStudentSearch(e.target.value); setShowStudentPicker(true); }} onFocus={() => setShowStudentPicker(true)} placeholder="Ism, familiya yoki username bo'yicha qidirish" className={`${CONTROL.input} w-full pl-9`} aria-label="Talabalarni qidirish" />
+              </div>
+              <button type="button" onClick={() => { setShowStudentPicker(true); refetchAvailableStudents(); }} className={`${CONTROL.buttonGhost} shrink-0`}>Yangilash</button>
             </div>
-          </Panel>
-        </form>
+            {showStudentPicker && <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border border-tint/10 bg-surface/40 p-2">
+              {availableStudentsLoading || availableStudentsFetching ? <p className="p-3 text-xs text-ink-muted">Talabalar yuklanmoqda...</p>
+                : availableStudentsError ? <div className="p-3 text-xs text-coral">Ro'yxatni yuklab bo'lmadi. <button type="button" onClick={() => refetchAvailableStudents()} className="underline">Qayta urinish</button></div>
+                : availableStudents.length === 0 ? <p className="p-3 text-xs text-ink-muted">{studentSearch.trim() ? "Qidiruv bo'yicha talaba topilmadi." : "Bu maktabda guruhga qo'shish mumkin bo'lgan talabalar yo'q."}</p>
+                : availableStudents.map((student: any) => <div key={student.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-surface/80">
+                  <Avatar name={`${student.firstName} ${student.lastName || ''}`} />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-ink">{student.firstName} {student.lastName || ''}</p><p className="truncate text-xs text-ink-muted">{student.username ? `@${student.username}` : student.phone || 'EduGo talabasi'}</p></div>
+                  <button type="button" onClick={() => setSelectedStudentId(student.id)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${selectedStudentId === student.id ? 'bg-teal/15 text-teal' : 'bg-accent/10 text-accent'}`}>{selectedStudentId === student.id ? 'Tanlandi' : 'Tanlash'}</button>
+                </div>)}
+              {availableStudentsData && availableStudentsData.total > availableStudents.length && <p className="p-2 text-center text-[11px] text-ink-muted">Birinchi {availableStudents.length} / {availableStudentsData.total} ta natija. Aniqroq qidiruv kiriting.</p>}
+            </div>}
+            {selectedStudentId && <p className="text-xs text-teal">Talaba tanlandi. Qo'shish tugmasini bosing.</p>}
+            <button type="button" onClick={() => handleAddStudent({ preventDefault: () => undefined } as React.FormEvent)} disabled={addStudent.isPending || !selectedStudentId} className={`${CONTROL.buttonPrimary} w-full justify-center disabled:opacity-50`}>
+              {addStudent.isPending ? "Guruhga qo'shilmoqda..." : "Tanlangan talabani guruhga qo'shish"}
+            </button>
+          </div>
+        </Panel>
       </div>
 
       {/* ============ DAVOMAT ============ */}
