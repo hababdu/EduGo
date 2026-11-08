@@ -17,15 +17,17 @@ import androidx.compose.runtime.Composable
 import uz.edugo.mobile.data.GroupItem
 import uz.edugo.mobile.data.LessonItem
 import uz.edugo.mobile.data.Standing
+import uz.edugo.mobile.data.AssignedTest
 
 @Composable
-fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (String) -> Unit) {
+fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (String) -> Unit, openTest: (String) -> Unit) {
     val p = P
     val context = LocalContext.current
     val group = rememberRemote("/api/v1/groups/$groupId", GroupItem.serializer())
     val assignments = rememberRemoteList("/api/v1/dashboard/assignments", LessonItem.serializer())
     val standing = rememberRemoteList("/api/v1/dashboard/standing", Standing.serializer())
-    RefreshColumn(listOf(group, assignments, standing)) {
+    val tests = rememberRemoteList("/api/v1/tests/assigned/me", AssignedTest.serializer())
+    RefreshColumn(listOf(group, assignments, standing, tests)) {
         BackHeader("Guruh", onBack)
         Section(group) { g ->
             Hero("MENING TA'LIM GURUHIM", g.name, g.description)
@@ -71,7 +73,7 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
         }
         Section(assignments) { all ->
             val items = all.filter { it.groupId == groupId }
-            SectionTitle("GURUH MATERIALLARI · ${items.size}")
+            SectionTitle("GURUH DARSLARI · ${items.size}")
             if (items.isEmpty()) EmptyText("Guruhda hali material yo'q")
             items.forEachIndexed { index, item ->
                 Panel(Modifier.stagger(index).pressable { openLesson(item.id) }) {
@@ -81,6 +83,22 @@ fun StudentGroupDetailScreen(groupId: String, onBack: () -> Unit, openLesson: (S
                             Text(item.category, color = p.muted, fontSize = 11.sp)
                         }
                         Text("Ochish →", color = p.accent, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+        Section(tests) { all ->
+            val items = all.filter { it.groupId == groupId || it.groupId.isBlank() }
+            SectionTitle("GURUH TESTLARI · ${items.size}")
+            if (items.isEmpty()) EmptyText("Bu guruhga hali test biriktirilmagan")
+            items.forEachIndexed { index, item ->
+                Panel(Modifier.stagger(index).pressable { openTest(item.testId) }) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(item.title, color = p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                            Text("${item.durationSeconds / 60} daqiqa · ${item.status}", color = p.muted, fontSize = 11.sp)
+                        }
+                        Text("Boshlash →", color = p.accent, fontSize = 12.sp)
                     }
                 }
             }
