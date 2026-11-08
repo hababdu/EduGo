@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -51,8 +52,9 @@ private data class Tab(val route: String, val label: String, val icon: ImageVect
 
 private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.STUDENT -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("lessons", "Darslar", Icons.Rounded.MenuBook),
-        Tab("tests", "Testlar", Icons.Rounded.Quiz), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
+        Tab("home", "Bosh", Icons.Rounded.Home),
+        Tab("groups", "Guruhlar", Icons.Rounded.Groups),
+        Tab("schools", "Maktablar", Icons.Rounded.School),
         Tab("profile", "Profil", Icons.Rounded.Person),
     )
     Role.TEACHER -> listOf(
@@ -142,6 +144,7 @@ fun MainShell(user: AuthUser) {
                 composable("test/{id}") { TestTakingScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("ranking") { RankingScreen() }
                 composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
+                composable("schools") { StudentSchoolsScreen() }
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
@@ -162,7 +165,7 @@ fun MainShell(user: AuthUser) {
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
                 composable("group/{id}") {
                     val groupId = it.arguments?.getString("id").orEmpty()
-                    if (role == Role.STUDENT) StudentGroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openLesson = { nav.navigate("lesson/$it") })
+                    if (role == Role.STUDENT) StudentGroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openLesson = { nav.navigate("lesson/$it") }, openTest = { nav.navigate("test/$it") })
                     else GroupDetailScreen(groupId, onBack = { nav.popBackStack() }, openAssignment = { nav.navigate("homework-review/$it") })
                 }
                 composable("homework-review/{id}") { TeacherHomeworkReviewScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
