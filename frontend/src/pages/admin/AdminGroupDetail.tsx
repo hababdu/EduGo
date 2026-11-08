@@ -389,8 +389,9 @@ export function AdminGroupDetail() {
                     <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-ink">{student.firstName} {student.lastName || ''}</p><p className="truncate text-xs text-ink-muted">{student.username ? `@${student.username}` : student.phone || 'EduGo talabasi'}</p></div>
                     {selectedStudentIds.includes(student.id) && <span className="text-xs font-semibold text-teal">Tanlandi</span>}
                   </label>)}
+                  {availableStudentsData && availableStudentsData.total > availableStudents.length && <p className="p-2 text-center text-[11px] text-ink-muted">Birinchi {availableStudents.length} / {availableStudentsData.total} ta natija. Aniqroq qidiruv kiriting.</p>}
                 </>
-              {availableStudentsData && availableStudentsData.total > availableStudents.length && <p className="p-2 text-center text-[11px] text-ink-muted">Birinchi {availableStudents.length} / {availableStudentsData.total} ta natija. Aniqroq qidiruv kiriting.</p>}
+              }
             </div>}
             <div className="flex flex-col gap-2 border-t border-tint/10 pt-3">
               <div className="flex items-center justify-between text-xs"><span className="text-ink-muted">Tanlangan talabalar</span><strong className="text-ink">{selectedStudentIds.length} ta</strong></div>
