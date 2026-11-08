@@ -135,6 +135,24 @@ export function useAddStudentToGroup() {
 }
 
 /* ============================================================
+   BULK ADD STUDENTS
+   ============================================================ */
+export function useAddStudentsToGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, studentIds }: { groupId: string; studentIds: string[] }) =>
+      apiFetch<{ requested: number; addedCount: number; skippedCount: number; skipped: { studentId: string; reason: string }[] }>(
+        `/api/v1/groups/${groupId}/students/bulk`,
+        { method: 'POST', data: { studentIds } },
+      ),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['group-students', variables.groupId] });
+      qc.invalidateQueries({ queryKey: ['groups'] });
+    },
+  });
+}
+
+/* ============================================================
    REMOVE STUDENT
    ============================================================ */
 export function useRemoveStudentFromGroup() {
