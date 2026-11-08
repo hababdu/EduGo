@@ -37,6 +37,16 @@ export class GroupsController {
   }
 
   @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
+  @Get(':id/available-students')
+  async getAvailableStudents(
+    @Param('id') id: string,
+    @Query('search') search: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.groupsService.findAvailableStudents(id, user, search);
+  }
+
+  @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
   @Get(':id/students')
   async getGroupStudents(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
     return this.groupsService.findGroupStudents(id, user);
