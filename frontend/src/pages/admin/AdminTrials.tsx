@@ -76,7 +76,7 @@ export default function AdminTrials() {
       {error && <p className="rounded-xl bg-coral/10 p-3 text-sm text-coral">{(error as Error).message}</p>}
       {data && data.items.length === 0 && <EmptyState icon={GraduationCap} title="Arizalar topilmadi" subtitle="Tanlangan holatda sinov darsi arizalari mavjud emas." />}
       <div className="space-y-3">
-        {data?.items.map(t => <Panel key={t.id}>
+        {data?.items.map(t => <Panel key={t.id} title={t.student.name}>
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
