@@ -388,6 +388,34 @@ export class GroupsService {
     });
   }
 
+  /**
+   * Bir nechta talabani guruhga qo'shish. Har bir a'zo alohida tekshiriladi;
+   * xato bitta talabada bo'lsa ham qolgan mos talabalar qo'shilaveradi.
+   */
+  async addStudentsToGroup(groupId: string, studentIds: string[], user: CurrentUserPayload) {
+    const uniqueIds = [...new Set(studentIds.filter((id) => typeof id === 'string' && id.trim()).map((id) => id.trim()))];
+    if (!uniqueIds.length) throw new BadRequestException("Kamida bitta talaba tanlang");
+    if (uniqueIds.length > 100) throw new BadRequestException("Bir martada ko'pi bilan 100 ta talaba qo'shish mumkin");
+
+    await this.findOneOrThrow(groupId, user);
+    const added: any[] = [];
+    const skipped: { studentId: string; reason: string }[] = [];
+
+    for (const studentId of uniqueIds) {
+      try {
+        const result = await this.addStudentToGroup(groupId, studentId, user);
+        added.push(result);
+      } catch (error: any) {
+        skipped.push({
+          studentId,
+          reason: typeof error?.message === 'string' ? error.message : "Qo'shib bo'lmadi",
+        });
+      }
+    }
+
+    return { requested: uniqueIds.length, addedCount: added.length, skippedCount: skipped.length, added, skipped };
+  }
+
   /* ============================================================
      REMOVE STUDENT FROM GROUP
      ============================================================ */
