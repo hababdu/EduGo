@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.SchoolCatalog
 import uz.edugo.mobile.data.SchoolMembership
-import uz.edugo.mobile.data.SchoolItem
 
 @Composable
 fun StudentSchoolsScreen() {
@@ -30,7 +29,6 @@ fun StudentSchoolsScreen() {
     val api = LocalApi.current
     val scope = rememberCoroutineScope()
     var search by remember { mutableStateOf("") }
-    var refreshKey by remember { mutableStateOf(0) }
     var busyId by remember { mutableStateOf<String?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     val catalog = rememberRemote("/api/v1/catalog?sort=rating&search=${java.net.URLEncoder.encode(search, "UTF-8")}", SchoolCatalog.serializer())
