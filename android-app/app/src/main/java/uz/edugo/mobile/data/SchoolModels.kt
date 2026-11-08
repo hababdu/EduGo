@@ -23,3 +23,24 @@ import kotlinx.serialization.Serializable
     val requestedAt: String = "",
     val organization: SchoolItem,
 )
+
+@Serializable data class StudentTrial(
+    val id: String,
+    val status: String = "REQUESTED",
+    val preferredAt: String? = null,
+    val scheduledAt: String? = null,
+    val decisionNote: String? = null,
+    val organization: SchoolItem,
+)
+@Serializable data class StudentTimetableSlot(
+    val id: String,
+    val weekday: Int = 1,
+    val startTime: String = "",
+    val endTime: String = "",
+    val room: String? = null,
+    val subject: String = "",
+    val group: SchoolGroupRef = SchoolGroupRef(),
+    val teacher: SchoolTeacherRef = SchoolTeacherRef(),
+)
+@Serializable data class SchoolGroupRef(val id: String = "", val name: String = "")
+@Serializable data class SchoolTeacherRef(val id: String = "", val name: String = "")
