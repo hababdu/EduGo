@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.SchoolCatalog
 import uz.edugo.mobile.data.SchoolMembership
+import uz.edugo.mobile.data.StudentTrial
 
 @Composable
 fun StudentSchoolsScreen() {
@@ -33,8 +34,9 @@ fun StudentSchoolsScreen() {
     var message by remember { mutableStateOf<String?>(null) }
     val catalog = rememberRemote("/api/v1/catalog?sort=rating&search=${java.net.URLEncoder.encode(search, "UTF-8")}", SchoolCatalog.serializer())
     val memberships = rememberRemoteList("/api/v1/memberships/mine", SchoolMembership.serializer())
+    val trials = rememberRemoteList("/api/v1/trials/mine", StudentTrial.serializer())
 
-    RefreshColumn(listOf(catalog, memberships)) {
+    RefreshColumn(listOf(catalog, memberships, trials)) {
         Hero("EDUGO MAKTABLARI", "Maktablarni tanlang", "Bir nechta maktabga a'zo bo'lish va so'rovlaringizni kuzatish")
         OutlinedTextField(
             value = search,
@@ -53,6 +55,29 @@ fun StudentSchoolsScreen() {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(m.organization.name, color = p.ink, fontWeight = FontWeight.Bold)
                         Text("${m.organization.city.orEmpty()} · ${when (m.status) { "ACTIVE" -> "Faol a'zo"; "PENDING" -> "Tasdiq kutilmoqda"; "REJECTED" -> "Rad etilgan"; else -> m.status }}", color = p.muted, fontSize = 12.sp)
+                    }
+                }
+            }
+        }
+        Section(trials) { rows ->
+            SectionTitle("SINOV DARSLARI · ${rows.size}")
+            if (rows.isEmpty()) EmptyText("Sinov darsi uchun arizalar mavjud emas")
+            rows.forEach { trial ->
+                Panel {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(trial.organization.name, color = p.ink, fontWeight = FontWeight.Bold)
+                        Text(when (trial.status) {
+                            "REQUESTED" -> "Ariza yuborildi · tasdiq kutilmoqda"
+                            "APPROVED" -> "Sinov darsi tasdiqlandi"
+                            "ATTENDED" -> "Sinov darsida qatnashdingiz"
+                            "ADMITTED" -> "Maktabga qabul qilindingiz"
+                            "DECLINED" -> "Ariza rad etildi"
+                            "NO_SHOW" -> "Sinov darsiga kelinmadi"
+                            "CANCELLED" -> "Ariza bekor qilindi"
+                            else -> trial.status
+                        }, color = p.muted, fontSize = 12.sp)
+                        trial.scheduledAt?.let { Text("Dars vaqti: $it", color = p.accent, fontSize = 11.sp) }
+                        trial.decisionNote?.let { Text(it, color = p.muted, fontSize = 11.sp) }
                     }
                 }
             }
@@ -89,6 +114,24 @@ fun StudentSchoolsScreen() {
                                     }
                                 },
                             ) { Text(if (busyId == school.id) "Yuborilmoqda…" else "A'zo bo'lish") }
+                        }
+                        val hasTrial = (trials.state as? UiState.Ready)?.value?.any { it.organization.id == school.id && it.status in listOf("REQUESTED", "APPROVED", "ATTENDED", "ADMITTED") } == true
+                        if (!hasTrial && existing?.status != "ACTIVE") {
+                            TextButton(
+                                enabled = busyId != school.id,
+                                onClick = {
+                                    busyId = school.id
+                                    scope.launch {
+                                        try {
+                                            api.raw("POST", "/api/v1/trials", """{"organizationId":"${school.id}"}""")
+                                            message = "${school.name}: sinov darsi arizasi yuborildi"
+                                            trials.reload()
+                                        } catch (e: Exception) {
+                                            message = e.message ?: "Sinov darsi arizasi yuborilmadi"
+                                        } finally { busyId = null }
+                                    }
+                                },
+                            ) { Text("Sinov darsiga yozilish") }
                         }
                     }
                 }
