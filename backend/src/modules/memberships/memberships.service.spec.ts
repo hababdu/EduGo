@@ -37,7 +37,7 @@ describe('MembershipsService', () => {
     await expect(mk().svc.requestJoin(superU, 'o1')).rejects.toBeInstanceOf(BadRequestException);
     await expect(mk({ org: null }).svc.requestJoin(user, 'o1')).rejects.toBeInstanceOf(NotFoundException);
     await expect(mk({ pending: 3 }).svc.requestJoin(user, 'o1')).rejects.toBeInstanceOf(BadRequestException);
-    await expect(mk().svc.requestJoin({ ...user, organizationId: 'o2' }, 'o1')).rejects.toBeInstanceOf(ConflictException);
+    await expect(mk().svc.requestJoin({ ...user, organizationId: 'o2' }, 'o1')).resolves.toMatchObject({ status: 'PENDING' });
   });
   it("rad etilgan so'rov qayta yuborilishi mumkin", async () => {
     const { svc, prisma } = mk({ membership: mem({ status: 'REJECTED' }) });
