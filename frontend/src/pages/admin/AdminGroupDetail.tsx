@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { getFullUrl } from '../../hooks/useImageUpload';
 import {
-  useGroups,
   useAddStudentToGroup,
   useRemoveStudentFromGroup,
   useAssignGroupTeacher,
@@ -330,7 +329,7 @@ export function AdminGroupDetail() {
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-                <input value={studentSearch} onChange={e => { setStudentSearch(e.target.value); setShowStudentPicker(true); }} onFocus={() => setShowStudentPicker(true)} placeholder="Ism, familiya yoki username bo'yicha qidirish" className={`${CONTROL.input} w-full pl-9`} aria-label="Talabalarni qidirish" />
+                <input value={studentSearch} onChange={e => { setStudentSearch(e.target.value); setSelectedStudentId(''); setShowStudentPicker(true); }} onFocus={() => setShowStudentPicker(true)} placeholder="Ism, familiya yoki username bo'yicha qidirish" className={`${CONTROL.input} w-full pl-9`} aria-label="Talabalarni qidirish" />
               </div>
               <button type="button" onClick={() => { setShowStudentPicker(true); refetchAvailableStudents(); }} className={`${CONTROL.buttonGhost} shrink-0`}>Yangilash</button>
             </div>
