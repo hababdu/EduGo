@@ -35,6 +35,7 @@ import AdminGroups from './pages/admin/AdminGroups';
 import { AdminGroupDetail } from './pages/admin/AdminGroupDetail';
 import AdminPayments from './pages/admin/AdminPayments';
 import AdminLeads from './pages/admin/AdminLeads';
+import AdminTrials from './pages/admin/AdminTrials';
 import AdminSchool from './pages/school/AdminSchool';
 import StudentSchool from './pages/school/StudentSchool';
 import TeacherTimetable from './pages/school/TeacherTimetable';
@@ -228,6 +229,7 @@ function AdminRoutes() {
           <Route path="/admin/groups/:id" element={<AdminGroupDetail />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/leads" element={<AdminLeads />} />
+          <Route path="/admin/trials" element={<AdminTrials />} />
           <Route path="/admin/school" element={<AdminSchool />} />
           <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
