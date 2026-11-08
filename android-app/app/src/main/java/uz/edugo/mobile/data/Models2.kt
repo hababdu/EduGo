@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AssignedTest(
     val testId: String,
+    val groupId: String = "",
+    val groupName: String = "Umumiy",
     val title: String = "",
     val durationSeconds: Int = 0,
     val deadline: String? = null,
