@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, Check, GraduationCap, UserRoundX, X } from 'lucide-react';
+import { Check, GraduationCap, UserRoundX, X } from 'lucide-react';
 import { apiFetch } from '../../lib/api-client';
 import { StaffHero, Panel } from '../../components/staff';
 import { IMAGES } from '../../design/images';
@@ -49,7 +49,7 @@ export default function AdminTrials() {
     onSuccess: () => { toast('success', 'Ariza holati yangilandi'); refresh(); },
     onError: (e: any) => toast('error', e?.message || 'Amal bajarilmadi'),
   });
-  const counts = useMemo(() => {
+  const counts: Record<string, number> = useMemo(() => {
     const items = data?.items ?? [];
     return {
       ALL: data?.total ?? 0,
