@@ -31,11 +31,13 @@ export function uploadMaterialFile(
   file: File,
   onProgress?: (pct: number) => void,
   signal?: AbortSignal,
+  groupId?: string,
 ): Promise<MaterialFileDto> {
   const attempt = (): Promise<{ status: number; body: any }> =>
     new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${API_URL}/api/v1/materials/files`);
+      const query = groupId ? `?groupId=${encodeURIComponent(groupId)}` : '';
+      xhr.open('POST', `${API_URL}/api/v1/materials/files${query}`);
       const { accessToken } = useAuthStore.getState();
       if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
       const initData = (window as any).Telegram?.WebApp?.initData;
