@@ -44,3 +44,30 @@ import kotlinx.serialization.Serializable
 )
 @Serializable data class SchoolGroupRef(val id: String = "", val name: String = "")
 @Serializable data class SchoolTeacherRef(val id: String = "", val name: String = "")
+
+@Serializable data class AdminTrialStudent(
+    val id: String = "",
+    val name: String = "",
+    val username: String? = null,
+)
+@Serializable data class AdminTrialGroup(
+    val id: String = "",
+    val name: String = "",
+)
+@Serializable data class AdminTrialItem(
+    val id: String,
+    val status: String = "REQUESTED",
+    val preferredAt: String? = null,
+    val scheduledAt: String? = null,
+    val note: String? = null,
+    val decisionNote: String? = null,
+    val group: AdminTrialGroup? = null,
+    val student: AdminTrialStudent = AdminTrialStudent(),
+    val requestedByParent: Boolean = false,
+)
+@Serializable data class AdminTrialPage(
+    val total: Int = 0,
+    val page: Int = 1,
+    val pages: Int = 1,
+    val items: List<AdminTrialItem> = emptyList(),
+)
