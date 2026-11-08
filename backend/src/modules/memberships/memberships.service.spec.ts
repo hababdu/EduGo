@@ -50,6 +50,13 @@ describe('MembershipsService', () => {
     expect(prisma.teacherProfile.upsert).toHaveBeenCalled();
     expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { role: 'TEACHER', organizationId: 'o1' } });
   });
+  it("student second school approval keeps existing active school context", async () => {
+    const { svc, prisma } = mk({ membership: mem({ user: { id: 'u1', role: 'STUDENT', organizationId: 'o2' } }) });
+    await svc.decide(admin, 'm1', true);
+    expect(prisma.studentProfile.upsert).toHaveBeenCalled();
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
   it("boshqa maktab so'rovini ko'ra olmaydi (izolyatsiya)", async () => {
     const { svc } = mk({ membership: mem({ organizationId: 'o2' }) });
     await expect(svc.decide(admin, 'm1', true)).rejects.toBeInstanceOf(ForbiddenException);
@@ -65,6 +72,6 @@ describe('MembershipsService', () => {
     await expect(mk().svc.list(superU, {})).rejects.toBeInstanceOf(BadRequestException);
     const { svc, prisma } = mk({ membership: mem({ status: 'ACTIVE' }) });
     await svc.remove(admin, 'm1');
-    expect(prisma.user.updateMany).toHaveBeenCalledWith({ where: { id: 'u1', organizationId: 'o1' }, data: { organizationId: null, role: 'STUDENT' } });
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
 });
