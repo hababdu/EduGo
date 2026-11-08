@@ -36,13 +36,14 @@ export default function AdminTrials() {
   const qc = useQueryClient();
   const { data: groupOptions = [] } = useGroups();
   const [filter, setFilter] = useState<TrialStatus | 'ALL'>('ALL');
+  const [page, setPage] = useState(1);
   const [schedule, setSchedule] = useState<Record<string, string>>({});
   const [groups, setGroups] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const key = ['admin-trials', filter];
+  const key = ['admin-trials', filter, page];
   const { data, isLoading, error } = useQuery({
     queryKey: key,
-    queryFn: () => apiFetch<TrialResponse>(`/api/v1/admin/trials${filter === 'ALL' ? '' : `?status=${filter}`}`),
+    queryFn: () => apiFetch<TrialResponse>('/api/v1/admin/trials?' + new URLSearchParams({ page: String(page), ...(filter === 'ALL' ? {} : { status: filter }) }).toString()),
   });
   const refresh = () => qc.invalidateQueries({ queryKey: ['admin-trials'] });
   const act = useMutation({
@@ -69,7 +70,7 @@ export default function AdminTrials() {
       <StaffHero accent="gold" image={IMAGES.hero} eyebrow="EduGo · Qabul" title="Sinov darslari va qabul"
         subtitle="Arizalarni ko'rib chiqing, sinov darsini belgilang va qatnashgan talabani maktabga qabul qiling." />
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
-        {filters.map(s => <button key={s} type="button" role="tab" aria-selected={filter === s} onClick={() => setFilter(s)}
+        {filters.map(s => <button key={s} type="button" role="tab" aria-selected={filter === s} onClick={() => { setFilter(s); setPage(1); }}
           className={`shrink-0 rounded-xl px-3 py-2 text-xs font-semibold ${filter === s ? 'bg-accent text-base' : 'bg-surface/50 text-ink-muted'}`}>
           {s === 'ALL' ? 'Hammasi' : LABEL[s]} · {counts[s] ?? 0}
         </button>)}
@@ -118,7 +119,11 @@ export default function AdminTrials() {
           </div>
         </Panel>)}
       </div>
-      {data && data.pages > 1 && <p className="text-center text-xs text-ink-muted">Sahifa {data.page} / {data.pages} · {data.total} ta ariza</p>}
+      {data && data.pages > 1 && <div className="flex items-center justify-between gap-3">
+        <button type="button" disabled={page <= 1} onClick={() => setPage(v => Math.max(1, v - 1))} className="rounded-xl bg-surface/50 px-3 py-2 text-xs text-ink disabled:opacity-40">Oldingi</button>
+        <p className="text-center text-xs text-ink-muted">Sahifa {data.page} / {data.pages} · {data.total} ta ariza</p>
+        <button type="button" disabled={page >= data.pages} onClick={() => setPage(v => Math.min(data.pages, v + 1))} className="rounded-xl bg-surface/50 px-3 py-2 text-xs text-ink disabled:opacity-40">Keyingi</button>
+      </div>}
     </div>
   );
 }
