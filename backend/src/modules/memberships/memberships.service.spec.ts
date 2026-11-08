@@ -11,6 +11,7 @@ function mk(over: any = {}) {
     organization: { findFirst: jest.fn().mockResolvedValue(over.org === undefined ? { id: 'o1' } : over.org) },
     organizationMembership: {
       findUnique: jest.fn().mockResolvedValue(m ?? null),
+      findFirst: jest.fn().mockResolvedValue(over.remaining ?? null),
       count: jest.fn().mockResolvedValue(over.pending ?? 0),
       create: jest.fn().mockResolvedValue({ id: 'm1', status: 'PENDING' }),
       update: jest.fn().mockResolvedValue({ id: 'm1', status: 'PENDING' }),
