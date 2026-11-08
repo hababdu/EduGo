@@ -29,7 +29,13 @@ export class TrialsService {
 
     const student = await this.prisma.user.findFirst({ where: { id: studentId, deletedAt: null }, select: { id: true, organizationId: true } });
     if (!student) throw new NotFoundException("O'quvchi topilmadi");
-    if (student.organizationId === dto.organizationId) throw new ConflictException("O'quvchi allaqachon shu maktab a'zosi");
+    const activeMembership = await this.prisma.organizationMembership.findFirst({
+      where: { userId: studentId, organizationId: dto.organizationId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (student.organizationId === dto.organizationId || activeMembership) {
+      throw new ConflictException("O'quvchi allaqachon shu maktab a'zosi");
+    }
     const org = await this.prisma.organization.findFirst({ where: { id: dto.organizationId, status: 'ACTIVE' }, select: { id: true } });
     if (!org) throw new NotFoundException('Maktab topilmadi yoki faol emas');
     if (dto.groupId) {
