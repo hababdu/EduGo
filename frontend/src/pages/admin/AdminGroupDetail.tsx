@@ -7,6 +7,7 @@ import { apiFetch } from '../../lib/api-client';
 import { getFullUrl } from '../../hooks/useImageUpload';
 import {
   useAddStudentToGroup,
+  useAddStudentsToGroup,
   useRemoveStudentFromGroup,
   useAssignGroupTeacher,
   useTeachersList,
@@ -74,11 +75,13 @@ export function AdminGroupDetail() {
 
   /* ---------- Mutations ---------- */
   const addStudent = useAddStudentToGroup();
+  const addStudentsBulk = useAddStudentsToGroup();
   const removeStudent = useRemoveStudentFromGroup();
   const assignTeacher = useAssignGroupTeacher();
 
   /* ---------- Local state ---------- */
   const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
 
   /* ---------- Form state ---------- */
@@ -132,6 +135,38 @@ export function AdminGroupDetail() {
               err?.message ||
               "Qo'shishda xatolik",
           );
+        },
+      },
+    );
+  };
+
+  /* ---------- Handle: Bulk add students ---------- */
+  const handleBulkAddStudents = () => {
+    if (!selectedStudentIds.length) return;
+    haptic('light');
+    addStudentsBulk.mutate(
+      { groupId: id, studentIds: selectedStudentIds },
+      {
+        onSuccess: (result) => {
+          hapticNotify(result.addedCount > 0 ? 'success' : 'error');
+          if (result.skippedCount === 0) {
+            toast('success', `${result.addedCount} ta talaba guruhga qo'shildi!`);
+          } else {
+            toast('info', `${result.addedCount} ta qo'shildi, ${result.skippedCount} ta o'tkazib yuborildi.`);
+          }
+          setSelectedStudentIds([]);
+          setSelectedStudentId('');
+          setStudentSearch('');
+          refetchAvailableStudents();
+          refetchStudents();
+          refetchGroup();
+          if (result.skippedCount > 0) {
+            console.warn('Guruhga qo‘shilmagan talabalar:', result.skipped);
+          }
+        },
+        onError: (err: any) => {
+          hapticNotify('error');
+          toast('error', err?.response?.data?.message || err?.message || "Ommaviy qo'shishda xatolik");
         },
       },
     );
@@ -337,17 +372,32 @@ export function AdminGroupDetail() {
               {availableStudentsLoading || availableStudentsFetching ? <p className="p-3 text-xs text-ink-muted">Talabalar yuklanmoqda...</p>
                 : availableStudentsError ? <div className="p-3 text-xs text-coral">Ro'yxatni yuklab bo'lmadi. <button type="button" onClick={() => refetchAvailableStudents()} className="underline">Qayta urinish</button></div>
                 : availableStudents.length === 0 ? <p className="p-3 text-xs text-ink-muted">{studentSearch.trim() ? "Qidiruv bo'yicha talaba topilmadi." : "Bu maktabda guruhga qo'shish mumkin bo'lgan talabalar yo'q."}</p>
-                : availableStudents.map((student: any) => <div key={student.id} className="flex items-center gap-3 rounded-lg p-2 hover:bg-surface/80">
-                  <Avatar name={`${student.firstName} ${student.lastName || ''}`} />
-                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-ink">{student.firstName} {student.lastName || ''}</p><p className="truncate text-xs text-ink-muted">{student.username ? `@${student.username}` : student.phone || 'EduGo talabasi'}</p></div>
-                  <button type="button" onClick={() => setSelectedStudentId(student.id)} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${selectedStudentId === student.id ? 'bg-teal/15 text-teal' : 'bg-accent/10 text-accent'}`}>{selectedStudentId === student.id ? 'Tanlandi' : 'Tanlash'}</button>
-                </div>)}
+                : <>
+                  <div className="flex items-center justify-between gap-2 border-b border-tint/10 px-2 pb-2">
+                    <span className="text-xs text-ink-muted">{availableStudents.length} ta natija</span>
+                    <button type="button" onClick={() => {
+                      const visibleIds = availableStudents.map((student: any) => student.id);
+                      const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((studentId: string) => selectedStudentIds.includes(studentId));
+                      setSelectedStudentIds(allVisibleSelected ? selectedStudentIds.filter(studentId => !visibleIds.includes(studentId)) : [...new Set([...selectedStudentIds, ...visibleIds])]);
+                    }} className="text-xs font-semibold text-accent">
+                      {availableStudents.length > 0 && availableStudents.every((student: any) => selectedStudentIds.includes(student.id)) ? 'Tanlovni bekor qilish' : 'Barchasini tanlash'}
+                    </button>
+                  </div>
+                  {availableStudents.map((student: any) => <label key={student.id} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-surface/80">
+                    <input type="checkbox" checked={selectedStudentIds.includes(student.id)} onChange={e => setSelectedStudentIds(current => e.target.checked ? [...current, student.id] : current.filter(studentId => studentId !== student.id))} className="h-4 w-4 rounded accent-current" />
+                    <Avatar name={`${student.firstName} ${student.lastName || ''}`} />
+                    <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-ink">{student.firstName} {student.lastName || ''}</p><p className="truncate text-xs text-ink-muted">{student.username ? `@${student.username}` : student.phone || 'EduGo talabasi'}</p></div>
+                    {selectedStudentIds.includes(student.id) && <span className="text-xs font-semibold text-teal">Tanlandi</span>}
+                  </label>)}
+                </>
               {availableStudentsData && availableStudentsData.total > availableStudents.length && <p className="p-2 text-center text-[11px] text-ink-muted">Birinchi {availableStudents.length} / {availableStudentsData.total} ta natija. Aniqroq qidiruv kiriting.</p>}
             </div>}
-            {selectedStudentId && <p className="text-xs text-teal">Talaba tanlandi. Qo'shish tugmasini bosing.</p>}
-            <button type="button" onClick={() => handleAddStudent({ preventDefault: () => undefined } as React.FormEvent)} disabled={addStudent.isPending || !selectedStudentId} className={`${CONTROL.buttonPrimary} w-full justify-center disabled:opacity-50`}>
-              {addStudent.isPending ? "Guruhga qo'shilmoqda..." : "Tanlangan talabani guruhga qo'shish"}
-            </button>
+            <div className="flex flex-col gap-2 border-t border-tint/10 pt-3">
+              <div className="flex items-center justify-between text-xs"><span className="text-ink-muted">Tanlangan talabalar</span><strong className="text-ink">{selectedStudentIds.length} ta</strong></div>
+              <button type="button" onClick={handleBulkAddStudents} disabled={addStudentsBulk.isPending || selectedStudentIds.length === 0} className={`${CONTROL.buttonPrimary} w-full justify-center disabled:opacity-50`}>
+                {addStudentsBulk.isPending ? "Talabalar qo'shilmoqda..." : `Tanlangan ${selectedStudentIds.length} ta talabani guruhga qo'shish`}
+              </button>
+            </div>
           </div>
         </Panel>
       </div>
