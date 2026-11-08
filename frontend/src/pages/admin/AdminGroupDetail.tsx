@@ -23,7 +23,7 @@ import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
 import { EmptyState, Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
-import { ArrowLeft, Users, Calendar, GraduationCap, Plus, X, ClipboardCheck, ShieldCheck, Wallet } from '../../design/icons';
+import { ArrowLeft, Users, Calendar, GraduationCap, Plus, X, Search, ClipboardCheck, ShieldCheck, Wallet } from '../../design/icons';
 
 
 /* ============================================================
@@ -198,18 +198,6 @@ export function AdminGroupDetail() {
       },
     );
   };
-
-  /* ---------- Filter students (exclude existing members) ---------- */
-  const existingStudentIds = new Set(
-    (groupStudents ?? []).map((m: any) => {
-      const s = m?.student || m?.user || m;
-      return s?.id || s?._id || m?.studentId;
-    }),
-  );
-
-  const availableStudents = allStudents.filter(
-    (s: any) => !existingStudentIds.has(s.id || s._id || s.studentId),
-  );
 
   /* ---------- Loading ---------- */
   if (groupLoading || !group) {
