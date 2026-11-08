@@ -49,6 +49,7 @@ interface GroupDetail {
   room?: string | null;
   teacher?: Teacher | null;
   members?: GroupMember[];
+  memberCount?: number;
   _count?: {
     members?: number;
     assignments?: number;
@@ -143,7 +144,7 @@ export function GroupDetailPage() {
   }
 
   const members = group.members ?? [];
-  const memberCount = group._count?.members ?? members.length;
+  const memberCount = group.memberCount ?? group._count?.members ?? members.length;
   const assignmentCount = group._count?.assignments ?? 0;
   const posterFullUrl = group.posterUrl ? getFullUrl(group.posterUrl) : null;
 
