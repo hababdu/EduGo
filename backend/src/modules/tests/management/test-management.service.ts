@@ -118,29 +118,25 @@ export class TestManagementService {
           { targetType: 'INDIVIDUAL', studentId },
         ],
       },
-      include: { test: true },
+      include: { test: true, group: { select: { id: true, name: true } } },
       orderBy: { assignedAt: 'desc' },
     });
 
-    const uniqueByTest = new Map<string, (typeof assignments)[number]>(
-      assignments.map((a) => [a.testId, a]),
-    );
-
+    const testIds = Array.from(new Set(assignments.map((a) => a.testId)));
     const attempts = await this.prisma.testAttempt.findMany({
-      where: {
-        studentId,
-        testId: { in: Array.from(uniqueByTest.keys()) },
-      },
+      where: { studentId, testId: { in: testIds } },
     });
 
     const attemptMap = new Map<string, (typeof attempts)[number]>(
       attempts.map((a) => [a.testId, a]),
     );
 
-    return Array.from(uniqueByTest.values()).map((a) => {
+    return assignments.map((a) => {
       const attempt = attemptMap.get(a.testId);
       return {
         testId: a.testId,
+        groupId: a.groupId ?? '',
+        groupName: a.group?.name ?? 'Umumiy',
         title: a.test.title,
         durationSeconds: a.test.durationSeconds,
         deadline: a.deadline,
