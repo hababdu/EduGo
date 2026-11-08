@@ -116,7 +116,7 @@ export class SubmissionsService {
     });
     const can = this.canResubmit(a, sub?.status) ?? this.canSubmitNow(a);
     return {
-      assignment: { id: a.id, title: a.title, dueAt: a.dueAt, maxScore: a.maxScore, gradingStatus: a.gradingStatus },
+      assignment: { id: a.id, groupId: a.groupId, title: a.title, dueAt: a.dueAt, maxScore: a.maxScore, gradingStatus: a.gradingStatus },
       canSubmit: can.ok,
       closedReason: can.reason,
       submission: this.studentView(sub as SubmissionRow | null, a.maxScore),
