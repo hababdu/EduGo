@@ -18,7 +18,8 @@ function build(opts: { maxCapacity?: number | null; members?: number } = {}) {
   };
   const prisma: any = {
     group: { findUnique: jest.fn().mockResolvedValue(group), update: jest.fn().mockResolvedValue({}) },
-    user: { findFirst: jest.fn().mockResolvedValue({ id: 's', organizationId: 'o1' }), findUnique: jest.fn().mockResolvedValue({ id: 'tB' }) },
+    user: { findFirst: jest.fn().mockResolvedValue({ id: 's', organizationId: 'o1' }), findUnique: jest.fn().mockResolvedValue({ id: 'tB' }), findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    organizationMembership: { findFirst: jest.fn().mockResolvedValue(null) },
     groupMember: {
       findUnique: jest.fn().mockResolvedValue(null),
       count: jest.fn().mockResolvedValue(opts.members ?? 0),
@@ -40,6 +41,22 @@ describe("sig'im cheklovi (addStudentToGroup)", () => {
     await svc.addStudentToGroup('g', 's', teacher);
     expect(tx.group.update).toHaveBeenCalled();
     expect(tx.groupMember.create).toHaveBeenCalled();
+  });
+  it("asosiy maktabi boshqa bo'lgan, lekin shu maktabga faol a'zo talabani qo'shadi", async () => {
+    const a = build();
+    a.prisma.user.findFirst.mockResolvedValue({ id: 's', organizationId: 'o2' });
+    a.prisma.organizationMembership.findFirst.mockResolvedValue({ id: 'membership-o1' });
+    await a.svc.addStudentToGroup('g', 's', teacher);
+    expect(a.prisma.organizationMembership.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 's', organizationId: 'o1', role: 'STUDENT', status: 'ACTIVE' },
+    }));
+    expect(a.prisma.groupMember.create).toHaveBeenCalled();
+  });
+  it("maktab a'zoligi yo'q talabani boshqa maktab guruhiga qo'shmaydi", async () => {
+    const a = build();
+    a.prisma.user.findFirst.mockResolvedValue({ id: 's', organizationId: 'o2' });
+    await expect(a.svc.addStudentToGroup('g', 's', teacher)).rejects.toThrow("Talaba ushbu maktabning faol a'zosi emas");
+    expect(a.prisma.groupMember.create).not.toHaveBeenCalled();
   });
   it("sig'im belgilanmagan bo'lsa tranzaksiyasiz oddiy qo'shadi", async () => {
     const { svc, prisma } = build({ maxCapacity: null, members: 999 });
@@ -83,5 +100,21 @@ describe('DTO tekshiruvi — Telegram havola va sig\'im', () => {
     for (const bad of [0, -1, 501, 1.5, 'x']) expect(await errs(CreateGroupDto, { name: 'A', maxCapacity: bad })).toContain('maxCapacity');
     expect(await errs(CreateGroupDto, { name: 'A', maxCapacity: 30 })).toEqual([]);
     expect(await errs(UpdateGroupDto, { maxCapacity: null, telegramChatUrl: null })).toEqual([]);
+  });
+});
+
+describe('findAvailableStudents', () => {
+  it("maktabning faol a'zolarini qidiradi va guruhdagi talabalarni chiqarib tashlaydi", async () => {
+    const a = build();
+    a.prisma.user.findMany.mockResolvedValue([{ id: 's2', firstName: 'Ali', lastName: 'Valiyev' }]);
+    a.prisma.user.count.mockResolvedValue(1);
+    const result = await a.svc.findAvailableStudents('g', teacher, 'Ali');
+    expect(result).toMatchObject({ total: 1, items: [{ id: 's2' }] });
+    const where = a.prisma.user.findMany.mock.calls[0][0].where;
+    expect(where.groupMemberships).toEqual({ none: { groupId: 'g' } });
+    expect(where.OR).toEqual(expect.arrayContaining([
+      { organizationId: 'o1' },
+      { memberships: { some: { organizationId: 'o1', role: 'STUDENT', status: 'ACTIVE' } } },
+    ]));
   });
 });
