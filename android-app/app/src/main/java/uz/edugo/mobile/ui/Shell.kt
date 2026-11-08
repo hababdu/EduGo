@@ -25,6 +25,7 @@ import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.People
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.EventAvailable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -64,7 +65,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.ADMIN -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "Foydalanuvchilar", Icons.Rounded.People),
         Tab("admin-groups", "Guruhlar", Icons.Rounded.Groups), Tab("payments", "To'lov", Icons.Rounded.Assignment),
-        Tab("leads", "Qabul", Icons.Rounded.People),
+        Tab("leads", "Lidlar", Icons.Rounded.People), Tab("trials", "Sinov", Icons.Rounded.EventAvailable),
     )
     Role.SUPER -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
@@ -156,6 +157,7 @@ fun MainShell(user: AuthUser) {
                     AdminGroupPaymentsScreen(entry.arguments?.getString("id").orEmpty(), entry.arguments?.getString("month").orEmpty()) { nav.popBackStack() }
                 }
                 composable("leads") { AdminLeadsScreen() }
+                composable("trials") { AdminTrialsScreen() }
                 composable("billing") { SuperBillingScreen() }
                 composable("audit") { SuperAuditScreen() }
                 composable("ai-settings") { SuperAiSettingsScreen() }
