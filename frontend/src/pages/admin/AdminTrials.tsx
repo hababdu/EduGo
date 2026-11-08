@@ -7,6 +7,7 @@ import { IMAGES } from '../../design/images';
 import { PAGE_WIDE } from '../../design/tokens';
 import { EmptyState, Skeleton } from '../../components/ui';
 import { toast } from '../../components/ui/Toast';
+import { useGroups } from '../../hooks/useGroups';
 
 type TrialStatus = 'REQUESTED' | 'APPROVED' | 'DECLINED' | 'ATTENDED' | 'NO_SHOW' | 'CANCELLED' | 'ADMITTED';
 interface Trial {
@@ -33,6 +34,7 @@ const input = 'min-h-[40px] rounded-xl border border-tint/10 bg-surface/50 px-3 
 
 export default function AdminTrials() {
   const qc = useQueryClient();
+  const { data: groups = [] } = useGroups();
   const [filter, setFilter] = useState<TrialStatus | 'ALL'>('ALL');
   const [schedule, setSchedule] = useState<Record<string, string>>({});
   const [groups, setGroups] = useState<Record<string, string>>({});
@@ -106,8 +108,11 @@ export default function AdminTrials() {
               <button type="button" disabled={act.isPending} onClick={() => act.mutate({ id: t.id, action: 'no-show' })} className="flex min-h-[40px] items-center justify-center gap-1 rounded-xl bg-coral/15 px-3 py-2 text-xs font-semibold text-coral"><UserRoundX className="h-4 w-4"/>Kelmagan</button>
             </div>}
             {t.status === 'ATTENDED' && <div className="space-y-2 border-t border-tint/10 pt-3">
-              <label className="block text-xs text-ink-muted">Qabul qilinadigan guruh ID (ixtiyoriy)</label>
-              <input className={`${input} w-full`} placeholder="Guruh ID — bo'sh qoldirilsa sinov guruhi ishlatiladi" value={groups[t.id] ?? ''} onChange={e => setGroups(v => ({ ...v, [t.id]: e.target.value }))} />
+              <label className="block text-xs text-ink-muted">Biriktiriladigan guruh (ixtiyoriy)</label>
+              <select className={`${input} w-full`} value={groups[t.id] ?? ''} onChange={e => setGroups(v => ({ ...v, [t.id]: e.target.value }))}>
+                <option value="">Sinov guruhidan foydalanish</option>
+                {groups.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
               <button type="button" disabled={act.isPending} onClick={() => act.mutate({ id: t.id, action: 'admit', body: groups[t.id]?.trim() ? { groupId: groups[t.id].trim() } : {} })} className="flex min-h-[42px] w-full items-center justify-center gap-2 rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-base"><GraduationCap className="h-4 w-4"/>Maktabga qabul qilish</button>
             </div>}
           </div>
