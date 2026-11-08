@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseInterceptors,
@@ -33,8 +34,9 @@ export class MaterialsController {
   upload(
     @CurrentUser() user: CurrentUserPayload,
     @UploadedFile() file: { originalname: string; mimetype: string; buffer: Buffer },
+    @Query('groupId') groupId?: string,
   ) {
-    return this.materials.upload(user, file);
+    return this.materials.upload(user, file, groupId);
   }
 
   @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN', 'STUDENT')
