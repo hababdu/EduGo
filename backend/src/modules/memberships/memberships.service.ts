@@ -52,7 +52,7 @@ export class MembershipsService implements OnModuleInit {
       orderBy: { requestedAt: 'desc' },
       include: { organization: { select: { id: true, name: true } } },
     });
-    return rows.map((m) => ({ id: m.id, role: m.role, status: m.status, requestedAt: m.requestedAt, decidedAt: m.decidedAt, organization: m.organization }));
+    return rows.map((m) => ({ id: m.id, role: m.role, status: m.status, requestedAt: m.requestedAt, decidedAt: m.decidedAt, organization: m.organization, isActive: m.status === 'ACTIVE' && m.organizationId === user.organizationId }));
   }
 
   async requestJoin(user: CurrentUserPayload, orgId: string, role: 'STUDENT' | 'TEACHER' = 'STUDENT', message?: string) {
@@ -75,6 +75,19 @@ export class MembershipsService implements OnModuleInit {
       ? await this.prisma.organizationMembership.update({ where: { id: existing.id }, data })
       : await this.prisma.organizationMembership.create({ data: { userId: user.id, organizationId: orgId, ...data } });
     return { id: m.id, status: m.status };
+  }
+
+  /**
+   * O'quvchi bir nechta maktab a'zosi bo'lishi mumkin; `User.organizationId` — hozirgi (faol) maktab.
+   * Faqat o'quvchi a'zoliklari orasida almashtiriladi (o'qituvchi/admin uchun bitta maktab qoidasi o'zgarmaydi).
+   */
+  async activate(user: CurrentUserPayload, membershipId: string) {
+    if (user.role !== 'STUDENT') throw new BadRequestException("Maktab almashtirish faqat o'quvchilar uchun");
+    const m = await this.prisma.organizationMembership.findUnique({ where: { id: membershipId }, include: { organization: { select: { status: true } } } });
+    if (!m || m.userId !== user.id || m.status !== 'ACTIVE' || m.role !== 'STUDENT') throw new NotFoundException("A'zolik topilmadi");
+    if (m.organization.status !== 'ACTIVE') throw new BadRequestException('Maktab faol emas');
+    await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: m.organizationId } });
+    return { ok: true };
   }
 
   async cancel(user: CurrentUserPayload, id: string) {
@@ -162,7 +175,7 @@ export class MembershipsService implements OnModuleInit {
     if (finalRole === 'STUDENT') {
       await this.prisma.studentProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
       // organizationId — eski tizimdagi bitta faol kontekst; mavjud maktab kontekstini almashtirmaymiz.
-      if (!m.user.organizationId) await this.prisma.user.update({ where: { id: m.userId }, data: { role: 'STUDENT' } });
+      if (!m.user.organizationId) await this.prisma.user.update({ where: { id: m.userId }, data: { role: 'STUDENT', organizationId: m.organizationId } });
     } else {
       await this.applyActive(m.userId, m.organizationId, finalRole);
       await this.prisma.organizationMembership.deleteMany({ where: { userId: m.userId, status: 'PENDING', organizationId: { not: m.organizationId } } });
@@ -191,7 +204,7 @@ export class MembershipsService implements OnModuleInit {
     });
     if (role === 'STUDENT') {
       await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
-      if (!user.organizationId) await this.prisma.user.update({ where: { id: userId }, data: { role: 'STUDENT' } });
+      if (!user.organizationId) await this.prisma.user.update({ where: { id: userId }, data: { role: 'STUDENT', organizationId: orgId } });
     } else {
       await this.applyActive(userId, orgId, role);
     }

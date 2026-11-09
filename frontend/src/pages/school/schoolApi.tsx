@@ -5,7 +5,7 @@ import { toast } from '../../components/ui/Toast';
 export interface School { id: string; name: string; city: string | null; about: string | null; ratingAvg: number; ratingCount: number }
 export interface SchoolDetail extends School { subjects: string[]; breakdown: Record<string, number>; reviews: { rating: number; comment: string | null; createdAt: string; author: string }[] }
 export interface Catalog { total: number; page: number; pages: number; items: School[] }
-export interface MyMembership { id: string; role: string; status: string; requestedAt: string; organization: { id: string; name: string } }
+export interface MyMembership { id: string; role: string; status: string; requestedAt: string; isActive?: boolean; organization: { id: string; name: string } }
 export interface MyTrial { id: string; status: string; preferredAt: string | null; scheduledAt: string | null; decisionNote: string | null; organization: { id: string; name: string }; group: { name: string } | null; student: { id: string; name: string } }
 export interface Slot { id: string; weekday: number; startTime: string; endTime: string; room: string | null; subject: string; group: { id: string; name: string }; teacher: { id: string; name: string } }
 export interface MemberRow { id: string; role: string; status: string; message: string | null; requestedAt: string; user: { id: string; name: string; username: string | null; telegramId: string } }

@@ -95,12 +95,21 @@ function SchoolsTab() {
 function RequestsTab() {
   const { data: m } = useSchoolQuery<MyMembership[]>(['mine-m'], '/api/v1/memberships/mine');
   const { data: t } = useSchoolQuery<MyTrial[]>(['mine-t'], '/api/v1/trials/mine');
+  const activate = useSchoolAction((id: string) => post(`/api/v1/memberships/${id}/activate`), 'Maktab almashtirildi', () => window.location.reload());
+  const mine = m?.filter((r) => r.status === 'ACTIVE') ?? [];
+  const requests = m?.filter((r) => r.status !== 'ACTIVE') ?? [];
   const cancelM = useSchoolAction((id: string) => del(`/api/v1/memberships/requests/${id}`), "So'rov bekor qilindi");
   const cancelT = useSchoolAction((id: string) => del(`/api/v1/trials/${id}`), 'Bekor qilindi');
   return (
     <div className="space-y-4">
+      <Panel title="Mening maktablarim" icon={GraduationCap} accent="sky" flush>
+        {!mine.length ? <p className="p-5 text-xs text-ink-muted">Siz hali hech qaysi maktab a'zosi emassiz. «Maktablar» bo'limidan maktab tanlab, so'rov yuboring. Bir nechta maktab a'zosi bo'lish mumkin.</p> : <ul className="divide-y divide-tint/5">{mine.map((r) => (
+          <li key={r.id} className="flex items-center gap-3 px-4 py-3"><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-ink">{r.organization.name}</div><div className="text-[11px] text-ink-muted">{ROLE_UZ[r.role] ?? r.role}</div></div>
+            {r.isActive ? <Chip s={{ l: 'Hozirgi', c: 'bg-teal/15 text-teal' }} /> : r.role !== 'STUDENT' ? null : <button type="button" disabled={activate.isPending} onClick={() => activate.mutate(r.id)} className="rounded-xl bg-sky/15 px-2.5 py-1.5 text-xs font-semibold text-sky">Tanlash</button>}</li>
+        ))}</ul>}
+      </Panel>
       <Panel title="A'zolik so'rovlari" accent="teal" flush>
-        {!m?.length ? <p className="p-5 text-xs text-ink-muted">So'rov yo'q</p> : <ul className="divide-y divide-tint/5">{m.map((r) => (
+        {!requests.length ? <p className="p-5 text-xs text-ink-muted">So'rov yo'q</p> : <ul className="divide-y divide-tint/5">{requests.map((r) => (
           <li key={r.id} className="flex items-center gap-3 px-4 py-3"><div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-ink">{r.organization.name}</div><div className="text-[11px] text-ink-muted">{ROLE_UZ[r.role] ?? r.role} · {dt(r.requestedAt)}</div></div>
             <Chip s={MEMBER_UZ[r.status] ?? MEMBER_UZ.PENDING} />
             {r.status === 'PENDING' && <button type="button" onClick={() => cancelM.mutate(r.id)} className="rounded-xl bg-coral/10 px-2.5 py-1.5 text-xs font-semibold text-coral">Bekor</button>}</li>
@@ -120,7 +129,7 @@ function RequestsTab() {
 /** O'quvchi uchun: maktablar katalogi, o'z jadvali, so'rovlar. */
 export default function StudentSchool() {
   const [tab, setTab] = useState<Tab>('schools');
-  const tabs: [Tab, string][] = [['schools', 'Maktablar'], ['timetable', 'Jadvalim'], ['requests', "So'rovlarim"]];
+  const tabs: [Tab, string][] = [['schools', 'Maktablar'], ['timetable', 'Jadvalim'], ['requests', 'Maktablarim']];
   return (
     <div className={PAGE}>
       <StaffHero accent="sky" image={IMAGES.hero} eyebrow="EduGo · Maktab" title="Maktablar va jadval" subtitle="Maktab toping, a'zo bo'ling yoki sinov darsiga yoziling." />

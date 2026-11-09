@@ -75,4 +75,19 @@ describe('MembershipsService', () => {
     await svc.remove(admin, 'm1');
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
   });
+
+  it("o'quvchi faol maktabni almashtiradi; o'qituvchi yoki begona a'zolik rad etiladi", async () => {
+    const m = { id: 'm9', userId: 'u1', organizationId: 'o2', role: 'STUDENT', status: 'ACTIVE', organization: { status: 'ACTIVE' } };
+    const { svc, prisma } = mk({ membership: m });
+    await svc.activate({ ...user, organizationId: 'o1' }, 'm9');
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { organizationId: 'o2' } });
+    await expect(mk({ membership: { ...m, userId: 'x' } }).svc.activate(user, 'm9')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(mk({ membership: { ...m, role: 'TEACHER' } }).svc.activate(user, 'm9')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(mk().svc.activate({ ...user, role: 'TEACHER' }, 'm9')).rejects.toBeInstanceOf(BadRequestException);
+  });
+  it("birinchi a'zolikda o'quvchining hozirgi maktabi o'rnatiladi", async () => {
+    const { svc, prisma } = mk({ membership: mem() });
+    await svc.decide(admin, 'm1', true);
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { role: 'STUDENT', organizationId: 'o1' } });
+  });
 });

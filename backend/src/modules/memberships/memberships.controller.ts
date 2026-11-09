@@ -13,6 +13,7 @@ export class MembershipsController {
   @Get('schools') schools(@Query() q: SchoolSearchDto) { return this.svc.schools(q.search); }
   @Get('mine') mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.mine(u); }
   @Throttle({ default: { limit: 5, ttl: 60_000 } }) @Post('requests') request(@CurrentUser() u: CurrentUserPayload, @Body() dto: JoinRequestDto) { return this.svc.requestJoin(u, dto.organizationId, dto.role, dto.message); }
+  @Post(':id/activate') activate(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.activate(u, id); }
   @Delete('requests/:id') cancel(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.cancel(u, id); }
 }
 

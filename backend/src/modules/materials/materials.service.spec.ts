@@ -82,7 +82,7 @@ describe('MaterialsService — maktab kanali', () => {
   it("kanali yo'q maktab uchun yuklash rad etiladi (umumiy kanalga tushmaydi)", async () => {
     const { svc, tg, prisma } = build();
     prisma.organization.findUnique.mockResolvedValue({ storageChatId: null });
-    await expect(svc.upload(orgTeacher, up)).rejects.toThrow(/yopiq kanal/);
+    await expect(svc.upload(orgTeacher, up)).rejects.toThrow(/yopiq Telegram kanal/);
     expect(tg.store).not.toHaveBeenCalled();
   });
 
