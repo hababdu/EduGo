@@ -97,7 +97,7 @@ export function AdminGroupDetail() {
   useEffect(() => {
     const cleanup = showBackButton(() => {
       haptic('light');
-      navigate('/admin/groups');
+      navigate('/admin/school?tab=groups');
     });
     return () => {
       cleanup?.();
@@ -269,7 +269,7 @@ export function AdminGroupDetail() {
             type="button"
             onClick={() => {
               haptic('light');
-              navigate('/admin/groups');
+              navigate('/admin/school?tab=groups');
             }}
             className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink bg-tint/5 px-3 py-2 rounded-xl border border-tint/10 min-h-[36px] transition"
           >

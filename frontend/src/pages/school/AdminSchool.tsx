@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import AdminGroups from '../admin/AdminGroups';
+import AdminTrials from '../admin/AdminTrials';
 import { CalendarDays, GraduationCap, Settings, Users } from 'lucide-react';
 import { StaffHero, Panel, Avatar } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
@@ -7,7 +10,8 @@ import { PAGE_WIDE } from '../../design/tokens';
 import { TimetableView } from './TimetableView';
 import { AssignmentRow, Chip, DAYS, InvoiceRow, MEMBER_UZ, MemberRow, Paged, ROLE_UZ, Slot, TRIAL_UZ, TrialRow, del, dt, inputCls, money, patch, post, useSchoolAction, useSchoolQuery } from './schoolApi';
 
-type Tab = 'members' | 'trials' | 'timetable' | 'profile';
+type Tab = 'members' | 'groups' | 'trials' | 'timetable' | 'profile';
+const TABS: Tab[] = ['members', 'groups', 'trials', 'timetable', 'profile'];
 const btn = (c: string) => `rounded-xl px-2.5 py-1.5 text-xs font-semibold ${c}`;
 const ok = 'bg-teal/15 text-teal';
 const bad = 'bg-coral/10 text-coral';
@@ -72,43 +76,6 @@ function MembersTab() {
         )}
       </Panel>
     </div>
-  );
-}
-
-/* ───────── Sinov darslari ───────── */
-function TrialsTab() {
-  const [status, setStatus] = useState('REQUESTED');
-  const [when, setWhen] = useState<Record<string, string>>({});
-  const { data, isLoading } = useSchoolQuery<Paged<TrialRow>>(['trials', status], `/api/v1/admin/trials?status=${status}`);
-  const { data: groups } = useSchoolQuery<{ id: string; name: string }[]>(['groups'], '/api/v1/groups');
-  const [grp, setGrp] = useState<Record<string, string>>({});
-  const act = useSchoolAction((v: { id: string; a: string; body?: unknown }) => post(`/api/v1/admin/trials/${v.id}/${v.a}`, v.body), 'Bajarildi');
-  return (
-    <Panel title="Sinov darslari" icon={GraduationCap} accent="gold" flush>
-      <div className="flex flex-wrap gap-1.5 border-b border-tint/5 p-3">{Object.entries(TRIAL_UZ).filter(([k]) => k !== 'CANCELLED').map(([k, v]) => (
-        <button key={k} type="button" onClick={() => setStatus(k)} className={`rounded-full px-3 py-1 text-xs font-semibold ${status === k ? 'bg-gold/20 text-gold' : 'bg-tint/5 text-ink-muted'}`}>{v.l}</button>
-      ))}</div>
-      {isLoading ? <div className="p-5"><Skeleton className="h-24" /></div> : !data?.items.length ? <p className="p-6 text-center text-xs text-ink-muted">Bo'sh</p> : (
-        <ul className="divide-y divide-tint/5">{data.items.map((t) => (
-          <li key={t.id} className="space-y-2 px-4 py-3">
-            <div className="flex items-center gap-2"><Avatar name={t.student.name} />
-              <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-ink">{t.student.name}{t.requestedByParent ? ' (ota-ona orqali)' : ''}</div><div className="truncate text-[11px] text-ink-muted">{t.group ? `${t.group.name} · ` : ''}{t.scheduledAt ? `Dars: ${dt(t.scheduledAt)}` : t.preferredAt ? `Xohish: ${dt(t.preferredAt)}` : 'Vaqt yo\'q'}{t.note ? ` · ${t.note}` : ''}</div></div>
-              <Chip s={TRIAL_UZ[t.status]} /></div>
-            {t.status === 'REQUESTED' && (
-              <div className="flex flex-wrap gap-2"><input type="datetime-local" aria-label="Dars vaqti" className="min-h-[40px] flex-1 rounded-xl border border-tint/5 bg-surface/40 px-2 text-xs text-ink" value={when[t.id] ?? ''} onChange={(e) => setWhen({ ...when, [t.id]: e.target.value })} />
-                <button type="button" disabled={!when[t.id] || act.isPending} onClick={() => act.mutate({ id: t.id, a: 'approve', body: { scheduledAt: new Date(when[t.id]).toISOString() } })} className={`${btn(ok)} disabled:opacity-40`}>Tasdiqlash</button>
-                <button type="button" onClick={() => act.mutate({ id: t.id, a: 'decline', body: {} })} className={btn(bad)}>Rad</button></div>
-            )}
-            {t.status === 'APPROVED' && <div className="flex gap-2"><button type="button" onClick={() => act.mutate({ id: t.id, a: 'attended' })} className={btn(ok)}>Qatnashdi</button><button type="button" onClick={() => act.mutate({ id: t.id, a: 'no-show' })} className={btn(bad)}>Kelmadi</button><button type="button" onClick={() => act.mutate({ id: t.id, a: 'decline', body: {} })} className={btn(neutral)}>Bekor</button></div>}
-            {t.status === 'ATTENDED' && (
-              <div className="flex gap-2"><select aria-label="Guruh" className="min-h-[40px] flex-1 rounded-xl bg-tint/5 px-2 text-xs text-ink" value={grp[t.id] ?? t.group?.id ?? ''} onChange={(e) => setGrp({ ...grp, [t.id]: e.target.value })}>
-                <option value="">Guruhsiz</option>{groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
-                <button type="button" disabled={act.isPending} onClick={() => act.mutate({ id: t.id, a: 'admit', body: { groupId: (grp[t.id] ?? t.group?.id) || undefined } })} className={btn(ok)}>Qabul qilish</button></div>
-            )}
-          </li>
-        ))}</ul>
-      )}
-    </Panel>
   );
 }
 
@@ -193,19 +160,23 @@ function ProfileTab() {
   );
 }
 
-/** Maktab admini: a'zolar, sinov darslari, jadval, profil va obuna. */
+/** Maktab admini: a'zolar, guruhlar, sinov darslari, jadval, profil va obuna — bitta joyda. Tab URL'da (?tab=). */
 export default function AdminSchool() {
-  const [tab, setTab] = useState<Tab>('members');
+  const [params, setParams] = useSearchParams();
+  const q = params.get('tab') as Tab | null;
+  const tab: Tab = q && TABS.includes(q) ? q : 'members';
+  const setTab = (t: Tab) => setParams(t === 'members' ? {} : { tab: t }, { replace: true });
   const { data: ctx } = useSchoolQuery<{ pending?: { joinRequests: number; trialRequests: number } }>(['ctx'], '/api/v1/panel/context');
-  const tabs: [Tab, string, number?][] = [['members', "A'zolar", ctx?.pending?.joinRequests], ['trials', 'Sinov', ctx?.pending?.trialRequests], ['timetable', 'Jadval'], ['profile', 'Profil']];
+  const tabs: [Tab, string, number?][] = [['members', "A'zolar", ctx?.pending?.joinRequests], ['groups', 'Guruhlar'], ['trials', 'Sinov', ctx?.pending?.trialRequests], ['timetable', 'Jadval'], ['profile', 'Profil']];
   return (
     <div className={PAGE_WIDE}>
-      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="EduGo · Maktab" title="Maktab boshqaruvi" subtitle="A'zolik so'rovlari, sinov darslari, o'qituvchilar va dars jadvali." />
-      <div className="flex gap-2">{tabs.map(([k, l, n]) => (
-        <button key={k} type="button" onClick={() => setTab(k)} className={`relative flex-1 rounded-xl py-2 text-xs font-semibold ${tab === k ? 'bg-sky/20 text-sky' : 'bg-tint/5 text-ink-muted'}`}>{l}{!!n && <span className="ml-1 rounded-full bg-coral px-1.5 py-0.5 text-[10px] text-white">{n}</span>}</button>
+      <StaffHero accent="sky" image={IMAGES.hero} eyebrow="EduGo · Maktab" title="Maktab boshqaruvi" subtitle="A'zolar, guruhlar, sinov darslari, o'qituvchilar va dars jadvali — bitta joyda." />
+      <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist">{tabs.map(([k, l, n]) => (
+        <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={`relative shrink-0 rounded-xl px-3.5 py-2 text-xs font-semibold ${tab === k ? 'bg-sky/20 text-sky' : 'bg-tint/5 text-ink-muted'}`}>{l}{!!n && <span className="ml-1 rounded-full bg-coral px-1.5 py-0.5 text-[10px] text-white">{n}</span>}</button>
       ))}</div>
       {tab === 'members' && <MembersTab />}
-      {tab === 'trials' && <TrialsTab />}
+      {tab === 'groups' && <AdminGroups embedded />}
+      {tab === 'trials' && <AdminTrials embedded />}
       {tab === 'timetable' && <TimetableTab />}
       {tab === 'profile' && <ProfileTab />}
     </div>

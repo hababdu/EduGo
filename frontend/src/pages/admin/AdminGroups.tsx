@@ -19,7 +19,9 @@ import { IMAGES } from '../../design/images';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
 import { Plus, X, Search, Trash2, Users, FolderOpen, Image, RefreshCw, GraduationCap } from '../../design/icons';
 
-export default function AdminGroups() {
+export default function AdminGroups({ embedded = false }: { embedded?: boolean } = {}) {
+  /** Maktab sahifasi ichida: o'z sarlavhasi va tashqi chegarasiz */
+  const Hero: typeof StaffHero = embedded ? ((() => null) as unknown as typeof StaffHero) : StaffHero;
   const navigate = useNavigate();
   const { haptic, hapticNotify, showConfirm } = useTelegram();
 
@@ -163,9 +165,9 @@ export default function AdminGroups() {
   );
 
   return (
-    <div className={PAGE_WIDE}>
+    <div className={embedded ? 'space-y-5' : PAGE_WIDE}>
       {/* ==================== HERO ==================== */}
-      <StaffHero
+      <Hero
         accent="sky"
         image={IMAGES.hero}
         eyebrow="EduGo · Administrator"

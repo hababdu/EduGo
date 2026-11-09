@@ -39,11 +39,11 @@ export function AdminOverview() {
   }));
 
   const shortcuts = [
-    { label: 'Foydalanuvchilar va rollar', hint: "Rol berish, bloklash", icon: Users, to: '/admin/users' },
-    { label: 'Studentlar', hint: "Qidirish va natijalari", icon: GraduationCap, to: '/admin/students' },
-    { label: 'Guruhlar', hint: "Sig'im, davomat, o'qituvchi", icon: FolderOpen, to: '/admin/groups' },
+    { label: 'Maktab', hint: "A'zolar va rollar, guruhlar, sinov darslari, jadval", icon: Users, to: '/admin/school' },
+    { label: "O'quvchilar", hint: "Qidirish va natijalari", icon: GraduationCap, to: '/admin/students' },
+    { label: 'Guruhlar', hint: "Sig'im, davomat, o'qituvchi", icon: FolderOpen, to: '/admin/school?tab=groups' },
     { label: "To'lovlar", hint: "Kim to'lagan, qarzdorlar", icon: Wallet, to: '/admin/payments' },
-    { label: 'Qabul (arizalar)', hint: 'Yangi o\'quvchilar, aloqa, sinov darsi', icon: Users, to: '/admin/leads' },
+    { label: 'Lidlar', hint: 'Qiziqqanlar bilan aloqa (CRM)', icon: Users, to: '/admin/leads' },
   ];
 
   return (
@@ -60,8 +60,8 @@ export function AdminOverview() {
         title="Boshqaruv paneli"
         subtitle="Foydalanuvchilar, guruhlar va o'quv jarayonining umumiy holati."
         actions={
-          <button type="button" onClick={() => navigate('/admin/users')} className={CONTROL.buttonPrimary}>
-            A'zolarni boshqarish
+          <button type="button" onClick={() => navigate('/admin/school')} className={CONTROL.buttonPrimary}>
+            Maktabni boshqarish
           </button>
         }
         footer={

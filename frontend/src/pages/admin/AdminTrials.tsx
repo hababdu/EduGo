@@ -32,7 +32,9 @@ const COLOR: Record<TrialStatus, string> = {
 const dateLabel = (value: string | null) => value ? new Date(value).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', dateStyle: 'medium', timeStyle: 'short' }) : 'Belgilanmagan';
 const input = 'min-h-[40px] rounded-xl border border-tint/10 bg-surface/50 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60';
 
-export default function AdminTrials() {
+export default function AdminTrials({ embedded = false }: { embedded?: boolean } = {}) {
+  /** Maktab sahifasi ichida: o'z sarlavhasi va tashqi chegarasiz */
+  const Hero: typeof StaffHero = embedded ? ((() => null) as unknown as typeof StaffHero) : StaffHero;
   const qc = useQueryClient();
   const { data: groupOptions = [] } = useGroups();
   const [filter, setFilter] = useState<TrialStatus | 'ALL'>('ALL');
@@ -66,8 +68,8 @@ export default function AdminTrials() {
   const dateToIso = (v: string) => v ? new Date(v).toISOString() : '';
 
   return (
-    <div className={`${PAGE_WIDE} space-y-4`}>
-      <StaffHero accent="gold" image={IMAGES.hero} eyebrow="EduGo · Qabul" title="Sinov darslari va qabul"
+    <div className={embedded ? 'space-y-4' : `${PAGE_WIDE} space-y-4`}>
+      <Hero accent="gold" image={IMAGES.hero} eyebrow="EduGo · Qabul" title="Sinov darslari va qabul"
         subtitle="Arizalarni ko'rib chiqing, sinov darsini belgilang va qatnashgan talabani maktabga qabul qiling." />
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist">
         {filters.map(s => <button key={s} type="button" role="tab" aria-selected={filter === s} onClick={() => { setFilter(s); setPage(1); }}
