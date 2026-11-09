@@ -85,7 +85,7 @@ export function StudentDashboard() {
   const unreadCount =
     notifications?.filter((n) => !n.isRead).length ?? 0;
 
-  // So'nggi natijalardan zaif mavzularni chiqarib olamiz (repetitor shularga urg'u beradi)
+  // So'nggi natijalardan zaif mavzularni chiqarib olamiz.
   const weakTopics = useMemo(() => {
     if (!data?.recentResults) return [];
     return data.recentResults
@@ -93,9 +93,7 @@ export function StudentDashboard() {
       .map((r) => r.testTitle);
   }, [data?.recentResults]);
 
-  // Maskot bir marta, real ma'lumot kelgach, holatga mos gap aytadi —
-  // yaxshi holatda maqtaydi, xavotirli holatda (streak yo'q, ko'p yiqilish)
-  // muloyim-lekin-jiddiy eslatma beradi. Bu HAQIQIY AI chaqiruvi.
+  // Maskot real ma'lumot kelgach, holatga mos gap aytadi.
   useEffect(() => {
     if (!data || hasCheckedIn.current) return;
     hasCheckedIn.current = true;
@@ -108,57 +106,40 @@ export function StudentDashboard() {
     })
       .then((line) => speak(line.text, line.mood))
       .catch(() => {
-        /* jim — bu ixtiyoriy "jonlanish", asosiy funksionallikka ta'sir qilmasin */
+        /* Ixtiyoriy AI jonlanishi asosiy funksionallikka ta'sir qilmaydi. */
       });
   }, [data, weakTopics.length, speak]);
 
-  /* ---------- Loading ---------- */
   if (isLoading) {
     return (
-      <div className="pb-24 space-y-6">
-        {/* Hero skeleton */}
+      <div className="student-dashboard pb-24 space-y-6">
         <div className="px-5 pt-6 pb-8 space-y-4 text-center">
           <div className="h-4 w-32 bg-surface/50 rounded mx-auto animate-pulse" />
           <div className="h-20 w-48 bg-surface/50 rounded mx-auto animate-pulse" />
           <div className="h-3 w-40 bg-surface/50 rounded mx-auto animate-pulse" />
         </div>
-
-        {/* Chips skeleton */}
         <div className="px-5 flex gap-2">
           {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="h-10 w-28 bg-surface/50 rounded-full animate-pulse"
-            />
+            <div key={i} className="h-10 w-28 bg-surface/50 rounded-full animate-pulse" />
           ))}
         </div>
-
-        {/* Card skeleton */}
         <div className="px-5">
           <div className="h-32 bg-surface/50 rounded-2xl animate-pulse" />
         </div>
-
-        {/* List skeleton */}
         <div className="px-5 space-y-3">
           {[...Array(2)].map((_, i) => (
-            <div
-              key={i}
-              className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-tint/5"
-            />
+            <div key={i} className="h-16 bg-surface/30 rounded-2xl animate-pulse border border-tint/5" />
           ))}
         </div>
       </div>
     );
   }
 
-  /* ---------- Error ---------- */
   if (error || !data) {
     return (
-      <div className="pb-24 px-5 pt-6">
+      <div className="student-dashboard pb-24 px-5 pt-6">
         <div className="text-center py-14 bg-surface/20 rounded-3xl border border-tint/5 space-y-3">
-          <p className="text-sm font-semibold text-ink">
-            Ma'lumotlarni yuklashda xatolik
-          </p>
+          <p className="text-sm font-semibold text-ink">Ma'lumotlarni yuklashda xatolik</p>
           <p className="text-xs text-ink-muted">
             {(error as any)?.response?.data?.message ||
               (error as any)?.message ||
@@ -170,7 +151,7 @@ export function StudentDashboard() {
               haptic('light');
               window.location.reload();
             }}
-            className="mt-2 text-xs font-semibold text-gold bg-gold/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
+            className="mt-2 text-xs font-semibold text-accent bg-accent/10 px-4 py-2.5 rounded-2xl active:scale-[0.98] transition-transform"
           >
             🔄 Qayta yuklash
           </button>
@@ -179,10 +160,8 @@ export function StudentDashboard() {
     );
   }
 
-  /* ---------- Render ---------- */
   return (
-    <div className="pb-24 space-y-6">
-      {/* ============ HERO — ball, level, unread count ============ */}
+    <div className="student-dashboard pb-24 space-y-6">
       <BackdropImage src={IMAGES.hero} opacity={0.45} blur={5}>
         <ScoreHero
           firstName={data.student.firstName}
@@ -194,7 +173,6 @@ export function StudentDashboard() {
         />
       </BackdropImage>
 
-      {/* ============ AI REPETITOR ============ */}
       <div className="px-5">
         <button
           type="button"
@@ -202,22 +180,21 @@ export function StudentDashboard() {
             haptic('light');
             openChat({ studentName: data.student.firstName, weakTopics });
           }}
-          className="w-full flex items-center gap-3 bg-gradient-to-r from-gold/15 to-gold/5 border border-gold/25 rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-transform"
+          className="student-ai-card w-full flex items-center gap-3 rounded-3xl px-5 py-4 text-left active:scale-[0.98] transition-transform"
         >
-          <span className="text-2xl shrink-0">🎓</span>
+          <span className="text-2xl shrink-0" aria-hidden="true">✦</span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-ink">AI Repetitor</p>
+            <p className="text-sm font-semibold text-ink">EduGo AI yordamchi</p>
             <p className="text-xs text-ink-muted truncate">
               {weakTopics.length > 0
                 ? `Savol bering yoki "${weakTopics[0]}" mavzusini birga ko'rib chiqamiz`
                 : "Har qanday savolingizga yordam beraman"}
             </p>
           </div>
-          <span className="text-gold text-sm shrink-0">→</span>
+          <span className="student-ai-arrow text-sm shrink-0">→</span>
         </button>
       </div>
 
-      {/* ============ STAT CHIPS — reyting, streak, fanlar ============ */}
       <StatChips
         rank={data.student.rank}
         streak={data.student.streak}
@@ -229,11 +206,8 @@ export function StudentDashboard() {
       />
 
       <StudentToday />
-
-      {/* ============ DAILY CHALLENGE ============ */}
       <DailyChallengeCard />
 
-      {/* ============ CONTINUE LEARNING ============ */}
       {data.continueLesson && (
         <ContinueLearningCard
           subjectTitle={data.continueLesson.subjectTitle}
@@ -245,10 +219,7 @@ export function StudentDashboard() {
         />
       )}
 
-      {/* ============ ACHIEVEMENTS ============ */}
       <AchievementsRow achievements={data.achievements} />
-
-      {/* ============ SUBJECT PROGRESS ============ */}
       <SubjectScoreList
         subjects={data.subjects.map((s) => ({
           id: s.id,
@@ -257,8 +228,6 @@ export function StudentDashboard() {
           posterUrl: s.posterUrl,
         }))}
       />
-
-      {/* ============ RECENT RESULTS ============ */}
       <ResultsChart results={data.recentResults ?? []} />
     </div>
   );

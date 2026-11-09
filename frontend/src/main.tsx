@@ -5,6 +5,7 @@ import { App } from './App';
 import { CertificatePage } from './pages/public/CertificatePage';
 import { initTelegramApp } from './lib/telegram';
 import './styles/index.css';
+import './styles/student-premium.css';
 import { initTheme } from './lib/theme';
 import { initPwa } from './lib/pwa';
 

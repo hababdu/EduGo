@@ -1,0 +1,55 @@
+/* EduGo Student — Premium Dark / Light visual layer.
+   Kept scoped to the student role so teacher/admin/parent palettes remain unchanged. */
+:root:not([data-role]) {
+  --c-accent: 139 92 246;
+  --c-accent-soft: 49 31 86;
+  --c-accent-2: 99 102 241;
+}
+:root[data-theme='light']:not([data-role]) {
+  --c-accent: 124 58 237;
+  --c-accent-soft: 237 228 255;
+  --c-accent-2: 79 70 229;
+}
+:root:not([data-role]) .student-dashboard {
+  position: relative;
+  isolation: isolate;
+}
+.student-dashboard > * {
+  animation: student-rise-in .48s cubic-bezier(.2,.75,.25,1) both;
+}
+.student-dashboard > *:nth-child(2) { animation-delay: 45ms; }
+.student-dashboard > *:nth-child(3) { animation-delay: 90ms; }
+.student-dashboard > *:nth-child(4) { animation-delay: 135ms; }
+.student-dashboard > *:nth-child(5) { animation-delay: 180ms; }
+.student-dashboard > *:nth-child(6) { animation-delay: 225ms; }
+.student-dashboard > *:nth-child(7) { animation-delay: 270ms; }
+.student-dashboard > *:nth-child(8) { animation-delay: 315ms; }
+.student-dashboard > *:nth-child(9) { animation-delay: 360ms; }
+.student-ai-card {
+  border: 1px solid rgb(var(--c-accent) / .42);
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--c-accent) / .28), transparent 58%),
+    linear-gradient(115deg, rgb(var(--c-accent) / .20), rgb(var(--c-accent-2) / .10) 58%, rgb(var(--c-surface) / .76));
+  box-shadow: 0 12px 34px -22px rgb(var(--c-accent) / .85), inset 0 1px 0 rgb(255 255 255 / .10);
+  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+}
+.student-ai-card:hover {
+  border-color: rgb(var(--c-accent) / .72);
+  box-shadow: 0 16px 38px -20px rgb(var(--c-accent) / .9), inset 0 1px 0 rgb(255 255 255 / .14);
+}
+.student-ai-card:active { transform: scale(.985); }
+.student-ai-arrow { color: rgb(var(--c-accent)); }
+:root[data-theme='light']:not([data-role]) .student-ai-card {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--c-accent) / .12), transparent 58%),
+    linear-gradient(115deg, rgb(255 255 255 / .96), rgb(var(--c-accent-soft) / .72));
+  box-shadow: 0 12px 30px -22px rgb(var(--c-accent) / .55), inset 0 1px 0 white;
+}
+@keyframes student-rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .student-dashboard > * { animation: none !important; }
+  .student-ai-card { transition: none !important; }
+}

@@ -42,14 +42,14 @@ class Palette(
 private fun c(r: Int, g: Int, b: Int) = Color(r, g, b)
 
 fun paletteFor(role: Role, dark: Boolean): Palette {
-    // Yagona EduGo brand palette: barcha rollarda bir xil xalqaro EdTech identifikatsiyasi.
-    val accent = c(53, 99, 246)
-    val accent2 = c(129, 87, 246)
+    // Student panel — Premium Dark: violet/indigo. Boshqa rollarning ranglari saqlanadi.
+    val accent = if (role == Role.STUDENT) c(139, 92, 246) else c(53, 99, 246)
+    val accent2 = if (role == Role.STUDENT) c(99, 102, 241) else c(129, 87, 246)
     return if (dark) Palette(
-        true, c(15, 19, 38), c(25, 31, 56), c(37, 45, 76), c(246, 247, 255), c(166, 175, 205), c(112, 123, 158),
+        true, c(10, 10, 24), c(20, 20, 42), c(34, 35, 66), c(246, 247, 255), c(166, 175, 205), c(112, 123, 158),
         accent, accent2, c(255, 190, 74), c(48, 196, 145), c(245, 103, 115), c(73, 174, 255),
     ) else Palette(
-        false, c(245, 247, 255), c(255, 255, 255), c(237, 241, 255), c(25, 31, 55), c(104, 114, 145), c(150, 159, 184),
+        false, c(246, 247, 255), c(255, 255, 255), c(237, 241, 255), c(25, 31, 55), c(104, 114, 145), c(150, 159, 184),
         accent, accent2, c(230, 157, 45), c(20, 164, 123), c(220, 76, 91), c(40, 145, 235),
     )
 }
