@@ -1,3 +1,4 @@
+import { syncMembership } from '../../common/membership-sync';
 // src/modules/groups/groups.service.ts
 import { orgWhere, assertSameOrg } from '../../common/org-scope';
 import { normalizeSchedule, ScheduleInput } from './schedule.util';
@@ -371,7 +372,7 @@ export class GroupsService {
     if (group.maxCapacity == null) {
       if (!adopt) return this.prisma.groupMember.create({ data: { groupId, studentId }, include });
       return this.prisma.$transaction(async (tx) => {
-        if (adopt) await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } });
+        if (adopt) { await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } }); await syncMembership(tx, studentId, group.organizationId, 'STUDENT'); }
         return tx.groupMember.create({ data: { groupId, studentId }, include });
       });
     }
@@ -383,7 +384,7 @@ export class GroupsService {
       if (count >= (group.maxCapacity as number)) {
         throw new BadRequestException(`Guruh to'lgan (${count}/${group.maxCapacity})`);
       }
-      if (adopt) await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } });
+      if (adopt) { await tx.user.update({ where: { id: studentId }, data: { organizationId: group.organizationId } }); await syncMembership(tx, studentId, group.organizationId, 'STUDENT'); }
       return tx.groupMember.create({ data: { groupId, studentId }, include });
     });
   }

@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, OnModuleInit, Optional } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { isSuperAdmin } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type MRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
 const MAX_PENDING = 3;
@@ -13,7 +14,21 @@ const USER_SEL = { select: { id: true, firstName: true, lastName: true, username
 @Injectable()
 export class MembershipsService implements OnModuleInit {
   private readonly logger = new Logger(MembershipsService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly notifications?: NotificationsService) {}
+
+  /** Bildirishnoma (ilova + Telegram). Asosiy amalni hech qachon to'xtatmaydi. */
+  private tell(userId: string, title: string, body: string) {
+    this.notifications?.notify(userId, 'SYSTEM', title, body).catch((e) => this.logger.warn(`Bildirishnoma xatosi: ${(e as Error).message}`));
+  }
+
+  /** Maktab adminlariga xabar (yangi so'rov kelganda) */
+  private async tellAdmins(orgId: string, title: string, body: string) {
+    if (!this.notifications) return;
+    try {
+      const admins = await this.prisma.organizationMembership.findMany({ where: { organizationId: orgId, role: 'ADMIN', status: 'ACTIVE' }, select: { userId: true } });
+      for (const a of admins) this.tell(a.userId, title, body);
+    } catch { /* xabar ixtiyoriy */ }
+  }
 
   /** Eski foydalanuvchilar (User.organizationId) uchun a'zolik yozuvlarini bir marta yaratadi (idempotent). */
   async onModuleInit() {
@@ -74,6 +89,7 @@ export class MembershipsService implements OnModuleInit {
     const m = existing
       ? await this.prisma.organizationMembership.update({ where: { id: existing.id }, data })
       : await this.prisma.organizationMembership.create({ data: { userId: user.id, organizationId: orgId, ...data } });
+    void this.tellAdmins(orgId, "📥 Yangi qo'shilish so'rovi", "«Maktab» bo'limida «A'zolar» tabini oching va so'rovni ko'rib chiqing.");
     return { id: m.id, status: m.status };
   }
 
@@ -112,7 +128,7 @@ export class MembershipsService implements OnModuleInit {
   }
 
   private async load(actor: CurrentUserPayload, id: string) {
-    const m = await this.prisma.organizationMembership.findUnique({ where: { id }, include: { user: USER_SEL } });
+    const m = await this.prisma.organizationMembership.findUnique({ where: { id }, include: { user: USER_SEL, organization: { select: { name: true } } } });
     if (!m) throw new NotFoundException("A'zolik topilmadi");
     if (!isSuperAdmin(actor) && m.organizationId !== actor.organizationId) throw new ForbiddenException('Bu boshqa maktab');
     return m;
@@ -167,6 +183,7 @@ export class MembershipsService implements OnModuleInit {
     if (!approve) {
       await this.prisma.organizationMembership.update({ where: { id }, data: { status: 'REJECTED', decidedAt: now, decidedById: actor.id } });
       await this.audit(actor, 'MEMBERSHIP_REJECT', id, { status: 'PENDING' }, { status: 'REJECTED' });
+      this.tell(m.userId, "So'rovingiz rad etildi", `«${(m.organization?.name ?? "maktab")}» maktabiga qo'shilish so'rovingiz rad etildi.`);
       return { ok: true, status: 'REJECTED' };
     }
     const finalRole = role ?? (m.role as MRole);
@@ -181,6 +198,7 @@ export class MembershipsService implements OnModuleInit {
       await this.prisma.organizationMembership.deleteMany({ where: { userId: m.userId, status: 'PENDING', organizationId: { not: m.organizationId } } });
     }
     await this.audit(actor, 'MEMBERSHIP_APPROVE', id, { status: 'PENDING', role: m.role }, { status: 'ACTIVE', role: finalRole });
+    this.tell(m.userId, "✅ So'rovingiz qabul qilindi", `Siz «${(m.organization?.name ?? "maktab")}» maktabining ${finalRole === 'TEACHER' ? "o'qituvchisi" : finalRole === 'ADMIN' ? 'administratori' : "o'quvchisi"} bo'ldingiz.`);
     return { ok: true, status: 'ACTIVE' };
   }
 
@@ -222,6 +240,7 @@ export class MembershipsService implements OnModuleInit {
     await this.prisma.organizationMembership.update({ where: { id }, data: { role } });
     await this.applyActive(m.userId, m.organizationId, role);
     await this.audit(actor, 'MEMBERSHIP_ROLE', id, { role: m.role }, { role });
+    this.tell(m.userId, 'Rolingiz o\'zgardi', `«${(m.organization?.name ?? "maktab")}» maktabida endi siz ${role === 'TEACHER' ? "o'qituvchi" : role === 'ADMIN' ? 'administrator' : "o'quvchi"}siz.`);
     return { ok: true };
   }
 
@@ -237,6 +256,7 @@ export class MembershipsService implements OnModuleInit {
       await this.prisma.user.updateMany({ where: { id: m.userId, organizationId: m.organizationId }, data: { organizationId: remaining?.organizationId ?? null, role: remaining?.role ?? 'STUDENT' } });
     }
     await this.audit(actor, 'MEMBERSHIP_REMOVE', id, { status: 'ACTIVE', role: m.role }, { status: 'REMOVED' });
+    this.tell(m.userId, 'Maktabdan chiqarildingiz', `Siz «${(m.organization?.name ?? "maktab")}» maktabi a'zoligidan chiqarildingiz.`);
     return { ok: true };
   }
 }

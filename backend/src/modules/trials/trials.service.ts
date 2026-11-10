@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { isSuperAdmin, resolveOrgId } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MembershipsService } from '../memberships/memberships.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const OPEN = ['REQUESTED', 'APPROVED'] as const;
 const MAX_OPEN = 3;
@@ -11,7 +12,16 @@ const nameOf = (u: { firstName: string; lastName: string | null }) => [u.firstNa
 
 @Injectable()
 export class TrialsService {
-  constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipsService) {}
+  private readonly logger = new Logger(TrialsService.name);
+  constructor(private readonly prisma: PrismaService, private readonly memberships: MembershipsService, @Optional() private readonly notifications?: NotificationsService) {}
+
+  /** Arizachi (o'quvchi yoki ota-ona) va o'quvchining o'ziga xabar; ikki marta bormaydi. */
+  private tellParties(t: { studentId: string; requestedById: string }, title: string, body: string) {
+    if (!this.notifications) return;
+    for (const id of new Set([t.studentId, t.requestedById])) {
+      this.notifications.notify(id, 'SYSTEM', title, body).catch((e) => this.logger.warn(`Bildirishnoma xatosi: ${(e as Error).message}`));
+    }
+  }
 
   /** O'quvchi o'zi uchun, ota-ona esa bog'langan farzandi uchun yozadi. */
   async request(user: CurrentUserPayload, dto: { organizationId: string; groupId?: string; studentId?: string; preferredAt?: Date; note?: string }) {
@@ -50,6 +60,11 @@ export class TrialsService {
       data: { organizationId: org.id, groupId: dto.groupId ?? null, studentId, requestedById: user.id, preferredAt: dto.preferredAt ?? null, note: dto.note?.trim() || null },
       select: { id: true, status: true },
     });
+    if (this.notifications) {
+      this.prisma.organizationMembership.findMany({ where: { organizationId: org.id, role: 'ADMIN', status: 'ACTIVE' }, select: { userId: true } })
+        .then((admins) => admins.forEach((a) => this.notifications!.notify(a.userId, 'SYSTEM', '📅 Yangi sinov darsi arizasi', "«Maktab» bo'limida «Sinov» tabini oching.").catch(() => undefined)))
+        .catch(() => undefined);
+    }
     return t;
   }
 
@@ -94,18 +109,20 @@ export class TrialsService {
     return t;
   }
 
-  private async move(actor: CurrentUserPayload, id: string, from: string[], data: Record<string, unknown>) {
+  private async move(actor: CurrentUserPayload, id: string, from: string[], data: Record<string, unknown>, message?: { title: string; body: string }) {
     const t = await this.load(actor, id);
     if (!from.includes(t.status)) throw new BadRequestException(`Bu holatdan o'tib bo'lmaydi (${t.status})`);
     await this.prisma.trialLesson.update({ where: { id }, data: { ...data, decidedById: actor.id, decidedAt: new Date() } });
+    if (message) this.tellParties(t, message.title, message.body);
     return { ok: true };
   }
 
   async approve(actor: CurrentUserPayload, id: string, scheduledAt: Date, note?: string) {
     if (scheduledAt.getTime() < Date.now() - 60_000) throw new BadRequestException("Sana o'tmishda bo'lmasin");
-    return this.move(actor, id, ['REQUESTED'], { status: 'APPROVED', scheduledAt, decisionNote: note?.trim() || null });
+    const when = scheduledAt.toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+    return this.move(actor, id, ['REQUESTED'], { status: 'APPROVED', scheduledAt, decisionNote: note?.trim() || null }, { title: '✅ Sinov darsi tasdiqlandi', body: `Dars vaqti: ${when} (Toshkent vaqti).${note?.trim() ? ` ${note.trim()}` : ''}` });
   }
-  decline(actor: CurrentUserPayload, id: string, note?: string) { return this.move(actor, id, ['REQUESTED', 'APPROVED'], { status: 'DECLINED', decisionNote: note?.trim() || null }); }
+  decline(actor: CurrentUserPayload, id: string, note?: string) { return this.move(actor, id, ['REQUESTED', 'APPROVED'], { status: 'DECLINED', decisionNote: note?.trim() || null }, { title: 'Sinov darsi arizasi rad etildi', body: note?.trim() || "Maktab arizangizni qabul qila olmadi. Boshqa maktabni tanlashingiz mumkin." }); }
   attended(actor: CurrentUserPayload, id: string) { return this.move(actor, id, ['APPROVED'], { status: 'ATTENDED' }); }
   noShow(actor: CurrentUserPayload, id: string) { return this.move(actor, id, ['APPROVED'], { status: 'NO_SHOW' }); }
 
@@ -125,6 +142,7 @@ export class TrialsService {
     await this.memberships.attach(actor, t.studentId, 'STUDENT', t.organizationId);
     if (gid) await this.prisma.groupMember.upsert({ where: { groupId_studentId: { groupId: gid, studentId: t.studentId } }, create: { groupId: gid, studentId: t.studentId }, update: {} });
     await this.prisma.trialLesson.update({ where: { id }, data: { status: 'ADMITTED', groupId: gid ?? null, decidedById: actor.id, decidedAt: new Date() } });
+    this.tellParties(t, '🎓 Maktabga qabul qilindingiz', "Tabriklaymiz! «Maktab» bo'limidan maktabingizni tanlab, guruh va jadvalni ko'ring.");
     return { ok: true };
   }
 }
