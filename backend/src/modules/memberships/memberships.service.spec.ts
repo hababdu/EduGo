@@ -21,6 +21,8 @@ function mk(over: any = {}) {
     user: { findUnique: jest.fn().mockResolvedValue(over.target), update: jest.fn(), updateMany: jest.fn() },
     studentProfile: { upsert: jest.fn() }, teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() },
     adminActionLog: { create: jest.fn().mockResolvedValue({}) },
+    groupMember: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
+    group: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
   };
   return { prisma, svc: new MembershipsService(prisma) };
 }
@@ -74,6 +76,15 @@ describe('MembershipsService', () => {
     const { svc, prisma } = mk({ membership: mem({ status: 'ACTIVE' }) });
     await svc.remove(admin, 'm1');
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
+  });
+
+  it("a'zo chiqarilganda shu maktab guruhlaridagi a'zolik/biriktirish ham bekor qilinadi", async () => {
+    const st = mk({ membership: mem({ status: 'ACTIVE', role: 'STUDENT' }) });
+    await st.svc.remove(admin, 'm1');
+    expect(st.prisma.groupMember.deleteMany).toHaveBeenCalledWith({ where: { studentId: expect.any(String), group: { organizationId: expect.any(String) } } });
+    const tc = mk({ membership: mem({ status: 'ACTIVE', role: 'TEACHER' }) });
+    await tc.svc.remove(admin, 'm1');
+    expect(tc.prisma.group.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { teacherId: null } }));
   });
 
   it("o'quvchi faol maktabni almashtiradi; o'qituvchi yoki begona a'zolik rad etiladi", async () => {

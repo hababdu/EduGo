@@ -1313,3 +1313,14 @@ model OrgInvoice {
 
   @@index([organizationId, month])
 }
+
+/// Telegram'siz (PWA/APK) kirish sessiyalari — bir nechta backend nusxasi va qayta ishga tushishga chidamli
+model AppLoginSession {
+  id         String   @id
+  secretHash String
+  tgUser     Json?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([expiresAt])
+}

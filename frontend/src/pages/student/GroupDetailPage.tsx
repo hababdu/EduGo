@@ -225,7 +225,9 @@ export function GroupDetailPage() {
         {members.length === 0 ? (
           <div className="text-center py-8 bg-surface/30 rounded-2xl border border-tint/5">
             <p className="text-xs text-ink-muted">
-              A'zolar ro'yxati mavjud emas
+              {memberCount > 0
+                ? `Guruhda ${memberCount} ta o'quvchi bor (shaxsiy ma'lumotlar yashirilgan)`
+                : "Guruhda hali o'quvchi yo'q"}
             </p>
           </div>
         ) : (

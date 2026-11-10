@@ -106,6 +106,12 @@ describe('Access control (HTTP)', () => {
     await api().get('/api/v1/catalog').set('x-test-user', as('PARENT')).expect(200);
   });
 
+  it("super admin 'ADMIN' ko'rish rejimida ham (realRole) maktab ma'lumotini o'zgartira olmaydi", async () => {
+    const viewAsAdmin = as('ADMIN', { realRole: 'SUPER_ADMIN', organizationId: 'o1' });
+    await api().post('/api/v1/admin/teaching/subjects').set('x-test-user', viewAsAdmin).send({ name: 'Fizika' }).expect(403);
+    await api().get('/api/v1/admin/memberships').set('x-test-user', viewAsAdmin).expect(200);
+  });
+
   it("super admin maktab ichida faqat o'qiydi (yozish 403), GET ishlaydi", async () => {
     await api().get('/api/v1/admin/memberships').set('x-test-user', as('SUPER_ADMIN', { organizationId: null })).expect(200);
     await api().post('/api/v1/admin/memberships/attach').set('x-test-user', as('SUPER_ADMIN', { organizationId: null })).send({ userId: 'user-12345', role: 'TEACHER' }).expect(403);

@@ -250,8 +250,12 @@ export class MembershipsService implements OnModuleInit {
     this.guardTarget(actor, m);
     if (m.role === 'ADMIN' && !isSuperAdmin(actor)) throw new ForbiddenException("Adminni faqat super admin chiqara oladi");
     await this.prisma.organizationMembership.update({ where: { id }, data: { status: 'REMOVED', decidedAt: new Date(), decidedById: actor.id } });
+    // Shu maktab guruhlaridagi a'zolik/biriktirish ham bekor qilinadi (eski guruhga kirib bo'lmasin)
+    if (m.role === 'STUDENT') await this.prisma.groupMember.deleteMany({ where: { studentId: m.userId, group: { organizationId: m.organizationId } } });
+    else if (m.role === 'TEACHER') await this.prisma.group.updateMany({ where: { teacherId: m.userId, organizationId: m.organizationId }, data: { teacherId: null } });
+    // Joriy maktab chiqarilsa — eng oxirgi tasdiqlangan faol a'zolik tanlanadi (aniq tartib).
     // Faqat shu maktabdagi a'zolik bekor qilinadi. Boshqa maktablardagi faol a'zoliklar saqlanadi.
-    const remaining = await this.prisma.organizationMembership.findFirst({ where: { userId: m.userId, status: 'ACTIVE', id: { not: m.id } }, select: { organizationId: true, role: true } });
+    const remaining = await this.prisma.organizationMembership.findFirst({ where: { userId: m.userId, status: 'ACTIVE', id: { not: m.id } }, orderBy: [{ decidedAt: 'desc' }, { requestedAt: 'desc' }], select: { organizationId: true, role: true } });
     if (m.user.organizationId === m.organizationId) {
       await this.prisma.user.updateMany({ where: { id: m.userId, organizationId: m.organizationId }, data: { organizationId: remaining?.organizationId ?? null, role: remaining?.role ?? 'STUDENT' } });
     }

@@ -54,6 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Super admin botdan boshqa rolni tanlagan bo'lsa — shu rol sifatida ishlaydi (tashkilot tekshiruvi haqiqiy rol bo'yicha o'tdi)
+    const realRole = role;
     role = effectiveRole(role, user.activeRole as string | null);
 
     // Bu obyekt @CurrentUser() decorator orqali controller'larda ishlatiladi
@@ -61,6 +62,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       id: user.id,
       telegramId: user.telegramId,
       role,
+      realRole,
       status: user.status,
       organizationId: user.organizationId,
     };

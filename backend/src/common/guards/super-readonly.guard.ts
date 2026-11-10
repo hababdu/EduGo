@@ -24,7 +24,8 @@ export class SuperReadOnlyGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest();
     const user = req.user;
-    if (!user || user.role !== 'SUPER_ADMIN') return true;
+    // Haqiqiy vakolat bo'yicha: super admin boshqa rolni "ko'rish" rejimida ham faqat o'qiydi
+    if (!user || (user.realRole ?? user.role) !== 'SUPER_ADMIN') return true;
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
     const path: string = (req.originalUrl || req.url || '').split('?')[0];
     if (path === '/api/v1/users/me' || path.startsWith('/api/v1/users/me/')) return true;

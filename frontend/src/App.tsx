@@ -22,6 +22,7 @@ import { GroupsPage } from './pages/student/GroupsPage';
 import { GroupDetailPage } from './pages/student/GroupDetailPage';
 import { ProfilePage } from './pages/student/ProfilePage';
 import { TestTaking } from './pages/tests/TestTaking';
+import { TestResultPage } from './pages/student/TestResultPage';
 import { RankingPage } from './pages/ranking/RankingPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { ParentRoutes } from './pages/parent/ParentPages';
@@ -84,54 +85,13 @@ export function App() {
   // Rolga mos aksent rangi (o'quvchi/o'qituvchi/admin/super/ota-ona)
   useEffect(() => { applyRole(user?.role); }, [user?.role]);
 
-  /* ---------- Avtorizatsiya ---------- */
+  /* ---------- Telegram oynasini tayyorlash (login — faqat useAuth'da) ---------- */
   useEffect(() => {
-    async function authenticateUser() {
-      try {
-        const tg = (window as any).Telegram?.WebApp;
-
-        if (tg) {
-          tg.ready?.();
-          tg.expand?.();
-          tg.disableVerticalSwipes?.();
-        }
-
-        const initData = tg?.initData || '';
-        if (!initData) return; // Telegram'siz: LoginPage hal qiladi
-
-        const res = await fetch(`${API_URL}/api/v1/auth/telegram`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(initData ? { 'X-Telegram-Init-Data': initData } : {}),
-          },
-          credentials: 'include',
-          body: JSON.stringify({ initData }),
-        });
-        if (!res.ok) throw new Error(`Auth ${res.status}`);
-        const data = await res.json();
-
-        // Backend'dan barcha ma'lumotlarni olish
-        const accessToken =
-          data.accessToken || data.token;
-        const refreshToken = data.refreshToken || '';
-        const serverUser = data.user;
-
-        if (accessToken) {
-          // Zustand store (apiFetch shundan foydalanadi)
-          useAuthStore.getState().setSession({
-            accessToken,
-            refreshToken,
-            user: serverUser || useAuthStore.getState().user!,
-          });
-
-        }
-      } catch (err) {
-        console.error("Avtorizatsiyadan o'tishda xatolik:", err);
-      }
-    }
-
-    authenticateUser();
+    const tg = (window as any).Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready?.();
+    tg.expand?.();
+    tg.disableVerticalSwipes?.();
   }, []);
 
   /* ---------- Loading / Error states ---------- */
@@ -354,6 +314,7 @@ function StudentRoutes() {
             {/* ============ TESTLAR ============ */}
             <Route path="/tests" element={<TestsPage />} />
             <Route path="/tests/:testId" element={<TestTaking />} />
+            <Route path="/tests/:testId/result" element={<TestResultPage />} />
 
             {/* ============ REYTING ============ */}
             <Route path="/ranking" element={<RankingPage />} />

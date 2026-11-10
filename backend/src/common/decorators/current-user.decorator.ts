@@ -4,6 +4,8 @@ export interface CurrentUserPayload {
   id: string;
   telegramId: string;
   role: string;
+  /** Haqiqiy vakolat (ko'rish rolidan qat'i nazar). Yozish huquqi shu bo'yicha tekshiriladi. */
+  realRole?: string;
   status: string;
   /** Tashkilot (maktab/markaz). SUPER_ADMIN va hali biriktirilmaganlar uchun null */
   organizationId?: string | null;

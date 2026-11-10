@@ -87,6 +87,12 @@ export class GroupsService {
     }
 
     this.assertCanAccess(group, user);
+    // O'quvchi: guruh a'zoligidan tashqari maktab a'zoligi ham faol bo'lishi shart
+    if (user.role === 'STUDENT' && group.organizationId) {
+      const active = await this.prisma.organizationMembership.findFirst({ where: { userId: user.id, organizationId: group.organizationId, status: 'ACTIVE' }, select: { id: true } });
+      const legacy = user.organizationId === group.organizationId;
+      if (!active && !legacy) throw new ForbiddenException("Siz bu maktab a'zosi emassiz");
+    }
     return group;
   }
 
