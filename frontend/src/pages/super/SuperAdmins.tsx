@@ -7,7 +7,7 @@ import { ShieldCheck } from '../../design/icons';
 import { ROLE_UZ, sapi, useAllUsers, useSuperOrgs, useSuperMutation, when } from './superApi';
 
 const ROLES = ['STUDENT', 'TEACHER', 'ADMIN'] as const;
-const FILTERS = [['', 'Hammasi'], ['STUDENT', 'Talabalar'], ['TEACHER', "O'qituvchilar"], ['ADMIN', 'Adminlar']] as const;
+const FILTERS = [['', 'Hammasi'], ['STUDENT', 'O\'quvchilar'], ['TEACHER', "O'qituvchilar"], ['ADMIN', 'Adminlar']] as const;
 const BADGE: Record<string, string> = { SUPER_ADMIN: 'bg-gold/15 text-gold', ADMIN: 'bg-sky/15 text-sky', TEACHER: 'bg-teal/15 text-teal', STUDENT: 'bg-tint/10 text-ink-muted' };
 
 export function SuperAdmins() {

@@ -37,7 +37,7 @@ export function AssignTestForm({ testId }: { testId: string }) {
         onChange={(e) => setTargetType(e.target.value as any)}
         className="w-full bg-surfaceRaised rounded-lg px-3 py-2.5 text-sm"
       >
-        <option value="ALL">Barcha studentlar</option>
+        <option value="ALL">Barcha o'quvchilar</option>
         <option value="GROUP">Bitta guruh</option>
         <option value="INDIVIDUAL">Bitta student (ID orqali)</option>
       </select>
@@ -61,7 +61,7 @@ export function AssignTestForm({ testId }: { testId: string }) {
         <input
           value={studentId}
           onChange={(e) => setStudentId(e.target.value)}
-          placeholder="Student ID (Admin → Studentlar orqali topiladi)"
+          placeholder="Student ID (Admin → O'quvchilar orqali topiladi)"
           className="w-full bg-surfaceRaised rounded-lg px-3 py-2.5 text-sm outline-none"
         />
       )}

@@ -7,3 +7,5 @@ export { ProgressBar } from './ProgressBar';
 export { StaffNav } from './StaffNav';
 export { TodayLessons } from './TodayLessons';
 export type { StaffNavItem } from './StaffNav';
+export { SectionTabs, Section } from './SectionTabs';
+export type { SectionTab } from './SectionTabs';

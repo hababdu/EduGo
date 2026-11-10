@@ -71,7 +71,7 @@ export function AdminTestDetail() {
   const handlePublish = async () => {
     haptic('medium');
     const ok = await showConfirm(
-      "Testni e'lon qilmoqchimisiz? Talabalar uni ko'radi.",
+      "Testni e'lon qilmoqchimisiz? O\'quvchilar uni ko'radi.",
     );
     if (!ok) return;
 

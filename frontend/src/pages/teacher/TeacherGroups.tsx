@@ -97,7 +97,7 @@ export function TeacherGroups() {
         footer={
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <KpiCard label="Guruhlar" value={groups?.length ?? 0} icon={FolderOpen} accent="gold" />
-            <KpiCard label="Talabalar" value={totalMembers} icon={Users} accent="teal" />
+            <KpiCard label="O'quvchilar" value={totalMembers} icon={Users} accent="teal" />
             <KpiCard label="Materiallar" value={totalMaterials} icon={FileText} accent="sky" />
           </div>
         }

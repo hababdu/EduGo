@@ -53,8 +53,8 @@ export function AdminStudents() {
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-5 pb-24">
       <StaffHero
         eyebrow="ADMIN · TALABALAR"
-        title="Studentlar"
-        subtitle={data?.total ? `Jami: ${data.total} ta talaba` : "Talabalar ro'yxati va boshqaruvi"}
+        title="O'quvchilar"
+        subtitle={data?.total ? `Jami: ${data.total} ta talaba` : "O'quvchilar ro'yxati va boshqaruvi"}
         image={IMAGES.hero}
         accent="sky"
         actions={
@@ -121,7 +121,7 @@ export function AdminStudents() {
           )}
         </div>
       ) : (
-        <Panel title="Talabalar" icon={Users} accent="sky" flush>
+        <Panel title="O'quvchilar" icon={Users} accent="sky" flush>
           <div className="divide-y divide-tint/5">
             {sortedItems.map((s, idx) => {
               const isBlocked = s.status === 'BLOCKED';

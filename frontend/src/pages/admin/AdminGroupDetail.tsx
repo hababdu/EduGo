@@ -161,7 +161,7 @@ export function AdminGroupDetail() {
           refetchStudents();
           refetchGroup();
           if (result.skippedCount > 0) {
-            console.warn('Guruhga qo‘shilmagan talabalar:', result.skipped);
+            console.warn('Guruhga qo‘shilmagan o\'quvchilar:', result.skipped);
           }
         },
         onError: (err: any) => {
@@ -295,7 +295,7 @@ export function AdminGroupDetail() {
 
       {/* ============ KPI ============ */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        <KpiCard label="Talabalar" value={memberCount} icon={Users} accent="teal" hint={group.maxCapacity ? `sig'im: ${group.maxCapacity}` : 'guruh a\'zolari'} />
+        <KpiCard label="O'quvchilar" value={memberCount} icon={Users} accent="teal" hint={group.maxCapacity ? `sig'im: ${group.maxCapacity}` : 'guruh a\'zolari'} />
         <KpiCard label="Asosiy ustoz" value={teacherName || '—'} icon={ShieldCheck} accent="gold" hint={teacherName ? 'biriktirilgan' : 'biriktirilmagan'} />
         <KpiCard
           label="Yaratilgan"
@@ -360,7 +360,7 @@ export function AdminGroupDetail() {
         {/* ============ ADD STUDENT ============ */}
         <Panel title="Guruhga talaba qo'shish" icon={Plus} accent="teal" className="h-full">
           <div className="space-y-3">
-            <p className="text-xs text-ink-muted">Faqat ushbu maktabga faol a'zo bo'lgan va hali guruhga kiritilmagan talabalar ko'rsatiladi.</p>
+            <p className="text-xs text-ink-muted">Faqat ushbu maktabga faol a'zo bo'lgan va hali guruhga kiritilmagan o'quvchilar ko'rsatiladi.</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -369,9 +369,9 @@ export function AdminGroupDetail() {
               <button type="button" onClick={() => { setShowStudentPicker(true); refetchAvailableStudents(); }} className={`${CONTROL.buttonGhost} shrink-0`}>Yangilash</button>
             </div>
             {showStudentPicker && <div className="max-h-72 space-y-1 overflow-y-auto rounded-xl border border-tint/10 bg-surface/40 p-2">
-              {availableStudentsLoading || availableStudentsFetching ? <p className="p-3 text-xs text-ink-muted">Talabalar yuklanmoqda...</p>
+              {availableStudentsLoading || availableStudentsFetching ? <p className="p-3 text-xs text-ink-muted">O'quvchilar yuklanmoqda...</p>
                 : availableStudentsError ? <div className="p-3 text-xs text-coral">Ro'yxatni yuklab bo'lmadi. <button type="button" onClick={() => refetchAvailableStudents()} className="underline">Qayta urinish</button></div>
-                : availableStudents.length === 0 ? <p className="p-3 text-xs text-ink-muted">{studentSearch.trim() ? "Qidiruv bo'yicha talaba topilmadi." : "Bu maktabda guruhga qo'shish mumkin bo'lgan talabalar yo'q."}</p>
+                : availableStudents.length === 0 ? <p className="p-3 text-xs text-ink-muted">{studentSearch.trim() ? "Qidiruv bo'yicha talaba topilmadi." : "Bu maktabda guruhga qo'shish mumkin bo'lgan o\'quvchilar yo'q."}</p>
                 : <>
                   <div className="flex items-center justify-between gap-2 border-b border-tint/10 px-2 pb-2">
                     <span className="text-xs text-ink-muted">{availableStudents.length} ta natija</span>
@@ -394,9 +394,9 @@ export function AdminGroupDetail() {
               }
             </div>}
             <div className="flex flex-col gap-2 border-t border-tint/10 pt-3">
-              <div className="flex items-center justify-between text-xs"><span className="text-ink-muted">Tanlangan talabalar</span><strong className="text-ink">{selectedStudentIds.length} ta</strong></div>
+              <div className="flex items-center justify-between text-xs"><span className="text-ink-muted">Tanlangan o'quvchilar</span><strong className="text-ink">{selectedStudentIds.length} ta</strong></div>
               <button type="button" onClick={handleBulkAddStudents} disabled={addStudentsBulk.isPending || selectedStudentIds.length === 0} className={`${CONTROL.buttonPrimary} w-full justify-center disabled:opacity-50`}>
-                {addStudentsBulk.isPending ? "Talabalar qo'shilmoqda..." : `Tanlangan ${selectedStudentIds.length} ta talabani guruhga qo'shish`}
+                {addStudentsBulk.isPending ? "O'quvchilar qo'shilmoqda..." : `Tanlangan ${selectedStudentIds.length} ta talabani guruhga qo'shish`}
               </button>
             </div>
           </div>
@@ -413,7 +413,7 @@ export function AdminGroupDetail() {
 
       {/* ============ STUDENTS LIST ============ */}
       <Panel
-        title="Guruhdagi talabalar"
+        title="Guruhdagi o'quvchilar"
         icon={GraduationCap}
         accent="teal"
         flush
@@ -430,7 +430,7 @@ export function AdminGroupDetail() {
             ))}
           </div>
         ) : !groupStudents || groupStudents.length === 0 ? (
-          <EmptyState icon={Users} title="Bu guruhda hali talabalar mavjud emas." />
+          <EmptyState icon={Users} title="Bu guruhda hali o'quvchilar mavjud emas." />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-tint/5">
             {groupStudents.map((m: any) => {

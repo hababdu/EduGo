@@ -35,6 +35,7 @@ import AdminPayments from './pages/admin/AdminPayments';
 import AdminLeads from './pages/admin/AdminLeads';
 import AdminSchool from './pages/school/AdminSchool';
 import StudentSchool from './pages/school/StudentSchool';
+import { Section } from './components/staff';
 import TeacherTimetable from './pages/school/TeacherTimetable';
 import AdminGroupPayments from './pages/admin/AdminGroupPayments';
 
@@ -184,6 +185,11 @@ export function App() {
 /* ============================================================
    SUPER ADMIN ROUTES (maktab, admin, obuna, AI, tizim; maktab ichini faqat ko'radi)
    ============================================================ */
+const TEACHER_GROUP_TABS = [{ to: '/teacher/groups', label: 'Guruhlar' }, { to: '/teacher/timetable', label: 'Dars jadvali' }];
+const TEACHER_TEST_TABS = [{ to: '/teacher/tests', label: 'Testlar' }, { to: '/teacher/questions', label: 'Savollar bazasi' }];
+const SUPER_SCHOOL_TABS = [{ to: '/super/orgs', label: 'Maktablar' }, { to: '/super/billing', label: 'Obunalar' }];
+const SUPER_SYSTEM_TABS = [{ to: '/super/ai', label: 'AI sozlamalari' }, { to: '/super/audit', label: 'Amallar jurnali' }];
+
 function SuperRoutes() {
   return (
     <>
@@ -191,12 +197,12 @@ function SuperRoutes() {
         <PageTransition>
           <Routes>
             <Route path="/super" element={<SuperOverview />} />
-            <Route path="/super/orgs" element={<SuperOrgs />} />
+            <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperOrgs /></Section>} />
             <Route path="/super/admins" element={<SuperAdmins />} />
-            <Route path="/super/ai" element={<SuperAi />} />
-            <Route path="/super/audit" element={<SuperAudit />} />
+            <Route path="/super/ai" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAi /></Section>} />
+            <Route path="/super/audit" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAudit /></Section>} />
             <Route path="/super/orgs/:id" element={<SuperOrgDetail />} />
-            <Route path="/super/billing" element={<SuperBilling />} />
+            <Route path="/super/billing" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperBilling /></Section>} />
             <Route path="*" element={<Navigate to="/super" replace />} />
           </Routes>
         </PageTransition>
@@ -262,10 +268,10 @@ function TeacherRoutes() {
         <Routes>
           {/* ============ OVERVIEW ============ */}
           <Route path="/teacher" element={<TeacherOverview />} />
-          <Route path="/teacher/timetable" element={<TeacherTimetable />} />
+          <Route path="/teacher/timetable" element={<Section tabs={TEACHER_GROUP_TABS} label="Guruhlar bo'limi"><TeacherTimetable /></Section>} />
 
           {/* ============ GROUPS ============ */}
-          <Route path="/teacher/groups" element={<TeacherGroups />} />
+          <Route path="/teacher/groups" element={<Section tabs={TEACHER_GROUP_TABS} label="Guruhlar bo'limi"><TeacherGroups /></Section>} />
           <Route
             path="/teacher/groups/:groupId"
             element={<TeacherGroupDetail />}
@@ -300,9 +306,9 @@ function TeacherRoutes() {
           {/* ============ TESTS + QUESTIONS ============ */}
           <Route
             path="/teacher/questions"
-            element={<AdminQuestions />}
+            element={<Section tabs={TEACHER_TEST_TABS} label="Testlar bo'limi"><AdminQuestions /></Section>}
           />
-          <Route path="/teacher/tests" element={<AdminTests />} />
+          <Route path="/teacher/tests" element={<Section tabs={TEACHER_TEST_TABS} label="Testlar bo'limi"><AdminTests /></Section>} />
           <Route path="/teacher/tests/:id" element={<AdminTestDetail />} />
 
           {/* ============ CATCH-ALL ============ */}

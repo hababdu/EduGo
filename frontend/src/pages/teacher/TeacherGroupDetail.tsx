@@ -174,7 +174,7 @@ export function TeacherGroupDetail() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard label="Talabalar" value={stats.studentsCount} icon={Users} accent="gold" hint={`${stats.activeCount} ta faol`} />
+        <KpiCard label="O'quvchilar" value={stats.studentsCount} icon={Users} accent="gold" hint={`${stats.activeCount} ta faol`} />
         <KpiCard label="Materiallar" value={materialsCount} icon={FileText} accent="sky" />
         <KpiCard label="O'rtacha ball" value={stats.avg} icon={BarChart3} accent="teal" />
         <KpiCard label="Jami ball" value={stats.total} icon={Trophy} accent="coral" />
@@ -212,7 +212,7 @@ export function TeacherGroupDetail() {
           }`}
         >
           <Users className="w-3.5 h-3.5" />
-          Talabalar
+          O'quvchilar
           <span className="opacity-70">· {stats.studentsCount}</span>
         </button>
         <button
@@ -256,10 +256,10 @@ export function TeacherGroupDetail() {
       {tab === 'students' &&
         (members.length === 0 ? (
           <div className="bg-surface/40 border border-tint/10 rounded-3xl">
-            <EmptyState icon={Users} title="Talabalar yo'q" />
+            <EmptyState icon={Users} title="O'quvchilar yo'q" />
           </div>
         ) : (
-          <Panel title="Talabalar" icon={Users} accent="gold" flush>
+          <Panel title="O'quvchilar" icon={Users} accent="gold" flush>
             <ul className="divide-y divide-tint/5">
               {members.map((m: any) => {
                 const s = m.student || {};

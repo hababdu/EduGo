@@ -1,18 +1,16 @@
-import { LayoutDashboard, FolderOpen, BookOpen, ClipboardCheck, MessageCircleQuestionMark, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, BookOpen, ClipboardCheck } from 'lucide-react';
 import { StaffNav, StaffNavItem } from '../staff';
 
 const ITEMS: StaffNavItem[] = [
   { to: '/teacher', label: 'Asosiy', Icon: LayoutDashboard, end: true },
-  { to: '/teacher/groups', label: 'Guruhlar', Icon: FolderOpen },
+  { to: '/teacher/groups', label: 'Guruhlar', Icon: FolderOpen, match: ['/teacher/groups', '/teacher/timetable'] },
   {
     to: '/teacher/content/courses',
     label: 'Materiallar',
     Icon: BookOpen,
     match: ['/teacher/content', '/teacher/assignments', '/teacher/sections', '/teacher/topics', '/teacher/lessons'],
   },
-  { to: '/teacher/timetable', label: 'Jadval', Icon: CalendarDays },
-  { to: '/teacher/tests', label: 'Testlar', Icon: ClipboardCheck },
-  { to: '/teacher/questions', label: 'Savollar', Icon: MessageCircleQuestionMark },
+  { to: '/teacher/tests', label: 'Testlar', Icon: ClipboardCheck, match: ['/teacher/tests', '/teacher/questions'] },
 ];
 
 export function TeacherNav() {

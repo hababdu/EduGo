@@ -108,7 +108,7 @@ export function TeacherOverview() {
         image={IMAGES.sciencePhysics}
         eyebrow="O'qituvchi paneli"
         title={name ? `Salom, ${name}!` : 'Ish maydonim'}
-        subtitle="Guruhlaringiz, testlar va talabalar natijalarini bir joyda kuzating."
+        subtitle="Guruhlaringiz, testlar va o'quvchilar natijalarini bir joyda kuzating."
         actions={
           <>
             <button type="button" onClick={() => { haptic('light'); navigate('/teacher/tests'); }} className={CONTROL.buttonPrimary}>
@@ -123,7 +123,7 @@ export function TeacherOverview() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
         <KpiCard label="Guruhlar" value={data.groupsCount} icon={FolderOpen} accent="gold" hint="barchasini ko'rish" onClick={() => { haptic('light'); setGroupsModal(true); }} />
-        <KpiCard label="Talabalar" value={data.studentsCount} icon={Users} accent="teal" hint="faol tinglovchilar" />
+        <KpiCard label="O'quvchilar" value={data.studentsCount} icon={Users} accent="teal" hint="faol tinglovchilar" />
         <KpiCard label="Biriktirilgan testlar" value={data.assignedTestsCount} icon={FileText} accent="sky" />
         <KpiCard label="O'rtacha natija" value={`${data.averageScore}%`} icon={BarChart3} accent="coral" hint={`${data.totalAttempts} ta urinish`} />
       </div>
@@ -137,7 +137,7 @@ export function TeacherOverview() {
           <MiniBars data={days} color="gold" />
         </Panel>
 
-        <Panel title="Eng yaxshi talabalar" icon={Trophy} accent="gold" className="lg:col-span-2" flush>
+        <Panel title="Eng yaxshi o'quvchilar" icon={Trophy} accent="gold" className="lg:col-span-2" flush>
           {data.topStudents.length === 0 ? (
             <p className="px-5 pb-5 text-xs text-ink-muted">Hozircha ma'lumot yo'q</p>
           ) : (

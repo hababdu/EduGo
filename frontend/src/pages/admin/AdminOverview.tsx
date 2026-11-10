@@ -67,7 +67,7 @@ export function AdminOverview() {
         footer={
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3 pt-1">
             <div>
-              <p className="text-[11px] text-ink-muted">Jami studentlar</p>
+              <p className="text-[11px] text-ink-muted">Jami o'quvchilar</p>
               <p className="font-display text-4xl font-extrabold text-gold tabular-nums leading-none mt-1">{fmt(totals.students)}</p>
             </div>
             <div className="min-w-[160px] flex-1 max-w-xs">
@@ -82,7 +82,7 @@ export function AdminOverview() {
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <KpiCard label="Faol studentlar" value={fmt(totals.activeStudents)} icon={Activity} accent="teal" hint="so'nggi 7 kun" />
+        <KpiCard label="Faol o'quvchilar" value={fmt(totals.activeStudents)} icon={Activity} accent="teal" hint="so'nggi 7 kun" />
         <KpiCard label="O'qituvchilar" value={fmt(totals.teachers)} icon={ShieldCheck} accent="gold" hint="faol mentorlar" />
         <KpiCard label="Bugungi urinishlar" value={fmt(today.testAttempts)} icon={ClipboardCheck} accent="sky" hint="test topshirishlar" />
         <KpiCard label="Berilgan ball" value={fmt(totals.totalScoreIssued)} icon={Award} accent="coral" hint="jami" />
