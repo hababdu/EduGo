@@ -11,7 +11,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-/** docs/DESIGN.md dagi rol bo'yicha rang jadvali (veb-ilova bilan bir xil). */
+/** Shared EduGo Premium palette. Keep semantic colors consistent across every role. */
 enum class Role { STUDENT, TEACHER, ADMIN, SUPER, PARENT }
 
 fun roleOf(s: String?): Role = when (s) {
@@ -41,18 +41,20 @@ class Palette(
 
 private fun c(r: Int, g: Int, b: Int) = Color(r, g, b)
 
-fun paletteFor(role: Role, dark: Boolean): Palette {
-    // Student panel — Premium Dark: violet/indigo. Boshqa rollarning ranglari saqlanadi.
-    val accent = if (role == Role.STUDENT) c(139, 92, 246) else c(53, 99, 246)
-    val accent2 = if (role == Role.STUDENT) c(99, 102, 241) else c(129, 87, 246)
-    return if (dark) Palette(
-        true, c(10, 10, 24), c(20, 20, 42), c(34, 35, 66), c(246, 247, 255), c(166, 175, 205), c(112, 123, 158),
-        accent, accent2, c(255, 190, 74), c(48, 196, 145), c(245, 103, 115), c(73, 174, 255),
-    ) else Palette(
-        false, c(246, 247, 255), c(255, 255, 255), c(237, 241, 255), c(25, 31, 55), c(104, 114, 145), c(150, 159, 184),
-        accent, accent2, c(230, 157, 45), c(20, 164, 123), c(220, 76, 91), c(40, 145, 235),
-    )
-}
+/** Role is intentionally not used to encode permissions; all workspaces share one visual language. */
+fun paletteFor(role: Role, dark: Boolean): Palette = if (dark) Palette(
+    true,
+    c(12, 16, 29), c(20, 27, 44), c(29, 39, 61),
+    c(241, 245, 249), c(157, 169, 190), c(111, 126, 151),
+    c(139, 92, 246), c(99, 102, 241),
+    c(245, 183, 85), c(52, 211, 153), c(251, 113, 133), c(96, 165, 250),
+) else Palette(
+    false,
+    c(246, 248, 252), c(255, 255, 255), c(238, 242, 249),
+    c(26, 36, 55), c(91, 107, 132), c(132, 146, 168),
+    c(109, 72, 219), c(79, 70, 229),
+    c(184, 124, 36), c(5, 150, 105), c(225, 75, 95), c(37, 117, 205),
+)
 
 val LocalPalette = staticCompositionLocalOf { paletteFor(Role.STUDENT, true) }
 val LocalThemeMode = staticCompositionLocalOf { "system" }
@@ -70,7 +72,7 @@ fun EduGoTheme(role: Role, themeMode: String = "system", content: @Composable ()
     }
     val p = paletteFor(role, dark)
     val scheme = if (dark) darkColorScheme(
-        primary = p.accent, onPrimary = p.base, secondary = p.accent2, onSecondary = p.base,
+        primary = p.accent, onPrimary = Color.White, secondary = p.accent2, onSecondary = Color.White,
         background = p.base, onBackground = p.ink, surface = p.surface, onSurface = p.ink,
         surfaceVariant = p.raised, onSurfaceVariant = p.muted, error = p.coral, outline = p.faint,
     ) else lightColorScheme(
