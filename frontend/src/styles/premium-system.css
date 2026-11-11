@@ -1,0 +1,105 @@
+/* EduGo Premium School Management Design System
+   Shared visual foundation for Web, Capacitor and responsive mobile web. */
+:root {
+  --c-base: 12 16 29;
+  --c-surface: 20 27 44;
+  --c-raised: 29 39 61;
+  --c-tint: 255 255 255;
+  --c-ink: 241 245 249;
+  --c-muted: 157 169 190;
+  --c-faint: 111 126 151;
+  --c-accent: 139 92 246;
+  --c-accent-soft: 55 42 91;
+  --c-accent-2: 99 102 241;
+  --c-gold: 245 183 85;
+  --c-gold-soft: 75 57 32;
+  --c-teal: 52 211 153;
+  --c-teal-soft: 24 68 57;
+  --c-coral: 251 113 133;
+  --c-sky: 96 165 250;
+  --glass-bg: 20 27 44;
+  --glass-a: .84;
+  color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --c-base: 246 248 252;
+  --c-surface: 255 255 255;
+  --c-raised: 238 242 249;
+  --c-tint: 26 39 63;
+  --c-ink: 26 36 55;
+  --c-muted: 91 107 132;
+  --c-faint: 132 146 168;
+  --c-accent: 109 72 219;
+  --c-accent-soft: 235 228 255;
+  --c-accent-2: 79 70 229;
+  --c-gold: 184 124 36;
+  --c-gold-soft: 250 239 218;
+  --c-teal: 5 150 105;
+  --c-teal-soft: 215 245 234;
+  --c-coral: 225 75 95;
+  --c-sky: 37 117 205;
+  --glass-bg: 255 255 255;
+  --glass-a: .88;
+  color-scheme: light;
+}
+/* Keep the same semantic accent across roles: role permissions, not color, define access. */
+:root[data-role='teacher'], :root[data-role='admin'],
+:root[data-role='super'], :root[data-role='parent'] {
+  --c-accent: 139 92 246;
+  --c-accent-soft: 55 42 91;
+  --c-accent-2: 99 102 241;
+}
+:root[data-theme='light'][data-role='teacher'],
+:root[data-theme='light'][data-role='admin'],
+:root[data-theme='light'][data-role='super'],
+:root[data-theme='light'][data-role='parent'] {
+  --c-accent: 109 72 219;
+  --c-accent-soft: 235 228 255;
+  --c-accent-2: 79 70 229;
+}
+html { background: rgb(var(--c-base)); }
+body {
+  background:
+    radial-gradient(70rem 35rem at 100% -10%, rgb(var(--c-accent) / .10), transparent 62%),
+    radial-gradient(55rem 30rem at -15% 25%, rgb(var(--c-accent-2) / .07), transparent 65%),
+    rgb(var(--c-base));
+  color: rgb(var(--c-ink));
+  font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -.012em;
+}
+:root[data-theme='light'] body {
+  background:
+    radial-gradient(65rem 32rem at 100% -10%, rgb(var(--c-accent) / .07), transparent 62%),
+    rgb(var(--c-base));
+}
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 2px solid rgb(var(--c-accent)); outline-offset: 3px; }
+::selection { background: rgb(var(--c-accent) / .25); }
+.glass {
+  background: rgb(var(--glass-bg) / var(--glass-a));
+  border-color: rgb(var(--c-tint) / .09);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+  backdrop-filter: blur(20px) saturate(1.25);
+}
+.bg-surface { box-shadow: 0 10px 32px -24px rgb(0 0 0 / .42), inset 0 1px 0 rgb(var(--c-tint) / .035); }
+:root[data-theme='light'] .bg-surface { box-shadow: 0 10px 30px -24px rgb(29 46 79 / .24), inset 0 1px 0 #fff; }
+:root[data-theme='light'] .glass { box-shadow: 0 12px 36px -26px rgb(29 46 79 / .2); }
+.bg-aurora {
+  background-image:
+    radial-gradient(65% 60% at 100% 0%, rgb(var(--c-accent) / .14), transparent 72%),
+    radial-gradient(55% 55% at 0% 100%, rgb(var(--c-accent-2) / .10), transparent 72%);
+}
+.lift { transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+@media (hover:hover) {
+  .lift:hover { transform: translateY(-2px); border-color: rgb(var(--c-accent) / .28); box-shadow: 0 18px 38px -28px rgb(var(--c-accent) / .45); }
+}
+:root[data-theme='light'] .student-level-panel,
+:root[data-theme='light'] .student-ai-banner { box-shadow: 0 14px 34px -25px rgb(64 48 130 / .45); }
+@media (max-width: 640px) {
+  body { letter-spacing: -.01em; }
+  .glass { -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
