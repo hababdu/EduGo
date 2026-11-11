@@ -55,22 +55,21 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     Role.STUDENT -> listOf(
         Tab("home", "Bosh", Icons.Rounded.Home),
         Tab("groups", "Guruhlar", Icons.Rounded.Groups),
-        Tab("schools", "Maktablar", Icons.Rounded.School),
+        Tab("schools", "Maktab", Icons.Rounded.School),
         Tab("profile", "Profil", Icons.Rounded.Person),
     )
     Role.TEACHER -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
+        Tab("home", "Asosiy", Icons.Rounded.Home), Tab("groups", "Guruhlar", Icons.Rounded.Groups),
         Tab("materials", "Materiallar", Icons.Rounded.MenuBook), Tab("teacher-tests", "Testlar", Icons.Rounded.Quiz),
     )
     Role.ADMIN -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("students", "Foydalanuvchilar", Icons.Rounded.People),
-        Tab("admin-groups", "Guruhlar", Icons.Rounded.Groups), Tab("payments", "To'lov", Icons.Rounded.Assignment),
-        Tab("leads", "Lidlar", Icons.Rounded.People), Tab("trials", "Sinov", Icons.Rounded.EventAvailable),
+        Tab("home", "Boshqaruv", Icons.Rounded.Home), Tab("students", "O'quvchilar", Icons.Rounded.People),
+        Tab("school", "Maktab", Icons.Rounded.School), Tab("payments", "To'lovlar", Icons.Rounded.Assignment),
+        Tab("leads", "Lidlar", Icons.Rounded.EventAvailable),
     )
     Role.SUPER -> listOf(
-        Tab("home", "Bosh", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.Groups),
-        Tab("billing", "Obuna", Icons.Rounded.Assignment), Tab("audit", "Audit", Icons.Rounded.People),
-        Tab("ai-settings", "AI sozlama", Icons.Rounded.AutoAwesome),
+        Tab("home", "Umumiy", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.School),
+        Tab("admins", "Adminlar", Icons.Rounded.People), Tab("system", "Tizim", Icons.Rounded.AutoAwesome),
     )
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
@@ -150,6 +149,11 @@ fun MainShell(user: AuthUser) {
                 composable("teacher-tests") { TeacherTestsScreen() }
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
                 composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
+                composable("school") {
+                    SectionTabs("school", listOf("Guruhlar", "Sinov darslari")) { i ->
+                        if (i == 0) AdminGroupsScreen { nav.navigate("admin-group/$it") } else AdminTrialsScreen()
+                    }
+                }
                 composable("admin-groups") { AdminGroupsScreen { nav.navigate("admin-group/$it") } }
                 composable("admin-group/{id}") { AdminGroupDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("payments") { AdminPaymentsScreen { id, month -> nav.navigate("payments-group/$id/$month") } }
@@ -158,10 +162,21 @@ fun MainShell(user: AuthUser) {
                 }
                 composable("leads") { AdminLeadsScreen() }
                 composable("trials") { AdminTrialsScreen() }
+                composable("orgs") {
+                    SectionTabs("orgs", listOf("Maktablar", "Obunalar")) { i ->
+                        if (i == 0) SuperOrganizations { nav.navigate("org/$it") } else SuperBillingScreen()
+                    }
+                }
+                composable("admins") { SuperAdminsScreen() }
+                composable("system") {
+                    SectionTabs("system", listOf("AI sozlamalari", "Amallar jurnali")) { i ->
+                        if (i == 0) SuperAiSettingsScreen() else SuperAuditScreen()
+                    }
+                }
+                // Eski yo'llar (eski havolalar uchun) yangi bo'limlarga olib boradi
                 composable("billing") { SuperBillingScreen() }
                 composable("audit") { SuperAuditScreen() }
                 composable("ai-settings") { SuperAiSettingsScreen() }
-                composable("orgs") { SuperOrganizations { nav.navigate("org/$it") } }
                 composable("org/{id}") { SuperOrganizationDetail(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("notifications") { Column { BackHeader("Xabarlar") { nav.popBackStack() }; NotificationsScreen() } }
                 composable("profile") { Column { BackHeader("Profil") { nav.popBackStack() }; ProfileScreen(user) } }
