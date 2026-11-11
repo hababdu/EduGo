@@ -143,15 +143,28 @@ fun MainShell(user: AuthUser) {
                 composable("task/{id}") { HomeworkScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("test/{id}") { TestTakingScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("ranking") { RankingScreen() }
-                composable("groups") { GroupsScreen { nav.navigate("group/$it") } }
-                composable("schools") { StudentSchoolsScreen() }
+                composable("groups") {
+                    if (role == Role.TEACHER) SectionTabs("t-groups", listOf("Guruhlar", "Dars jadvali")) { i ->
+                        if (i == 0) GroupsScreen { nav.navigate("group/$it") } else TimetableScreen("/api/v1/timetable/mine", "Mening darslarim", showTeacher = false)
+                    } else GroupsScreen { nav.navigate("group/$it") }
+                }
+                composable("schools") {
+                    SectionTabs("schools", listOf("Maktablar", "Jadvalim")) { i ->
+                        if (i == 0) StudentSchoolsScreen() else TimetableScreen("/api/v1/timetable/mine", "Mening jadvalim")
+                    }
+                }
                 composable("materials") { TeacherMaterialsScreen() }
                 composable("teacher-tests") { TeacherTestsScreen() }
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
                 composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("school") {
-                    SectionTabs("school", listOf("Guruhlar", "Sinov darslari")) { i ->
-                        if (i == 0) AdminGroupsScreen { nav.navigate("admin-group/$it") } else AdminTrialsScreen()
+                    SectionTabs("school", listOf("A'zolar", "Guruhlar", "Sinov darslari", "Jadval")) { i ->
+                        when (i) {
+                            0 -> AdminMembersScreen()
+                            1 -> AdminGroupsScreen { nav.navigate("admin-group/$it") }
+                            2 -> AdminTrialsScreen()
+                            else -> TimetableScreen("/api/v1/admin/teaching/timetable", "Maktab jadvali")
+                        }
                     }
                 }
                 composable("admin-groups") { AdminGroupsScreen { nav.navigate("admin-group/$it") } }

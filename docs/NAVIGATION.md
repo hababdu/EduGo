@@ -46,9 +46,9 @@ Super admin maktab ichida faqat o'qiydi (`SuperReadOnlyGuard`); yozish amallari 
 Web bilan bir xil bo'limlar; yaqin ekranlar `SectionTabs` (tablar) ichida.
 | Rol | Pastki menyu |
 |---|---|
-| O'quvchi | Bosh · Guruhlar · Maktab · Profil |
-| O'qituvchi | Asosiy · Guruhlar · Materiallar · Testlar |
-| Admin | Boshqaruv · O'quvchilar · Maktab (tablar: Guruhlar · Sinov darslari) · To'lovlar · Lidlar |
+| O'quvchi | Bosh · Guruhlar · Maktab (tablar: Maktablar · Jadvalim) · Profil |
+| O'qituvchi | Asosiy · Guruhlar (tablar: Guruhlar · Dars jadvali) · Materiallar · Testlar |
+| Admin | Boshqaruv · O'quvchilar · Maktab (tablar: A'zolar · Guruhlar · Sinov darslari · Jadval) · To'lovlar · Lidlar |
 | Super admin | Umumiy · Maktablar (tablar: Maktablar · Obunalar) · Adminlar · Tizim (tablar: AI sozlamalari · Amallar jurnali) |
 | Ota-ona | Farzandlar |
 Web'dagi «A'zolar», «Jadval», «Profil» tablari Android'da hali yo'q (`FEATURE_PARITY.md`).

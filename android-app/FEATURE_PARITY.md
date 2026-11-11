@@ -14,7 +14,7 @@ This document tracks the native Kotlin app against the EduGo Telegram Mini App a
 - API 31 minimum SDK, authenticated API client with refresh-token handling, theme preference, notifications and role-based navigation.
 
 ## Remaining parity work before visual redesign
-- Admin: full group management, payments, admissions/lead CRM, user/role administration, reports and audit views.
+- Admin: school profile tab, teacher assignment and timetable editing, reports (members, groups, trials, payments, leads and read-only timetable exist).
 - Super Admin: full organization lifecycle, billing, platform settings, backups and audit management.
 - Teacher: question bank, test editing/assignment controls, schedule editing, complete student analytics and report export.
 - Student/Parent: full lesson log, payment history, file preview/download, account editing and parent linking.

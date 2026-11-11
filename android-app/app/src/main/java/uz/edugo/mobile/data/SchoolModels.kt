@@ -71,3 +71,23 @@ import kotlinx.serialization.Serializable
     val pages: Int = 1,
     val items: List<AdminTrialItem> = emptyList(),
 )
+
+@Serializable data class MemberUser(
+    val id: String = "",
+    val name: String = "",
+    val username: String? = null,
+)
+@Serializable data class MemberRow(
+    val id: String,
+    val role: String = "STUDENT",
+    val status: String = "ACTIVE",
+    val message: String? = null,
+    val requestedAt: String = "",
+    val user: MemberUser = MemberUser(),
+)
+@Serializable data class MemberPage(
+    val total: Int = 0,
+    val page: Int = 1,
+    val pages: Int = 1,
+    val items: List<MemberRow> = emptyList(),
+)
