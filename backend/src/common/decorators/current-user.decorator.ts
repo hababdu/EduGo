@@ -8,7 +8,9 @@ export interface CurrentUserPayload {
   realRole?: string;
   status: string;
   /** Tashkilot (maktab/markaz). SUPER_ADMIN va hali biriktirilmaganlar uchun null */
-  organizationId?: string | null;\n  /** Tanlangan tashkilot ID'si (organizationId bilan moslik aliasi). */\n  activeOrganizationId?: string | null;
+  organizationId?: string | null;
+  /** Tanlangan tashkilot ID'si (organizationId bilan moslik aliasi). */
+  activeOrganizationId?: string | null;
 }
 
 /**
