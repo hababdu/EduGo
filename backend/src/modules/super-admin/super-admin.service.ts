@@ -1,4 +1,3 @@
-import { syncMembership } from '../../common/membership-sync';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -159,43 +158,60 @@ export class SuperAdminService {
     };
   }
 
-  /** Adminni boshqa maktabga ko'chirish (super admin). */
+  /** Admin bir vaqtning o'zida faqat bitta tashkilotga biriktiriladi; boshqa membership rollari saqlanadi. */
   async moveAdmin(actor: CurrentUserPayload, userId: string, orgId: string) {
-    const [user, org] = await Promise.all([
+    const [user, org, current] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
       this.prisma.organization.findUnique({ where: { id: orgId } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId, role: 'ADMIN', status: 'ACTIVE' } }),
     ]);
-    if (!user || user.deletedAt || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
-    if (!org) throw new NotFoundException('Maktab topilmadi');
-    if (user.organizationId === orgId) return { ok: true };
-    await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
-    await syncMembership(this.prisma, userId, orgId, 'ADMIN', user.organizationId);
-    await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: user.organizationId }, { organizationId: orgId });
+    if (!user || user.deletedAt || !current) throw new NotFoundException('Faol admin a’zoligi topilmadi');
+    if (!org) throw new NotFoundException('Tashkilot topilmadi');
+    if (current.organizationId === orgId) return { ok: true };
+    await this.prisma.$transaction(async (tx) => {
+      await tx.organizationMembership.update({ where: { id: current.id }, data: { role: 'TEACHER' } });
+      await tx.organizationMembership.upsert({
+        where: { userId_organizationId: { userId, organizationId: orgId } },
+        create: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+        update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+      });
+      await tx.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
+      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+    });
+    await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: current.organizationId }, { organizationId: orgId });
     return { ok: true };
   }
 
   async assignAdmin(actor: CurrentUserPayload, orgId: string, dto: AssignAdminDto) {
-    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
-    if (!org) throw new NotFoundException('Maktab topilmadi');
-    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    const [org, user, otherAdmin] = await Promise.all([
+      this.prisma.organization.findUnique({ where: { id: orgId } }),
+      this.prisma.user.findUnique({ where: { id: dto.userId } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId: dto.userId, role: 'ADMIN', status: 'ACTIVE', organizationId: { not: orgId } }, select: { organizationId: true } }),
+    ]);
+    if (!org) throw new NotFoundException('Tashkilot topilmadi');
     if (!user || user.deletedAt) throw new NotFoundException('Foydalanuvchi topilmadi');
-    if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo\'lmaydi');
-    if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni maktabga biriktirib bo'lmaydi");
-    if (user.organizationId && user.organizationId !== orgId && user.role !== 'STUDENT') {
-      throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan");
+    if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo‘lmaydi');
+    if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni tashkilotga biriktirib bo'lmaydi");
+    if (otherAdmin) throw new ConflictException("Administrator faqat bitta tashkilotga biriktirilishi mumkin");
+    const membership = await this.prisma.organizationMembership.upsert({
+      where: { userId_organizationId: { userId: user.id, organizationId: orgId } },
+      create: { userId: user.id, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+      update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+    });
+    await this.prisma.adminProfile.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
+    if (!user.organizationId) {
+      await this.prisma.userActiveOrganization.upsert({ where: { userId: user.id }, create: { userId: user.id, organizationId: orgId }, update: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: orgId } });
     }
-    const updated = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN', organizationId: orgId } });
-    await syncMembership(this.prisma, user.id, orgId, 'ADMIN');
-    await this.audit(actor, 'ADMIN_ASSIGN', 'User', user.id, { role: user.role, organizationId: user.organizationId }, { role: 'ADMIN', organizationId: orgId });
-    return { id: updated.id, name: nameOf(updated) };
+    await this.audit(actor, 'ADMIN_ASSIGN', 'OrganizationMembership', membership.id, null, { role: 'ADMIN', organizationId: orgId });
+    return { id: user.id, name: nameOf(user) };
   }
 
   async removeAdmin(actor: CurrentUserPayload, orgId: string, userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.organizationId !== orgId || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
-    await this.prisma.user.update({ where: { id: userId }, data: { role: 'TEACHER' } });
-    await syncMembership(this.prisma, userId, orgId, 'TEACHER');
-    await this.audit(actor, 'ADMIN_REMOVE', 'User', userId, { role: 'ADMIN' }, { role: 'TEACHER' });
+    const membership = await this.prisma.organizationMembership.findFirst({ where: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE' } });
+    if (!membership) throw new NotFoundException('Ushbu tashkilot admini topilmadi');
+    await this.prisma.organizationMembership.update({ where: { id: membership.id }, data: { role: 'TEACHER' } });
+    await this.audit(actor, 'ADMIN_REMOVE', 'OrganizationMembership', membership.id, { role: 'ADMIN' }, { role: 'TEACHER' });
     return { ok: true };
   }
 
