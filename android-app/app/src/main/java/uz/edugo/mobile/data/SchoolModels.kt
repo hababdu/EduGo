@@ -91,3 +91,13 @@ import kotlinx.serialization.Serializable
     val pages: Int = 1,
     val items: List<MemberRow> = emptyList(),
 )
+
+@Serializable data class SubjectRow(val id: String, val name: String = "")
+@Serializable data class NamedRef(val id: String = "", val name: String = "")
+@Serializable data class AssignmentRow(
+    val id: String,
+    val teacher: NamedRef = NamedRef(),
+    val subject: NamedRef = NamedRef(),
+    val group: NamedRef = NamedRef(),
+    val slots: Int = 0,
+)
