@@ -54,7 +54,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Tashkilot ichidagi rol membership'dan olinadi; User.role faqat global/legacy rol.
     let organizationId: string | null = null;
     if (role !== 'SUPER_ADMIN') {
-      const selectedId = user.activeOrganizationContext?.organizationId ?? user.organizationId;
+      const selectedId = user.activeOrganizationContext?.organizationId ?? null;
       if (selectedId) {
         const membership = await this.prisma.organizationMembership.findFirst({
           where: { userId: user.id, organizationId: selectedId, status: 'ACTIVE' },
