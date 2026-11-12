@@ -340,3 +340,19 @@ Bu mexanizm yangi endpointlarda dekorator bilan bosqichma-bosqich qo'llanadi. Ha
 - Prisma schema/migration validation, Nest build, Jest suite va frontend build hali ishga tushirilmagan.
 - Unique partial index migratsiyasi real DB snapshotda duplicate active admin mavjud emasligi bilan tekshirilishi kerak.
 - Barcha qolgan backend modullaridagi `User.organizationId` to'g'ridan-to'g'ri ishlatilishlari keyingi bosqichlarda audit qilinadi; teacher scope'ning birinchi to'plami yangilandi.
+
+
+## 12. Organization Core rollout checklist
+
+Before merging to `main`:
+- [ ] Review and resolve duplicate active ADMIN memberships if the unique-index migration preflight reports any.
+- [ ] Run `npx prisma validate` and `npx prisma generate` from `backend/`.
+- [ ] Run backend `npm run build` and `npm test -- --runInBand`.
+- [ ] Run frontend `npm ci` and `npm run build`.
+- [ ] Verify teacher A/B organization isolation with two active memberships and different groups, assignments, attendance, and test attempts.
+- [ ] Verify Super Admin catalog CRUD and organization classification.
+- [ ] Verify branch CRUD for Super Admin, organization admin, and a staff membership explicitly granted `branches.manage`.
+- [ ] Verify role switching across organizations refreshes both access token and frontend route role.
+- [ ] Verify all remaining API modules use active organization context rather than direct legacy `User.organizationId` assumptions.
+
+PR #12 targets `main` so the repository's Web/Backend quality workflow can validate frontend build, Prisma generation, backend build and Jest tests on pull-request synchronization.
