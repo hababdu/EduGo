@@ -71,7 +71,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
         Tab("home", "Umumiy", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.School),
         Tab("admins", "Foydalanuvchilar", Icons.Rounded.People), Tab("system", "Tizim", Icons.Rounded.AutoAwesome),
     )
-    Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
+    Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home), Tab("schools", "Maktablar", Icons.Rounded.School))
 }
 
 private val DETAIL_PREFIXES = listOf("group/", "child/", "test/", "task/", "lesson/", "org/", "homework-review/", "payments-group/", "admin-group/")
@@ -149,6 +149,7 @@ fun MainShell(user: AuthUser) {
                     } else GroupsScreen { nav.navigate("group/$it") }
                 }
                 composable("schools") {
+                  if (role == Role.PARENT) ParentSchoolsScreen() else
                     SectionTabs("schools", listOf("Maktablar", "Jadvalim")) { i ->
                         if (i == 0) StudentSchoolsScreen() else TimetableScreen("/api/v1/timetable/mine", "Mening jadvalim")
                     }

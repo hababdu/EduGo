@@ -126,3 +126,12 @@ import kotlinx.serialization.Serializable
     val pages: Int = 1,
     val items: List<SuperUserRow> = emptyList(),
 )
+
+@Serializable data class ParentTrial(
+    val id: String,
+    val status: String = "REQUESTED",
+    val scheduledAt: String? = null,
+    val decisionNote: String? = null,
+    val organization: SchoolItem,
+    val student: NamedRef = NamedRef(),
+)
