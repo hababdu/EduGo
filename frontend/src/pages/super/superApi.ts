@@ -47,7 +47,7 @@ export interface SystemInfo {
 export const useSuperOverview = () => useQuery({ queryKey: ['super', 'overview'], queryFn: () => apiFetch<Overview>(`${b}/overview`) });
 export const useSuperSystem = () => useQuery({ queryKey: ['super', 'system'], queryFn: () => apiFetch<SystemInfo>(`${b}/system`), refetchInterval: 30_000 });
 export const useSuperOrgs = () => useQuery({ queryKey: ['super', 'orgs'], queryFn: () => apiFetch<Org[]>(`${b}/organizations`) });
-export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null }
+export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null; memberships?: { role: string; organization: { id: string; name: string } }[] }
 export const useCandidates = (search: string, enabled: boolean) =>
   useQuery({
     queryKey: ['super', 'candidates', search],
