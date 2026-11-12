@@ -41,7 +41,7 @@ export class MaterialsService {
     if (groupId) {
       const group = await this.prisma.group.findFirst({
         where: { id: groupId, deletedAt: null },
-        select: { organizationId: true, members: { where: { studentId: actor.id }, select: { id: true, studentId: true } } },
+        select: { organizationId: true, teacherId: true, assistantId: true, members: { where: { studentId: actor.id }, select: { id: true, studentId: true } } },
       });
       if (!group) throw new NotFoundException("Guruh topilmadi");
       if (isStudent && !group.members.length) throw new ForbiddenException("Siz bu guruhga a'zo emassiz");
