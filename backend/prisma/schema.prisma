@@ -69,6 +69,7 @@ model Organization {
   teachingAssignments TeachingAssignment[]
   scheduleSlots ScheduleSlot[]
   reviews     SchoolReview[]
+  mediaAssets SchoolMediaAsset[]
   trialLessons TrialLesson[]
   invoices    OrgInvoice[]
 
@@ -153,6 +154,7 @@ model User {
   deletedAt       DateTime? // soft delete
 
   memberships    OrganizationMembership[] @relation("MembershipUser")
+  uploadedMedia SchoolMediaAsset[]
   decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
   teachingAssignmentsAsTeacher TeachingAssignment[] @relation("TeachingTeacher")
   schoolReviews SchoolReview[]
@@ -486,7 +488,9 @@ enum ContentType {
 model SchoolMediaAsset {
   id                String   @id @default(cuid())
   organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   uploaderId        String
+  uploader          User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
   purpose           String   // SCHOOL_POSTER | GROUP_POSTER
   fileName          String
   mimeType          String
