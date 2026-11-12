@@ -37,6 +37,7 @@ import { TeachingModule } from './modules/teaching/teaching.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { OrganizationCoreModule } from './modules/organization-core/organization-core.module';
 @Module({
   imports: [
     UploadModule,
@@ -72,6 +73,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     HealthModule,
     LeadsModule,
     SubmissionsModule,
+    OrganizationCoreModule,
   ],
   providers: [
     {
