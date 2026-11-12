@@ -179,6 +179,17 @@ export class MembershipsService implements OnModuleInit {
     return this.prisma.adminActionLog.create({ data: { actorId: actor.id, action, targetType: 'OrganizationMembership', targetId: id, oldValue: oldValue as any, newValue: newValue as any } }).catch(() => undefined);
   }
 
+  private async enforceSingleOrganizationAdmin<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'P2002') {
+        throw new ConflictException('Foydalanuvchi boshqa tashkilotda faol administrator. Avval u yerdagi admin rolini bekor qiling.');
+      }
+      throw error;
+    }
+  }
+
   private guardTarget(actor: CurrentUserPayload, m: { userId: string; user: { role: string } }) {
     if (m.user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminga tegib bo'lmaydi");
     if (m.userId === actor.id) throw new BadRequestException("O'zingizning a'zoligingizni o'zgartira olmaysiz");
@@ -203,7 +214,9 @@ export class MembershipsService implements OnModuleInit {
       });
       if (otherAdmin) throw new ConflictException('Administrator faqat bitta tashkilotga biriktirilishi mumkin');
     }
-    await this.prisma.organizationMembership.update({ where: { id }, data: { status: 'ACTIVE', role: finalRole, decidedAt: now, decidedById: actor.id } });
+    const activateMembership = () => this.prisma.organizationMembership.update({ where: { id }, data: { status: 'ACTIVE', role: finalRole, decidedAt: now, decidedById: actor.id } });
+    if (finalRole === 'ADMIN') await this.enforceSingleOrganizationAdmin(activateMembership);
+    else await activateMembership();
     if (finalRole === 'STUDENT') {
       await this.prisma.studentProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
       if (!m.user.organizationId) await this.applyActive(m.userId, m.organizationId, 'STUDENT');
@@ -235,11 +248,12 @@ export class MembershipsService implements OnModuleInit {
     if (!org) throw new NotFoundException('Maktab topilmadi yoki faol emas');
     if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni maktabga biriktirib bo'lmaydi");
     if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini biriktirib bo\'lmaydi');
-    const m = await this.prisma.organizationMembership.upsert({
+    const saveMembership = () => this.prisma.organizationMembership.upsert({
       where: { userId_organizationId: { userId, organizationId: orgId } },
       create: { userId, organizationId: orgId, role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
       update: { role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
     });
+    const m = role === 'ADMIN' ? await this.enforceSingleOrganizationAdmin(saveMembership) : await saveMembership();
     if (role === 'STUDENT') {
       await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
       if (!user.organizationId) await this.applyActive(userId, orgId, 'STUDENT');
@@ -265,7 +279,9 @@ export class MembershipsService implements OnModuleInit {
       if (otherAdmin) throw new ConflictException('Administrator faqat bitta tashkilotga biriktirilishi mumkin');
     }
     if (m.role === role) return { ok: true };
-    await this.prisma.organizationMembership.update({ where: { id }, data: { role } });
+    const changeMembershipRole = () => this.prisma.organizationMembership.update({ where: { id }, data: { role } });
+    if (role === 'ADMIN') await this.enforceSingleOrganizationAdmin(changeMembershipRole);
+    else await changeMembershipRole();
     if (m.user.organizationId === m.organizationId) {
       await this.prisma.user.update({ where: { id: m.userId }, data: { role } });
     }
