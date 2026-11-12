@@ -109,8 +109,8 @@ export interface BillingOverview {
 export interface OrgDetail {
   org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string; typeId: string | null; type: EducationCatalogItem | null; directions: EducationCatalogItem[] };
   counts: { students: number; teachers: number; admins: number; groups: number };
-  admins: { id: string; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
-  teachers: { id: string; name: string; username: string | null; status: string }[];
+  admins: { id: string; membershipId: string; permissions: { allow?: string[]; deny?: string[] } | null; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
+  teachers: { id: string; membershipId: string; permissions: { allow?: string[]; deny?: string[] } | null; name: string; username: string | null; status: string }[];
   groups: { id: string; name: string; fee: number | null; members: number; teacher: string | null }[];
   studentPayments: { month: string; collected: number; paidCount: number; expected: number };
   subscription: { currentMonth: string; state: SubState; history: { month: string; state: SubState; amount: number; paidAt: string }[] };
@@ -156,4 +156,8 @@ export const branchApi = {
   create: (v: Partial<OrganizationBranch> & { organizationId: string; name: string }) => apiFetch('/api/v1/organization/branches', { method: 'POST', body: JSON.stringify(v) }),
   update: (v: Partial<OrganizationBranch> & { id: string }) => { const { id, ...rest } = v; return apiFetch(`/api/v1/organization/branches/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
   remove: (id: string) => apiFetch(`/api/v1/organization/branches/${id}`, { method: 'DELETE' }),
+};
+
+export const membershipPermissionApi = {
+  update: (v: { id: string; allow: string[]; deny: string[] }) => apiFetch(`/api/v1/admin/memberships/${v.id}/permissions`, { method: 'PATCH', body: JSON.stringify({ allow: v.allow, deny: v.deny }) }),
 };
