@@ -216,24 +216,33 @@ export class SuperAdminService {
   }
 
   /** Admin qilish uchun nomzodlar: super admin va boshqa maktabga biriktirilgan xodimlar chiqmaydi */
+  /** Admin nomzodlari: o'qituvchi boshqa tashkilotlarda ishlashi mumkin, ammo admin faqat bittasida bo'ladi. */
   async candidates(search?: string) {
     const q = search?.trim();
     const users = await this.prisma.user.findMany({
       where: {
-        deletedAt: null,
-        status: 'ACTIVE',
-        role: { in: ['STUDENT', 'TEACHER', 'ADMIN'] },
+        deletedAt: null, status: 'ACTIVE', role: { in: ['STUDENT', 'TEACHER', 'ADMIN'] },
         ...(q ? { OR: [
           { firstName: { contains: q, mode: 'insensitive' } },
           { lastName: { contains: q, mode: 'insensitive' } },
           { username: { contains: q, mode: 'insensitive' } },
         ] } : {}),
       },
-      orderBy: [{ role: 'desc' }, { firstName: 'asc' }],
-      take: 20,
-      select: { id: true, firstName: true, lastName: true, username: true, role: true, organization: { select: { id: true, name: true } } },
+      orderBy: [{ firstName: 'asc' }], take: 20,
+      select: {
+        id: true, firstName: true, lastName: true, username: true, role: true,
+        organization: { select: { id: true, name: true } },
+        memberships: {
+          where: { status: 'ACTIVE' },
+          select: { role: true, organization: { select: { id: true, name: true } } },
+        },
+      },
     });
-    return users.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, role: u.role, organization: u.organization }));
+    return users.map((u) => ({
+      id: u.id, name: nameOf(u), username: u.username, role: u.role,
+      organization: u.organization,
+      memberships: u.memberships,
+    }));
   }
 
   /* ───────── Barcha foydalanuvchilar ───────── */
