@@ -80,6 +80,7 @@ export function useSuperMutation<V>(fn: (v: V) => Promise<unknown>, okMsg?: stri
   });
 }
 export const sapi = {
+  classifyOrg: (v: { id: string; typeId: string; directionIds: string[] }) => apiFetch(`${b}/organizations/${v.id}/classification`, { method: 'PATCH', body: JSON.stringify({ typeId: v.typeId, directionIds: v.directionIds }) }),
   createOrg: (v: { name: string; note?: string; storageChatId: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
   updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null; storageChatId?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
@@ -146,7 +147,7 @@ export interface OrganizationBranch {
   city: string | null; phone: string | null; email: string | null; isMain: boolean; isActive: boolean;
 }
 export const useOrganizationBranches = (organizationId: string) => useQuery({
-  queryKey: ['organization-branches', organizationId],
+  queryKey: ['super', 'branches', organizationId],
   queryFn: () => apiFetch<OrganizationBranch[]>(`/api/v1/organization/branches?organizationId=${encodeURIComponent(organizationId)}`),
   enabled: !!organizationId,
 });
