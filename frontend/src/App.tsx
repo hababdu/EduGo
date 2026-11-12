@@ -62,6 +62,7 @@ import { SuperAi } from './pages/super/SuperAi';
 import { SuperAudit } from './pages/super/SuperAudit';
 import { SuperOrgDetail } from './pages/super/SuperOrgDetail';
 import { SuperBilling } from './pages/super/SuperBilling';
+import { SuperEducationCatalog } from './pages/super/SuperEducationCatalog';
 import { SuperNav } from './components/super/SuperNav';
 
 /* ============ LAYOUT ============ */
@@ -157,7 +158,8 @@ function SuperRoutes() {
         <PageTransition>
           <Routes>
             <Route path="/super" element={<SuperOverview />} />
-            <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperOrgs /></Section>} />
+            <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Tashkilotlar bo'limi"><SuperOrgs /></Section>} />
+            <Route path="/super/catalog" element={<SuperEducationCatalog />} />
             <Route path="/super/admins" element={<SuperAdmins />} />
             <Route path="/super/ai" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAi /></Section>} />
             <Route path="/super/audit" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAudit /></Section>} />
