@@ -29,6 +29,7 @@ export class UploadController {
     @UploadedFile() file: { originalname: string; mimetype: string; buffer: Buffer } | undefined,
     @Query('organizationId') requestedOrgId?: string,
     @Query('groupId') groupId?: string,
+    @Query('purpose') purpose?: string,
   ) {
     if (!file?.buffer?.length) throw new BadRequestException('Rasm tanlanmadi');
     if (file.buffer.length > MAX_IMAGE_BYTES) throw new BadRequestException('Rasm hajmi 8 MB dan oshmasin');
