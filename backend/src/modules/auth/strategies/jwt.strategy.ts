@@ -33,7 +33,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: {\n        organization: { select: { status: true } },\n        activeOrganizationContext: { include: { organization: { select: { status: true } } } },\n      },
+      include: {
+        organization: { select: { status: true } },
+        activeOrganizationContext: { include: { organization: { select: { status: true } } } },
+      },
     });
 
     if (!user || user.status === 'BLOCKED' || user.deletedAt) {
@@ -78,7 +81,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role,
       realRole,
       status: user.status,
-      organizationId,\n      activeOrganizationId: organizationId,
+      organizationId,
+      activeOrganizationId: organizationId,
     };
   }
 }
