@@ -185,7 +185,7 @@ export class SuperAdminService {
         update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
       });
       await tx.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
-      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId, role: 'ADMIN' } });
     });
     await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: current.organizationId }, { organizationId: orgId });
     return { ok: true };
@@ -210,7 +210,7 @@ export class SuperAdminService {
     await this.prisma.adminProfile.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
     if (!user.organizationId) {
       await this.prisma.userActiveOrganization.upsert({ where: { userId: user.id }, create: { userId: user.id, organizationId: orgId }, update: { organizationId: orgId } });
-      await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: orgId, role: 'ADMIN' } });
     }
     await this.audit(actor, 'ADMIN_ASSIGN', 'OrganizationMembership', membership.id, null, { role: 'ADMIN', organizationId: orgId });
     return { id: user.id, name: nameOf(user) };
@@ -220,6 +220,7 @@ export class SuperAdminService {
     const membership = await this.prisma.organizationMembership.findFirst({ where: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE' } });
     if (!membership) throw new NotFoundException('Ushbu tashkilot admini topilmadi');
     await this.prisma.organizationMembership.update({ where: { id: membership.id }, data: { role: 'TEACHER' } });
+    await this.prisma.user.updateMany({ where: { id: userId, organizationId: orgId }, data: { role: 'TEACHER' } });
     await this.audit(actor, 'ADMIN_REMOVE', 'OrganizationMembership', membership.id, { role: 'ADMIN' }, { role: 'TEACHER' });
     return { ok: true };
   }
@@ -309,7 +310,9 @@ export class SuperAdminService {
     });
     if (!user.organizationId) {
       await this.prisma.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
-      await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId, role: dto.role } });
+    } else if (user.organizationId === orgId) {
+      await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role } });
     }
     await this.audit(actor, 'USER_ROLE_CHANGE', 'OrganizationMembership', membership.id, null, { role: dto.role, organizationId: orgId });
     return { ok: true };
