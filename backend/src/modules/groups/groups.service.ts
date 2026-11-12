@@ -45,6 +45,7 @@ export class GroupsService {
       return this.prisma.group.findMany({
         where: {
           teacherId: user.id,
+          organizationId: user.activeOrganizationId ?? user.organizationId ?? '__no_org__',
           deletedAt: null,
         },
         include: baseInclude,
@@ -529,8 +530,8 @@ export class GroupsService {
 
     // TEACHER — faqat o'ziniki
     if (user.role === 'TEACHER') {
-      if (group.teacherId !== user.id) {
-        throw new ForbiddenException('Bu guruh sizga biriktirilmagan');
+      if (group.teacherId !== user.id || !user.organizationId || group.organizationId !== (user.activeOrganizationId ?? user.organizationId)) {
+        throw new ForbiddenException('Bu guruh faol tashkilotingizga tegishli emas yoki sizga biriktirilmagan');
       }
       return;
     }
