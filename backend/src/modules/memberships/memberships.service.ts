@@ -196,6 +196,13 @@ export class MembershipsService implements OnModuleInit {
       return { ok: true, status: 'REJECTED' };
     }
     const finalRole = role ?? (m.role as MRole);
+    if (finalRole === 'ADMIN' && !isSuperAdmin(actor)) throw new ForbiddenException('Admin rolini faqat Super Admin tayinlaydi');
+    if (finalRole === 'ADMIN') {
+      const otherAdmin = await this.prisma.organizationMembership.findFirst({
+        where: { userId: m.userId, role: 'ADMIN', status: 'ACTIVE', organizationId: { not: m.organizationId } },
+      });
+      if (otherAdmin) throw new ConflictException('Administrator faqat bitta tashkilotga biriktirilishi mumkin');
+    }
     await this.prisma.organizationMembership.update({ where: { id }, data: { status: 'ACTIVE', role: finalRole, decidedAt: now, decidedById: actor.id } });
     if (finalRole === 'STUDENT') {
       await this.prisma.studentProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
@@ -214,6 +221,12 @@ export class MembershipsService implements OnModuleInit {
   async attach(actor: CurrentUserPayload, userId: string, role: MRole, requestedOrg?: string) {
     const orgId = this.scopeOrg(actor, requestedOrg);
     if (role === 'ADMIN' && !isSuperAdmin(actor)) throw new ForbiddenException('Admin tayinlash faqat super adminga ruxsat');
+    if (role === 'ADMIN') {
+      const otherAdmin = await this.prisma.organizationMembership.findFirst({
+        where: { userId, role: 'ADMIN', status: 'ACTIVE', organizationId: { not: orgId } },
+      });
+      if (otherAdmin) throw new ConflictException('Administrator faqat bitta tashkilotga biriktirilishi mumkin');
+    }
     const [user, org] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId }, select: { id: true, role: true, status: true, deletedAt: true, organizationId: true } }),
       this.prisma.organization.findFirst({ where: { id: orgId, status: 'ACTIVE' }, select: { id: true } }),
@@ -245,6 +258,12 @@ export class MembershipsService implements OnModuleInit {
     this.guardTarget(actor, m);
     // Admin darajasiga ko'tarish yoki admindan tushirish — faqat super admin
     if ((role === 'ADMIN' || m.role === 'ADMIN') && !isSuperAdmin(actor)) throw new ForbiddenException('Admin rolini faqat super admin o\'zgartiradi');
+    if (role === 'ADMIN') {
+      const otherAdmin = await this.prisma.organizationMembership.findFirst({
+        where: { userId: m.userId, role: 'ADMIN', status: 'ACTIVE', organizationId: { not: m.organizationId } },
+      });
+      if (otherAdmin) throw new ConflictException('Administrator faqat bitta tashkilotga biriktirilishi mumkin');
+    }
     if (m.role === role) return { ok: true };
     await this.prisma.organizationMembership.update({ where: { id }, data: { role } });
     if (m.user.organizationId === m.organizationId) {
