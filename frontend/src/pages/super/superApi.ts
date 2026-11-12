@@ -140,3 +140,18 @@ export const educationCatalogApi = {
   updateDirection: (v: EducationCatalogItem) => apiFetch(`/api/v1/super/education-directions/${v.id}`, { method: 'PATCH', body: JSON.stringify(v) }),
   deleteDirection: (id: string) => apiFetch(`/api/v1/super/education-directions/${id}`, { method: 'DELETE' }),
 };
+
+export interface OrganizationBranch {
+  id: string; organizationId: string; name: string; code: string | null; address: string | null;
+  city: string | null; phone: string | null; email: string | null; isMain: boolean; isActive: boolean;
+}
+export const useOrganizationBranches = (organizationId: string) => useQuery({
+  queryKey: ['organization-branches', organizationId],
+  queryFn: () => apiFetch<OrganizationBranch[]>(`/api/v1/organization/branches?organizationId=${encodeURIComponent(organizationId)}`),
+  enabled: !!organizationId,
+});
+export const branchApi = {
+  create: (v: Partial<OrganizationBranch> & { organizationId: string; name: string }) => apiFetch('/api/v1/organization/branches', { method: 'POST', body: JSON.stringify(v) }),
+  update: (v: Partial<OrganizationBranch> & { id: string }) => { const { id, ...rest } = v; return apiFetch(`/api/v1/organization/branches/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
+  remove: (id: string) => apiFetch(`/api/v1/organization/branches/${id}`, { method: 'DELETE' }),
+};
