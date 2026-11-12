@@ -83,6 +83,7 @@ export const sapi = {
   classifyOrg: (v: { id: string; typeId: string; directionIds: string[] }) => apiFetch(`${b}/organizations/${v.id}/classification`, { method: 'PATCH', body: JSON.stringify({ typeId: v.typeId, directionIds: v.directionIds }) }),
   createOrg: (v: { name: string; note?: string; storageChatId: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
   updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null; storageChatId?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
+  attachTeacher: (v: { organizationId: string; userId: string }) => apiFetch('/api/v1/admin/memberships/attach', { method: 'POST', body: JSON.stringify({ organizationId: v.organizationId, userId: v.userId, role: 'TEACHER' }) }),
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
