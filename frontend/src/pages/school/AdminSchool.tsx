@@ -149,7 +149,7 @@ function ProfileTab() {
   const onPoster = async (file?: File) => {
     if (!file) return;
     setUploading(true);
-    try { const posterUrl = await uploadPosterImage(file); setF(v => ({ ...v, posterUrl })); toast('success', 'Maktab posteri yuklandi'); }
+    try { const posterUrl = await uploadPosterImage(file, 'SCHOOL_POSTER'); setF(v => ({ ...v, posterUrl })); toast('success', 'Maktab posteri yuklandi'); }
     catch (e: any) { toast('error', e?.message || 'Poster yuklanmadi'); }
     finally { setUploading(false); }
   };
