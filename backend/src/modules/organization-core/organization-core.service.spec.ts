@@ -74,8 +74,7 @@ describe('OrganizationCoreService', () => {
   });
 
   it('rejects switching to an organization without an active membership', async () => {
-    const { service } = setup();
-    const { prisma } = setup({ membership: null });
+    const { service, prisma } = setup();
     prisma.organizationMembership.findFirst.mockResolvedValue(null);
     await expect(service.setActiveOrganization('user_12345', 'org_12345')).rejects.toBeInstanceOf(ForbiddenException);
   });
