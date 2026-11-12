@@ -248,7 +248,7 @@ export class SuperAdminService {
         organization: { select: { id: true, name: true } },
         memberships: {
           where: { status: 'ACTIVE' },
-          select: { role: true, organization: { select: { id: true, name: true } } },
+          select: { id: true, role: true, organization: { select: { id: true, name: true } } },
         },
       },
     });
