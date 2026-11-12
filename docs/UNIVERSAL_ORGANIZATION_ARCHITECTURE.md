@@ -238,3 +238,51 @@ Not yet implemented in this phase:
 - Dynamic feature configuration.
 
 Validation status: repository connector was used to commit source files, but no local dependency install, Prisma generate/validate, backend test run, or build has been executed in this environment. Do not treat this branch as production-ready until CI/build and database migration validation pass.
+
+
+## 11. Organization Core — Phase 1 qolgan qismlari
+
+Branch: `feature/organization-core` (PR #12 draft)
+
+### Super Admin katalog boshqaruvi
+- Tashkilot turlari va ta'lim yo'nalishlarini yaratish, tahrirlash, faolsizlantirish va o'chirish API'lari.
+- Ishlatilayotgan katalog elementini o'chirishga yo'l qo'yilmaydi; avval bog'lanishlarni o'zgartirish talab qilinadi.
+- Super Admin UI: `/super/catalog`.
+- Tashkilot detail sahifasida tur va ko'p yo'nalishni biriktirish boshqaruvi.
+
+### Filiallar
+- `OrganizationBranch` CRUD API.
+- Super Admin boshqa tashkilot uchun `organizationId` beradi; ADMIN faqat faol tashkilotining filiallarini boshqaradi.
+- Tashkilot detail sahifasida filial yaratish, tahrirlash, asosiy filialni belgilash va o'chirish UI.
+- Update API'da klient yuborgan `organizationId` e'tiborga olinmaydi; filial boshqa tashkilotga ko'chirilmaydi.
+
+### Membership va rollar
+- O'qituvchi bir nechta tashkilotda mustaqil `OrganizationMembership` yozuvlariga ega bo'lishi mumkin.
+- Har bir tashkilotdagi rol membership'da saqlanadi; `User.role` faqat legacy/active-role mirror.
+- ADMIN faqat bitta tashkilotga tayinlanadi; boshqa tashkilotlardagi o'qituvchi membershiplari saqlanadi.
+- Super Admin admin tayinlash/olib tashlash/ko'chirish amallarini membership asosida bajaradi.
+- Guruhga o'qituvchi tayinlash endi global `User.organizationId` va `User.role` emas, aynan shu guruh tashkilotidagi faol TEACHER membership bilan tekshiriladi.
+
+### Faol tashkilot konteksti
+- `UserActiveOrganization` jadvali va additive migration qo'shildi.
+- `POST /api/v1/organizations/active` foydalanuvchining faol membershipini tekshiradi va tanlangan tashkilotni saqlaydi.
+- Mavjud `POST /api/v1/memberships/:id/activate` endpointi ham endi shu kontekstni yangilaydi; avval faqat STUDENT uchun edi, endi har qanday membership roli uchun ishlaydi.
+- JWT strategiyasi har bir requestda faol membership'dan organization scope va rolni yechadi.
+- `User.organizationId` va `User.role` eski endpointlar va login javoblari bilan moslik uchun sinxron mirror sifatida qoldi; authorization source of truth emas.
+
+### Yangi API'lar
+- `GET /api/v1/super/organization-types`
+- `POST/PATCH/DELETE /api/v1/super/organization-types`
+- `GET /api/v1/super/education-directions`
+- `POST/PATCH/DELETE /api/v1/super/education-directions`
+- `GET/POST /api/v1/organization/branches`
+- `PATCH/DELETE /api/v1/organization/branches/:id`
+- `POST /api/v1/organizations/active`
+
+### Hali bajarilmagan validatsiya
+- Prisma client generate va schema validate.
+- Ikkala SQL migrationni test PostgreSQL bazasida qo'llash.
+- Backend unit testlar va build.
+- Frontend TypeScript/build.
+- Android build va API integratsiya tekshiruvi.
+- Legacy endpointlar bo'yicha regression va cross-organization access testlari.
