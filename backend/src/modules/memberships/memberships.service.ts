@@ -68,7 +68,7 @@ export class MembershipsService implements OnModuleInit {
       orderBy: { requestedAt: 'desc' },
       include: { organization: { select: { id: true, name: true } } },
     });
-    return rows.map((m) => ({ id: m.id, role: m.role, status: m.status, requestedAt: m.requestedAt, decidedAt: m.decidedAt, organization: m.organization, isActive: m.status === 'ACTIVE' && m.organizationId === user.organizationId }));
+    return rows.map((m) => ({ id: m.id, role: m.role, status: m.status, requestedAt: m.requestedAt, decidedAt: m.decidedAt, organization: m.organization, isActive: m.status === 'ACTIVE' && m.organizationId === (user.activeOrganizationId ?? user.organizationId) }));
   }
 
   async requestJoin(user: CurrentUserPayload, orgId: string, role: 'STUDENT' | 'TEACHER' = 'STUDENT', message?: string) {
