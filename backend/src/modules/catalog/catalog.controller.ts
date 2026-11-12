@@ -18,5 +18,6 @@ export class CatalogController {
 @Controller('api/v1/admin/school-profile')
 export class SchoolProfileController {
   constructor(private readonly svc: CatalogService) {}
+  @Get() mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.myProfile(u); }
   @Patch() update(@CurrentUser() u: CurrentUserPayload, @Body() dto: ProfileDto) { return this.svc.updateProfile(u, dto); }
 }
