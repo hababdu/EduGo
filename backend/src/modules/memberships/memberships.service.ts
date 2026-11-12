@@ -201,6 +201,8 @@ export class MembershipsService implements OnModuleInit {
       if (!m.user.organizationId) await this.applyActive(m.userId, m.organizationId, 'STUDENT');
     } else if (!m.user.organizationId) {
       await this.applyActive(m.userId, m.organizationId, finalRole);
+    } else if (m.user.organizationId === m.organizationId) {
+      await this.prisma.user.update({ where: { id: m.userId }, data: { role: finalRole } });
     }
     await this.audit(actor, 'MEMBERSHIP_APPROVE', id, { status: 'PENDING', role: m.role }, { status: 'ACTIVE', role: finalRole });
     this.tell(m.userId, "✅ So'rovingiz qabul qilindi", `Siz «${(m.organization?.name ?? "maktab")}» maktabining ${finalRole === 'TEACHER' ? "o'qituvchisi" : finalRole === 'ADMIN' ? 'administratori' : "o'quvchisi"} bo'ldingiz.`);
@@ -229,6 +231,8 @@ export class MembershipsService implements OnModuleInit {
       if (!user.organizationId) await this.applyActive(userId, orgId, 'STUDENT');
     } else if (!user.organizationId) {
       await this.applyActive(userId, orgId, role);
+    } else if (user.organizationId === orgId) {
+      await this.prisma.user.update({ where: { id: userId }, data: { role } });
     }
     await this.audit(actor, 'MEMBERSHIP_ATTACH', m.id, null, { userId, organizationId: orgId, role });
     return { id: m.id };
@@ -242,6 +246,9 @@ export class MembershipsService implements OnModuleInit {
     if ((role === 'ADMIN' || m.role === 'ADMIN') && !isSuperAdmin(actor)) throw new ForbiddenException('Admin rolini faqat super admin o\'zgartiradi');
     if (m.role === role) return { ok: true };
     await this.prisma.organizationMembership.update({ where: { id }, data: { role } });
+    if (m.user.organizationId === m.organizationId) {
+      await this.prisma.user.update({ where: { id: m.userId }, data: { role } });
+    }
     if (role === 'STUDENT') await this.prisma.studentProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
     if (role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
     if (role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId: m.userId }, create: { userId: m.userId }, update: {} });
