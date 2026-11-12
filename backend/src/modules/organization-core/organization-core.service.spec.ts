@@ -7,6 +7,7 @@ function setup(over: any = {}) {
       findUnique: jest.fn().mockResolvedValue(over.organization ?? { id: 'org_12345', name: 'Edu' }),
       update: jest.fn().mockResolvedValue({ id: 'org_12345' }),
     },
+    user: { update: jest.fn().mockResolvedValue({ id: 'user_12345' }) },
     organizationType: {
       findMany: jest.fn().mockResolvedValue([]),
       findFirst: jest.fn().mockResolvedValue(over.type === undefined ? { id: 'type_12345' } : over.type),
