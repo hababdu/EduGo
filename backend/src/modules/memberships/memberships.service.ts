@@ -263,7 +263,22 @@ export class MembershipsService implements OnModuleInit {
     // Faqat shu maktabdagi a'zolik bekor qilinadi. Boshqa maktablardagi faol a'zoliklar saqlanadi.
     const remaining = await this.prisma.organizationMembership.findFirst({ where: { userId: m.userId, status: 'ACTIVE', id: { not: m.id } }, orderBy: [{ decidedAt: 'desc' }, { requestedAt: 'desc' }], select: { organizationId: true, role: true } });
     if (m.user.organizationId === m.organizationId) {
-      await this.prisma.user.updateMany({ where: { id: m.userId, organizationId: m.organizationId }, data: { organizationId: remaining?.organizationId ?? null, role: remaining?.role ?? 'STUDENT' } });
+      await this.prisma.$transaction(async (tx) => {
+        if (remaining?.organizationId) {
+          await tx.userActiveOrganization.upsert({
+            where: { userId: m.userId },
+            create: { userId: m.userId, organizationId: remaining.organizationId },
+            update: { organizationId: remaining.organizationId },
+          });
+        } else {
+          await tx.userActiveOrganization.deleteMany({ where: { userId: m.userId } });
+        }
+        // Global role o'zgarmaydi; faqat legacy organizationId mirror yangilanadi.
+        await tx.user.updateMany({
+          where: { id: m.userId, organizationId: m.organizationId },
+          data: { organizationId: remaining?.organizationId ?? null },
+        });
+      });
     }
     await this.audit(actor, 'MEMBERSHIP_REMOVE', id, { status: 'ACTIVE', role: m.role }, { status: 'REMOVED' });
     this.tell(m.userId, 'Maktabdan chiqarildingiz', `Siz «${(m.organization?.name ?? "maktab")}» maktabi a'zoligidan chiqarildingiz.`);
