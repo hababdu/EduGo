@@ -4,7 +4,7 @@ import { resolveOrgId } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const PAGE = 20;
-const PUBLIC_SEL = { id: true, name: true, city: true, about: true, ratingAvg: true, ratingCount: true } as const;
+const PUBLIC_SEL = { id: true, name: true, city: true, about: true, posterUrl: true, websiteUrl: true, telegramUrl: true, instagramUrl: true, ratingAvg: true, ratingCount: true } as const;
 
 @Injectable()
 export class CatalogService {
@@ -59,9 +59,16 @@ export class CatalogService {
     return { ok: true };
   }
 
-  async updateProfile(actor: CurrentUserPayload, dto: { city?: string; about?: string; isPublic?: boolean; organizationId?: string }) {
+  async myProfile(actor: CurrentUserPayload) {
+    const id = resolveOrgId(actor);
+    const org = await this.prisma.organization.findUnique({ where: { id }, select: { id: true, name: true, city: true, about: true, posterUrl: true, websiteUrl: true, telegramUrl: true, instagramUrl: true, isPublic: true } });
+    if (!org) throw new NotFoundException('Maktab topilmadi');
+    return org;
+  }
+
+  async updateProfile(actor: CurrentUserPayload, dto: { city?: string; about?: string; isPublic?: boolean; posterUrl?: string; websiteUrl?: string; telegramUrl?: string; instagramUrl?: string; organizationId?: string }) {
     const id = resolveOrgId(actor, dto.organizationId);
-    await this.prisma.organization.update({ where: { id }, data: { ...(dto.city !== undefined ? { city: dto.city.trim() || null } : {}), ...(dto.about !== undefined ? { about: dto.about.trim() || null } : {}), ...(dto.isPublic !== undefined ? { isPublic: dto.isPublic } : {}) } });
+    await this.prisma.organization.update({ where: { id }, data: { ...(dto.city !== undefined ? { city: dto.city.trim() || null } : {}), ...(dto.about !== undefined ? { about: dto.about.trim() || null } : {}), ...(dto.posterUrl !== undefined ? { posterUrl: dto.posterUrl.trim() || null } : {}), ...(dto.websiteUrl !== undefined ? { websiteUrl: dto.websiteUrl.trim() || null } : {}), ...(dto.telegramUrl !== undefined ? { telegramUrl: dto.telegramUrl.trim() || null } : {}), ...(dto.instagramUrl !== undefined ? { instagramUrl: dto.instagramUrl.trim() || null } : {}), ...(dto.isPublic !== undefined ? { isPublic: dto.isPublic } : {}) } });
     return { ok: true };
   }
 }
