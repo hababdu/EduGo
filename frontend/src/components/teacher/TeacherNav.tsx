@@ -1,4 +1,4 @@
-import { LayoutDashboard, FolderOpen, BookOpen, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, BookOpen, ClipboardCheck, UserRound } from 'lucide-react';
 import { StaffNav, StaffNavItem } from '../staff';
 
 const ITEMS: StaffNavItem[] = [
@@ -11,6 +11,7 @@ const ITEMS: StaffNavItem[] = [
     match: ['/teacher/content', '/teacher/assignments', '/teacher/sections', '/teacher/topics', '/teacher/lessons'],
   },
   { to: '/teacher/tests', label: 'Testlar', Icon: ClipboardCheck, match: ['/teacher/tests', '/teacher/questions'] },
+  { to: '/teacher/profile', label: 'Profil', Icon: UserRound, match: ['/teacher/profile'] },
 ];
 
 export function TeacherNav() {
