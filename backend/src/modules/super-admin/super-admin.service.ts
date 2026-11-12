@@ -138,13 +138,13 @@ export class SuperAdminService {
       this.prisma.organizationMembership.findMany({
         where: { organizationId: id, status: 'ACTIVE', role: { in: ['ADMIN', 'TEACHER'] }, user: { deletedAt: null } },
         orderBy: [{ role: 'asc' }, { requestedAt: 'asc' }],
-        select: { role: true, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
+        select: { id: true, role: true, permissions: true, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
       }),
       this.prisma.organizationMembership.count({ where: { organizationId: id, status: 'ACTIVE', role: 'STUDENT', user: { deletedAt: null } } }),
       this.prisma.payment.groupBy({ by: ['status'], where: { month, group: { organizationId: id, deletedAt: null } }, _count: true, _sum: { amount: true } }),
       this.prisma.orgPayment.findMany({ where: { organizationId: id }, orderBy: { month: 'desc' }, take: 12 }),
     ]);
-    const staff = staffMemberships.map((membership) => ({ ...membership.user, role: membership.role }));
+    const staff = staffMemberships.map((membership) => ({ ...membership.user, role: membership.role, membershipId: membership.id, permissions: membership.permissions }));
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
@@ -155,8 +155,8 @@ export class SuperAdminService {
         directions: org.directions.map((row) => row.direction),
       },
       counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
-      admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
-      teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),
+      admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, membershipId: u.membershipId, permissions: u.permissions, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
+      teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, membershipId: u.membershipId, permissions: u.permissions, name: nameOf(u), username: u.username, status: u.status })),
       groups: groups.map((g) => ({ id: g.id, name: g.name, fee: g.monthlyFee, members: g._count.members, teacher: g.teacher ? nameOf(g.teacher) : null })),
       studentPayments: { month, collected: paid?._sum.amount ?? 0, paidCount: paid?._count ?? 0, expected },
       subscription: {
