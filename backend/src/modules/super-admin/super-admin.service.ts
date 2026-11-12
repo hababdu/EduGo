@@ -211,6 +211,8 @@ export class SuperAdminService {
     if (!user.organizationId) {
       await this.prisma.userActiveOrganization.upsert({ where: { userId: user.id }, create: { userId: user.id, organizationId: orgId }, update: { organizationId: orgId } });
       await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: orgId, role: 'ADMIN' } });
+    } else if (user.organizationId === orgId) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
     }
     await this.audit(actor, 'ADMIN_ASSIGN', 'OrganizationMembership', membership.id, null, { role: 'ADMIN', organizationId: orgId });
     return { id: user.id, name: nameOf(user) };
