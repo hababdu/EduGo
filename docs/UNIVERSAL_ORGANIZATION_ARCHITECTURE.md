@@ -210,3 +210,31 @@ Mavjud ma'lumotlarni o'chirish yoki barcha tashkilotlarni avtomatik yangi turga 
 6. Admin uchun tashkilot/filial scope'ni alohida saqlash; Super Admin global scope bo'lib qoladi.
 7. Cross-organization access testlari yozilmaguncha mavjud scope helperlarini ommaviy almashtirmaslik.
 
+
+
+## 10. Phase 1 — Organization Core (implementation started)
+
+Branch: `feature/organization-core`
+
+Implemented in this branch:
+- Additive Prisma models: `OrganizationType`, `EducationDirection`, `OrganizationDirection`, `OrganizationBranch`.
+- Optional `Organization.typeId` relation; existing organizations are not force-classified.
+- SQL migration creates the catalog and relationship tables without deleting or rewriting existing organization data.
+- Initial editable catalog seed: 15 organization types and 21 education directions. The catalog is intentionally open-ended.
+- Public read endpoints:
+  - `GET /api/v1/education-catalog/organization-types`
+  - `GET /api/v1/education-catalog/directions?category=technology`
+- Super Admin classification endpoint:
+  - `PATCH /api/v1/super/organizations/:id/classification`
+  - Body: `{ "typeId": "...", "directionIds": ["...", "..."] }`
+- Classification validates the organization, active type, and every active direction, deduplicates direction IDs, and updates type + directions in one database transaction.
+- Unit tests added for catalog ordering/filtering, classification, deduplication, and invalid IDs.
+
+Not yet implemented in this phase:
+- CRUD management for organization types and directions.
+- Branch management endpoints and branch-level membership/permission scopes.
+- Active organization context replacing `User.organizationId`.
+- Multi-organization teacher/admin membership policy changes.
+- Dynamic feature configuration.
+
+Validation status: repository connector was used to commit source files, but no local dependency install, Prisma generate/validate, backend test run, or build has been executed in this environment. Do not treat this branch as production-ready until CI/build and database migration validation pass.
