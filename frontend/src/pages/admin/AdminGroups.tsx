@@ -10,14 +10,15 @@ import {
   useTeachersList,
 } from '../../hooks/useGroups';
 import { getFullUrl } from '../../hooks/useImageUpload';
+import { uploadPosterImage } from '../../lib/image-upload';
 import { useTelegram } from '../../hooks/useTelegram';
 import { toast } from '../../components/ui/Toast';
-import { PexelsPhotoPickerModal } from '../../components/admin/PexelsPhotoPickerModal';
+
 import { StaffHero, Panel, Avatar, ProgressBar } from '../../components/staff';
 import { EmptyState, Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE_WIDE, CONTROL } from '../../design/tokens';
-import { Plus, X, Search, Trash2, Users, FolderOpen, Image, RefreshCw, GraduationCap } from '../../design/icons';
+import { Plus, X, Search, Trash2, Users, FolderOpen, Image, GraduationCap } from '../../design/icons';
 
 export default function AdminGroups({ embedded = false }: { embedded?: boolean } = {}) {
   /** Maktab sahifasi ichida: o'z sarlavhasi va tashqi chegarasiz */
@@ -31,11 +32,11 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
   const deleteGroup = useDeleteGroup();
 
   const [showForm, setShowForm] = useState(false);
-  const [showPexelsModal, setShowPexelsModal] = useState(false);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [posterUrl, setPosterUrl] = useState('');
+  const [posterUploading, setPosterUploading] = useState(false);
   const [selectedTeacherId, setSelectedTeacherId] = useState('');
   const [search, setSearch] = useState('');
   const [sched, setSched] = useState<ScheduleValue>({ days: [], start: '', end: '', room: '' });
@@ -65,11 +66,18 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
     setFormError(null);
   };
 
-  /* ============ PEXELS SELECT ============ */
-  const handlePexelsSelect = (url: string) => {
-    setPosterUrl(url);
-    hapticNotify('success');
-    toast('success', 'Rasm tanlandi');
+  const handlePosterFile = async (file?: File) => {
+    if (!file) return;
+    setPosterUploading(true);
+    try {
+      const url = await uploadPosterImage(file, 'GROUP_POSTER');
+      setPosterUrl(url);
+      hapticNotify('success');
+      toast('success', 'Poster yuklandi');
+    } catch (err: any) {
+      hapticNotify('error');
+      toast('error', err?.message || 'Rasm yuklanmadi');
+    } finally { setPosterUploading(false); }
   };
 
   const handleRemovePoster = () => {
@@ -272,49 +280,16 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
                 </label>
               </div>
 
-              {/* Poster — Pexels orqali */}
+              {/* Poster — qurilmadan yuklash */}
               <div className="space-y-1.5">
-                <label className="text-xs text-ink-muted font-medium">Poster (ixtiyoriy)</label>
-
-                {!posterUrl ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      haptic('light');
-                      setShowPexelsModal(true);
-                    }}
-                    className="w-full bg-surface/40 rounded-2xl px-4 py-6 outline-none border border-dashed border-tint/10 text-ink-muted hover:border-sky/50 active:scale-[0.99] transition-all min-h-[160px] flex flex-col items-center justify-center gap-2"
-                  >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky/10 text-sky">
-                      <Search className="h-6 w-6" aria-hidden="true" />
-                    </span>
-                    <span className="text-xs font-medium text-ink">Rasm qidirish</span>
-                    <span className="text-[10px]">Pexels'dan bepul rasmlar</span>
-                  </button>
-                ) : (
-                  <div className="relative bg-surface/50 rounded-2xl overflow-hidden border border-tint/10">
-                    <img src={getFullUrl(posterUrl)} alt="Preview" className="w-full h-48 object-cover" />
-                    <button
-                      type="button"
-                      onClick={handleRemovePoster}
-                      aria-label="Rasmni olib tashlash"
-                      className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white w-8 h-8 rounded-full flex items-center justify-center active:scale-[0.95]"
-                    >
-                      <X className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        haptic('light');
-                        setShowPexelsModal(true);
-                      }}
-                      className="absolute bottom-2 right-2 inline-flex items-center gap-1.5 bg-black/60 backdrop-blur-sm text-white text-[11px] px-3 py-1.5 rounded-xl font-semibold active:scale-[0.95]"
-                    >
-                      <RefreshCw className="h-3 w-3" aria-hidden="true" />
-                      Almashtirish
-                    </button>
-                  </div>
-                )}
+                <label className="text-xs text-ink-muted font-medium">Guruh posteri (ixtiyoriy)</label>
+                {posterUrl && <div className="relative overflow-hidden rounded-2xl border border-tint/10"><img src={getFullUrl(posterUrl)} alt="Guruh posteri" className="h-48 w-full object-cover" /><button type="button" onClick={handleRemovePoster} className="absolute right-2 top-2 rounded-full bg-black/70 p-2 text-white" aria-label="Posterni olib tashlash"><X className="h-4 w-4" /></button></div>}
+                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-tint/15 bg-surface/30 p-4 text-center">
+                  <Image className="h-7 w-7 text-sky" />
+                  <span className="text-xs font-semibold text-ink">{posterUploading ? 'Yuklanmoqda…' : posterUrl ? 'Boshqa rasm tanlash' : 'Kompyuter yoki telefondan rasm tanlash'}</span>
+                  <span className="text-[10px] text-ink-muted">JPG, PNG yoki WebP · 8 MB gacha</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={posterUploading} onChange={e => { void handlePosterFile(e.target.files?.[0]); e.currentTarget.value = ''; }} />
+                </label>
               </div>
             </div>
 
@@ -322,7 +297,7 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
 
             <button
               type="submit"
-              disabled={createGroup.isPending}
+              disabled={createGroup.isPending || posterUploading}
               className={`${CONTROL.buttonPrimary} mt-4 w-full lg:w-auto lg:px-10 disabled:opacity-50`}
             >
               {createGroup.isPending ? 'Yaratilmoqda...' : 'Saqlash'}
@@ -426,11 +401,6 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
         </div>
       )}
 
-      <PexelsPhotoPickerModal
-        isOpen={showPexelsModal}
-        onClose={() => setShowPexelsModal(false)}
-        onSelect={handlePexelsSelect}
-      />
     </div>
   );
 }

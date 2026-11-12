@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { MaterialsService } from './materials.service';
 
-const teacher: any = { id: 't1', role: 'TEACHER' };
+const teacher: any = { id: 't1', role: 'TEACHER', organizationId: 'o1' };
 const otherTeacher: any = { id: 't2', role: 'TEACHER' };
 const admin: any = { id: 'adm', role: 'ADMIN', organizationId: 'o1' };
 const student: any = { id: 's1', role: 'STUDENT' };
@@ -86,10 +86,11 @@ describe('MaterialsService — maktab kanali', () => {
     expect(tg.store).not.toHaveBeenCalled();
   });
 
-  it("maktabsiz foydalanuvchi (platforma) umumiy kanalga yuklaydi", async () => {
+  it("maktab kontekstisiz fayl yuklashni rad etadi va umumiy kanalga yubormaydi", async () => {
     const { svc, tg } = build();
-    await svc.upload(teacher, up);
-    expect(tg.store.mock.calls[0][3]).toBeNull();
+    const unscoped: any = { id: 't1', role: 'TEACHER' };
+    await expect(svc.upload(unscoped, up)).rejects.toThrow(/maktab yoki guruh kontekstida/);
+    expect(tg.store).not.toHaveBeenCalled();
   });
 
   it("boshqa maktab admini faylni ko'ra ham, o'chira ham olmaydi", async () => {

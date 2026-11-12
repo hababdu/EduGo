@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { toast } from '../../components/ui/Toast';
 
-export interface School { id: string; name: string; city: string | null; about: string | null; ratingAvg: number; ratingCount: number }
+export interface School { id: string; name: string; city: string | null; about: string | null; posterUrl?: string | null; websiteUrl?: string | null; telegramUrl?: string | null; instagramUrl?: string | null; ratingAvg: number; ratingCount: number }
 export interface SchoolDetail extends School { subjects: string[]; breakdown: Record<string, number>; reviews: { rating: number; comment: string | null; createdAt: string; author: string }[] }
 export interface Catalog { total: number; page: number; pages: number; items: School[] }
 export interface MyMembership { id: string; role: string; status: string; requestedAt: string; isActive?: boolean; organization: { id: string; name: string } }

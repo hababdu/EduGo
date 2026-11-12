@@ -8,6 +8,9 @@ import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE_WIDE } from '../../design/tokens';
 import { TimetableView } from './TimetableView';
+import { uploadPosterImage } from '../../lib/image-upload';
+import { getFullUrl } from '../../hooks/useImageUpload';
+import { toast } from '../../components/ui/Toast';
 import { AssignmentRow, Chip, DAYS, InvoiceRow, MEMBER_UZ, MemberRow, Paged, ROLE_UZ, Slot, TRIAL_UZ, TrialRow, del, dt, inputCls, money, patch, post, useSchoolAction, useSchoolQuery } from './schoolApi';
 
 type Tab = 'members' | 'groups' | 'trials' | 'timetable' | 'profile';
@@ -137,24 +140,45 @@ function TimetableTab() {
 
 /* ───────── Profil va obuna ───────── */
 function ProfileTab() {
-  const [f, setF] = useState({ city: '', about: '', isPublic: true });
+  const [f, setF] = useState({ city: '', about: '', isPublic: true, posterUrl: '', websiteUrl: '', telegramUrl: '', instagramUrl: '' });
+  const [uploading, setUploading] = useState(false);
+  const { data: profile } = useSchoolQuery<{ city: string | null; about: string | null; isPublic: boolean; posterUrl: string | null; websiteUrl: string | null; telegramUrl: string | null; instagramUrl: string | null }>(['school-profile'], '/api/v1/admin/school-profile');
   const { data: inv } = useSchoolQuery<InvoiceRow[]>(['invoices'], '/api/v1/admin/subscription/invoices');
-  const save = useSchoolAction(() => patch('/api/v1/admin/school-profile', f), 'Saqlandi');
+  useEffect(() => { if (profile) setF({ city: profile.city || '', about: profile.about || '', isPublic: profile.isPublic, posterUrl: profile.posterUrl || '', websiteUrl: profile.websiteUrl || '', telegramUrl: profile.telegramUrl || '', instagramUrl: profile.instagramUrl || '' }); }, [profile]);
+  const save = useSchoolAction(() => patch('/api/v1/admin/school-profile', f), 'Maktab profili saqlandi');
+  const onPoster = async (file?: File) => {
+    if (!file) return;
+    setUploading(true);
+    try { const posterUrl = await uploadPosterImage(file, 'SCHOOL_POSTER'); setF(v => ({ ...v, posterUrl })); toast('success', 'Maktab posteri yuklandi'); }
+    catch (e: any) { toast('error', e?.message || 'Poster yuklanmadi'); }
+    finally { setUploading(false); }
+  };
   return (
     <div className="space-y-4">
-      <Panel title="Katalogdagi profil" icon={Settings} accent="sky">
-        <div className="space-y-2">
-          <input className={inputCls} placeholder="Shahar" maxLength={60} value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />
-          <textarea className={inputCls} rows={3} maxLength={1000} placeholder="Maktab haqida" value={f.about} onChange={(e) => setF({ ...f, about: e.target.value })} />
-          <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={f.isPublic} onChange={(e) => setF({ ...f, isPublic: e.target.checked })} />Katalogda ko'rinsin</label>
-          <button type="button" disabled={save.isPending} onClick={() => save.mutate(undefined)} className="w-full rounded-xl bg-sky py-2.5 text-sm font-semibold text-base disabled:opacity-40">Saqlash</button>
-          <p className="text-[11px] text-ink-muted">Shaharni o'chirish uchun maydonni bo'sh qoldirib saqlang.</p>
+      <Panel title="Maktab profili va ommaviy sahifasi" icon={Settings} accent="sky">
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-ink-muted font-medium">Maktab posteri</label>
+            {f.posterUrl && <div className="relative overflow-hidden rounded-2xl border border-tint/10"><img src={getFullUrl(f.posterUrl)} alt="Maktab posteri" className="h-48 w-full object-cover" /><button type="button" onClick={() => setF(v => ({ ...v, posterUrl: '' }))} className="absolute right-2 top-2 rounded-full bg-black/70 px-3 py-1.5 text-xs text-white">Olib tashlash</button></div>}
+            <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-tint/15 bg-surface/30 p-4 text-center">
+              <span className="text-sm font-semibold text-ink">{uploading ? 'Yuklanmoqda…' : 'Rasm yuklash yoki almashtirish'}</span>
+              <span className="text-[11px] text-ink-muted">JPG, PNG yoki WebP · 8 MB gacha</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading} onChange={e => { void onPoster(e.target.files?.[0]); e.currentTarget.value = ''; }} />
+            </label>
+          </div>
+          <input className={inputCls} placeholder="Shahar" maxLength={60} value={f.city} onChange={e => setF({ ...f, city: e.target.value })} />
+          <textarea className={inputCls} rows={4} maxLength={1000} placeholder="Maktab haqida batafsil tavsif..." value={f.about} onChange={e => setF({ ...f, about: e.target.value })} />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <input className={inputCls} placeholder="Rasmiy sayt: https://..." value={f.websiteUrl} onChange={e => setF({ ...f, websiteUrl: e.target.value })} />
+            <input className={inputCls} placeholder="Telegram: https://t.me/..." value={f.telegramUrl} onChange={e => setF({ ...f, telegramUrl: e.target.value })} />
+            <input className={inputCls} placeholder="Instagram: https://instagram.com/..." value={f.instagramUrl} onChange={e => setF({ ...f, instagramUrl: e.target.value })} />
+          </div>
+          <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={f.isPublic} onChange={e => setF({ ...f, isPublic: e.target.checked })} />Katalogda ko'rinsin</label>
+          <button type="button" disabled={save.isPending || uploading} onClick={() => save.mutate(undefined)} className="w-full rounded-xl bg-sky py-2.5 text-sm font-semibold text-base disabled:opacity-40">Profilni saqlash</button>
         </div>
       </Panel>
       <Panel title="Obuna hisoblari" accent="gold" flush>
-        {!inv?.length ? <p className="p-5 text-xs text-ink-muted">Hisob yo'q</p> : <ul className="divide-y divide-tint/5">{inv.map((i) => (
-          <li key={i.id} className="flex items-center gap-3 px-4 py-3 text-xs"><span className="font-semibold text-ink">{i.month}</span><span className="flex-1 text-ink-muted">{money(i.amount)}</span><Chip s={i.status === 'PAID' ? { l: "To'langan", c: 'bg-teal/15 text-teal' } : i.status === 'PENDING' ? { l: 'Kutilmoqda', c: 'bg-gold/15 text-gold' } : { l: 'Bekor', c: 'bg-tint/10 text-ink-muted' }} /></li>
-        ))}</ul>}
+        {!inv?.length ? <p className="p-5 text-xs text-ink-muted">Hisob yo'q</p> : <ul className="divide-y divide-tint/5">{inv.map(i => <li key={i.id} className="flex items-center gap-3 px-4 py-3 text-xs"><span className="font-semibold text-ink">{i.month}</span><span className="flex-1 text-ink-muted">{money(i.amount)}</span><Chip s={i.status === 'PAID' ? { l: "To'langan", c: 'bg-teal/15 text-teal' } : i.status === 'PENDING' ? { l: 'Kutilmoqda', c: 'bg-gold/15 text-gold' } : { l: 'Bekor', c: 'bg-tint/10 text-ink-muted' }} /></li>)}</ul>}
       </Panel>
     </div>
   );
