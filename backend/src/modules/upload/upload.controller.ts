@@ -54,8 +54,8 @@ export class UploadController {
       }
       if (actor.role === 'STUDENT' && !group.members.length) throw new ForbiddenException('Siz bu guruh a’zosi emassiz');
       if (actor.role === 'PARENT') {
-        const child = await this.prisma.parentLink.findFirst({ where: { parentId: actor.id }, select: { studentId: true } });
-        if (!child || !(await this.prisma.groupMember.findFirst({ where: { groupId, studentId: child.studentId }, select: { id: true } }))) {
+        const children = await this.prisma.parentLink.findMany({ where: { parentId: actor.id }, select: { studentId: true } });
+        if (!children.length || !(await this.prisma.groupMember.findFirst({ where: { groupId, studentId: { in: children.map((child) => child.studentId) } }, select: { id: true } }))) {
           throw new ForbiddenException('Farzandingiz ushbu guruhga biriktirilmagan');
         }
       }
@@ -109,7 +109,7 @@ export class UploadController {
     if (actor.role === 'ADMIN') allowed = actor.organizationId === asset.organizationId;
     if (actor.role === 'TEACHER' || actor.role === 'STUDENT' || actor.role === 'PARENT') {
       const memberships = await this.prisma.organizationMembership.findFirst({ where: { userId: actor.id, organizationId: asset.organizationId, status: 'ACTIVE' }, select: { id: true } });
-      allowed = !!memberships && asset.uploaderId === actor.id;
+      allowed = !!memberships;
     }
     if (!allowed) throw new ForbiddenException('Bu rasmga ruxsat yo‘q');
     const buffer = await this.telegram.download(asset.telegramFileId, asset.sizeBytes);
