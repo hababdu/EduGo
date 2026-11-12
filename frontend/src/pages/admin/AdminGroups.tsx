@@ -70,7 +70,7 @@ export default function AdminGroups({ embedded = false }: { embedded?: boolean }
     if (!file) return;
     setPosterUploading(true);
     try {
-      const url = await uploadPosterImage(file);
+      const url = await uploadPosterImage(file, 'GROUP_POSTER');
       setPosterUrl(url);
       hapticNotify('success');
       toast('success', 'Poster yuklandi');
