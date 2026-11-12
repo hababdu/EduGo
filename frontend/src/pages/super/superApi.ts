@@ -105,7 +105,7 @@ export interface BillingOverview {
   totals: { paid: number; waived: number; unpaid: number; collected: number; expected: number };
 }
 export interface OrgDetail {
-  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string };
+  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string; typeId: string | null; type: EducationCatalogItem | null; directions: EducationCatalogItem[] };
   counts: { students: number; teachers: number; admins: number; groups: number };
   admins: { id: string; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
   teachers: { id: string; name: string; username: string | null; status: string }[];
