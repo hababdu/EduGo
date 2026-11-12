@@ -8,6 +8,7 @@ import { CONTROL, PAGE } from '../../design/tokens';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
 import { sapi, type RestoreResult, useEducationDirections, useEducationTypes, useOrgDetail, useSuperMutation, when } from './superApi';
 import { OrganizationBranchManager } from './OrganizationBranchManager';
+import { OrganizationTeacherManager } from './OrganizationTeacherManager';
 
 const SUB = { PAID: ["To'lagan", 'bg-teal/15 text-teal'], WAIVED: ['Imtiyoz', 'bg-sky/15 text-sky'], UNPAID: ["To'lamagan", 'bg-coral/15 text-coral'] } as const;
 
@@ -50,6 +51,7 @@ export function SuperOrgDetail() {
             </div>
           </Panel>
           <OrganizationBranchManager organizationId={id} />
+          <OrganizationTeacherManager organizationId={id} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <KpiCard label="O'quvchilar" value={d.counts.students} icon={GraduationCap} accent="sky" />
             <KpiCard label="O'qituvchilar" value={d.counts.teachers} icon={Users} accent="teal" />
