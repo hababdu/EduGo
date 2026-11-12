@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { BookOpen, Plus, Save, Tags, Trash2, X } from 'lucide-react';
 import { StaffHero, Panel } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
-import { toast } from '../../components/ui/Toast';
 import { IMAGES } from '../../design/images';
 import { CONTROL, PAGE } from '../../design/tokens';
 import { educationCatalogApi, EducationCatalogItem, useEducationDirections, useEducationTypes, useSuperMutation } from './superApi';
@@ -14,10 +13,9 @@ function CatalogEditor({ kind, items }: { kind: Kind; items: EducationCatalogIte
   const [draft, setDraft] = useState<typeof empty & { id?: string }>(empty);
   const [show, setShow] = useState(false);
   const save = useSuperMutation((v: typeof draft) => {
-    const api = kind === 'type' ? educationCatalogApi : educationCatalogApi;
     return v.id
-      ? (kind === 'type' ? api.updateType(v as EducationCatalogItem) : api.updateDirection(v as EducationCatalogItem))
-      : (kind === 'type' ? api.saveType(v) : api.saveDirection(v));
+      ? (kind === 'type' ? educationCatalogApi.updateType(v as EducationCatalogItem) : educationCatalogApi.updateDirection(v as EducationCatalogItem))
+      : (kind === 'type' ? educationCatalogApi.saveType(v) : educationCatalogApi.saveDirection(v));
   }, 'Katalog saqlandi');
   const remove = useSuperMutation((id: string) => kind === 'type' ? educationCatalogApi.deleteType(id) : educationCatalogApi.deleteDirection(id), 'Katalog elementi o‘chirildi');
   const title = kind === 'type' ? 'Tashkilot turlari' : 'Ta’lim yo‘nalishlari';
