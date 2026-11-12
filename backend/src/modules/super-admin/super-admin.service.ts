@@ -63,17 +63,26 @@ export class SuperAdminService {
   async listOrgs() {
     const orgs = await this.prisma.organization.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { users: true, groups: true } } },
+      include: { _count: { select: { groups: true } } },
     });
-    const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN', deletedAt: null, organizationId: { in: orgs.map((o) => o.id) } },
-      select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, organizationId: true },
+    const memberships = await this.prisma.organizationMembership.findMany({
+      where: { organizationId: { in: orgs.map((o) => o.id) }, status: 'ACTIVE', user: { deletedAt: null } },
+      select: {
+        organizationId: true, role: true,
+        user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true } },
+      },
     });
-    return orgs.map((o) => ({
-      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId, lastBackupAt: o.lastBackupAt, lastBackupStatus: o.lastBackupStatus,
-      users: o._count.users, groups: o._count.groups,
-      admins: admins.filter((a) => a.organizationId === o.id).map((a) => ({ id: a.id, name: nameOf(a), username: a.username, telegramId: a.telegramId })),
-    }));
+    return orgs.map((o) => {
+      const members = memberships.filter((m) => m.organizationId === o.id);
+      return {
+        id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt,
+        monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId, lastBackupAt: o.lastBackupAt, lastBackupStatus: o.lastBackupStatus,
+        users: members.length, groups: o._count.groups,
+        admins: members.filter((m) => m.role === 'ADMIN').map((m) => ({
+          id: m.user.id, name: nameOf(m.user), username: m.user.username, telegramId: m.user.telegramId,
+        })),
+      };
+    });
   }
 
   /** Bitta kanal faqat bitta maktabga biriktiriladi (aks holda maktablar ma'lumoti aralashib ketadi). */
