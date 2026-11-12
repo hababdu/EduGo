@@ -15,3 +15,6 @@ CREATE TABLE "SchoolMediaAsset" (
 );
 CREATE INDEX "SchoolMediaAsset_organizationId_purpose_createdAt_idx" ON "SchoolMediaAsset"("organizationId", "purpose", "createdAt");
 CREATE INDEX "SchoolMediaAsset_uploaderId_idx" ON "SchoolMediaAsset"("uploaderId");
+
+ALTER TABLE "SchoolMediaAsset" ADD CONSTRAINT "SchoolMediaAsset_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SchoolMediaAsset" ADD CONSTRAINT "SchoolMediaAsset_uploaderId_fkey" FOREIGN KEY ("uploaderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
