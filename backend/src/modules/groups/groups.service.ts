@@ -530,7 +530,7 @@ export class GroupsService {
 
     // TEACHER — faqat o'ziniki
     if (user.role === 'TEACHER') {
-      if (group.teacherId !== user.id || !user.organizationId || group.organizationId !== (user.activeOrganizationId ?? user.organizationId)) {
+      if (group.teacherId !== user.id || !(user.activeOrganizationId ?? user.organizationId) || group.organizationId !== (user.activeOrganizationId ?? user.organizationId)) {
         throw new ForbiddenException('Bu guruh faol tashkilotingizga tegishli emas yoki sizga biriktirilmagan');
       }
       return;
