@@ -66,7 +66,7 @@ export class SuperOrganizationCoreController {
   deleteDirection(@Param('id') id: string) { return this.service.deleteCatalog('direction', id); }
 }
 
-@Roles('ADMIN')
+@Roles('ADMIN', 'TEACHER')
 @RequirePermissions('branches.manage')
 @Controller('api/v1/organization/branches')
 export class OrganizationBranchController {
