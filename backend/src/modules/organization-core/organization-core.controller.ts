@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { IsArray, IsBoolean, IsEmail, IsInt, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { RequirePermissions } from '../../common/decorators/organization-permissions.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { OrganizationCoreService } from './organization-core.service';
 
@@ -66,6 +67,7 @@ export class SuperOrganizationCoreController {
 }
 
 @Roles('ADMIN')
+@RequirePermissions('branches.manage')
 @Controller('api/v1/organization/branches')
 export class OrganizationBranchController {
   constructor(private readonly service: OrganizationCoreService) {}
