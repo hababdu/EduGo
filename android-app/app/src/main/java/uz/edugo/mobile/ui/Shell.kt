@@ -69,7 +69,7 @@ private fun tabsFor(role: Role): List<Tab> = when (role) {
     )
     Role.SUPER -> listOf(
         Tab("home", "Umumiy", Icons.Rounded.Home), Tab("orgs", "Maktablar", Icons.Rounded.School),
-        Tab("admins", "Adminlar", Icons.Rounded.People), Tab("system", "Tizim", Icons.Rounded.AutoAwesome),
+        Tab("admins", "Foydalanuvchilar", Icons.Rounded.People), Tab("system", "Tizim", Icons.Rounded.AutoAwesome),
     )
     Role.PARENT -> listOf(Tab("home", "Farzandlar", Icons.Rounded.Home))
 }
@@ -158,12 +158,13 @@ fun MainShell(user: AuthUser) {
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
                 composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("school") {
-                    SectionTabs("school", listOf("A'zolar", "Guruhlar", "Sinov darslari", "Tayinlash", "Jadval")) { i ->
+                    SectionTabs("school", listOf("A'zolar", "Guruhlar", "Sinov darslari", "Tayinlash", "Jadval", "Profil")) { i ->
                         when (i) {
                             0 -> AdminMembersScreen()
                             1 -> AdminGroupsScreen { nav.navigate("admin-group/$it") }
                             2 -> AdminTrialsScreen()
                             3 -> AdminTeachingScreen()
+                            5 -> AdminSchoolProfileScreen()
                             else -> TimetableScreen("/api/v1/admin/teaching/timetable", "Maktab jadvali")
                         }
                     }
@@ -181,7 +182,11 @@ fun MainShell(user: AuthUser) {
                         if (i == 0) SuperOrganizations { nav.navigate("org/$it") } else SuperBillingScreen()
                     }
                 }
-                composable("admins") { SuperAdminsScreen() }
+                composable("admins") {
+                    SectionTabs("admins", listOf("Foydalanuvchilar", "Administratorlar")) { i ->
+                        if (i == 0) SuperUsersScreen() else SuperAdminsScreen()
+                    }
+                }
                 composable("system") {
                     SectionTabs("system", listOf("AI sozlamalari", "Amallar jurnali")) { i ->
                         if (i == 0) SuperAiSettingsScreen() else SuperAuditScreen()

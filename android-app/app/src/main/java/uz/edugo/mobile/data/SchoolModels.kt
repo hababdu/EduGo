@@ -101,3 +101,28 @@ import kotlinx.serialization.Serializable
     val group: NamedRef = NamedRef(),
     val slots: Int = 0,
 )
+
+@Serializable data class OrgInvoiceRow(
+    val id: String,
+    val month: String = "",
+    val amount: Long = 0,
+    val status: String = "PENDING",
+    val paidAt: String? = null,
+)
+
+@Serializable data class SuperUserOrg(val id: String = "", val name: String = "")
+@Serializable data class SuperUserRow(
+    val id: String,
+    val name: String = "",
+    val username: String? = null,
+    val telegramId: String = "",
+    val role: String = "STUDENT",
+    val status: String = "ACTIVE",
+    val organization: SuperUserOrg? = null,
+)
+@Serializable data class SuperUserPage(
+    val total: Int = 0,
+    val page: Int = 1,
+    val pages: Int = 1,
+    val items: List<SuperUserRow> = emptyList(),
+)
