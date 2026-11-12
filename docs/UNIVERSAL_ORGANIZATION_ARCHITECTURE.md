@@ -164,3 +164,49 @@ Modulning UI'da yashirilishi yetarli emas: backend har bir endpointda tashkilotn
 ## 7. Birinchi implementatsiyadan oldingi xavfsizlik cheklovi
 
 Mavjud ma'lumotlarni o'chirish yoki barcha tashkilotlarni avtomatik yangi turga aylantirish mumkin emas. Avval schema va query audit tugaydi, keyin additive migration qilinadi. Hech qanday tashkilotga global fallback yoki boshqa tashkilot ma'lumotini ko'rsatish yo'li ochilmaydi.
+
+
+## 8. Auditning chuqurroq natijalari (main branch)
+
+### Membership va faol tashkilot
+
+- `MembershipsService.activate()` faqat STUDENT uchun ishlaydi va faol tashkilotni `User.organizationId` ga yozadi. Faol tashkilot tanlovi membership/session kontekstida mustaqil saqlanmaydi.
+- `requestJoin()` o'qituvchi va adminni boshqa tashkilotga qo'shilishdan cheklaydi. Bu universal multi-organization xodim modeli bilan mos emas.
+- `applyActive()` global `User.role` va `User.organizationId` ni yangilaydi. Natijada foydalanuvchining bir tashkilotdagi roli boshqasidagi roliga ta'sir qilishi mumkin.
+- `syncMembership()` xatolarni yutib yuboradi. Sinxronlash muvaffaqiyatsiz bo'lsa, `User.organizationId` va membership holati farqlanib qolishi mumkin.
+- `mine()` faol a'zolikni `User.organizationId` bilan solishtiradi; bu bir nechta faol membership bo'lganda faqat bittasini faol deb ko'rsatadi.
+
+### Organization scope va guruhlar
+
+- `org-scope.ts` dagi `orgWhere`, `sameOrg`, `resolveOrgId` hamda `createdByOrg` deyarli to'liq `CurrentUserPayload.organizationId` ga tayanadi.
+- `GroupsService.createGroup()` tashkilotni `user.organizationId` dan oladi. So'rovda tanlangan membership context yo'q.
+- `GroupsService.findAllForUser()` teacher guruhlarini `teacherId` bo'yicha oladi, lekin har bir guruh uchun faol organization membership yoki alohida assignment scope tekshirilmaydi.
+- `GroupsService.updateGroup()` va `assignTeacher()` o'qituvchini `User.organizationId` bilan tekshiradi. O'qituvchi bir nechta tashkilotda ishlashi uchun bu membership asosida tekshirilishi kerak.
+- Guruhga o'quvchi qo'shish allaqachon membershipni ham tekshiradi; bu yangi model uchun foydali mavjud poydevor.
+
+### Katalog va domen nomlari
+
+- Public catalog `Organization` ni `schools` deb ataydi, shaharlar hisoblagichida ham `schools` nomi ishlatiladi.
+- `SchoolSubject`, `SchoolReview`, `SchoolMediaAsset` kabi modellar maktabga xos nomda, lekin ularning ayrimlari universal organization scope'da ishlatilishi mumkin.
+- Katalogda tashkilot turi va yo'nalish bo'yicha filtrlash mavjud emas.
+- Mavjud tashkilot yaratish/sozlash oqimi to'liq universal organization wizard sifatida ko'rinmaydi.
+
+### Birinchi navbatda tuzatilishi kerak bo'lgan xavflar
+
+1. Global `User.role` ni tashkilot ichidagi rol sifatida ishlatishni to'xtatish.
+2. Faol organization context va authorization scope'ni yagona xizmatga yig'ish.
+3. Barcha organization-scoped querylarda aynan shu kontekstni ishlatish.
+4. Teacher ko'p tashkilot a'zoligi va bir tashkilotdagi bir nechta role/permission holatini test bilan qoplash.
+5. Membership sync xatolarini yashirmaslik; transaction yoki qayta tiklanadigan audit mexanizmi qo'llash.
+6. Maktabga oid API/UI nomlarini birdaniga o'chirmasdan, universal endpoint va aliaslar orqali bosqichma-bosqich ko'chirish.
+
+## 9. Phase 1 uchun aniq implementatsiya tartibi
+
+1. `OrganizationType`, `EducationDirection` va organization-direction join modellari (kengaytiriladigan DB katalogi).
+2. `OrganizationFeature` konfiguratsiyasi va xavfsiz defaultlar.
+3. `OrganizationContextService`: foydalanuvchi membershiplari, tanlangan organization va role/permissionni bitta joyda aniqlash.
+4. Request contextni controller/service qatlamiga yetkazish; legacy JWT payload va `User.organizationId` bilan moslik.
+5. Membership service'ni o'quvchi va xodimlar uchun ko'p tashkilotli holatga tayyorlash.
+6. Admin uchun tashkilot/filial scope'ni alohida saqlash; Super Admin global scope bo'lib qoladi.
+7. Cross-organization access testlari yozilmaguncha mavjud scope helperlarini ommaviy almashtirmaslik.
+
