@@ -49,6 +49,8 @@ export class SuperOrganizationCoreController {
   constructor(private readonly service: OrganizationCoreService) {}
   @Patch('organizations/:id/classification')
   classify(@Param('id') id: string, @Body() dto: ClassifyOrganizationDto) { return this.service.classifyOrganization(id, dto.typeId, dto.directionIds); }
+  @Get('organization-types') allTypes() { return this.service.listTypesAdmin(); }
+  @Get('education-directions') allDirections() { return this.service.listDirectionsAdmin(); }
   @Post('organization-types')
   saveType(@Body() dto: CatalogDto) { return this.service.manageCatalog('type', dto); }
   @Patch('organization-types/:id')
