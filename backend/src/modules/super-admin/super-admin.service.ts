@@ -289,29 +289,49 @@ export class SuperAdminService {
     if (user.role === 'SUPER_ADMIN' || user.id === actor.id || superAdminIds(this.cfg.get<string>('SUPER_ADMIN_TELEGRAM_IDS')).includes(user.telegramId)) {
       throw new BadRequestException("Super adminning rolini o'zgartirib bo'lmaydi");
     }
-    if (user.role === dto.role && (!dto.organizationId || dto.organizationId === user.organizationId)) return { ok: true };
     const orgId = dto.organizationId ?? user.organizationId;
-    if (!orgId) throw new BadRequestException('Maktabni tanlang: foydalanuvchi hali maktabga biriktirilmagan');
+    if (!orgId) throw new BadRequestException('Tashkilotni tanlang');
     const org = await this.prisma.organization.findFirst({ where: { id: orgId, status: 'ACTIVE' }, select: { id: true } });
-    if (!org) throw new NotFoundException('Maktab topilmadi yoki faol emas');
-    // Sahifalar profil yozuvlarini kutadi — yo'q bo'lsa bo'sh profil yaratamiz
+    if (!org) throw new NotFoundException('Tashkilot topilmadi yoki faol emas');
+    if (dto.role === 'ADMIN') {
+      const other = await this.prisma.organizationMembership.findFirst({
+        where: { userId, status: 'ACTIVE', role: 'ADMIN', organizationId: { not: orgId } },
+      });
+      if (other) throw new ConflictException("Administrator faqat bitta tashkilotga biriktirilishi mumkin");
+    }
     if (dto.role === 'STUDENT') await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId }, create: { userId }, update: {} });
-    await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role, organizationId: orgId } });
-    await syncMembership(this.prisma, userId, orgId, dto.role, user.organizationId);
-    await this.audit(actor, 'USER_ROLE_CHANGE', 'User', userId, { role: user.role, organizationId: user.organizationId }, { role: dto.role, organizationId: orgId });
+    const membership = await this.prisma.organizationMembership.upsert({
+      where: { userId_organizationId: { userId, organizationId: orgId } },
+      create: { userId, organizationId: orgId, role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
+      update: { role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
+    });
+    if (!user.organizationId) {
+      await this.prisma.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+    }
+    await this.audit(actor, 'USER_ROLE_CHANGE', 'OrganizationMembership', membership.id, null, { role: dto.role, organizationId: orgId });
     return { ok: true };
   }
 
   /* ───────── Adminlar ───────── */
   async listAdmins() {
-    const list = await this.prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null },
-      orderBy: { registeredAt: 'asc' },
-      select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true, organization: { select: { id: true, name: true } } },
-    });
-    return list.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, role: u.role, status: u.status, lastActiveAt: u.lastActiveAt, organization: u.organization }));
+    const [superAdmins, adminMemberships] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', deletedAt: null }, orderBy: { registeredAt: 'asc' },
+        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true },
+      }),
+      this.prisma.organizationMembership.findMany({
+        where: { role: 'ADMIN', status: 'ACTIVE', user: { deletedAt: null } },
+        orderBy: { requestedAt: 'asc' },
+        select: { organization: { select: { id: true, name: true } }, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
+      }),
+    ]);
+    return [
+      ...superAdmins.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, role: 'SUPER_ADMIN', status: u.status, lastActiveAt: u.lastActiveAt, organization: null })),
+      ...adminMemberships.map((m) => ({ id: m.user.id, name: nameOf(m.user), username: m.user.username, telegramId: m.user.telegramId, role: 'ADMIN', status: m.user.status, lastActiveAt: m.user.lastActiveAt, organization: m.organization })),
+    ];
   }
 
   async setBlocked(actor: CurrentUserPayload, userId: string, blocked: boolean) {
