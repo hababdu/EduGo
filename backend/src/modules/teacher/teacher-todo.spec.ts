@@ -18,7 +18,7 @@ describe('TeacherService.getTodo', () => {
       },
     };
     const svc = new TeacherService(prisma, {} as any, {} as any, {} as any);
-    const r = await svc.getTodo('t1');
+    const r = await svc.getTodo('t1', 'o1');
     expect(r.toGradeTotal).toBe(2);
     expect(r.toGrade[0]).toMatchObject({ assignmentId: 'a1', pending: 2 });
     expect(r.atRisk).toHaveLength(1);
@@ -75,10 +75,10 @@ describe('TeacherService.getGroupSubmissionStats', () => {
       ]) },
     };
     const svc = new TeacherService(prisma, {} as any, {} as any, {} as any);
-    const r = await svc.getGroupSubmissionStats('t1', 'g1');
+    const r = await svc.getGroupSubmissionStats('t1', 'g1', 'o1');
     expect(r[0]).toMatchObject({ total: 5, submitted: 3, graded: 2 });
     expect(prisma.group.findFirst.mock.calls[0][0].where.teacherId).toBe('t1');
     prisma.group.findFirst.mockResolvedValue(null);
-    await expect(svc.getGroupSubmissionStats('t2', 'g1')).rejects.toThrow();
+    await expect(svc.getGroupSubmissionStats('t2', 'g1', 'o1')).rejects.toThrow();
   });
 });
