@@ -53,7 +53,7 @@ export function SuperOrgDetail() {
           </Panel>
           <OrganizationBranchManager organizationId={id} />
           <OrganizationTeacherManager organizationId={id} />
-          <OrganizationPermissionsManager members={d.teachers} />
+          <OrganizationPermissionsManager members={[...d.teachers, ...d.admins]} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <KpiCard label="O'quvchilar" value={d.counts.students} icon={GraduationCap} accent="sky" />
             <KpiCard label="O'qituvchilar" value={d.counts.teachers} icon={Users} accent="teal" />
