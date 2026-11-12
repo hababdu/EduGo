@@ -3,6 +3,7 @@ import { CurrentUserPayload } from '../../common/decorators/current-user.decorat
 import { isSuperAdmin } from '../../common/org-scope';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ORGANIZATION_PERMISSIONS } from '../../common/organization-permissions';
 
 type MRole = 'STUDENT' | 'TEACHER' | 'ADMIN';
 const MAX_PENDING = 3;
@@ -255,6 +256,19 @@ export class MembershipsService implements OnModuleInit {
     await this.audit(actor, 'MEMBERSHIP_ROLE', id, { role: m.role }, { role });
     this.tell(m.userId, 'Rolingiz o\'zgardi', `«${(m.organization?.name ?? "maktab")}» maktabida endi siz ${role === 'TEACHER' ? "o'qituvchi" : role === 'ADMIN' ? 'administrator' : "o'quvchi"}siz.`);
     return { ok: true };
+  }
+
+  async updatePermissions(actor: CurrentUserPayload, id: string, allow: string[] = [], deny: string[] = []) {
+    const membership = await this.load(actor, id);
+    if (membership.status !== 'ACTIVE') throw new BadRequestException("Faqat faol a'zolik ruxsatlarini o'zgartirish mumkin");
+    if (membership.role === 'ADMIN' && !isSuperAdmin(actor)) throw new ForbiddenException("Admin ruxsatlarini faqat Super Admin boshqaradi");
+    const valid = new Set<string>(ORGANIZATION_PERMISSIONS);
+    const unknown = [...new Set([...allow, ...deny])].filter((permission) => !valid.has(permission));
+    if (unknown.length) throw new BadRequestException('Noma’lum ruxsatlar: ' + unknown.join(', '));
+    const permissions = { allow: [...new Set(allow)], deny: [...new Set(deny)] };
+    await this.prisma.organizationMembership.update({ where: { id }, data: { permissions } });
+    await this.audit(actor, 'MEMBERSHIP_PERMISSIONS', id, membership.permissions, permissions);
+    return { id, permissions };
   }
 
   async remove(actor: CurrentUserPayload, id: string) {
