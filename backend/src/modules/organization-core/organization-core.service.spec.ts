@@ -18,7 +18,7 @@ function setup(over: any = {}) {
       deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       createMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
-    $transaction: jest.fn(async (ops: any[]) => Promise.all(ops)),
+    $transaction: jest.fn(async (work: any) => work(prisma)),
   };
   return { prisma, service: new OrganizationCoreService(prisma) };
 }
