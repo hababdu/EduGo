@@ -18,10 +18,11 @@ export class OrganizationPermissionsGuard implements CanActivate {
     const user = request.user;
     if (!user) throw new ForbiddenException('Autentifikatsiyadan o‘tilmagan');
     if (user.role === 'SUPER_ADMIN' || user.realRole === 'SUPER_ADMIN') return true;
-    if (!user.organizationId) throw new ForbiddenException('Faol tashkilot tanlanmagan');
+    const activeOrganizationId = user.activeOrganizationId ?? user.organizationId;
+    if (!activeOrganizationId) throw new ForbiddenException('Faol tashkilot tanlanmagan');
 
     const membership = await this.prisma.organizationMembership.findFirst({
-      where: { userId: user.id, organizationId: user.organizationId, status: 'ACTIVE' },
+      where: { userId: user.id, organizationId: activeOrganizationId, status: 'ACTIVE' },
       select: { role: true, permissions: true },
     });
     if (!membership) throw new ForbiddenException('Faol tashkilot a’zoligi topilmadi');
