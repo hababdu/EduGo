@@ -27,6 +27,17 @@ export class SuperAdminService {
     private readonly storage: TelegramStorageService,
   ) {}
 
+  private async enforceSingleOrganizationAdmin<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'P2002') {
+        throw new ConflictException('Foydalanuvchi boshqa tashkilotda faol administrator. Avval u yerdagi admin rolini bekor qiling.');
+      }
+      throw error;
+    }
+  }
+
   auditAction(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
     return this.audit(actor, action, targetType, targetId, oldValue, newValue);
   }
@@ -203,11 +214,11 @@ export class SuperAdminService {
     if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo‘lmaydi');
     if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni tashkilotga biriktirib bo'lmaydi");
     if (otherAdmin) throw new ConflictException("Administrator faqat bitta tashkilotga biriktirilishi mumkin");
-    const membership = await this.prisma.organizationMembership.upsert({
+    const membership = await this.enforceSingleOrganizationAdmin(() => this.prisma.organizationMembership.upsert({
       where: { userId_organizationId: { userId: user.id, organizationId: orgId } },
       create: { userId: user.id, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
       update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
-    });
+    }));
     await this.prisma.adminProfile.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
     if (!user.organizationId) {
       await this.prisma.userActiveOrganization.upsert({ where: { userId: user.id }, create: { userId: user.id, organizationId: orgId }, update: { organizationId: orgId } });
@@ -307,11 +318,14 @@ export class SuperAdminService {
     if (dto.role === 'STUDENT') await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId }, create: { userId }, update: {} });
-    const membership = await this.prisma.organizationMembership.upsert({
+    const saveMembership = () => this.prisma.organizationMembership.upsert({
       where: { userId_organizationId: { userId, organizationId: orgId } },
       create: { userId, organizationId: orgId, role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
       update: { role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
     });
+    const membership = dto.role === 'ADMIN'
+      ? await this.enforceSingleOrganizationAdmin(saveMembership)
+      : await saveMembership();
     if (!user.organizationId) {
       await this.prisma.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
       await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId, role: dto.role } });
