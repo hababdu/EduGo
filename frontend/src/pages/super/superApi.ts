@@ -119,3 +119,24 @@ export const useOrgDetail = (id: string) => useQuery({ queryKey: ['super', 'org'
 export const num = (n: number) => n.toLocaleString('uz-UZ');
 export const when = (iso: string) => new Date(iso).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 export const ROLE_UZ: Record<string, string> = { STUDENT: 'Talaba', TEACHER: "O'qituvchi", ADMIN: 'Admin', SUPER_ADMIN: 'Super admin' };
+
+export interface EducationCatalogItem {
+  id: string; slug: string; nameUz: string; nameRu?: string | null; nameEn?: string | null;
+  description?: string | null; category?: string | null; sortOrder: number; isActive: boolean;
+}
+export const useEducationTypes = () => useQuery({
+  queryKey: ['super', 'education-types'],
+  queryFn: () => apiFetch<EducationCatalogItem[]>('/api/v1/education-catalog/organization-types'),
+});
+export const useEducationDirections = () => useQuery({
+  queryKey: ['super', 'education-directions'],
+  queryFn: () => apiFetch<EducationCatalogItem[]>('/api/v1/education-catalog/directions'),
+});
+export const educationCatalogApi = {
+  saveType: (v: Partial<EducationCatalogItem>) => apiFetch('/api/v1/super/organization-types', { method: 'POST', body: JSON.stringify(v) }),
+  updateType: (v: EducationCatalogItem) => apiFetch(`/api/v1/super/organization-types/${v.id}`, { method: 'PATCH', body: JSON.stringify(v) }),
+  deleteType: (id: string) => apiFetch(`/api/v1/super/organization-types/${id}`, { method: 'DELETE' }),
+  saveDirection: (v: Partial<EducationCatalogItem>) => apiFetch('/api/v1/super/education-directions', { method: 'POST', body: JSON.stringify(v) }),
+  updateDirection: (v: EducationCatalogItem) => apiFetch(`/api/v1/super/education-directions/${v.id}`, { method: 'PATCH', body: JSON.stringify(v) }),
+  deleteDirection: (id: string) => apiFetch(`/api/v1/super/education-directions/${id}`, { method: 'DELETE' }),
+};
