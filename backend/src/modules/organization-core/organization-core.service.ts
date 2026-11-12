@@ -98,7 +98,7 @@ export class OrganizationCoreService {
       select: { id: true },
     });
     if (!membership) throw new ForbiddenException('Tashkilot administratori ruxsati talab qilinadi');
-    return actor.organizationId;
+    return activeOrganizationId;
   }
 
   async createBranch(actor: CurrentUserPayload, organizationId: string | undefined, input: { name: string; code?: string; address?: string; city?: string; phone?: string; email?: string; isMain?: boolean }) {
