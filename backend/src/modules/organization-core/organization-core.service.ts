@@ -90,10 +90,11 @@ export class OrganizationCoreService {
       if (!org) throw new NotFoundException('Tashkilot topilmadi');
       return org.id;
     }
-    if (!actor.organizationId) throw new ForbiddenException('Faol tashkilot tanlanmagan');
-    if (organizationId && organizationId !== actor.organizationId) throw new ForbiddenException('Boshqa tashkilotga ruxsat yo‘q');
+    const activeOrganizationId = actor.activeOrganizationId ?? actor.organizationId;
+    if (!activeOrganizationId) throw new ForbiddenException('Faol tashkilot tanlanmagan');
+    if (organizationId && organizationId !== activeOrganizationId) throw new ForbiddenException('Boshqa tashkilotga ruxsat yo‘q');
     const membership = await this.prisma.organizationMembership.findFirst({
-      where: { userId: actor.id, organizationId: actor.organizationId, status: 'ACTIVE', role: 'ADMIN' },
+      where: { userId: actor.id, organizationId: activeOrganizationId, status: 'ACTIVE', role: 'ADMIN' },
       select: { id: true },
     });
     if (!membership) throw new ForbiddenException('Tashkilot administratori ruxsati talab qilinadi');
