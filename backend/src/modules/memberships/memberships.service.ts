@@ -104,7 +104,7 @@ export class MembershipsService implements OnModuleInit {
         update: { organizationId: m.organizationId },
       });
       // Legacy maydon faqat eski endpointlar bilan moslik uchun sinxronlanadi.
-      await tx.user.update({ where: { id: user.id }, data: { organizationId: m.organizationId } });
+      await tx.user.update({ where: { id: user.id }, data: { organizationId: m.organizationId, role: m.role } });
     });
     return { ok: true, organizationId: m.organizationId, role: m.role };
   }
@@ -276,7 +276,7 @@ export class MembershipsService implements OnModuleInit {
         // Global role o'zgarmaydi; faqat legacy organizationId mirror yangilanadi.
         await tx.user.updateMany({
           where: { id: m.userId, organizationId: m.organizationId },
-          data: { organizationId: remaining?.organizationId ?? null },
+          data: { organizationId: remaining?.organizationId ?? null, role: remaining?.role ?? 'STUDENT' },
         });
       });
     }
