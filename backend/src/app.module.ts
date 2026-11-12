@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ParentScopeGuard } from './common/guards/parent-scope.guard';
+import { OrganizationPermissionsGuard } from './common/guards/organization-permissions.guard';
 import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -87,6 +88,10 @@ import { OrganizationCoreModule } from './modules/organization-core/organization
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: OrganizationPermissionsGuard,
     },
     {
       provide: APP_GUARD,
