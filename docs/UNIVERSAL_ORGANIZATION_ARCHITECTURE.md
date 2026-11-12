@@ -299,3 +299,44 @@ Branch: `feature/organization-core` (PR #12 draft)
 - O'qituvchi panelida bir nechta faol tashkilot orasida almashtirish komponenti qo'shildi; switch paytida refresh token yangilanadi va UI roli ham qayta olinadi.
 
 Bu mexanizm yangi endpointlarda dekorator bilan bosqichma-bosqich qo'llanadi. Hali barcha mavjud EduGo endpointlariga granular permission dekoratorlari qo'shilmagan; mavjud endpointlar hozircha role va organization scope guardlari bilan himoyalanadi.
+
+
+## 11. Organization Core — boshqaruv, filial va a'zolik bosqichi
+
+### Super Admin katalog boshqaruvi
+- `GET/POST/PATCH/DELETE /api/v1/super/organization-types`
+- `GET/POST/PATCH/DELETE /api/v1/super/education-directions`
+- Super Admin UI: `/super/catalog` — tur va yo'nalishlarni qo'shish, tahrirlash, faollashtirish va foydalanilmayotgan elementni o'chirish.
+- Ishlatilayotgan katalog elementini fizik o'chirish 409 Conflict bilan rad etiladi; avval boshqa turga o'tkazish yoki yo'nalish bog'lanishini olib tashlash kerak.
+
+### Filiallar
+- `GET/POST /api/v1/organization/branches`
+- `PATCH/DELETE /api/v1/organization/branches/:id`
+- Super Admin tashkilot tafsilotida filiallarni boshqaradi.
+- Tashkilot administratori faol tashkiloti doirasida boshqaradi; boshqa tashkilot ID yuborish rad etiladi.
+- Filialni boshqarish `branches.manage` ruxsati bilan tekshiriladi; ruxsat berilgan TEACHER roli ham shu imkoniyatni olishi mumkin.
+
+### Membership va faol tashkilot
+- `UserActiveOrganization` faol tashkilotni alohida saqlaydi; JWT endi `User.organizationId` dan fallback qilib faol tashkilot tanlamaydi.
+- `GET /api/v1/memberships/mine` faol kontekstni `isActive` orqali ko'rsatadi.
+- `POST /api/v1/memberships/:membershipId/activate` faol a'zolikni tekshiradi va kontekstni almashtiradi.
+- Auth refresh javobi faol membership rolini qaytaradi, shuning uchun bir xil foydalanuvchi bir tashkilotda o'qituvchi, boshqasida o'quvchi bo'lsa, UI tegishli panelga o'tadi.
+- `User.organizationId` va `User.role` eski kod bilan moslik uchun vaqtinchalik mirror bo'lib qoladi; yangi JWT tenant contextning manbasi `UserActiveOrganization + OrganizationMembership`.
+
+### Tashkilotga xos rollar va ruxsatlar
+- Membership'dagi `role` va `permissions.allow/deny` tashkilot doirasida tekshiriladi.
+- `OrganizationPermissionsGuard` faol organization context bo'yicha membershipni topadi.
+- Bir foydalanuvchida bir nechta TEACHER membership bo'lishi mumkin.
+- Bir foydalanuvchida faqat bitta faol ADMIN membership bo'lishi kerak. PostgreSQL partial unique index migratsiyasi bu qoidani parallel so'rovlarda ham kafolatlaydi.
+- Migratsiya mavjud bazada bir nechta faol ADMIN membership topilsa ataylab xato bilan to'xtaydi; ma'lumotni avtomatik o'zgartirmaydi. Avval Super Admin bilan qaysi tashkilot admini qolishini hal qilib, qolganlarini TEACHERga tushirish kerak.
+
+### Teacher tenant isolation
+- Teacher overview, todo, guruhlar, topshiriqlar ro'yxati/ko'rish/yaratish/tahrirlash/o'chirish endi teacher ID bilan birga faol organization ID bo'yicha scope qilinadi.
+- Guruhlar modulida teacher guruh ro'yxati va obyektga kirish faol tashkilot bilan tekshiriladi.
+- Teacher organization switcher mavjud faol membershiplar orasida almashadi va session refresh qiladi.
+- Testlarda todo, attendance, group submission stats va assignment yaratish querylarida organization filter tekshiriladi.
+
+### Qolgan validation
+- Prisma schema/migration validation, Nest build, Jest suite va frontend build hali ishga tushirilmagan.
+- Unique partial index migratsiyasi real DB snapshotda duplicate active admin mavjud emasligi bilan tekshirilishi kerak.
+- Barcha qolgan backend modullaridagi `User.organizationId` to'g'ridan-to'g'ri ishlatilishlari keyingi bosqichlarda audit qilinadi; teacher scope'ning birinchi to'plami yangilandi.
