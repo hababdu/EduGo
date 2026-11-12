@@ -44,6 +44,10 @@ model Organization {
   /// Ochiq katalog ma'lumotlari
   city      String?
   about     String?
+  posterUrl String?
+  websiteUrl String?
+  telegramUrl String?
+  instagramUrl String?
   isPublic  Boolean   @default(true)
   ratingAvg   Float   @default(0)
   ratingCount Int     @default(0)
