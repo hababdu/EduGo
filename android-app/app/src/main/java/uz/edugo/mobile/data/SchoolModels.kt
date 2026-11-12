@@ -135,3 +135,11 @@ import kotlinx.serialization.Serializable
     val organization: SchoolItem,
     val student: NamedRef = NamedRef(),
 )
+
+@Serializable data class QuestionRow(
+    val id: String,
+    val type: String = "SINGLE_CHOICE",
+    val difficulty: String = "MEDIUM",
+    val text: String = "",
+    val points: Int = 1,
+)

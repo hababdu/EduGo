@@ -155,7 +155,11 @@ fun MainShell(user: AuthUser) {
                     }
                 }
                 composable("materials") { TeacherMaterialsScreen() }
-                composable("teacher-tests") { TeacherTestsScreen() }
+                composable("teacher-tests") {
+                    SectionTabs("teacher-tests", listOf("Testlar", "Savollar bazasi")) { i ->
+                        if (i == 0) TeacherTestsScreen() else TeacherQuestionsScreen()
+                    }
+                }
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
                 composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("school") {
