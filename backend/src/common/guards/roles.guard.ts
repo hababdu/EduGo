@@ -29,7 +29,7 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Autentifikatsiyadan o\'tilmagan');
     }
 
-    if (user.role === 'SUPER_ADMIN') {
+    if (user.role === 'SUPER_ADMIN' || user.realRole === 'SUPER_ADMIN') {
       return true;
     }
 
