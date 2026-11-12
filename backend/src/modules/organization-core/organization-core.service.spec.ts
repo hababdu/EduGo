@@ -4,7 +4,7 @@ import { OrganizationCoreService } from './organization-core.service';
 function setup(over: any = {}) {
   const prisma: any = {
     organization: {
-      findUnique: jest.fn().mockResolvedValue(over.organization ?? { id: 'org_12345', name: 'Edu' }),
+      findUnique: jest.fn().mockResolvedValue(Object.prototype.hasOwnProperty.call(over, 'organization') ? over.organization : { id: 'org_12345', name: 'Edu' }),
       update: jest.fn().mockResolvedValue({ id: 'org_12345' }),
     },
     user: { update: jest.fn().mockResolvedValue({ id: 'user_12345' }) },
