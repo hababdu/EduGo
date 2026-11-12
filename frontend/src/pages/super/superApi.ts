@@ -126,11 +126,11 @@ export interface EducationCatalogItem {
 }
 export const useEducationTypes = () => useQuery({
   queryKey: ['super', 'education-types'],
-  queryFn: () => apiFetch<EducationCatalogItem[]>('/api/v1/education-catalog/organization-types'),
+  queryFn: () => apiFetch<EducationCatalogItem[]>(`${b}/organization-types`),
 });
 export const useEducationDirections = () => useQuery({
   queryKey: ['super', 'education-directions'],
-  queryFn: () => apiFetch<EducationCatalogItem[]>('/api/v1/education-catalog/directions'),
+  queryFn: () => apiFetch<EducationCatalogItem[]>(`${b}/education-directions`),
 });
 export const educationCatalogApi = {
   saveType: (v: Partial<EducationCatalogItem>) => apiFetch('/api/v1/super/organization-types', { method: 'POST', body: JSON.stringify(v) }),
