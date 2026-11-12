@@ -170,7 +170,7 @@ export class MembershipsService implements OnModuleInit {
       await tx.userActiveOrganization.upsert({
         where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId },
       });
-      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId } });
+      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId, role } });
     });
   }
 
