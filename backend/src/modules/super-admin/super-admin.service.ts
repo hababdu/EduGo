@@ -178,6 +178,7 @@ export class SuperAdminService {
     if (!org) throw new NotFoundException('Tashkilot topilmadi');
     if (current.organizationId === orgId) return { ok: true };
     await this.prisma.$transaction(async (tx) => {
+      await tx.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
       await tx.organizationMembership.update({ where: { id: current.id }, data: { role: 'TEACHER' } });
       await tx.organizationMembership.upsert({
         where: { userId_organizationId: { userId, organizationId: orgId } },
@@ -221,6 +222,7 @@ export class SuperAdminService {
   async removeAdmin(actor: CurrentUserPayload, orgId: string, userId: string) {
     const membership = await this.prisma.organizationMembership.findFirst({ where: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE' } });
     if (!membership) throw new NotFoundException('Ushbu tashkilot admini topilmadi');
+    await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     await this.prisma.organizationMembership.update({ where: { id: membership.id }, data: { role: 'TEACHER' } });
     await this.prisma.user.updateMany({ where: { id: userId, organizationId: orgId }, data: { role: 'TEACHER' } });
     await this.audit(actor, 'ADMIN_REMOVE', 'OrganizationMembership', membership.id, { role: 'ADMIN' }, { role: 'TEACHER' });
