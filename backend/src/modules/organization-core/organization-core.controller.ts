@@ -71,7 +71,10 @@ export class OrganizationBranchController {
   constructor(private readonly service: OrganizationCoreService) {}
   @Get() list(@CurrentUser() user: CurrentUserPayload, @Query('organizationId') organizationId?: string) { return this.service.listBranches(user, organizationId); }
   @Post() create(@CurrentUser() user: CurrentUserPayload, @Body() dto: BranchDto) { return this.service.createBranch(user, dto.organizationId, dto); }
-  @Patch(':id') update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: BranchDto) { return this.service.updateBranch(user, id, dto); }
+  @Patch(':id') update(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: BranchDto) {
+    const { organizationId: _ignoredOrganizationId, ...input } = dto;
+    return this.service.updateBranch(user, id, input);
+  }
   @Delete(':id') remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) { return this.service.deleteBranch(user, id); }
 }
 
