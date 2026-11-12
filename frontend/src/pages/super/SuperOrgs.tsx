@@ -119,11 +119,12 @@ function OrgCard({ org }: { org: Org }) {
               </div>
               <ul className="max-h-64 divide-y divide-tint/5 overflow-y-auto">
                 {(cands ?? []).map((c: Candidate) => {
-                  const other = !!c.organization && c.organization.id !== org.id && c.role !== 'STUDENT';
-                  const already = c.role === 'ADMIN' && c.organization?.id === org.id;
+                  const targetMembership = c.memberships?.find((m) => m.organization.id === org.id);
+                  const otherAdmin = c.memberships?.some((m) => m.role === 'ADMIN' && m.organization.id !== org.id) ?? false;
+                  const already = targetMembership?.role === 'ADMIN';
                   return (
                     <li key={c.id}>
-                      <button type="button" disabled={assign.isPending || other || already}
+                      <button type="button" disabled={assign.isPending || otherAdmin || already}
                         onClick={() => assign.mutate({ orgId: org.id, userId: c.id }, { onSuccess: () => { setOpen(false); setQ(''); } })}
                         className="flex w-full items-center gap-3 px-2 py-2.5 text-left disabled:opacity-40">
                         <Avatar name={c.name} />
@@ -131,7 +132,7 @@ function OrgCard({ org }: { org: Org }) {
                           <div className="truncate text-sm font-semibold text-ink">{c.name}</div>
                           <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role]}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
                         </div>
-                        <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : other ? 'Band' : 'Tanlash'}</span>
+                        <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : otherAdmin ? 'Boshqa tashkilot admini' : 'Tanlash'}</span>
                       </button>
                     </li>
                   );
