@@ -35,6 +35,7 @@ describe('TeacherService.createAssignment', () => {
   it('bir nechta guruhga alohida material yaratadi', async () => {
     const { svc, tx } = build();
     await svc.createAssignment('t1', 'o1', { ...base, groupIds: ['g1', 'g2'] });
+    expect(prisma.group.findMany.mock.calls[0][0].where.organizationId).toBe('o1');
     expect(tx.teacherAssignment.create).toHaveBeenCalledTimes(2);
     const groupsUsed = tx.teacherAssignment.create.mock.calls.map((c: any) => c[0].data.groupId);
     expect(groupsUsed).toEqual(['g1', 'g2']);
