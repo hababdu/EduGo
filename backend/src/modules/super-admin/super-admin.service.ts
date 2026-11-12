@@ -233,7 +233,7 @@ export class SuperAdminService {
     const q = search?.trim();
     const users = await this.prisma.user.findMany({
       where: {
-        deletedAt: null, status: 'ACTIVE', role: { in: ['STUDENT', 'TEACHER', 'ADMIN'] },
+        deletedAt: null, status: 'ACTIVE', role: { not: 'SUPER_ADMIN' },
         ...(q ? { OR: [
           { firstName: { contains: q, mode: 'insensitive' } },
           { lastName: { contains: q, mode: 'insensitive' } },
