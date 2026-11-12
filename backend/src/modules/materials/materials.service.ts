@@ -45,10 +45,12 @@ export class MaterialsService {
       });
       if (!group) throw new NotFoundException("Guruh topilmadi");
       if (isStudent && !group.members.length) throw new ForbiddenException("Siz bu guruhga a'zo emassiz");
+      if (actor.role === 'TEACHER' && group.teacherId !== actor.id && group.assistantId !== actor.id) throw new ForbiddenException("Siz bu guruhga biriktirilmagansiz");
       if (isStudent && !group.organizationId) throw new BadRequestException("Guruh maktabga biriktirilmagan");
       if (group.organizationId) organizationId = group.organizationId;
     }
 
+    if (!organizationId) throw new BadRequestException('Faylni maktab yoki guruh kontekstida yuklang');
     let chatId: string | null = null;
     if (organizationId) {
       const org = await this.prisma.organization.findUnique({ where: { id: organizationId }, select: { storageChatId: true } });
