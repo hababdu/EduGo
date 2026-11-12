@@ -72,10 +72,86 @@ model Organization {
   mediaAssets SchoolMediaAsset[]
   trialLessons TrialLesson[]
   invoices    OrgInvoice[]
+  typeId      String?
+  type        OrganizationType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  directions  OrganizationDirection[]
+  branches    OrganizationBranch[]
 
+  @@index([typeId])
   @@index([status])
   @@index([status, isPublic, ratingAvg(sort: Desc)])
   @@index([city])
+}
+
+
+/// Kengaytiriladigan tashkilot turlari katalogi. Prisma enum emas: Super Admin yangi tur qo'sha oladi.
+model OrganizationType {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameUz      String
+  nameRu      String?
+  nameEn      String?
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizations Organization[]
+  @@index([isActive, sortOrder])
+}
+
+/// Ta'lim yo'nalishlari katalogi. Tashkilot bir nechta yo'nalishni tanlay oladi.
+model EducationDirection {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameUz      String
+  nameRu      String?
+  nameEn      String?
+  category    String?
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizations OrganizationDirection[]
+  @@index([isActive, sortOrder])
+}
+
+/// Organization va EducationDirection o'rtasidagi many-to-many bog'lanish.
+model OrganizationDirection {
+  id             String   @id @default(cuid())
+  organizationId String
+  directionId    String
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  direction    EducationDirection @relation(fields: [directionId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, directionId])
+  @@index([directionId])
+}
+
+/// Tashkilotning filial yoki kampusi. Eski tashkilotlar uchun avtomatik filial yaratilmaydi.
+model OrganizationBranch {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  address        String?
+  city           String?
+  phone          String?
+  email          String?
+  isMain         Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
 }
 
 enum MembershipStatus {
