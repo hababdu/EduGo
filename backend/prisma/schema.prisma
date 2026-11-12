@@ -482,6 +482,25 @@ enum ContentType {
 }
 
 /// Materialga biriktirilgan fayl. Fayl Telegram'dagi maxfiy kanalda saqlanadi (tgFileId orqali).
+/// Maktab posterlari va guruh rasmlari: faylning o'zi faqat maktabning yopiq Telegram kanalida saqlanadi.
+model SchoolMediaAsset {
+  id                String   @id @default(cuid())
+  organizationId    String
+  uploaderId        String
+  purpose           String   // SCHOOL_POSTER | GROUP_POSTER
+  fileName          String
+  mimeType          String
+  sizeBytes         Int
+  telegramFileId    String
+  telegramMessageId Int
+  telegramChatId    String
+  isPublic          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@index([organizationId, purpose, createdAt])
+  @@index([uploaderId])
+}
+
 model MaterialFile {
   id           String             @id @default(cuid())
   assignmentId String?
