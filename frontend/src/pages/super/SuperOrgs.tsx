@@ -130,7 +130,7 @@ function OrgCard({ org }: { org: Org }) {
                         <Avatar name={c.name} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold text-ink">{c.name}</div>
-                          <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role]}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
+                          <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role] ?? c.role}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
                         </div>
                         <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : otherAdmin ? 'Boshqa tashkilot admini' : 'Tanlash'}</span>
                       </button>
