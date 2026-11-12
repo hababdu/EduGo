@@ -47,7 +47,7 @@ export interface SystemInfo {
 export const useSuperOverview = () => useQuery({ queryKey: ['super', 'overview'], queryFn: () => apiFetch<Overview>(`${b}/overview`) });
 export const useSuperSystem = () => useQuery({ queryKey: ['super', 'system'], queryFn: () => apiFetch<SystemInfo>(`${b}/system`), refetchInterval: 30_000 });
 export const useSuperOrgs = () => useQuery({ queryKey: ['super', 'orgs'], queryFn: () => apiFetch<Org[]>(`${b}/organizations`) });
-export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null; memberships?: { role: string; organization: { id: string; name: string } }[] }
+export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null; memberships?: { id: string; role: string; organization: { id: string; name: string } }[] }
 export const useCandidates = (search: string, enabled: boolean) =>
   useQuery({
     queryKey: ['super', 'candidates', search],
@@ -84,6 +84,7 @@ export const sapi = {
   createOrg: (v: { name: string; note?: string; storageChatId: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
   updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null; storageChatId?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
   attachTeacher: (v: { organizationId: string; userId: string }) => apiFetch('/api/v1/admin/memberships/attach', { method: 'POST', body: JSON.stringify({ organizationId: v.organizationId, userId: v.userId, role: 'TEACHER' }) }),
+  promoteMembershipToTeacher: (id: string) => apiFetch(`/api/v1/admin/memberships/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role: 'TEACHER' }) }),
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
