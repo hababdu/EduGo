@@ -45,6 +45,7 @@ import { TeacherOverview } from './pages/teacher/TeacherOverview';
 import { TeacherGroups } from './pages/teacher/TeacherGroups';
 import { TeacherGroupDetail } from './pages/teacher/TeacherGroupDetail';
 import { TeacherStudentDetail } from './pages/teacher/TeacherStudentDetail';
+import { TeacherProfile } from './pages/teacher/TeacherProfile';
 import { TeacherAssignments } from './pages/teacher/content/TeacherAssignments';
 import { TeacherAssignmentDetail } from './pages/teacher/content/TeacherAssignmentDetail';
 import { AdminSubjectDetail } from './pages/teacher/content/AdminSubjectDetail';
@@ -228,6 +229,7 @@ function TeacherRoutes() {
         <Routes>
           {/* ============ OVERVIEW ============ */}
           <Route path="/teacher" element={<TeacherOverview />} />
+          <Route path="/teacher/profile" element={<TeacherProfile />} />
           <Route path="/teacher/timetable" element={<Section tabs={TEACHER_GROUP_TABS} label="Guruhlar bo'limi"><TeacherTimetable /></Section>} />
 
           {/* ============ GROUPS ============ */}
