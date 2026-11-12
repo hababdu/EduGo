@@ -13,6 +13,14 @@ export class OrganizationCoreService {
     });
   }
 
+  listTypesAdmin() {
+    return this.prisma.organizationType.findMany({ orderBy: [{ sortOrder: 'asc' }, { nameUz: 'asc' }] });
+  }
+
+  listDirectionsAdmin() {
+    return this.prisma.educationDirection.findMany({ orderBy: [{ sortOrder: 'asc' }, { nameUz: 'asc' }] });
+  }
+
   listDirections(category?: string) {
     const normalized = category?.trim();
     return this.prisma.educationDirection.findMany({
