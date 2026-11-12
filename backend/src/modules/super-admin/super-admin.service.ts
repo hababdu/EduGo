@@ -121,21 +121,22 @@ export class SuperAdminService {
     });
     if (!org) throw new NotFoundException('Maktab topilmadi');
     const month = currentMonth();
-    const [groups, staff, studentCount, pays, sub] = await Promise.all([
+    const [groups, staffMemberships, studentCount, pays, sub] = await Promise.all([
       this.prisma.group.findMany({
         where: { organizationId: id, deletedAt: null },
         orderBy: { createdAt: 'desc' },
         select: { id: true, name: true, monthlyFee: true, teacher: { select: { firstName: true, lastName: true, username: true } }, _count: { select: { members: true } } },
       }),
-      this.prisma.user.findMany({
-        where: { organizationId: id, deletedAt: null, role: { in: ['ADMIN', 'TEACHER'] } },
-        orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
-        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true },
+      this.prisma.organizationMembership.findMany({
+        where: { organizationId: id, status: 'ACTIVE', role: { in: ['ADMIN', 'TEACHER'] }, user: { deletedAt: null } },
+        orderBy: [{ role: 'asc' }, { requestedAt: 'asc' }],
+        select: { role: true, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
       }),
-      this.prisma.user.count({ where: { organizationId: id, deletedAt: null, role: 'STUDENT' } }),
+      this.prisma.organizationMembership.count({ where: { organizationId: id, status: 'ACTIVE', role: 'STUDENT', user: { deletedAt: null } } }),
       this.prisma.payment.groupBy({ by: ['status'], where: { month, group: { organizationId: id, deletedAt: null } }, _count: true, _sum: { amount: true } }),
       this.prisma.orgPayment.findMany({ where: { organizationId: id }, orderBy: { month: 'desc' }, take: 12 }),
     ]);
+    const staff = staffMemberships.map((membership) => ({ ...membership.user, role: membership.role }));
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
