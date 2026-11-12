@@ -286,3 +286,15 @@ Branch: `feature/organization-core` (PR #12 draft)
 - Frontend TypeScript/build.
 - Android build va API integratsiya tekshiruvi.
 - Legacy endpointlar bo'yicha regression va cross-organization access testlari.
+
+
+### Tashkilotga xos ruxsatlar (membership permission overrides)
+- `OrganizationMembership.permissions` JSON maydoni qo'shildi: `{ allow: string[], deny: string[] }`.
+- Ruxsatlar katalogi: organization settings, branches, memberships, students, teachers, courses, groups, lessons, materials, assignments, tests, attendance, grading, payments, analytics, certificates va messaging.
+- Har bir rol uchun boshlang'ich ruxsatlar alohida belgilanadi; membership darajasidagi `allow` qo'shimcha ruxsat beradi, `deny` esa rol defaultidan ustun turadi.
+- `@RequirePermissions(...)` dekoratori va global `OrganizationPermissionsGuard` qo'shildi.
+- Filial boshqaruvi `branches.manage` ruxsati bilan himoyalangan.
+- `PATCH /api/v1/admin/memberships/:id/permissions` orqali tashkilot a'zosi uchun ruxsatlar boshqariladi.
+- Super Admin tashkilot detail sahifasida o'qituvchi va admin a'zolari ruxsatlarini sozlay oladi.
+
+Bu mexanizm yangi endpointlarda dekorator bilan bosqichma-bosqich qo'llanadi. Hali barcha mavjud EduGo endpointlariga granular permission dekoratorlari qo'shilmagan; mavjud endpointlar hozircha role va organization scope guardlari bilan himoyalanadi.
