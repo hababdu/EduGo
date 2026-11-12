@@ -9,6 +9,7 @@ export function OrganizationTeacherManager({ organizationId }: { organizationId:
   const [open, setOpen] = useState(false);
   const { data: candidates = [], isFetching } = useCandidates(search.trim(), open && search.trim().length >= 2);
   const attach = useSuperMutation(sapi.attachTeacher, 'O‘qituvchi tashkilotga biriktirildi');
+  const promote = useSuperMutation(sapi.promoteMembershipToTeacher, 'A’zolik o‘qituvchi roliga o‘tkazildi');
   return (
     <Panel title="O‘qituvchilarni biriktirish" icon={Users} accent="sky">
       <div className="space-y-2">
@@ -31,8 +32,12 @@ export function OrganizationTeacherManager({ organizationId }: { organizationId:
                         <div className="truncate text-sm font-semibold text-ink">{candidate.name}</div>
                         <div className="truncate text-[11px] text-ink-muted">{candidate.username ? '@' + candidate.username : candidate.role}{existing ? ' · ' + existing.role : ''}</div>
                       </div>
-                      <button disabled={!!existing || attach.isPending} className="rounded-lg bg-teal/15 px-2.5 py-1.5 text-[11px] font-semibold text-teal disabled:opacity-40"
-                        onClick={() => attach.mutate({ organizationId, userId: candidate.id })}>{isTeacher ? 'Biriktirilgan' : existing ? 'A’zolik bor' : 'Biriktirish'}</button>
+                      <button disabled={isTeacher || attach.isPending || promote.isPending} className="rounded-lg bg-teal/15 px-2.5 py-1.5 text-[11px] font-semibold text-teal disabled:opacity-40"
+                        onClick={() => existing
+                          ? promote.mutate(existing.id)
+                          : attach.mutate({ organizationId, userId: candidate.id })}>
+                        {isTeacher ? 'Biriktirilgan' : existing ? 'O‘qituvchiga o‘tkazish' : 'Biriktirish'}
+                      </button>
                     </li>
                   );
                 })}
