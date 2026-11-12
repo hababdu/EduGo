@@ -19,6 +19,8 @@ function mk(over: any = {}) {
       delete: jest.fn(), deleteMany: jest.fn(),
     },
     user: { findUnique: jest.fn().mockResolvedValue(over.target), update: jest.fn(), updateMany: jest.fn() },
+    userActiveOrganization: { upsert: jest.fn().mockResolvedValue({}) },
+    $transaction: jest.fn(async (work: any) => work(prisma)),
     studentProfile: { upsert: jest.fn() }, teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() },
     adminActionLog: { create: jest.fn().mockResolvedValue({}) },
     groupMember: { deleteMany: jest.fn().mockResolvedValue({ count: 0 }) },
@@ -87,15 +89,22 @@ describe('MembershipsService', () => {
     expect(tc.prisma.group.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { teacherId: null } }));
   });
 
-  it("o'quvchi faol maktabni almashtiradi; o'qituvchi yoki begona a'zolik rad etiladi", async () => {
-    const m = { id: 'm9', userId: 'u1', organizationId: 'o2', role: 'STUDENT', status: 'ACTIVE', organization: { status: 'ACTIVE' } };
+  it("faol tashkilotni membership roli bo'yicha almashtiradi va faqat egasiga ruxsat beradi", async () => {
+    const m = { id: 'm9', userId: 'u1', organizationId: 'o2', role: 'TEACHER', status: 'ACTIVE', organization: { status: 'ACTIVE' } };
     const { svc, prisma } = mk({ membership: m });
     await svc.activate({ ...user, organizationId: 'o1' }, 'm9');
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { organizationId: 'o2' } });
+    expect(prisma.userActiveOrganization.upsert).toHaveBeenCalledWith({
+      where: { userId: 'u1' },
+      create: { userId: 'u1', organizationId: 'o2' },
+      update: { organizationId: 'o2' },
+    });
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' }, data: { organizationId: 'o2', role: 'TEACHER' },
+    });
     await expect(mk({ membership: { ...m, userId: 'x' } }).svc.activate(user, 'm9')).rejects.toBeInstanceOf(NotFoundException);
-    await expect(mk({ membership: { ...m, role: 'TEACHER' } }).svc.activate(user, 'm9')).rejects.toBeInstanceOf(NotFoundException);
-    await expect(mk().svc.activate({ ...user, role: 'TEACHER' }, 'm9')).rejects.toBeInstanceOf(BadRequestException);
+    await expect(mk().svc.activate(user, 'm9')).rejects.toBeInstanceOf(NotFoundException);
   });
+
   it("birinchi a'zolikda o'quvchining hozirgi maktabi o'rnatiladi", async () => {
     const { svc, prisma } = mk({ membership: mem() });
     await svc.decide(admin, 'm1', true);
