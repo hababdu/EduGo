@@ -30,7 +30,7 @@ enum AccountStatus {
   PENDING
 }
 
-/// Tashkilot (maktab / o'quv markazi). Har biri o'z admini, o'qituvchilari va o'quvchilari bilan — bir-biriga aralashmaydi.
+/// Universal ta'lim va o'quv tashkiloti. Har biri o'z a'zolari, yo'nalishlari va sozlamalari bilan ajratiladi.
 enum OrgStatus {
   ACTIVE
   SUSPENDED
@@ -227,7 +227,7 @@ model AppSetting {
 
 model User {
   id              String        @id @default(cuid())
-  /// null — hali hech qaysi tashkilotga biriktirilmagan (yoki SUPER_ADMIN)
+  /// Legacy mirror: faol tashkilot ID'si. Haqiqiy kontekst UserActiveOrganization'da saqlanadi.
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   telegramId      String        @unique
@@ -236,6 +236,7 @@ model User {
   firstName       String
   lastName        String?
   profilePhotoUrl String?
+  /// Legacy mirror of the active OrganizationMembership role; authorization reads membership.
   role            RoleName      @default(STUDENT)
   /// Faqat SUPER_ADMIN uchun: botdan tanlangan "ko'rish" roli (null = o'z roli). Haqiqiy rol `role` da qoladi.
   activeRole      RoleName?
