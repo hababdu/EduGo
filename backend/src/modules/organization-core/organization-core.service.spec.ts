@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { OrganizationCoreService } from './organization-core.service';
 
 function setup(over: any = {}) {
@@ -17,6 +17,13 @@ function setup(over: any = {}) {
     organizationDirection: {
       deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       createMany: jest.fn().mockResolvedValue({ count: 1 }),
+      count: jest.fn().mockResolvedValue(0),
+    },
+    organizationMembership: {
+      findFirst: jest.fn().mockResolvedValue({ id: 'membership_1', role: 'TEACHER', organizationId: 'org_12345' }),
+    },
+    userActiveOrganization: {
+      upsert: jest.fn().mockResolvedValue({ userId: 'user_12345', organizationId: 'org_12345' }),
     },
     $transaction: jest.fn(async (work: any) => work(prisma)),
   };
@@ -53,6 +60,24 @@ describe('OrganizationCoreService', () => {
     expect(prisma.organizationDirection.createMany).toHaveBeenCalledWith({
       data: [{ organizationId: 'org_12345', directionId: 'dir_12345' }, { organizationId: 'org_12345', directionId: 'dir_67890' }],
     });
+  });
+
+  it('sets active organization only when the user has an active membership', async () => {
+    const { service, prisma } = setup();
+    const result = await service.setActiveOrganization('user_12345', 'org_12345');
+    expect(result).toEqual({ ok: true, organizationId: 'org_12345', role: 'TEACHER' });
+    expect(prisma.userActiveOrganization.upsert).toHaveBeenCalledWith({
+      where: { userId: 'user_12345' },
+      create: { userId: 'user_12345', organizationId: 'org_12345' },
+      update: { organizationId: 'org_12345' },
+    });
+  });
+
+  it('rejects switching to an organization without an active membership', async () => {
+    const { service } = setup();
+    const { prisma } = setup({ membership: null });
+    prisma.organizationMembership.findFirst.mockResolvedValue(null);
+    await expect(service.setActiveOrganization('user_12345', 'org_12345')).rejects.toBeInstanceOf(ForbiddenException);
   });
 
   it('rejects unknown organizations, inactive types and unknown directions', async () => {
