@@ -105,6 +105,7 @@ export class TeacherService {
     const attemptsWhere: Prisma.TestAttemptWhereInput = {
       studentId: { in: studentIds },
       completedAt: { lte: new Date() },
+      test: { assignments: { some: { group: { organizationId } } } },
     };
 
     const [
@@ -142,7 +143,7 @@ export class TeacherService {
         : Promise.resolve({ _count: { _all: 0 }, _avg: { percent: 0 } }),
 
       studentIds.length > 0
-        ? this.getDailyActivity(studentIds, sevenDaysAgo)
+        ? this.getDailyActivity(studentIds, sevenDaysAgo, organizationId)
         : Promise.resolve([]),
 
       studentIds.length > 0
@@ -199,10 +200,11 @@ export class TeacherService {
     };
   }
 
-  private async getDailyActivity(studentIds: string[], from: Date) {
+  private async getDailyActivity(studentIds: string[], from: Date, organizationId: string) {
     const where: Prisma.TestAttemptWhereInput = {
       studentId: { in: studentIds },
       completedAt: { gte: from },
+      test: { assignments: { some: { group: { organizationId } } } },
     };
 
     const attempts = await this.prisma.testAttempt.findMany({
@@ -253,6 +255,7 @@ export class TeacherService {
 
     const attemptsWhere: Prisma.TestAttemptWhereInput = {
       studentId: { in: studentIds },
+      test: { assignments: { some: { groupId } } },
     };
 
     const [profiles, attemptCounts] = await Promise.all([
