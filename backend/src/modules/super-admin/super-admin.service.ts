@@ -115,7 +115,10 @@ export class SuperAdminService {
 
   /** Maktab ichi: super admin FAQAT ko'radi (guruhlar, xodimlar, o'quvchilar to'lovi jamlamasi, obuna). */
   async orgDetail(id: string) {
-    const org = await this.prisma.organization.findUnique({ where: { id } });
+    const org = await this.prisma.organization.findUnique({
+      where: { id },
+      include: { type: true, directions: { include: { direction: true } } },
+    });
     if (!org) throw new NotFoundException('Maktab topilmadi');
     const month = currentMonth();
     const [groups, staff, studentCount, pays, sub] = await Promise.all([
@@ -136,7 +139,12 @@ export class SuperAdminService {
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
-      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId, lastBackupAt: org.lastBackupAt, lastBackupStatus: org.lastBackupStatus, createdAt: org.createdAt },
+      org: {
+        id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee,
+        storageChatId: org.storageChatId, lastBackupAt: org.lastBackupAt, lastBackupStatus: org.lastBackupStatus,
+        createdAt: org.createdAt, typeId: org.typeId, type: org.type,
+        directions: org.directions.map((row) => row.direction),
+      },
       counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
       admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
       teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),
