@@ -28,7 +28,7 @@ export class TeacherService {
   /* ============================================================
      TODO — o'qituvchining bugungi ishi: baholash navbati va e'tibor talab qiladiganlar
      ============================================================ */
-  async getTodo(teacherId: string) {
+  async getTodo(teacherId: string, organizationId: string) {
     const since = new Date(Date.now() + 5 * 3_600_000 - 30 * 86_400_000);
     since.setUTCHours(0, 0, 0, 0);
 
@@ -37,13 +37,13 @@ export class TeacherService {
         where: {
           status: { in: ['NEEDS_REVIEW', 'FAILED'] },
           teacherScore: null,
-          assignment: { teacherId, deletedAt: null },
+          assignment: { teacherId, deletedAt: null, group: { organizationId } },
         },
         select: { assignment: { select: { id: true, title: true, group: { select: { id: true, name: true } } } } },
         take: 500,
       }),
       this.prisma.attendanceRecord.findMany({
-        where: { date: { gte: since }, group: { teacherId, deletedAt: null } },
+        where: { date: { gte: since }, group: { teacherId, organizationId, deletedAt: null } },
         select: {
           groupId: true,
           studentId: true,
@@ -88,13 +88,13 @@ export class TeacherService {
   /* ============================================================
      OVERVIEW
      ============================================================ */
-  async getOverview(teacherId: string) {
+  async getOverview(teacherId: string, organizationId: string) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
 
     const groups = await this.prisma.group.findMany({
-      where: { teacherId, deletedAt: null },
+      where: { teacherId, organizationId, deletedAt: null },
       include: { members: { select: { studentId: true } } },
     });
 
@@ -116,15 +116,15 @@ export class TeacherService {
       topStudents,
     ] = await Promise.all([
       this.prisma.testAssignment.count({
-        where: { assignedById: teacherId },
+        where: { assignedById: teacherId, group: { organizationId } },
       }),
 
       this.prisma.teacherAssignment.count({
-        where: { teacherId, deletedAt: null },
+        where: { teacherId, deletedAt: null, group: { organizationId } },
       }),
 
       this.prisma.testAssignment.findMany({
-        where: { assignedById: teacherId },
+        where: { assignedById: teacherId, group: { organizationId } },
         orderBy: { assignedAt: 'desc' },
         take: 5,
         include: {
@@ -292,9 +292,9 @@ export class TeacherService {
   /* ============================================================
      TEACHER GROUPS
      ============================================================ */
-  async listMyGroups(teacherId: string) {
+  async listMyGroups(teacherId: string, organizationId: string) {
     return this.prisma.group.findMany({
-      where: { teacherId, deletedAt: null },
+      where: { teacherId, organizationId, deletedAt: null },
       include: {
         _count: {
           select: { members: true, assignments: true },
@@ -304,9 +304,9 @@ export class TeacherService {
   }
 
   /** Guruh vazifalari bo'yicha topshirish statistikasi (faqat o'z guruhi). */
-  async getGroupSubmissionStats(teacherId: string, groupId: string) {
+  async getGroupSubmissionStats(teacherId: string, groupId: string, organizationId: string) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, teacherId, deletedAt: null },
+      where: { id: groupId, teacherId, organizationId, deletedAt: null },
       select: { id: true, _count: { select: { members: true } } },
     });
     if (!group) throw new NotFoundException('Guruh topilmadi');
@@ -326,9 +326,9 @@ export class TeacherService {
     }));
   }
 
-  async getMyGroup(teacherId: string, groupId: string) {
+  async getMyGroup(teacherId: string, groupId: string, organizationId: string) {
     const group = await this.prisma.group.findFirst({
-      where: { id: groupId, teacherId, deletedAt: null },
+      where: { id: groupId, teacherId, organizationId, deletedAt: null },
       include: {
         members: {
           include: {
@@ -440,11 +440,12 @@ export class TeacherService {
   /* ============================================================
      ASSIGNMENTS — LIST
      ============================================================ */
-  async listAssignments(teacherId: string, groupId?: string) {
+  async listAssignments(teacherId: string, organizationId: string, groupId?: string) {
     // ✅ MUHIM: `teacherId` filter orqali faqat o'z materiallari
     const where: Prisma.TeacherAssignmentWhereInput = {
       teacherId,
       deletedAt: null,
+      group: { organizationId },
     };
 
     if (groupId) {
@@ -476,9 +477,9 @@ export class TeacherService {
   /* ============================================================
      ASSIGNMENTS — GET ONE
      ============================================================ */
-  async getAssignment(teacherId: string, id: string) {
+  async getAssignment(teacherId: string, id: string, organizationId: string) {
     const item = await this.prisma.teacherAssignment.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, group: { organizationId } },
       include: {
         ...TeacherService.ASSIGNMENT_INCLUDE,
         group: { select: { id: true, name: true, teacherId: true } },
@@ -520,13 +521,13 @@ export class TeacherService {
   /* ============================================================
      ASSIGNMENTS — CREATE (bir yoki bir nechta guruhga)
      ============================================================ */
-  async createAssignment(teacherId: string, dto: CreateAssignmentDto) {
+  async createAssignment(teacherId: string, organizationId: string, dto: CreateAssignmentDto) {
     const groupIds = Array.from(new Set(dto.groupIds?.length ? dto.groupIds : dto.groupId ? [dto.groupId] : []));
     if (groupIds.length === 0) throw new BadRequestException('Kamida bitta guruh tanlang');
 
     const groups = await this.prisma.group.findMany({
-      where: { id: { in: groupIds }, deletedAt: null },
-      select: { id: true, teacherId: true },
+      where: { id: { in: groupIds }, organizationId, deletedAt: null },
+      select: { id: true, teacherId: true, organizationId: true },
     });
     if (groups.length !== groupIds.length) throw new NotFoundException('Guruh topilmadi');
     if (groups.some((g) => g.teacherId !== teacherId)) {
@@ -655,9 +656,9 @@ export class TeacherService {
   /* ============================================================
      ASSIGNMENTS — UPDATE
      ============================================================ */
-  async updateAssignment(teacherId: string, id: string, dto: UpdateAssignmentDto) {
+  async updateAssignment(teacherId: string, organizationId: string, id: string, dto: UpdateAssignmentDto) {
     const existing = await this.prisma.teacherAssignment.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, group: { organizationId } },
       include: { files: { select: { id: true } } },
     });
     if (!existing) throw new NotFoundException('Material topilmadi');
@@ -667,7 +668,7 @@ export class TeacherService {
 
     if (dto.groupId && dto.groupId !== existing.groupId) {
       const newGroup = await this.prisma.group.findFirst({
-        where: { id: dto.groupId, deletedAt: null },
+        where: { id: dto.groupId, organizationId, deletedAt: null },
       });
       if (!newGroup) throw new NotFoundException('Yangi guruh topilmadi');
       if (newGroup.teacherId !== teacherId) {
@@ -770,9 +771,9 @@ export class TeacherService {
   /* ============================================================
      ASSIGNMENTS — DELETE
      ============================================================ */
-  async removeAssignment(teacherId: string, id: string) {
+  async removeAssignment(teacherId: string, organizationId: string, id: string) {
     const existing = await this.prisma.teacherAssignment.findFirst({
-      where: { id, deletedAt: null },
+      where: { id, deletedAt: null, group: { organizationId } },
     });
     if (!existing) throw new NotFoundException('Material topilmadi');
     if (existing.teacherId !== teacherId) {
