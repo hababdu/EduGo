@@ -453,7 +453,7 @@ export class TeacherService {
 
     if (groupId) {
       const group = await this.prisma.group.findFirst({
-        where: { id: groupId, teacherId, deletedAt: null },
+        where: { id: groupId, teacherId, organizationId, deletedAt: null },
       });
       if (!group) {
         throw new ForbiddenException('Bu guruh sizga tegishli emas');
