@@ -296,5 +296,6 @@ Branch: `feature/organization-core` (PR #12 draft)
 - Filial boshqaruvi `branches.manage` ruxsati bilan himoyalangan.
 - `PATCH /api/v1/admin/memberships/:id/permissions` orqali tashkilot a'zosi uchun ruxsatlar boshqariladi.
 - Super Admin tashkilot detail sahifasida o'qituvchi va admin a'zolari ruxsatlarini sozlay oladi.
+- O'qituvchi panelida bir nechta faol tashkilot orasida almashtirish komponenti qo'shildi; switch paytida refresh token yangilanadi va UI roli ham qayta olinadi.
 
 Bu mexanizm yangi endpointlarda dekorator bilan bosqichma-bosqich qo'llanadi. Hali barcha mavjud EduGo endpointlariga granular permission dekoratorlari qo'shilmagan; mavjud endpointlar hozircha role va organization scope guardlari bilan himoyalanadi.
