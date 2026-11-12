@@ -60,7 +60,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           where: { userId: user.id, organizationId: selectedId, status: 'ACTIVE' },
           select: { role: true, organization: { select: { status: true } } },
         });
-        if (membership && membership.organization.status === 'ACTIVE') {
+        if (membership && membership.organization.status === 'SUSPENDED') {
+          throw new UnauthorizedException("Tashkilot faoliyati to'xtatilgan. Administratorga murojaat qiling.");
+        }
+        if (membership) {
           organizationId = selectedId;
           role = membership.role;
         } else if (user.activeOrganizationContext) {
