@@ -34,13 +34,15 @@ export class OrganizationCoreService {
     if (!type) throw new BadRequestException('Tashkilot turi topilmadi yoki faol emas');
     if (directions.length !== uniqueDirectionIds.length) throw new BadRequestException('Yo‘nalishlardan biri topilmadi yoki faol emas');
 
-    await this.prisma.$transaction([
-      this.prisma.organization.update({ where: { id: organizationId }, data: { typeId } }),
-      this.prisma.organizationDirection.deleteMany({ where: { organizationId } }),
-      ...(uniqueDirectionIds.length
-        ? [this.prisma.organizationDirection.createMany({ data: uniqueDirectionIds.map((directionId) => ({ organizationId, directionId })) })]
-        : []),
-    ]);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.organization.update({ where: { id: organizationId }, data: { typeId } });
+      await tx.organizationDirection.deleteMany({ where: { organizationId } });
+      if (uniqueDirectionIds.length) {
+        await tx.organizationDirection.createMany({
+          data: uniqueDirectionIds.map((directionId) => ({ organizationId, directionId })),
+        });
+      }
+    });
 
     return this.prisma.organization.findUnique({
       where: { id: organizationId },
