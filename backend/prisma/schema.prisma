@@ -185,6 +185,8 @@ model OrganizationMembership {
   organizationId String
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   role           RoleName         @default(STUDENT)
+  /// Organization-specific custom permission overrides: { allow: string[], deny: string[] }
+  permissions    Json?
   status         MembershipStatus @default(PENDING)
   message        String?
   requestedAt    DateTime         @default(now())
