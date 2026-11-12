@@ -76,6 +76,7 @@ model Organization {
   type        OrganizationType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
   directions  OrganizationDirection[]
   branches    OrganizationBranch[]
+  activeUsers UserActiveOrganization[]
 
   @@index([typeId])
   @@index([status])
@@ -120,6 +121,20 @@ model EducationDirection {
 }
 
 /// Organization va EducationDirection o'rtasidagi many-to-many bog'lanish.
+
+/// Foydalanuvchining tanlangan tashkilot konteksti. User.organizationId legacy sifatida qoladi.
+model UserActiveOrganization {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
 model OrganizationDirection {
   id             String   @id @default(cuid())
   organizationId String
@@ -230,6 +245,7 @@ model User {
   deletedAt       DateTime? // soft delete
 
   memberships    OrganizationMembership[] @relation("MembershipUser")
+  activeOrganizationContext UserActiveOrganization?
   uploadedMedia SchoolMediaAsset[]
   decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
   teachingAssignmentsAsTeacher TeachingAssignment[] @relation("TeachingTeacher")
