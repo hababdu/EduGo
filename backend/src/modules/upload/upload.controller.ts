@@ -70,17 +70,17 @@ export class UploadController {
       data: {
         organizationId: org.id,
         uploaderId: actor.id,
-        purpose: groupId ? 'GROUP_POSTER' : 'SCHOOL_POSTER',
+        purpose: purpose === 'GROUP_POSTER' ? 'GROUP_POSTER' : 'SCHOOL_POSTER',
         fileName: cleanName,
         mimeType: file.mimetype,
         sizeBytes: file.buffer.length,
         telegramFileId: stored.fileId,
         telegramMessageId: stored.messageId,
         telegramChatId: stored.chatId,
-        isPublic: !groupId,
+        isPublic: !groupId && purpose !== 'GROUP_POSTER',
       },
     });
-    return { id: asset.id, url: `/api/v1/upload/assets/${asset.id}` };
+    return { id: asset.id, url: asset.isPublic ? `/api/v1/upload/assets/${asset.id}` : `/api/v1/upload/assets/${asset.id}/private` };
   }
 
   @Public()
