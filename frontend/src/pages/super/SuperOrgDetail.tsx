@@ -35,7 +35,7 @@ export function SuperOrgDetail() {
       {d && (
         <>
           <StaffHero accent="teal" image={IMAGES.hero} eyebrow="SUPER ADMIN · MAKTAB" title={d.org.name}
-            subtitle={`${d.org.status === 'ACTIVE' ? 'Faol' : "To'xtatilgan"} · faqat ko'rish rejimi — o'zgartirishni maktab admini qiladi`} />
+            subtitle={`${d.org.status === 'ACTIVE' ? 'Faol' : "To'xtatilgan"} · tashkilot tasnifi va filiallarini boshqarish mumkin`} />
 
           <Panel title="Tashkilot turi va yo‘nalishlari" icon={GraduationCap} accent="gold">
             <div className="space-y-3">
