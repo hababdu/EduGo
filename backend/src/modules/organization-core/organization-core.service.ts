@@ -138,8 +138,12 @@ export class OrganizationCoreService {
       select: { id: true, role: true, organizationId: true },
     });
     if (!membership) throw new ForbiddenException('Ushbu tashkilotda faol a’zolik topilmadi');
-    await this.prisma.userActiveOrganization.upsert({
-      where: { userId }, create: { userId, organizationId }, update: { organizationId },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.userActiveOrganization.upsert({
+        where: { userId }, create: { userId, organizationId }, update: { organizationId },
+      });
+      // Legacy mirror only; JWT authorization always reads the active membership.
+      await tx.user.update({ where: { id: userId }, data: { organizationId, role: membership.role } });
     });
     return { ok: true, organizationId, role: membership.role };
   }
