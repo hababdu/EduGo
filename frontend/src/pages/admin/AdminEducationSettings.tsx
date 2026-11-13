@@ -13,6 +13,16 @@ type Period = { id: string; name: string; periodType: string; startsAt: string; 
 type Config = { organizationId: string; model: { modelKey: string; settings?: Record<string, unknown> }; modules: Module[]; policies: { policyKey: string; config: Record<string, unknown> }[]; periods: Period[] };
 type Catalog = { models: CatalogItem[]; features: CatalogItem[]; policies: CatalogItem[] };
 const inputCls = 'min-h-[42px] w-full rounded-xl border border-tint/10 bg-surface/50 px-3 py-2 text-sm text-ink outline-none focus:border-accent/60';
+const MODEL_PRESETS: Record<string, string[]> = {
+  SCHOOL_YEAR: ['GROUPS','COURSES','SUBJECTS','SCHEDULE','ACADEMIC_PERIODS','ATTENDANCE','LESSONS','MATERIALS','ASSIGNMENTS','GRADING','TESTS','ANALYTICS','PARENT_ACCESS'],
+  SEMESTER: ['GROUPS','COURSES','SUBJECTS','SCHEDULE','ACADEMIC_PERIODS','ATTENDANCE','LESSONS','MATERIALS','ASSIGNMENTS','GRADING','TESTS','ANALYTICS'],
+  COURSE_BASED: ['GROUPS','COURSES','SCHEDULE','ATTENDANCE','LESSONS','MATERIALS','ASSIGNMENTS','GRADING','TESTS','PAYMENTS','CERTIFICATES','ANALYTICS','TRIAL_LESSONS'],
+  SHORT_TERM: ['GROUPS','COURSES','SCHEDULE','ACADEMIC_PERIODS','LESSONS','MATERIALS','ASSIGNMENTS','GRADING','PAYMENTS','CERTIFICATES'],
+  APPOINTMENT: ['SCHEDULE','LESSONS','MATERIALS','ASSIGNMENTS','PAYMENTS'],
+  CLUB: ['GROUPS','SCHEDULE','ATTENDANCE','LESSONS','MATERIALS','PAYMENTS'],
+  WORKSHOP: ['COURSES','SCHEDULE','ACADEMIC_PERIODS','LESSONS','MATERIALS','ASSIGNMENTS','CERTIFICATES'],
+};
+
 
 export function AdminEducationSettings() {
   const qc = useQueryClient();
@@ -66,7 +76,12 @@ export function AdminEducationSettings() {
       {catalogQuery.data && configQuery.data && <>
         <Panel title="Ta’lim modeli" icon={GraduationCap} accent="teal">
           <p className="mb-3 text-xs text-ink-muted">Tashkilotingizning asosiy ish uslubini tanlang. Turi va yo‘nalishlari katalogi bundan mustaqil.</p>
-          <select className={inputCls} value={modelKey} onChange={(e) => setModelKey(e.target.value)}>
+          <select className={inputCls} value={modelKey} onChange={(e) => {
+            const next = e.target.value;
+            setModelKey(next);
+            const selected = MODEL_PRESETS[next];
+            if (selected) setEnabled(Object.fromEntries(catalogQuery.data!.features.map((f) => [f.key, selected.includes(f.key)])));
+          }}>
             {catalogQuery.data.models.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
           </select>
           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
