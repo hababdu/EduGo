@@ -68,6 +68,7 @@ model Organization {
   subjects    SchoolSubject[]
   teachingAssignments TeachingAssignment[]
   scheduleSlots ScheduleSlot[]
+  scheduleSessions ScheduleSession[]
   reviews     SchoolReview[]
   mediaAssets SchoolMediaAsset[]
   trialLessons TrialLesson[]
