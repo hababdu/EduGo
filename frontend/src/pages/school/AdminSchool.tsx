@@ -88,7 +88,8 @@ function TimetableTab() {
   const { data: assigns } = useSchoolQuery<AssignmentRow[]>(['assigns'], '/api/v1/admin/teaching/assignments');
   const { data: groups } = useSchoolQuery<{ id: string; name: string }[]>(['groups'], '/api/v1/groups');
   const { data: members } = useSchoolQuery<Paged<MemberRow>>(['m-teachers'], '/api/v1/admin/memberships?status=ACTIVE&role=TEACHER');
-  const { data: slots } = useSchoolQuery<Slot[]>(['tt', 'admin'], '/api/v1/admin/teaching/timetable');
+  const [viewDate, setViewDate] = useState(new Date(Date.now() + 5 * 3600000).toISOString().slice(0, 10));
+  const { data: slots } = useSchoolQuery<Slot[]>(['tt', 'admin', viewDate], `/api/v1/admin/teaching/timetable?date=${viewDate}`);
   const { data: sessions } = useSchoolQuery<ScheduleSessionRow[]>(['schedule-sessions'], '/api/v1/admin/teaching/sessions');
   const [name, setName] = useState('');
   const [a, setA] = useState({ teacherId: '', subjectId: '', groupId: '' });
@@ -149,6 +150,7 @@ function TimetableTab() {
         {!!sessions?.length && <ul className="mt-3 divide-y divide-tint/5">{sessions.map((x) => <li key={x.id} className="flex items-center gap-2 py-2 text-xs"><span className="min-w-0 flex-1 text-ink">{x.title} · {dt(x.startsAt)}–{dt(x.endsAt)} · {x.status}</span>{x.status === 'SCHEDULED' && <button type="button" onClick={() => cancelSession.mutate(x.id)} className="text-coral">Bekor</button>}</li>)}</ul>}
       </Panel>
       <Panel title="Maktab jadvali" accent="teal" flush>
+        <div className="border-b border-tint/5 p-3"><label className="text-[11px] text-ink-muted">Ko‘rsatiladigan sana<input type="date" className={inputCls} value={viewDate} onChange={(e) => setViewDate(e.target.value)} /></label></div>
         {!slots?.length ? <p className="p-5 text-xs text-ink-muted">Jadval bo'sh</p> : <ul className="divide-y divide-tint/5">{slots.map((x) => (
           <li key={x.id} className="flex items-center gap-2 px-4 py-2.5 text-xs"><span className="w-24 shrink-0 font-semibold text-ink">{DAYS[x.weekday].slice(0, 3)} {x.startTime}–{x.endTime}</span><span className="min-w-0 flex-1 truncate text-ink-muted">{x.subject} · {x.group.name} · {x.teacher.name}{x.room ? ` · ${x.room}` : ''}</span><button type="button" aria-label="Darsni o'chirish" onClick={() => rmSlot.mutate(x.id)} className="text-coral">×</button></li>
         ))}</ul>}
