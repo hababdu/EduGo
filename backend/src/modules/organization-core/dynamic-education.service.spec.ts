@@ -52,7 +52,9 @@ describe('DynamicEducationService', () => {
   it('requires an explicit organization for Super Admin and validates it', async () => {
     const { service } = setup();
     await expect(service.getConfig(superAdmin)).rejects.toBeInstanceOf(BadRequestException);
-    await expect(service.getConfig(superAdmin, 'missing')).rejects.toBeInstanceOf(Error);
+    const { service: missingService, prisma } = setup();
+    prisma.organization.findUnique.mockResolvedValue(null);
+    await expect(missingService.getConfig(superAdmin, 'missing')).rejects.toBeInstanceOf(Error);
   });
 
   it('atomically saves model, module switches and organization policies', async () => {
