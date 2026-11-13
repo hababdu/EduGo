@@ -73,6 +73,7 @@ describe('updateGroup', () => {
     await expect(a.svc.updateGroup('g', { teacherId: null }, teacher)).rejects.toBeInstanceOf(ForbiddenException);
     expect(a.prisma.group.update).not.toHaveBeenCalled();
     const b = build();
+    b.prisma.organizationMembership.findFirst.mockResolvedValue({ id: 'teacher-membership' });
     await b.svc.updateGroup('g', { teacherId: 'tB' }, admin);
     expect(b.prisma.group.update).toHaveBeenCalled();
   });
