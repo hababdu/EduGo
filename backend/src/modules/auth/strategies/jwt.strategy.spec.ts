@@ -7,7 +7,7 @@ function setup(over: any = {}) {
       organizationId: 'legacy-org', activeRole: null, activeOrganizationContext: null,
     }) },
     organizationMembership: {
-      findFirst: jest.fn().mockResolvedValue(over.membership ?? { role: 'TEACHER', organization: { status: 'ACTIVE' } }),
+      findFirst: jest.fn().mockResolvedValue(Object.prototype.hasOwnProperty.call(over, 'membership') ? over.membership : { role: 'TEACHER', organization: { status: 'ACTIVE' } }),
     },
     userActiveOrganization: { deleteMany: jest.fn() },
   };
