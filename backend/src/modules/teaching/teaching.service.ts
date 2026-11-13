@@ -197,11 +197,20 @@ export class TeachingService {
   }
   private order = [{ weekday: 'asc' as const }, { startTime: 'asc' as const }];
 
+  private scheduleDate(value?: string) {
+    const iso = value ?? new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(iso)) throw new BadRequestException('Jadval sanasi YYYY-MM-DD formatida bo‘lsin');
+    const date = new Date(iso + 'T00:00:00.000Z');
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== iso) throw new BadRequestException('Jadval sanasi noto‘g‘ri');
+    return date;
+  }
+
   /** Admin: butun maktab yoki bitta sinf/o'qituvchi jadvali */
-  async timetable(actor: CurrentUserPayload, q: { organizationId?: string; teacherId?: string; groupId?: string }) {
+  async timetable(actor: CurrentUserPayload, q: { organizationId?: string; teacherId?: string; groupId?: string; date?: string }) {
     const organizationId = resolveOrgId(actor, q.organizationId);
+    const date = this.scheduleDate(q.date);
     const rows = await this.prisma.scheduleSlot.findMany({
-      where: { organizationId, assignment: { ...(q.teacherId ? { teacherId: q.teacherId } : {}), ...(q.groupId ? { groupId: q.groupId } : {}) } },
+      where: { organizationId, AND: [{ OR: [{ startsOn: null }, { startsOn: { lte: date } }] }, { OR: [{ endsOn: null }, { endsOn: { gte: date } }] }], assignment: { ...(q.teacherId ? { teacherId: q.teacherId } : {}), ...(q.groupId ? { groupId: q.groupId } : {}) } },
       orderBy: this.order, include: SLOT_INC,
     });
     return this.shape(rows);
@@ -211,9 +220,10 @@ export class TeachingService {
   async mine(user: CurrentUserPayload) {
     const organizationId = user.activeOrganizationId ?? user.organizationId;
     if (!organizationId) return [];
+    const date = this.scheduleDate();
     let where: any;
-    if (user.role === 'TEACHER') where = { organizationId, assignment: { teacherId: user.id } };
-    else if (user.role === 'STUDENT') where = { organizationId, assignment: { group: { members: { some: { studentId: user.id } } } } };
+    if (user.role === 'TEACHER') where = { organizationId, AND: [{ OR: [{ startsOn: null }, { startsOn: { lte: date } }] }, { OR: [{ endsOn: null }, { endsOn: { gte: date } }] }], assignment: { teacherId: user.id } };
+    else if (user.role === 'STUDENT') where = { organizationId, AND: [{ OR: [{ startsOn: null }, { startsOn: { lte: date } }] }, { OR: [{ endsOn: null }, { endsOn: { gte: date } }] }], assignment: { group: { members: { some: { studentId: user.id } } } } };
     else throw new ForbiddenException("Bu jadval o'qituvchi va o'quvchilar uchun");
     return this.shape(await this.prisma.scheduleSlot.findMany({ where, orderBy: this.order, include: SLOT_INC }));
   }
