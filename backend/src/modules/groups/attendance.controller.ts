@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,6 +7,7 @@ import { AttendanceService } from './attendance.service';
 import { MarkAttendanceDto } from './dto/attendance.dto';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('ATTENDANCE')
 @Controller('api/v1/groups/:groupId/attendance')
 export class AttendanceController {
   constructor(private readonly attendance: AttendanceService) {}
