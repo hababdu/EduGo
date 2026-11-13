@@ -11,6 +11,7 @@ export class AssignDto {
 export class AssignmentsQueryDto extends OrgQueryDto {
   @IsOptional() @IsString() @MaxLength(40) teacherId?: string;
   @IsOptional() @IsString() @MaxLength(40) groupId?: string;
+  @IsOptional() @IsString() date?: string;
 }
 export class SlotDto {
   @IsInt() @Min(1) @Max(7) weekday!: number;
