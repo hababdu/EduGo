@@ -109,6 +109,17 @@ export class DynamicEducationService {
     return this.getConfig(actor, organizationId);
   }
 
+  private async handleActivePeriodConflict<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'P2002') {
+        throw new ConflictException('Tashkilotda boshqa faol o‘quv davri mavjud. Avval uni yakunlang.');
+      }
+      throw error;
+    }
+  }
+
   async createPeriod(actor: CurrentUserPayload, input: {
     organizationId?: string; name: string; periodType?: string; startsAt: string; endsAt: string;
     isActive?: boolean; settings?: Record<string, unknown>;
@@ -118,12 +129,12 @@ export class DynamicEducationService {
     if (!input.name?.trim() || Number.isNaN(+startsAt) || Number.isNaN(+endsAt) || endsAt <= startsAt) {
       throw new BadRequestException('Davr nomi va to‘g‘ri boshlanish/tugash sanalari talab qilinadi');
     }
-    return this.prisma.$transaction(async (tx) => {
+    return this.handleActivePeriodConflict(() => this.prisma.$transaction(async (tx) => {
       if (input.isActive) await tx.organizationAcademicPeriod.updateMany({ where: { organizationId, isActive: true }, data: { isActive: false } });
       return tx.organizationAcademicPeriod.create({
         data: { organizationId, name: input.name.trim(), periodType: input.periodType ?? 'CUSTOM', startsAt, endsAt, isActive: input.isActive ?? false, settings: (input.settings ?? {}) as any },
       });
-    });
+    }));
   }
 
   async updatePeriod(actor: CurrentUserPayload, id: string, input: {
@@ -136,7 +147,7 @@ export class DynamicEducationService {
     const startsAt = input.startsAt ? new Date(input.startsAt) : current.startsAt;
     const endsAt = input.endsAt ? new Date(input.endsAt) : current.endsAt;
     if (Number.isNaN(+startsAt) || Number.isNaN(+endsAt) || endsAt <= startsAt) throw new BadRequestException('Davr sanalari noto‘g‘ri');
-    return this.prisma.$transaction(async (tx) => {
+    return this.handleActivePeriodConflict(() => this.prisma.$transaction(async (tx) => {
       if (input.isActive) await tx.organizationAcademicPeriod.updateMany({ where: { organizationId, isActive: true, id: { not: id } }, data: { isActive: false } });
       return tx.organizationAcademicPeriod.update({ where: { id }, data: {
         ...(input.name !== undefined ? { name: input.name.trim() } : {}),
@@ -145,7 +156,7 @@ export class DynamicEducationService {
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
         ...(input.settings !== undefined ? { settings: input.settings as any } : {}),
       } });
-    });
+    }));
   }
 
   async deletePeriod(actor: CurrentUserPayload, id: string, requested?: string) {
