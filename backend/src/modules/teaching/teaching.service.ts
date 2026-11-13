@@ -134,13 +134,16 @@ export class TeachingService {
     }
     if (!dto.studentId && !dto.groupId) throw new BadRequestException("Individual dars uchun o'quvchi yoki guruh ko'rsatilishi kerak");
     await this.assertSessionParticipants(organizationId, dto.teacherId, dto.studentId, dto.groupId);
-    const weekday = ((startsAt.getUTCDay() + 6) % 7) + 1;
+    const localStart = new Date(startsAt.getTime() + 5 * 60 * 60 * 1000);
+    const localEnd = new Date(endsAt.getTime() + 5 * 60 * 60 * 1000);
+    const localDate = new Date(Date.UTC(localStart.getUTCFullYear(), localStart.getUTCMonth(), localStart.getUTCDate()));
+    const weekday = ((localStart.getUTCDay() + 6) % 7) + 1;
     const recurring = await this.prisma.scheduleSlot.findMany({
-      where: { organizationId, weekday, OR: [{ startsOn: null }, { startsOn: { lte: new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate())) } }], AND: [{ OR: [{ endsOn: null }, { endsOn: { gte: new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate())) } }] }] },
+      where: { organizationId, weekday, OR: [{ startsOn: null }, { startsOn: { lte: localDate } }], AND: [{ OR: [{ endsOn: null }, { endsOn: { gte: localDate } }] }] },
       include: { assignment: { select: { teacherId: true, groupId: true } } },
     });
-    const startMinute = startsAt.getUTCHours() * 60 + startsAt.getUTCMinutes();
-    const endMinute = endsAt.getUTCHours() * 60 + endsAt.getUTCMinutes();
+    const startMinute = localStart.getUTCHours() * 60 + localStart.getUTCMinutes();
+    const endMinute = localEnd.getUTCHours() * 60 + localEnd.getUTCMinutes();
     if (recurring.some((slot: any) => startMinute < toMin(slot.endTime) && toMin(slot.startTime) < endMinute &&
       (slot.assignment.teacherId === dto.teacherId || (dto.groupId && slot.assignment.groupId === dto.groupId) || (!!dto.room && !!slot.room && slot.room.toLowerCase() === dto.room.toLowerCase())))) {
       throw new ConflictException('Tanlangan vaqtda haftalik jadval bo‘yicha o‘qituvchi, guruh yoki xona band');
