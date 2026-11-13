@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -7,6 +8,7 @@ import { ScheduleService } from './schedule.service';
 import { CreateGroupDto, UpdateGroupDto } from './dto/groups.dto';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('GROUPS')
 @Controller('api/v1/groups')
 export class GroupsController {
   constructor(
