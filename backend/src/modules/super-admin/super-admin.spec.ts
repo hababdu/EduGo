@@ -88,6 +88,7 @@ describe('SuperAdminService.changeRole', () => {
   const mk = (user: any) => {
     const prisma: any = {
       organization: { findFirst: jest.fn().mockResolvedValue({ id: 'o1' }) },
+      organizationMembership: { findFirst: jest.fn().mockResolvedValue(null), upsert: jest.fn().mockResolvedValue({ id: 'membership-1', organizationId: 'o1', role: 'TEACHER' }) },
       user: { findUnique: jest.fn().mockResolvedValue(user), update: jest.fn().mockResolvedValue({}) },
       studentProfile: { upsert: jest.fn() }, teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() },
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
