@@ -61,6 +61,24 @@ export class DynamicEducationService {
     return activeId;
   }
 
+  async enabledFeatures(actor: CurrentUserPayload) {
+    if (actor.role === 'SUPER_ADMIN' || actor.realRole === 'SUPER_ADMIN') {
+      return { organizationId: null, features: EDUCATION_FEATURES.map((feature) => feature.key) };
+    }
+    const organizationId = actor.activeOrganizationId ?? actor.organizationId ?? null;
+    if (!organizationId) return { organizationId: null, features: EDUCATION_FEATURES.map((feature) => feature.key) };
+    const membership = await this.prisma.organizationMembership.findFirst({
+      where: { userId: actor.id, organizationId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+    if (!membership) throw new ForbiddenException('Faol tashkilot a’zoligi topilmadi');
+    const configs = await this.prisma.organizationModuleConfig.findMany({
+      where: { organizationId }, select: { featureKey: true, enabled: true },
+    });
+    const disabled = new Set(configs.filter((item) => !item.enabled).map((item) => item.featureKey));
+    return { organizationId, features: EDUCATION_FEATURES.filter((feature) => !disabled.has(feature.key)).map((feature) => feature.key) };
+  }
+
   async catalog() {
     return { models: EDUCATION_MODELS, features: EDUCATION_FEATURES, policies: EDUCATION_POLICIES };
   }
