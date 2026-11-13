@@ -94,6 +94,67 @@ export class TeachingService {
     return { ok: true };
   }
 
+  private overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
+    return aStart < bEnd && bStart < aEnd;
+  }
+
+  private async assertSessionParticipants(organizationId: string, teacherId: string, studentId?: string, groupId?: string) {
+    const teacher = await this.prisma.organizationMembership.findFirst({
+      where: { organizationId, userId: teacherId, role: 'TEACHER', status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } },
+      select: { id: true },
+    });
+    if (!teacher) throw new BadRequestException("O'qituvchi tashkilotga faol biriktirilmagan");
+    if (studentId) {
+      const student = await this.prisma.organizationMembership.findFirst({
+        where: { organizationId, userId: studentId, role: 'STUDENT', status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } },
+        select: { id: true },
+      });
+      if (!student) throw new BadRequestException("O'quvchi tashkilotga faol biriktirilmagan");
+    }
+    if (groupId) {
+      const group = await this.prisma.group.findFirst({ where: { id: groupId, organizationId, deletedAt: null }, select: { id: true } });
+      if (!group) throw new NotFoundException('Guruh ushbu tashkilotda topilmadi');
+    }
+  }
+
+  /** Bir martalik yoki individual dars: vaqtlar UTC ISO formatida yuboriladi. */
+  async createSession(actor: CurrentUserPayload, dto: { organizationId?: string; title: string; sessionType?: string; teacherId: string; studentId?: string; groupId?: string; startsAt: string; endsAt: string; room?: string; notes?: string }) {
+    const organizationId = resolveOrgId(actor, dto.organizationId);
+    const startsAt = new Date(dto.startsAt), endsAt = new Date(dto.endsAt);
+    if (!Number.isFinite(startsAt.getTime()) || !Number.isFinite(endsAt.getTime()) || endsAt <= startsAt) {
+      throw new BadRequestException("Mashg'ulot vaqti noto'g'ri: tugash vaqti boshlanishdan keyin bo'lishi kerak");
+    }
+    if (!dto.studentId && !dto.groupId) throw new BadRequestException("Individual dars uchun o'quvchi yoki guruh ko'rsatilishi kerak");
+    await this.assertSessionParticipants(organizationId, dto.teacherId, dto.studentId, dto.groupId);
+    const clash = await this.prisma.scheduleSession.findFirst({
+      where: { organizationId, status: 'SCHEDULED', startsAt: { lt: endsAt }, endsAt: { gt: startsAt },
+        OR: [{ teacherId: dto.teacherId }, ...(dto.studentId ? [{ studentId: dto.studentId }] : []), ...(dto.groupId ? [{ groupId: dto.groupId }] : [])] },
+      select: { id: true, title: true, startsAt: true, endsAt: true },
+    });
+    if (clash) throw new ConflictException("O'qituvchi, o'quvchi yoki guruh shu vaqtda band");
+    return this.prisma.scheduleSession.create({
+      data: { organizationId, title: dto.title.trim(), sessionType: dto.sessionType ?? 'INDIVIDUAL', teacherId: dto.teacherId, studentId: dto.studentId ?? null, groupId: dto.groupId ?? null, startsAt, endsAt, room: dto.room?.trim() || null, notes: dto.notes?.trim() || null, createdById: actor.id },
+    });
+  }
+
+  async listSessions(actor: CurrentUserPayload, q: { organizationId?: string; from?: string; to?: string; teacherId?: string; groupId?: string }) {
+    const organizationId = resolveOrgId(actor, q.organizationId);
+    const from = q.from ? new Date(q.from) : new Date(Date.now() - 7 * 86400000);
+    const to = q.to ? new Date(q.to) : new Date(Date.now() + 30 * 86400000);
+    if (!Number.isFinite(from.getTime()) || !Number.isFinite(to.getTime()) || to <= from) throw new BadRequestException('Sana oralig‘i noto‘g‘ri');
+    return this.prisma.scheduleSession.findMany({
+      where: { organizationId, startsAt: { lt: to }, endsAt: { gt: from }, ...(q.teacherId ? { teacherId: q.teacherId } : {}), ...(q.groupId ? { groupId: q.groupId } : {}) },
+      orderBy: { startsAt: 'asc' },
+    });
+  }
+
+  async cancelSession(actor: CurrentUserPayload, id: string) {
+    const session = await this.prisma.scheduleSession.findUnique({ where: { id } });
+    if (!session) throw new NotFoundException("Mashg'ulot topilmadi");
+    resolveOrgId(actor, session.organizationId);
+    return this.prisma.scheduleSession.update({ where: { id }, data: { status: 'CANCELLED' } });
+  }
+
   private shape(rows: any[]) {
     return rows.map((s) => ({ id: s.id, weekday: s.weekday, startTime: s.startTime, endTime: s.endTime, room: s.room, subject: s.assignment.subject.name, group: { id: s.assignment.groupId, name: s.assignment.group.name }, teacher: { id: s.assignment.teacherId, name: nameOf(s.assignment.teacher) } }));
   }
