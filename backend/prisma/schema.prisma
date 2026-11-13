@@ -442,6 +442,7 @@ model ScheduleSession {
   teacherId      String
   studentId      String?
   groupId        String?
+  group          Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
   startsAt       DateTime
   endsAt         DateTime
   room           String?
