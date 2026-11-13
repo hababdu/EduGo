@@ -1,3 +1,4 @@
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -6,6 +7,7 @@ import { TeachingService } from './teaching.service';
 
 /** Maktab admini (o'z maktabi) / SUPER_ADMIN */
 @Roles('ADMIN')
+@RequireEducationFeature('SCHEDULE')
 @Controller('api/v1/admin/teaching')
 export class AdminTeachingController {
   constructor(private readonly svc: TeachingService) {}
@@ -28,6 +30,7 @@ export class AdminTeachingController {
 
 /** O'qituvchi / o'quvchi o'z haftalik jadvalini ko'radi */
 @Roles('TEACHER', 'STUDENT')
+@RequireEducationFeature('SCHEDULE')
 @Controller('api/v1/timetable')
 export class TimetableController {
   constructor(private readonly svc: TeachingService) {}
