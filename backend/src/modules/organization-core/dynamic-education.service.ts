@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 
@@ -121,7 +121,7 @@ export class DynamicEducationService {
     return this.prisma.$transaction(async (tx) => {
       if (input.isActive) await tx.organizationAcademicPeriod.updateMany({ where: { organizationId, isActive: true }, data: { isActive: false } });
       return tx.organizationAcademicPeriod.create({
-        data: { organizationId, name: input.name.trim(), periodType: input.periodType ?? 'CUSTOM', startsAt, endsAt, isActive: input.isActive ?? false, settings: input.settings ?? {} },
+        data: { organizationId, name: input.name.trim(), periodType: input.periodType ?? 'CUSTOM', startsAt, endsAt, isActive: input.isActive ?? false, settings: (input.settings ?? {}) as any },
       });
     });
   }
