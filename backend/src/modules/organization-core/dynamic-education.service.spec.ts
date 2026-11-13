@@ -57,6 +57,23 @@ describe('DynamicEducationService', () => {
     await expect(missingService.getConfig(superAdmin, 'missing')).rejects.toBeInstanceOf(Error);
   });
 
+  it('returns enabled modules for active organization members', async () => {
+    const { service, prisma } = setup();
+    prisma.organizationModuleConfig.findMany.mockResolvedValue([
+      { featureKey: 'TESTS', enabled: false }, { featureKey: 'ASSIGNMENTS', enabled: true },
+    ]);
+    const result = await service.enabledFeatures({ ...admin, role: 'STUDENT' } as any);
+    expect(result.organizationId).toBe('org_12345');
+    expect(result.features).toContain('ASSIGNMENTS');
+    expect(result.features).not.toContain('TESTS');
+  });
+
+  it('rejects enabled feature lookup without active membership', async () => {
+    const { service, prisma } = setup();
+    prisma.organizationMembership.findFirst.mockResolvedValue(null);
+    await expect(service.enabledFeatures({ ...admin, role: 'STUDENT' } as any)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
   it('atomically saves model, module switches and organization policies', async () => {
     const { service, prisma } = setup();
     await service.saveConfig(admin, {
