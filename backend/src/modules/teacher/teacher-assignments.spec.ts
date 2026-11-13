@@ -33,7 +33,7 @@ const pdf = (id: string) => ({ id, kind: 'PDF', fileName: `${id}.pdf`, mimeType:
 
 describe('TeacherService.createAssignment', () => {
   it('bir nechta guruhga alohida material yaratadi', async () => {
-    const { svc, tx } = build();
+    const { svc, tx, prisma } = build();
     await svc.createAssignment('t1', 'o1', { ...base, groupIds: ['g1', 'g2'] });
     expect(prisma.group.findMany.mock.calls[0][0].where.organizationId).toBe('o1');
     expect(tx.teacherAssignment.create).toHaveBeenCalledTimes(2);
