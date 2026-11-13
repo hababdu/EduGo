@@ -1,5 +1,4 @@
 import {
-import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
   Controller,
   Get,
   Post,
@@ -9,6 +8,7 @@ import { RequireEducationFeature } from '../../../common/decorators/education-fe
   Delete,
   UseGuards,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
