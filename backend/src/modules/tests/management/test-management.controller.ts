@@ -1,4 +1,3 @@
-import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import {
   Body,
   Controller,
@@ -8,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   CurrentUser,
