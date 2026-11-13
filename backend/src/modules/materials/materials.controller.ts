@@ -1,4 +1,3 @@
-import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import {
   Controller,
   Delete,
@@ -10,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
