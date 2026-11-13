@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Check, GraduationCap, Layers3, Save, Settings2 } from 'lucide-react';
+import { CalendarDays, Check, GraduationCap, Layers3, Save } from 'lucide-react';
 import { apiFetch } from '../../lib/api-client';
 import { PAGE_WIDE } from '../../design/tokens';
 import { StaffHero, Panel } from '../../components/staff';
@@ -26,18 +26,20 @@ export function AdminEducationSettings() {
   const catalogQuery = useQuery({ queryKey: ['education-catalog'], queryFn: () => apiFetch<Catalog>('/api/v1/organization/education/catalog') });
   const configQuery = useQuery({ queryKey: ['organization-education-config'], queryFn: () => apiFetch<Config>('/api/v1/organization/education/config') });
 
-  if (configQuery.data && !settingsLoaded) {
-    setModelKey(configQuery.data.model?.modelKey ?? 'CUSTOM');
-    setEnabled(Object.fromEntries(configQuery.data.modules.map((m) => [m.featureKey, m.enabled])));
-    setSettingsLoaded(true);
-  }
+  useEffect(() => {
+    if (configQuery.data && !settingsLoaded) {
+      setModelKey(configQuery.data.model?.modelKey ?? 'CUSTOM');
+      setEnabled(Object.fromEntries(configQuery.data.modules.map((m) => [m.featureKey, m.enabled])));
+      setSettingsLoaded(true);
+    }
+  }, [configQuery.data, settingsLoaded]);
 
   const save = useMutation({
     mutationFn: () => apiFetch('/api/v1/organization/education/config', {
       method: 'PATCH',
       data: {
         modelKey,
-        modules: (catalogQuery.data?.features ?? []).map((f) => ({ featureKey: f.key, enabled: !!enabled[f.key] })),
+        modules: (catalogQuery.data?.features ?? []).map((f) => ({ featureKey: f.key, enabled: !!enabled[f.key], settings: configQuery.data?.modules.find((m) => m.featureKey === f.key)?.settings ?? {} })),
         policies: configQuery.data?.policies ?? [],
       },
     }),
