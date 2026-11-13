@@ -15,6 +15,8 @@ describe('SuperAdminService', () => {
   const mk = (over: any = {}) => {
     const prisma: any = {
       organization: { findFirst: jest.fn().mockResolvedValue(null), findUnique: jest.fn().mockResolvedValue({ id: 'o1', name: 'M' }), create: jest.fn().mockResolvedValue({ id: 'o1' }) },
+      organizationMembership: { findFirst: jest.fn().mockResolvedValue(null), upsert: jest.fn().mockResolvedValue({ id: 'membership-1', organizationId: 'o1', role: 'ADMIN' }) },
+      teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() }, studentProfile: { upsert: jest.fn() },
       user: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({ id: 'u', firstName: 'A', lastName: null, username: null }) },
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
       ...over,
