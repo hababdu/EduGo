@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ParentScopeGuard } from './common/guards/parent-scope.guard';
+import { EducationFeatureGuard } from './common/guards/education-feature.guard';
 import { OrganizationPermissionsGuard } from './common/guards/organization-permissions.guard';
 import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
 import { ConfigModule } from '@nestjs/config';
@@ -92,6 +93,10 @@ import { OrganizationCoreModule } from './modules/organization-core/organization
     {
       provide: APP_GUARD,
       useClass: OrganizationPermissionsGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: EducationFeatureGuard,
     },
     {
       provide: APP_GUARD,
