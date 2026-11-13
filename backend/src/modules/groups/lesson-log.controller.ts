@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,6 +7,7 @@ import { UpsertLessonLogDto } from './dto/lesson-log.dto';
 import { LessonLogService } from './lesson-log.service';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('LESSONS')
 @Controller('api/v1/groups/:groupId/lesson-log')
 export class LessonLogController {
   constructor(private readonly logs: LessonLogService) {}
