@@ -33,7 +33,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { organization: { select: { status: true } } },
+      include: {
+        organization: { select: { status: true } },
+        activeOrganizationContext: { include: { organization: { select: { status: true } } } },
+      },
     });
 
     if (!user || user.status === 'BLOCKED' || user.deletedAt) {
@@ -48,14 +51,31 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       else if (role === 'SUPER_ADMIN') role = 'ADMIN';
     }
 
-    // To'xtatilgan tashkilot foydalanuvchilari (super admindan tashqari) kira olmaydi
-    if (role !== 'SUPER_ADMIN' && user.organization?.status === 'SUSPENDED') {
-      throw new UnauthorizedException("Tashkilot faoliyati to'xtatilgan. Administratorga murojaat qiling.");
+    // Tashkilot ichidagi rol membership'dan olinadi; User.role faqat global/legacy rol.
+    let organizationId: string | null = null;
+    if (role !== 'SUPER_ADMIN') {
+      const selectedId = user.activeOrganizationContext?.organizationId ?? null;
+      if (selectedId) {
+        const membership = await this.prisma.organizationMembership.findFirst({
+          where: { userId: user.id, organizationId: selectedId, status: 'ACTIVE' },
+          select: { role: true, organization: { select: { status: true } } },
+        });
+        if (membership && membership.organization.status === 'SUSPENDED') {
+          throw new UnauthorizedException("Tashkilot faoliyati to'xtatilgan. Administratorga murojaat qiling.");
+        }
+        if (membership) {
+          organizationId = selectedId;
+          role = membership.role;
+        } else if (user.activeOrganizationContext) {
+          // Eskirgan yoki bekor qilingan kontekstni ishlatmaymiz.
+          await this.prisma.userActiveOrganization.deleteMany({ where: { userId: user.id, organizationId: selectedId } });
+        }
+      }
     }
 
-    // Super admin botdan boshqa rolni tanlagan bo'lsa — shu rol sifatida ishlaydi (tashkilot tekshiruvi haqiqiy rol bo'yicha o'tdi)
+    // Super admin botdan boshqa rolni tanlagan bo'lsa — faqat super admin uchun.
     const realRole = role;
-    role = effectiveRole(role, user.activeRole as string | null);
+    role = effectiveRole(role, realRole === 'SUPER_ADMIN' ? user.activeRole as string | null : null);
 
     // Bu obyekt @CurrentUser() decorator orqali controller'larda ishlatiladi
     return {
@@ -64,7 +84,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role,
       realRole,
       status: user.status,
-      organizationId: user.organizationId,
+      organizationId,
+      activeOrganizationId: organizationId,
     };
   }
 }

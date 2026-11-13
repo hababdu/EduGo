@@ -1,4 +1,4 @@
-import { IsIn, IsNumberString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsArray, IsIn, IsNumberString, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SchoolSearchDto {
   @IsOptional() @IsString() @MaxLength(60) search?: string;
@@ -33,4 +33,9 @@ export class AttachDto {
   @IsIn(['STUDENT', 'TEACHER', 'ADMIN']) role!: 'STUDENT' | 'TEACHER' | 'ADMIN';
   /** Faqat SUPER_ADMIN uchun; maktab admini o'z maktabiga biriktiradi */
   @IsOptional() @IsString() @MinLength(5) @MaxLength(40) organizationId?: string;
+}
+
+export class MemberPermissionsDto {
+  @IsOptional() @IsArray() @IsString({ each: true }) allow?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) deny?: string[];
 }

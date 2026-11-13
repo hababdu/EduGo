@@ -4,7 +4,7 @@ import { CurrentUserPayload } from './decorators/current-user.decorator';
 /** Mavjud bo'lmagan tashkilot id — tashkilotsiz admin/o'qituvchi hech narsa ko'rmasligi uchun */
 const NO_ORG = '__no_org__';
 
-export const isSuperAdmin = (u: Pick<CurrentUserPayload, 'role'>) => u.role === 'SUPER_ADMIN';
+export const isSuperAdmin = (u: Pick<CurrentUserPayload, 'role'> & Partial<Pick<CurrentUserPayload, 'realRole'>>) => u.role === 'SUPER_ADMIN' || u.realRole === 'SUPER_ADMIN';
 export const isAdminTier = (u: Pick<CurrentUserPayload, 'role'>) => u.role === 'ADMIN' || u.role === 'SUPER_ADMIN';
 
 /** `organizationId` ustuniga ega modellar (User, Group) uchun filtr. SUPER_ADMIN — filtrsiz. */

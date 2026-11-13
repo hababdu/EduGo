@@ -1,0 +1,1 @@
+ALTER TABLE "OrganizationMembership" ADD COLUMN "permissions" JSONB;

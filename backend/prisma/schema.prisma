@@ -30,7 +30,7 @@ enum AccountStatus {
   PENDING
 }
 
-/// Tashkilot (maktab / o'quv markazi). Har biri o'z admini, o'qituvchilari va o'quvchilari bilan — bir-biriga aralashmaydi.
+/// Universal ta'lim va o'quv tashkiloti. Har biri o'z a'zolari, yo'nalishlari va sozlamalari bilan ajratiladi.
 enum OrgStatus {
   ACTIVE
   SUSPENDED
@@ -68,14 +68,173 @@ model Organization {
   subjects    SchoolSubject[]
   teachingAssignments TeachingAssignment[]
   scheduleSlots ScheduleSlot[]
+  scheduleSessions ScheduleSession[]
   reviews     SchoolReview[]
   mediaAssets SchoolMediaAsset[]
   trialLessons TrialLesson[]
   invoices    OrgInvoice[]
+  typeId      String?
+  type        OrganizationType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  directions  OrganizationDirection[]
+  branches    OrganizationBranch[]
+  activeUsers UserActiveOrganization[]
+  educationModel OrganizationEducationModel?
+  moduleConfigs OrganizationModuleConfig[]
+  periods OrganizationAcademicPeriod[]
+  policies OrganizationPolicy[]
 
+  @@index([typeId])
   @@index([status])
   @@index([status, isPublic, ratingAvg(sort: Desc)])
   @@index([city])
+}
+
+
+/// Kengaytiriladigan tashkilot turlari katalogi. Prisma enum emas: Super Admin yangi tur qo'sha oladi.
+
+/// Tashkilotning ta'lim modeli: tur katalogidan mustaqil, tashkilotning ish jarayonini belgilaydi.
+model OrganizationEducationModel {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  modelKey       String   @default("CUSTOM")
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Modullarni tashkilot kesimida yoqish/o'chirish va sozlash.
+model OrganizationModuleConfig {
+  id             String   @id @default(cuid())
+  organizationId String
+  featureKey     String
+  enabled        Boolean  @default(false)
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey])
+  @@index([organizationId, enabled])
+}
+
+/// O'quv yili, semestr, kurs oqimi yoki qisqa kursning vaqt oralig'i.
+model OrganizationAcademicPeriod {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  periodType     String   @default("CUSTOM")
+  startsAt       DateTime
+  endsAt         DateTime
+  isActive       Boolean  @default(false)
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, startsAt, endsAt])
+  @@index([organizationId, isActive])
+}
+
+/// Jadval, baholash, davomat, to'lov va boshqa tashkilot siyosatlari uchun kengaytiriladigan konfiguratsiya.
+model OrganizationPolicy {
+  id             String   @id @default(cuid())
+  organizationId String
+  policyKey      String
+  config         Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, policyKey])
+  @@index([organizationId])
+}
+
+model OrganizationType {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameUz      String
+  nameRu      String?
+  nameEn      String?
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizations Organization[]
+  @@index([isActive, sortOrder])
+}
+
+/// Ta'lim yo'nalishlari katalogi. Tashkilot bir nechta yo'nalishni tanlay oladi.
+model EducationDirection {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nameUz      String
+  nameRu      String?
+  nameEn      String?
+  category    String?
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizations OrganizationDirection[]
+  @@index([isActive, sortOrder])
+}
+
+/// Organization va EducationDirection o'rtasidagi many-to-many bog'lanish.
+
+/// Foydalanuvchining tanlangan tashkilot konteksti. User.organizationId legacy sifatida qoladi.
+model UserActiveOrganization {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model OrganizationDirection {
+  id             String   @id @default(cuid())
+  organizationId String
+  directionId    String
+  createdAt      DateTime @default(now())
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  direction    EducationDirection @relation(fields: [directionId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, directionId])
+  @@index([directionId])
+}
+
+/// Tashkilotning filial yoki kampusi. Eski tashkilotlar uchun avtomatik filial yaratilmaydi.
+model OrganizationBranch {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  address        String?
+  city           String?
+  phone          String?
+  email          String?
+  isMain         Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, code])
+  @@index([organizationId, isActive])
 }
 
 enum MembershipStatus {
@@ -94,6 +253,8 @@ model OrganizationMembership {
   organizationId String
   organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   role           RoleName         @default(STUDENT)
+  /// Organization-specific custom permission overrides: { allow: string[], deny: string[] }
+  permissions    Json?
   status         MembershipStatus @default(PENDING)
   message        String?
   requestedAt    DateTime         @default(now())
@@ -136,7 +297,7 @@ model AppSetting {
 
 model User {
   id              String        @id @default(cuid())
-  /// null — hali hech qaysi tashkilotga biriktirilmagan (yoki SUPER_ADMIN)
+  /// Legacy mirror: faol tashkilot ID'si. Haqiqiy kontekst UserActiveOrganization'da saqlanadi.
   organizationId  String?
   organization    Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   telegramId      String        @unique
@@ -145,6 +306,7 @@ model User {
   firstName       String
   lastName        String?
   profilePhotoUrl String?
+  /// Legacy mirror of the active OrganizationMembership role; authorization reads membership.
   role            RoleName      @default(STUDENT)
   /// Faqat SUPER_ADMIN uchun: botdan tanlangan "ko'rish" roli (null = o'z roli). Haqiqiy rol `role` da qoladi.
   activeRole      RoleName?
@@ -154,6 +316,7 @@ model User {
   deletedAt       DateTime? // soft delete
 
   memberships    OrganizationMembership[] @relation("MembershipUser")
+  activeOrganizationContext UserActiveOrganization?
   uploadedMedia SchoolMediaAsset[]
   decidedMemberships OrganizationMembership[] @relation("MembershipDecider")
   teachingAssignmentsAsTeacher TeachingAssignment[] @relation("TeachingTeacher")
@@ -262,11 +425,39 @@ model Group {
   attendance         AttendanceRecord[]
   payments           Payment[]
   lessonLogs         LessonLog[]
+  scheduleSessions   ScheduleSession[]
 
   @@index([teacherId])
   @@index([assistantId])
   @@index([organizationId])
   @@index([deletedAt, createdAt(sort: Desc)])
+}
+
+
+/// Bir martalik yoki individual mashg'ulot. Sana-vaqt UTC da saqlanadi.
+model ScheduleSession {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  sessionType    String   @default("INDIVIDUAL")
+  teacherId      String
+  studentId      String?
+  groupId        String?
+  group          Group?   @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  startsAt       DateTime
+  endsAt         DateTime
+  room           String?
+  status         String   @default("SCHEDULED")
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, startsAt, endsAt])
+  @@index([teacherId, startsAt, endsAt])
+  @@index([studentId, startsAt, endsAt])
+  @@index([groupId, startsAt])
 }
 
 model GroupMember {
@@ -1262,6 +1453,9 @@ model ScheduleSlot {
   startTime      String
   endTime        String
   room           String?
+  /// Slot amal qiladigan sana oralig'i; null = doimiy haftalik jadval.
+  startsOn       DateTime? @db.Date
+  endsOn         DateTime? @db.Date
 
   @@index([organizationId, weekday])
   @@index([assignmentId])

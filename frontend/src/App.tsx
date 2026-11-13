@@ -39,6 +39,7 @@ import StudentSchool from './pages/school/StudentSchool';
 import { Section } from './components/staff';
 import TeacherTimetable from './pages/school/TeacherTimetable';
 import AdminGroupPayments from './pages/admin/AdminGroupPayments';
+import { AdminEducationSettings } from './pages/admin/AdminEducationSettings';
 
 /* ============ TEACHER ============ */
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
@@ -62,6 +63,7 @@ import { SuperAi } from './pages/super/SuperAi';
 import { SuperAudit } from './pages/super/SuperAudit';
 import { SuperOrgDetail } from './pages/super/SuperOrgDetail';
 import { SuperBilling } from './pages/super/SuperBilling';
+import { SuperEducationCatalog } from './pages/super/SuperEducationCatalog';
 import { SuperNav } from './components/super/SuperNav';
 
 /* ============ LAYOUT ============ */
@@ -157,7 +159,8 @@ function SuperRoutes() {
         <PageTransition>
           <Routes>
             <Route path="/super" element={<SuperOverview />} />
-            <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperOrgs /></Section>} />
+            <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Tashkilotlar bo'limi"><SuperOrgs /></Section>} />
+            <Route path="/super/catalog" element={<SuperEducationCatalog />} />
             <Route path="/super/admins" element={<SuperAdmins />} />
             <Route path="/super/ai" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAi /></Section>} />
             <Route path="/super/audit" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAudit /></Section>} />
@@ -194,6 +197,7 @@ function AdminRoutes() {
           <Route path="/admin/leads" element={<AdminLeads />} />
           <Route path="/admin/trials" element={<Navigate to="/admin/school?tab=trials" replace />} />
           <Route path="/admin/school" element={<AdminSchool />} />
+          <Route path="/admin/education" element={<AdminEducationSettings />} />
           <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

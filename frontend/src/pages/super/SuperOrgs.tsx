@@ -29,16 +29,16 @@ function CreateOrg() {
   const m = useSuperMutation(sapi.createOrg, 'Maktab yaratildi');
   const ok = name.trim().length >= 2 && CH_RE.test(chan.trim());
   return (
-    <Panel title="Yangi maktab" icon={Plus} accent="gold">
+    <Panel title="Yangi tashkilot" icon={Plus} accent="gold">
       <div className="space-y-2.5">
-        <input className={CONTROL.input} placeholder="Maktab nomi (masalan: 12-maktab)" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
+        <input className={CONTROL.input} placeholder="Tashkilot nomi" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
         <input className={CONTROL.input} placeholder="Izoh (ixtiyoriy)" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
         <input className={CONTROL.input} placeholder="Yopiq kanal ID (masalan -1001234567890)" inputMode="numeric" value={chan} onChange={(e) => setChan(e.target.value.trim())} />
         {chan && !CH_RE.test(chan) && <p className="text-[11px] text-coral">ID -100 bilan boshlanishi kerak</p>}
         <ChannelHelp />
         <button type="button" disabled={!ok || m.isPending} className={`${CONTROL.buttonPrimary} w-full disabled:opacity-40`}
           onClick={() => m.mutate({ name: name.trim(), note: note.trim() || undefined, storageChatId: chan.trim() }, { onSuccess: () => { setName(''); setNote(''); setChan(''); } })}>
-          {m.isPending ? 'Kanal tekshirilmoqda…' : 'Maktab yaratish'}
+          {m.isPending ? 'Kanal tekshirilmoqda…' : 'Tashkilot yaratish'}
         </button>
       </div>
     </Panel>
@@ -119,19 +119,20 @@ function OrgCard({ org }: { org: Org }) {
               </div>
               <ul className="max-h-64 divide-y divide-tint/5 overflow-y-auto">
                 {(cands ?? []).map((c: Candidate) => {
-                  const other = !!c.organization && c.organization.id !== org.id && c.role !== 'STUDENT';
-                  const already = c.role === 'ADMIN' && c.organization?.id === org.id;
+                  const targetMembership = c.memberships?.find((m) => m.organization.id === org.id);
+                  const otherAdmin = c.memberships?.some((m) => m.role === 'ADMIN' && m.organization.id !== org.id) ?? false;
+                  const already = targetMembership?.role === 'ADMIN';
                   return (
                     <li key={c.id}>
-                      <button type="button" disabled={assign.isPending || other || already}
+                      <button type="button" disabled={assign.isPending || otherAdmin || already}
                         onClick={() => assign.mutate({ orgId: org.id, userId: c.id }, { onSuccess: () => { setOpen(false); setQ(''); } })}
                         className="flex w-full items-center gap-3 px-2 py-2.5 text-left disabled:opacity-40">
                         <Avatar name={c.name} />
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-semibold text-ink">{c.name}</div>
-                          <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role]}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
+                          <div className="truncate text-[11px] text-ink-muted">{ROLE_UZ[c.role] ?? c.role}{c.username ? ` · @${c.username}` : ''}{c.organization ? ` · ${c.organization.name}` : ''}</div>
                         </div>
-                        <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : other ? 'Band' : 'Tanlash'}</span>
+                        <span className="shrink-0 text-[11px] font-semibold text-gold">{already ? 'Admin' : otherAdmin ? 'Boshqa tashkilot admini' : 'Tanlash'}</span>
                       </button>
                     </li>
                   );
@@ -161,7 +162,7 @@ export function SuperOrgs() {
   const { data, isLoading } = useSuperOrgs();
   return (
     <div className={PAGE}>
-      <StaffHero accent="teal" image={IMAGES.hero} eyebrow="SUPER ADMIN · MAKTABLAR" title="Maktablar" subtitle="Har bir maktab o'z admini, o'qituvchilari va o'quvchilari bilan alohida ishlaydi." />
+      <StaffHero accent="teal" image={IMAGES.hero} eyebrow="SUPER ADMIN · TASHKILOTLAR" title="Tashkilotlar" subtitle="Har bir tashkilot o‘z yo‘nalishlari, filiallari, xodimlari va a’zolari bilan mustaqil ishlaydi." />
       <CreateOrg />
       {isLoading ? <Skeleton className="h-40" /> : data && data.length === 0 ? (
         <p className="py-8 text-center text-sm text-ink-muted">Hali maktab yaratilmagan</p>

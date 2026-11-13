@@ -9,6 +9,8 @@ export interface CurrentUserPayload {
   status: string;
   /** Tashkilot (maktab/markaz). SUPER_ADMIN va hali biriktirilmaganlar uchun null */
   organizationId?: string | null;
+  /** Tanlangan tashkilot ID'si (organizationId bilan moslik aliasi). */
+  activeOrganizationId?: string | null;
 }
 
 /**

@@ -56,7 +56,7 @@ export class AttendanceService {
   private async loadManageableGroup(groupId: string, user: CurrentUserPayload) {
     const group = await this.prisma.group.findUnique({
       where: { id: groupId },
-      select: { id: true, teacherId: true, organizationId: true, deletedAt: true, lessonDays: true },
+      select: { id: true, teacherId: true, organizationId: true, deletedAt: true, lessonDays: true, teachingAssignments: { select: { subject: { select: { id: true, name: true } }, slots: { select: { id: true, weekday: true, startTime: true, endTime: true, room: true, startsOn: true, endsOn: true } } } } },
     });
     if (!group || group.deletedAt) throw new NotFoundException('Guruh topilmadi');
     const isAdmin = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN';
@@ -68,6 +68,20 @@ export class AttendanceService {
       }
     }
     return group;
+  }
+
+  private scheduledLessons(group: any, iso: string) {
+    const weekday = isoWeekday(iso);
+    const date = new Date(iso + 'T00:00:00.000Z');
+    const slots = (group.teachingAssignments ?? []).flatMap((assignment: any) =>
+      (assignment.slots ?? [])
+        .filter((slot: any) => slot.weekday === weekday && (!slot.startsOn || slot.startsOn <= date) && (!slot.endsOn || slot.endsOn >= date))
+        .map((slot: any) => ({ id: slot.id, subject: assignment.subject?.name ?? null, startTime: slot.startTime, endTime: slot.endTime, room: slot.room ?? null })),
+    );
+    if (slots.length) return slots;
+    const days: number[] = group.lessonDays ?? [];
+    if (days.length && !days.includes(weekday)) return [];
+    return days.length ? [{ id: null, subject: null, startTime: group.lessonStartTime ?? null, endTime: group.lessonEndTime ?? null, room: group.room ?? null }] : [];
   }
 
   /** Bir kunlik davomat ro'yxati: guruh a'zolari va ularning belgilangan holati (belgilanmagan — null). */
@@ -99,21 +113,29 @@ export class AttendanceService {
       };
     });
     const lessonDays: number[] = (group as any).lessonDays ?? [];
+    const scheduledLessons = this.scheduledLessons(group, iso);
+    const hasSubjectSchedule = (group as any).teachingAssignments?.some((a: any) => a.slots?.length);
+    const isLessonDay = hasSubjectSchedule ? scheduledLessons.length > 0 : lessonDays.length === 0 || scheduledLessons.length > 0;
     return {
       groupId,
       date: iso,
       students,
       markedCount: students.filter((s: any) => s.status).length,
       lessonDays,
-      // Jadval belgilanmagan bo'lsa — true (cheklov yo'q); belgilangan bo'lsa shu kun darsmi
-      isLessonDay: lessonDays.length === 0 ? true : lessonDays.includes(isoWeekday(iso)),
+      isLessonDay,
+      scheduledLessons,
     };
   }
 
   /** Bir kunlik davomatni saqlaydi (qayta yuborilsa yangilaydi). Faqat guruh a'zolari uchun. */
   async markDay(groupId: string, dto: MarkAttendanceDto, user: CurrentUserPayload, now: Date = new Date()) {
-    await this.loadManageableGroup(groupId, user);
+    const group = await this.loadManageableGroup(groupId, user);
     const { iso, date } = parseAttendanceDate(dto.date, now);
+    const hasSubjectSchedule = (group as any).teachingAssignments?.some((a: any) => a.slots?.length);
+    const lessonDays: number[] = (group as any).lessonDays ?? [];
+    if ((hasSubjectSchedule || lessonDays.length) && this.scheduledLessons(group, iso).length === 0) {
+      throw new BadRequestException('Tanlangan sanada ushbu guruh uchun dars jadvali mavjud emas');
+    }
 
     const ids = dto.records.map((r) => r.studentId);
     if (new Set(ids).size !== ids.length) {

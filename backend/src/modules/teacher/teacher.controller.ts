@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -22,23 +23,29 @@ import {
 @Roles('TEACHER', 'ADMIN', 'SUPER_ADMIN')
 @Controller('api/v1/teacher')
 export class TeacherController {
+  private activeOrganization(user: CurrentUserPayload): string {
+    const organizationId = user.activeOrganizationId ?? user.organizationId;
+    if (!organizationId) throw new ForbiddenException('Avval faol tashkilotni tanlang');
+    return organizationId;
+  }
+
   constructor(private readonly teacherService: TeacherService) {}
 
   /* ============ OVERVIEW ============ */
   @Get('overview')
   getOverview(@CurrentUser() user: CurrentUserPayload) {
-    return this.teacherService.getOverview(user.id);
+    return this.teacherService.getOverview(user.id, this.activeOrganization(user));
   }
 
   @Get('todo')
   getTodo(@CurrentUser() user: CurrentUserPayload) {
-    return this.teacherService.getTodo(user.id);
+    return this.teacherService.getTodo(user.id, this.activeOrganization(user));
   }
 
   /* ============ GROUPS ============ */
   @Get('groups')
   listMyGroups(@CurrentUser() user: CurrentUserPayload) {
-    return this.teacherService.listMyGroups(user.id);
+    return this.teacherService.listMyGroups(user.id, this.activeOrganization(user));
   }
 
   @Get('groups/:groupId')
@@ -46,12 +53,12 @@ export class TeacherController {
     @Param('groupId') groupId: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.teacherService.getMyGroup(user.id, groupId);
+    return this.teacherService.getMyGroup(user.id, groupId, this.activeOrganization(user));
   }
 
   @Get('groups/:groupId/submission-stats')
   getSubmissionStats(@Param('groupId') groupId: string, @CurrentUser() user: CurrentUserPayload) {
-    return this.teacherService.getGroupSubmissionStats(user.id, groupId);
+    return this.teacherService.getGroupSubmissionStats(user.id, groupId, this.activeOrganization(user));
   }
 
   @Get('groups/:groupId/students')
@@ -68,7 +75,7 @@ export class TeacherController {
     @CurrentUser() user: CurrentUserPayload,
     @Query('groupId') groupId?: string,
   ) {
-    return this.teacherService.listAssignments(user.id, groupId);
+    return this.teacherService.listAssignments(user.id, this.activeOrganization(user), groupId);
   }
 
   @Get('assignments/:id')
@@ -76,7 +83,7 @@ export class TeacherController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.teacherService.getAssignment(user.id, id);
+    return this.teacherService.getAssignment(user.id, id, this.activeOrganization(user));
   }
 
   @Post('assignments')
@@ -84,7 +91,7 @@ export class TeacherController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAssignmentDto,
   ) {
-    return this.teacherService.createAssignment(user.id, dto);
+    return this.teacherService.createAssignment(user.id, this.activeOrganization(user), dto);
   }
 
   @Patch('assignments/:id')
@@ -93,7 +100,7 @@ export class TeacherController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateAssignmentDto,
   ) {
-    return this.teacherService.updateAssignment(user.id, id, dto);
+    return this.teacherService.updateAssignment(user.id, this.activeOrganization(user), id, dto);
   }
 
   @Delete('assignments/:id')
@@ -101,6 +108,6 @@ export class TeacherController {
     @Param('id') id: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.teacherService.removeAssignment(user.id, id);
+    return this.teacherService.removeAssignment(user.id, this.activeOrganization(user), id);
   }
 }

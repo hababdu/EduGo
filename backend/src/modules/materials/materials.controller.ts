@@ -9,6 +9,7 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
@@ -18,6 +19,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { MAX_UPLOAD_BYTES } from './material-file.util';
 import { MaterialsService } from './materials.service';
 
+@RequireEducationFeature('MATERIALS')
 @Controller('api/v1/materials')
 export class MaterialsController {
   constructor(private readonly materials: MaterialsService) {}

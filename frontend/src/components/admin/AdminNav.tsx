@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, GraduationCap, Wallet, UserPlus, School } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Wallet, UserPlus, School, BookOpen } from 'lucide-react';
 import { haptic } from '../../lib/telegram';
+import { useEducationFeatures } from '../../hooks/useEducationFeatures';
 
 /**
  * Admin navigatsiyasi — 5 ta bo'lim, takrorlanmaydi:
@@ -12,6 +13,7 @@ const ITEMS = [
   { to: '/admin/school', label: 'Maktab', Icon: School, also: ['/admin/groups', '/admin/trials', '/admin/users'] },
   { to: '/admin/payments', label: "To'lovlar", Icon: Wallet },
   { to: '/admin/leads', label: 'Lidlar', Icon: UserPlus },
+  { to: '/admin/education', label: 'Ta’lim modeli', Icon: BookOpen },
 ];
 
 function matches(pathname: string, item: { to: string; end?: boolean; also?: string[] }) {
@@ -21,10 +23,11 @@ function matches(pathname: string, item: { to: string; end?: boolean; also?: str
 
 export function AdminNav() {
   const { pathname } = useLocation();
+  const { enabled } = useEducationFeatures();
   return (
     <nav aria-label="Admin navigatsiyasi" className="glass fixed inset-x-0 bottom-0 z-50 border-t border-tint/10 shadow-[0_-8px_30px_rgb(0_0_0/0.08)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="mx-auto flex max-w-2xl items-center gap-1 px-2 py-2 sm:gap-2 sm:px-4">
-        {ITEMS.map((item) => {
+        {ITEMS.filter((item) => item.to !== '/admin/payments' || enabled('PAYMENTS')).map((item) => {
           const active = matches(pathname, item);
           const { to, label, Icon, end } = item;
           return (

@@ -15,7 +15,10 @@ describe('SuperAdminService', () => {
   const mk = (over: any = {}) => {
     const prisma: any = {
       organization: { findFirst: jest.fn().mockResolvedValue(null), findUnique: jest.fn().mockResolvedValue({ id: 'o1', name: 'M' }), create: jest.fn().mockResolvedValue({ id: 'o1' }) },
+      organizationMembership: { findFirst: jest.fn().mockResolvedValue(over.otherAdmin ?? null), upsert: jest.fn().mockResolvedValue({ id: 'membership-1', organizationId: 'o1', role: 'ADMIN' }) },
+      teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() }, studentProfile: { upsert: jest.fn() },
       user: { findUnique: jest.fn(), update: jest.fn().mockResolvedValue({ id: 'u', firstName: 'A', lastName: null, username: null }) },
+      userActiveOrganization: { upsert: jest.fn().mockResolvedValue({}) },
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
       ...over,
     };
@@ -66,7 +69,7 @@ describe('SuperAdminService', () => {
     await expect(a.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(NotFoundException);
     const b = mk(); b.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'SUPER_ADMIN' });
     await expect(b.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(BadRequestException);
-    const c = mk(); c.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'TEACHER', organizationId: 'other' });
+    const c = mk({ organizationMembership: { findFirst: jest.fn().mockResolvedValue({ organizationId: 'other' }), upsert: jest.fn() } }); c.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'TEACHER', organizationId: 'other' });
     await expect(c.svc.assignAdmin(actor, 'o1', { userId: 'user12345' })).rejects.toBeInstanceOf(ConflictException);
     const d = mk(); d.prisma.user.findUnique.mockResolvedValue({ id: 'u', role: 'STUDENT', organizationId: null });
     await d.svc.assignAdmin(actor, 'o1', { userId: 'user12345' });
@@ -86,6 +89,7 @@ describe('SuperAdminService.changeRole', () => {
   const mk = (user: any) => {
     const prisma: any = {
       organization: { findFirst: jest.fn().mockResolvedValue({ id: 'o1' }) },
+      organizationMembership: { findFirst: jest.fn().mockResolvedValue(null), upsert: jest.fn().mockResolvedValue({ id: 'membership-1', organizationId: 'o1', role: 'TEACHER' }) },
       user: { findUnique: jest.fn().mockResolvedValue(user), update: jest.fn().mockResolvedValue({}) },
       studentProfile: { upsert: jest.fn() }, teacherProfile: { upsert: jest.fn() }, adminProfile: { upsert: jest.fn() },
       adminActionLog: { create: jest.fn().mockResolvedValue({}) },
@@ -99,7 +103,7 @@ describe('SuperAdminService.changeRole', () => {
     const { svc, prisma } = mk(u());
     await svc.changeRole(actor, 'u1', { role: 'TEACHER' });
     expect(prisma.teacherProfile.upsert).toHaveBeenCalled();
-    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { role: 'TEACHER', organizationId: 'o1' } });
+    expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'u1' }, data: { role: 'TEACHER' } });
     expect(prisma.adminActionLog.create).toHaveBeenCalled();
   });
   it("super adminning rolini o'zgartirib bo'lmaydi", async () => {

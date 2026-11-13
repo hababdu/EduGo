@@ -1,4 +1,5 @@
 import { assertCanEditContent, assertCanSeeContent } from '../content-access';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { IsIn, IsInt, IsNotEmpty, IsOptional, IsString, IsUrl, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Body, Controller, Delete, Get, Injectable, NotFoundException, Param, Patch, Post, Query } from '@nestjs/common';
@@ -119,6 +120,7 @@ export class LessonsService {
   }
 }
 
+@RequireEducationFeature('LESSONS')
 @Controller('api/v1/lessons')
 export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}

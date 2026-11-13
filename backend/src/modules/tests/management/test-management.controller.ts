@@ -7,6 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import {
   CurrentUser,
@@ -19,6 +20,7 @@ import {
   ReopenTestDto,
 } from './dto/test.dto';
 
+@RequireEducationFeature('TESTS')
 @Controller('api/v1/tests')
 export class TestManagementController {
   constructor(private readonly service: TestManagementService) {}

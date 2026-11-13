@@ -1,11 +1,13 @@
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { AssignDto, AssignmentsQueryDto, OrgQueryDto, SlotDto, SubjectDto } from './dto/teaching.dto';
+import { AssignDto, AssignmentsQueryDto, OrgQueryDto, SlotDto, SubjectDto, SessionDto, SessionsQueryDto } from './dto/teaching.dto';
 import { TeachingService } from './teaching.service';
 
 /** Maktab admini (o'z maktabi) / SUPER_ADMIN */
 @Roles('ADMIN')
+@RequireEducationFeature('SCHEDULE')
 @Controller('api/v1/admin/teaching')
 export class AdminTeachingController {
   constructor(private readonly svc: TeachingService) {}
@@ -20,13 +22,18 @@ export class AdminTeachingController {
 
   @Get('timetable') timetable(@CurrentUser() u: CurrentUserPayload, @Query() q: AssignmentsQueryDto) { return this.svc.timetable(u, q); }
   @Post('assignments/:id/slots') addSlot(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string, @Body() dto: SlotDto) { return this.svc.addSlot(u, id, dto); }
+  @Get('sessions') sessions(@CurrentUser() u: CurrentUserPayload, @Query() q: SessionsQueryDto) { return this.svc.listSessions(u, q); }
+  @Post('sessions') createSession(@CurrentUser() u: CurrentUserPayload, @Body() dto: SessionDto) { return this.svc.createSession(u, dto); }
+  @Delete('sessions/:id') cancelSession(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.cancelSession(u, id); }
   @Delete('slots/:id') removeSlot(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.removeSlot(u, id); }
 }
 
 /** O'qituvchi / o'quvchi o'z haftalik jadvalini ko'radi */
 @Roles('TEACHER', 'STUDENT')
+@RequireEducationFeature('SCHEDULE')
 @Controller('api/v1/timetable')
 export class TimetableController {
   constructor(private readonly svc: TeachingService) {}
   @Get('mine') mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.mine(u); }
+  @Get('sessions/mine') mineSessions(@CurrentUser() u: CurrentUserPayload) { return this.svc.mineSessions(u); }
 }

@@ -8,12 +8,14 @@ import {
   Delete,
   UseGuards,
 } from '@nestjs/common';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 
+@RequireEducationFeature('COURSES')
 @Controller('tests')
 @UseGuards(JwtAuthGuard)
 export class CoursesController {

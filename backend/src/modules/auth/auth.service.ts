@@ -38,6 +38,24 @@ export class AuthService {
     return { ...user, role: want };
   }
 
+  /** Frontend session roli faol organization membership'dan olinadi. */
+  private async resolveSessionRole(userId: string, fallbackRole: string): Promise<string> {
+    if (fallbackRole === 'SUPER_ADMIN') return effectiveRole(fallbackRole, null);
+    const context = await this.prisma.userActiveOrganization.findUnique({
+      where: { userId },
+      select: {
+        organizationId: true,
+        organization: { select: { status: true } },
+      },
+    });
+    if (!context || context.organization.status !== 'ACTIVE') return fallbackRole;
+    const membership = await this.prisma.organizationMembership.findFirst({
+      where: { userId, organizationId: context.organizationId, status: 'ACTIVE' },
+      select: { role: true },
+    });
+    return membership?.role ?? fallbackRole;
+  }
+
   /**
    * Telegram WebApp initData orqali login/register.
    * Bu SISTEMADAGI YAGONA kirish nuqtasi — login/parol yo'q.
@@ -116,6 +134,7 @@ export class AuthService {
 
     user = await this.syncSuperAdmin(user);
     const tokens = await this.issueTokens(user.id, user.role);
+    const sessionRole = await this.resolveSessionRole(user.id, user.role);
 
     return {
       ...tokens,
@@ -124,7 +143,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName ?? undefined,
         username: user.username ?? undefined,
-        role: effectiveRole(user.role, (user as any).activeRole),
+        role: effectiveRole(sessionRole, (user as any).activeRole),
         profilePhotoUrl: user.profilePhotoUrl ?? undefined,
       },
     };
@@ -173,6 +192,7 @@ export class AuthService {
 
     user = await this.syncSuperAdmin(user);
     const tokens = await this.issueTokens(user.id, user.role);
+    const sessionRole = await this.resolveSessionRole(user.id, user.role);
 
     return {
       ...tokens,
@@ -181,7 +201,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName ?? undefined,
         username: user.username ?? undefined,
-        role: effectiveRole(user.role, (user as any).activeRole),
+        role: effectiveRole(sessionRole, (user as any).activeRole),
         profilePhotoUrl: user.profilePhotoUrl ?? undefined,
       },
     };

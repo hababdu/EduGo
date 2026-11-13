@@ -7,6 +7,7 @@ import { useTelegram } from '../../hooks/useTelegram';
 import { ListRow, EmptyState, Skeleton, CardList } from '../../components/ui';
 import { StaffHero, Panel, PanelLink, KpiCard, MiniBars, Avatar, TodayLessons } from '../../components/staff';
 import { TeacherTodo } from '../../components/staff/TeacherTodo';
+import { TeacherOrganizationSwitcher } from '../../components/teacher/TeacherOrganizationSwitcher';
 import { IMAGES } from '../../design/images';
 import {
   Users,
@@ -120,6 +121,8 @@ export function TeacherOverview() {
           </>
         }
       />
+
+      <TeacherOrganizationSwitcher />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger">
         <KpiCard label="Guruhlar" value={data.groupsCount} icon={FolderOpen} accent="gold" hint="barchasini ko'rish" onClick={() => { haptic('light'); setGroupsModal(true); }} />

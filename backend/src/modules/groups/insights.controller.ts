@@ -1,10 +1,12 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { InsightsService } from './insights.service';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('ANALYTICS')
 @Controller('api/v1/insights')
 export class InsightsController {
   constructor(private readonly insights: InsightsService) {}

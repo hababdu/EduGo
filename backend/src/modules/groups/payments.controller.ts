@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -6,6 +7,7 @@ import { PaymentsService } from './payments.service';
 import { MarkPaymentsDto } from './dto/payments.dto';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('PAYMENTS')
 @Controller('api/v1/payments')
 export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}

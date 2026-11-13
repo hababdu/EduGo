@@ -1,4 +1,3 @@
-import { syncMembership } from '../../common/membership-sync';
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -27,6 +26,17 @@ export class SuperAdminService {
     private readonly aiService: AiService,
     private readonly storage: TelegramStorageService,
   ) {}
+
+  private async enforceSingleOrganizationAdmin<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'P2002') {
+        throw new ConflictException('Foydalanuvchi boshqa tashkilotda faol administrator. Avval u yerdagi admin rolini bekor qiling.');
+      }
+      throw error;
+    }
+  }
 
   auditAction(actor: CurrentUserPayload, action: string, targetType: string, targetId: string, oldValue?: unknown, newValue?: unknown) {
     return this.audit(actor, action, targetType, targetId, oldValue, newValue);
@@ -64,17 +74,26 @@ export class SuperAdminService {
   async listOrgs() {
     const orgs = await this.prisma.organization.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { users: true, groups: true } } },
+      include: { _count: { select: { groups: true } } },
     });
-    const admins = await this.prisma.user.findMany({
-      where: { role: 'ADMIN', deletedAt: null, organizationId: { in: orgs.map((o) => o.id) } },
-      select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, organizationId: true },
+    const memberships = await this.prisma.organizationMembership.findMany({
+      where: { organizationId: { in: orgs.map((o) => o.id) }, status: 'ACTIVE', user: { deletedAt: null } },
+      select: {
+        organizationId: true, role: true,
+        user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true } },
+      },
     });
-    return orgs.map((o) => ({
-      id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt, monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId, lastBackupAt: o.lastBackupAt, lastBackupStatus: o.lastBackupStatus,
-      users: o._count.users, groups: o._count.groups,
-      admins: admins.filter((a) => a.organizationId === o.id).map((a) => ({ id: a.id, name: nameOf(a), username: a.username, telegramId: a.telegramId })),
-    }));
+    return orgs.map((o) => {
+      const members = memberships.filter((m) => m.organizationId === o.id);
+      return {
+        id: o.id, name: o.name, status: o.status, note: o.note, createdAt: o.createdAt,
+        monthlyPlanFee: o.monthlyPlanFee, storageChatId: o.storageChatId, lastBackupAt: o.lastBackupAt, lastBackupStatus: o.lastBackupStatus,
+        users: members.length, groups: o._count.groups,
+        admins: members.filter((m) => m.role === 'ADMIN').map((m) => ({
+          id: m.user.id, name: nameOf(m.user), username: m.user.username, telegramId: m.user.telegramId,
+        })),
+      };
+    });
   }
 
   /** Bitta kanal faqat bitta maktabga biriktiriladi (aks holda maktablar ma'lumoti aralashib ketadi). */
@@ -115,31 +134,40 @@ export class SuperAdminService {
 
   /** Maktab ichi: super admin FAQAT ko'radi (guruhlar, xodimlar, o'quvchilar to'lovi jamlamasi, obuna). */
   async orgDetail(id: string) {
-    const org = await this.prisma.organization.findUnique({ where: { id } });
+    const org = await this.prisma.organization.findUnique({
+      where: { id },
+      include: { type: true, directions: { include: { direction: true } } },
+    });
     if (!org) throw new NotFoundException('Maktab topilmadi');
     const month = currentMonth();
-    const [groups, staff, studentCount, pays, sub] = await Promise.all([
+    const [groups, staffMemberships, studentCount, pays, sub] = await Promise.all([
       this.prisma.group.findMany({
         where: { organizationId: id, deletedAt: null },
         orderBy: { createdAt: 'desc' },
         select: { id: true, name: true, monthlyFee: true, teacher: { select: { firstName: true, lastName: true, username: true } }, _count: { select: { members: true } } },
       }),
-      this.prisma.user.findMany({
-        where: { organizationId: id, deletedAt: null, role: { in: ['ADMIN', 'TEACHER'] } },
-        orderBy: [{ role: 'asc' }, { firstName: 'asc' }],
-        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true },
+      this.prisma.organizationMembership.findMany({
+        where: { organizationId: id, status: 'ACTIVE', role: { in: ['ADMIN', 'TEACHER'] }, user: { deletedAt: null } },
+        orderBy: [{ role: 'asc' }, { requestedAt: 'asc' }],
+        select: { id: true, role: true, permissions: true, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
       }),
-      this.prisma.user.count({ where: { organizationId: id, deletedAt: null, role: 'STUDENT' } }),
+      this.prisma.organizationMembership.count({ where: { organizationId: id, status: 'ACTIVE', role: 'STUDENT', user: { deletedAt: null } } }),
       this.prisma.payment.groupBy({ by: ['status'], where: { month, group: { organizationId: id, deletedAt: null } }, _count: true, _sum: { amount: true } }),
       this.prisma.orgPayment.findMany({ where: { organizationId: id }, orderBy: { month: 'desc' }, take: 12 }),
     ]);
+    const staff = staffMemberships.map((membership) => ({ ...membership.user, role: membership.role, membershipId: membership.id, permissions: membership.permissions }));
     const expected = groups.reduce((a, g) => a + (g.monthlyFee ?? 0) * g._count.members, 0);
     const paid = pays.find((p) => p.status === 'PAID');
     return {
-      org: { id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee, storageChatId: org.storageChatId, lastBackupAt: org.lastBackupAt, lastBackupStatus: org.lastBackupStatus, createdAt: org.createdAt },
+      org: {
+        id: org.id, name: org.name, status: org.status, note: org.note, monthlyPlanFee: org.monthlyPlanFee,
+        storageChatId: org.storageChatId, lastBackupAt: org.lastBackupAt, lastBackupStatus: org.lastBackupStatus,
+        createdAt: org.createdAt, typeId: org.typeId, type: org.type,
+        directions: org.directions.map((row) => row.direction),
+      },
       counts: { students: studentCount, teachers: staff.filter((u) => u.role === 'TEACHER').length, admins: staff.filter((u) => u.role === 'ADMIN').length, groups: groups.length },
-      admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
-      teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, name: nameOf(u), username: u.username, status: u.status })),
+      admins: staff.filter((u) => u.role === 'ADMIN').map((u) => ({ id: u.id, membershipId: u.membershipId, permissions: u.permissions, name: nameOf(u), username: u.username, telegramId: u.telegramId, status: u.status, lastActiveAt: u.lastActiveAt })),
+      teachers: staff.filter((u) => u.role === 'TEACHER').map((u) => ({ id: u.id, membershipId: u.membershipId, permissions: u.permissions, name: nameOf(u), username: u.username, status: u.status })),
       groups: groups.map((g) => ({ id: g.id, name: g.name, fee: g.monthlyFee, members: g._count.members, teacher: g.teacher ? nameOf(g.teacher) : null })),
       studentPayments: { month, collected: paid?._sum.amount ?? 0, paidCount: paid?._count ?? 0, expected },
       subscription: {
@@ -150,65 +178,96 @@ export class SuperAdminService {
     };
   }
 
-  /** Adminni boshqa maktabga ko'chirish (super admin). */
+  /** Admin bir vaqtning o'zida faqat bitta tashkilotga biriktiriladi; boshqa membership rollari saqlanadi. */
   async moveAdmin(actor: CurrentUserPayload, userId: string, orgId: string) {
-    const [user, org] = await Promise.all([
+    const [user, org, current] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
       this.prisma.organization.findUnique({ where: { id: orgId } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId, role: 'ADMIN', status: 'ACTIVE' } }),
     ]);
-    if (!user || user.deletedAt || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
-    if (!org) throw new NotFoundException('Maktab topilmadi');
-    if (user.organizationId === orgId) return { ok: true };
-    await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId } });
-    await syncMembership(this.prisma, userId, orgId, 'ADMIN', user.organizationId);
-    await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: user.organizationId }, { organizationId: orgId });
+    if (!user || user.deletedAt || !current) throw new NotFoundException('Faol admin a’zoligi topilmadi');
+    if (!org) throw new NotFoundException('Tashkilot topilmadi');
+    if (current.organizationId === orgId) return { ok: true };
+    await this.prisma.$transaction(async (tx) => {
+      await tx.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+      await tx.organizationMembership.update({ where: { id: current.id }, data: { role: 'TEACHER' } });
+      await tx.organizationMembership.upsert({
+        where: { userId_organizationId: { userId, organizationId: orgId } },
+        create: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+        update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+      });
+      await tx.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
+      await tx.user.update({ where: { id: userId }, data: { organizationId: orgId, role: 'ADMIN' } });
+    });
+    await this.audit(actor, 'ADMIN_MOVE', 'User', userId, { organizationId: current.organizationId }, { organizationId: orgId });
     return { ok: true };
   }
 
   async assignAdmin(actor: CurrentUserPayload, orgId: string, dto: AssignAdminDto) {
-    const org = await this.prisma.organization.findUnique({ where: { id: orgId } });
-    if (!org) throw new NotFoundException('Maktab topilmadi');
-    const user = await this.prisma.user.findUnique({ where: { id: dto.userId } });
+    const [org, user, otherAdmin] = await Promise.all([
+      this.prisma.organization.findUnique({ where: { id: orgId } }),
+      this.prisma.user.findUnique({ where: { id: dto.userId } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId: dto.userId, role: 'ADMIN', status: 'ACTIVE', organizationId: { not: orgId } }, select: { organizationId: true } }),
+    ]);
+    if (!org) throw new NotFoundException('Tashkilot topilmadi');
     if (!user || user.deletedAt) throw new NotFoundException('Foydalanuvchi topilmadi');
-    if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo\'lmaydi');
-    if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni maktabga biriktirib bo'lmaydi");
-    if (user.organizationId && user.organizationId !== orgId && user.role !== 'STUDENT') {
-      throw new ConflictException("Bu foydalanuvchi boshqa maktabga biriktirilgan");
+    if (user.status === 'BLOCKED') throw new BadRequestException('Bloklangan foydalanuvchini admin qilib bo‘lmaydi');
+    if (user.role === 'SUPER_ADMIN') throw new BadRequestException("Super adminni tashkilotga biriktirib bo'lmaydi");
+    if (otherAdmin) throw new ConflictException("Administrator faqat bitta tashkilotga biriktirilishi mumkin");
+    const membership = await this.enforceSingleOrganizationAdmin(() => this.prisma.organizationMembership.upsert({
+      where: { userId_organizationId: { userId: user.id, organizationId: orgId } },
+      create: { userId: user.id, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+      update: { role: 'ADMIN', status: 'ACTIVE', decidedAt: new Date() },
+    }));
+    await this.prisma.adminProfile.upsert({ where: { userId: user.id }, create: { userId: user.id }, update: {} });
+    if (!user.organizationId) {
+      await this.prisma.userActiveOrganization.upsert({ where: { userId: user.id }, create: { userId: user.id, organizationId: orgId }, update: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: user.id }, data: { organizationId: orgId, role: 'ADMIN' } });
+    } else if (user.organizationId === orgId) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } });
     }
-    const updated = await this.prisma.user.update({ where: { id: user.id }, data: { role: 'ADMIN', organizationId: orgId } });
-    await syncMembership(this.prisma, user.id, orgId, 'ADMIN');
-    await this.audit(actor, 'ADMIN_ASSIGN', 'User', user.id, { role: user.role, organizationId: user.organizationId }, { role: 'ADMIN', organizationId: orgId });
-    return { id: updated.id, name: nameOf(updated) };
+    await this.audit(actor, 'ADMIN_ASSIGN', 'OrganizationMembership', membership.id, null, { role: 'ADMIN', organizationId: orgId });
+    return { id: user.id, name: nameOf(user) };
   }
 
   async removeAdmin(actor: CurrentUserPayload, orgId: string, userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user || user.organizationId !== orgId || user.role !== 'ADMIN') throw new NotFoundException('Admin topilmadi');
-    await this.prisma.user.update({ where: { id: userId }, data: { role: 'TEACHER' } });
-    await syncMembership(this.prisma, userId, orgId, 'TEACHER');
-    await this.audit(actor, 'ADMIN_REMOVE', 'User', userId, { role: 'ADMIN' }, { role: 'TEACHER' });
+    const membership = await this.prisma.organizationMembership.findFirst({ where: { userId, organizationId: orgId, role: 'ADMIN', status: 'ACTIVE' } });
+    if (!membership) throw new NotFoundException('Ushbu tashkilot admini topilmadi');
+    await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
+    await this.prisma.organizationMembership.update({ where: { id: membership.id }, data: { role: 'TEACHER' } });
+    await this.prisma.user.updateMany({ where: { id: userId, organizationId: orgId }, data: { role: 'TEACHER' } });
+    await this.audit(actor, 'ADMIN_REMOVE', 'OrganizationMembership', membership.id, { role: 'ADMIN' }, { role: 'TEACHER' });
     return { ok: true };
   }
 
   /** Admin qilish uchun nomzodlar: super admin va boshqa maktabga biriktirilgan xodimlar chiqmaydi */
+  /** Admin nomzodlari: o'qituvchi boshqa tashkilotlarda ishlashi mumkin, ammo admin faqat bittasida bo'ladi. */
   async candidates(search?: string) {
     const q = search?.trim();
     const users = await this.prisma.user.findMany({
       where: {
-        deletedAt: null,
-        status: 'ACTIVE',
-        role: { in: ['STUDENT', 'TEACHER', 'ADMIN'] },
+        deletedAt: null, status: 'ACTIVE', role: { not: 'SUPER_ADMIN' },
         ...(q ? { OR: [
           { firstName: { contains: q, mode: 'insensitive' } },
           { lastName: { contains: q, mode: 'insensitive' } },
           { username: { contains: q, mode: 'insensitive' } },
         ] } : {}),
       },
-      orderBy: [{ role: 'desc' }, { firstName: 'asc' }],
-      take: 20,
-      select: { id: true, firstName: true, lastName: true, username: true, role: true, organization: { select: { id: true, name: true } } },
+      orderBy: [{ firstName: 'asc' }], take: 20,
+      select: {
+        id: true, firstName: true, lastName: true, username: true, role: true,
+        organization: { select: { id: true, name: true } },
+        memberships: {
+          where: { status: 'ACTIVE' },
+          select: { id: true, role: true, organization: { select: { id: true, name: true } } },
+        },
+      },
     });
-    return users.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, role: u.role, organization: u.organization }));
+    return users.map((u) => ({
+      id: u.id, name: nameOf(u), username: u.username, role: u.role,
+      organization: u.organization,
+      memberships: u.memberships,
+    }));
   }
 
   /* ───────── Barcha foydalanuvchilar ───────── */
@@ -246,29 +305,54 @@ export class SuperAdminService {
     if (user.role === 'SUPER_ADMIN' || user.id === actor.id || superAdminIds(this.cfg.get<string>('SUPER_ADMIN_TELEGRAM_IDS')).includes(user.telegramId)) {
       throw new BadRequestException("Super adminning rolini o'zgartirib bo'lmaydi");
     }
-    if (user.role === dto.role && (!dto.organizationId || dto.organizationId === user.organizationId)) return { ok: true };
     const orgId = dto.organizationId ?? user.organizationId;
-    if (!orgId) throw new BadRequestException('Maktabni tanlang: foydalanuvchi hali maktabga biriktirilmagan');
+    if (!orgId) throw new BadRequestException('Tashkilotni tanlang');
     const org = await this.prisma.organization.findFirst({ where: { id: orgId, status: 'ACTIVE' }, select: { id: true } });
-    if (!org) throw new NotFoundException('Maktab topilmadi yoki faol emas');
-    // Sahifalar profil yozuvlarini kutadi — yo'q bo'lsa bo'sh profil yaratamiz
+    if (!org) throw new NotFoundException('Tashkilot topilmadi yoki faol emas');
+    if (dto.role === 'ADMIN') {
+      const other = await this.prisma.organizationMembership.findFirst({
+        where: { userId, status: 'ACTIVE', role: 'ADMIN', organizationId: { not: orgId } },
+      });
+      if (other) throw new ConflictException("Administrator faqat bitta tashkilotga biriktirilishi mumkin");
+    }
     if (dto.role === 'STUDENT') await this.prisma.studentProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'TEACHER') await this.prisma.teacherProfile.upsert({ where: { userId }, create: { userId }, update: {} });
     if (dto.role === 'ADMIN') await this.prisma.adminProfile.upsert({ where: { userId }, create: { userId }, update: {} });
-    await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role, organizationId: orgId } });
-    await syncMembership(this.prisma, userId, orgId, dto.role, user.organizationId);
-    await this.audit(actor, 'USER_ROLE_CHANGE', 'User', userId, { role: user.role, organizationId: user.organizationId }, { role: dto.role, organizationId: orgId });
+    const saveMembership = () => this.prisma.organizationMembership.upsert({
+      where: { userId_organizationId: { userId, organizationId: orgId } },
+      create: { userId, organizationId: orgId, role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
+      update: { role: dto.role, status: 'ACTIVE', decidedAt: new Date(), decidedById: actor.id },
+    });
+    const membership = dto.role === 'ADMIN'
+      ? await this.enforceSingleOrganizationAdmin(saveMembership)
+      : await saveMembership();
+    if (!user.organizationId) {
+      await this.prisma.userActiveOrganization.upsert({ where: { userId }, create: { userId, organizationId: orgId }, update: { organizationId: orgId } });
+      await this.prisma.user.update({ where: { id: userId }, data: { organizationId: orgId, role: dto.role } });
+    } else if (user.organizationId === orgId) {
+      await this.prisma.user.update({ where: { id: userId }, data: { role: dto.role } });
+    }
+    await this.audit(actor, 'USER_ROLE_CHANGE', 'OrganizationMembership', membership.id, null, { role: dto.role, organizationId: orgId });
     return { ok: true };
   }
 
   /* ───────── Adminlar ───────── */
   async listAdmins() {
-    const list = await this.prisma.user.findMany({
-      where: { role: { in: ['ADMIN', 'SUPER_ADMIN'] }, deletedAt: null },
-      orderBy: { registeredAt: 'asc' },
-      select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true, organization: { select: { id: true, name: true } } },
-    });
-    return list.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, role: u.role, status: u.status, lastActiveAt: u.lastActiveAt, organization: u.organization }));
+    const [superAdmins, adminMemberships] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { role: 'SUPER_ADMIN', deletedAt: null }, orderBy: { registeredAt: 'asc' },
+        select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, role: true, status: true, lastActiveAt: true },
+      }),
+      this.prisma.organizationMembership.findMany({
+        where: { role: 'ADMIN', status: 'ACTIVE', user: { deletedAt: null } },
+        orderBy: { requestedAt: 'asc' },
+        select: { organization: { select: { id: true, name: true } }, user: { select: { id: true, firstName: true, lastName: true, username: true, telegramId: true, status: true, lastActiveAt: true } } },
+      }),
+    ]);
+    return [
+      ...superAdmins.map((u) => ({ id: u.id, name: nameOf(u), username: u.username, telegramId: u.telegramId, role: 'SUPER_ADMIN', status: u.status, lastActiveAt: u.lastActiveAt, organization: null })),
+      ...adminMemberships.map((m) => ({ id: m.user.id, name: nameOf(m.user), username: m.user.username, telegramId: m.user.telegramId, role: 'ADMIN', status: m.user.status, lastActiveAt: m.user.lastActiveAt, organization: m.organization })),
+    ];
   }
 
   async setBlocked(actor: CurrentUserPayload, userId: string, blocked: boolean) {

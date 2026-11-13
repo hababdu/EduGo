@@ -45,6 +45,7 @@ export class GroupsService {
       return this.prisma.group.findMany({
         where: {
           teacherId: user.id,
+          organizationId: user.activeOrganizationId ?? user.organizationId ?? '__no_org__',
           deletedAt: null,
         },
         include: baseInclude,
@@ -194,16 +195,17 @@ export class GroupsService {
       data.teacherId
     ) {
       // Admin teacherId berishi mumkin — tekshirish
-      const teacher = await this.prisma.user.findFirst({
+      const teacherMembership = await this.prisma.organizationMembership.findFirst({
         where: {
-          id: data.teacherId,
+          userId: data.teacherId,
+          organizationId: organizationId ?? undefined,
           role: 'TEACHER',
-          deletedAt: null,
           status: 'ACTIVE',
-          ...(organizationId ? { organizationId } : {}),
+          user: { deletedAt: null, status: 'ACTIVE' },
         },
-        select: { id: true, firstName: true, lastName: true },
+        select: { user: { select: { id: true, firstName: true, lastName: true } } },
       });
+      const teacher = teacherMembership?.user ?? null;
 
       if (!teacher) {
         throw new BadRequestException(
@@ -279,17 +281,18 @@ export class GroupsService {
 
     // Teacher ID validatsiya (agar berilgan bo'lsa)
     if (data.teacherId) {
-      const teacher = await this.prisma.user.findFirst({
+      const teacher = await this.prisma.organizationMembership.findFirst({
         where: {
-          id: data.teacherId,
+          userId: data.teacherId,
+          organizationId: group.organizationId ?? undefined,
           role: 'TEACHER',
-          deletedAt: null,
           status: 'ACTIVE',
-          organizationId: group.organizationId,
+          user: { deletedAt: null, status: 'ACTIVE' },
         },
+        select: { id: true },
       });
       if (!teacher) {
-        throw new BadRequestException("O'qituvchi topilmadi yoki faol emas");
+        throw new BadRequestException("O'qituvchi ushbu tashkilotda faol emas yoki topilmadi");
       }
     }
 
@@ -459,17 +462,18 @@ export class GroupsService {
 
     // Teacher ID validatsiya (agar berilgan bo'lsa) — faqat shu tashkilot o'qituvchisi
     if (teacherId) {
-      const teacher = await this.prisma.user.findFirst({
+      const teacher = await this.prisma.organizationMembership.findFirst({
         where: {
-          id: teacherId,
+          userId: teacherId,
+          organizationId: group.organizationId ?? undefined,
           role: 'TEACHER',
-          deletedAt: null,
           status: 'ACTIVE',
-          organizationId: group.organizationId,
+          user: { deletedAt: null, status: 'ACTIVE' },
         },
+        select: { id: true },
       });
       if (!teacher) {
-        throw new BadRequestException("O'qituvchi topilmadi yoki faol emas");
+        throw new BadRequestException("O'qituvchi ushbu tashkilotda faol emas yoki topilmadi");
       }
     }
 
@@ -526,8 +530,8 @@ export class GroupsService {
 
     // TEACHER — faqat o'ziniki
     if (user.role === 'TEACHER') {
-      if (group.teacherId !== user.id) {
-        throw new ForbiddenException('Bu guruh sizga biriktirilmagan');
+      if (group.teacherId !== user.id || !(user.activeOrganizationId ?? user.organizationId) || group.organizationId !== (user.activeOrganizationId ?? user.organizationId)) {
+        throw new ForbiddenException('Bu guruh faol tashkilotingizga tegishli emas yoki sizga biriktirilmagan');
       }
       return;
     }

@@ -7,7 +7,8 @@ export interface SchoolDetail extends School { subjects: string[]; breakdown: Re
 export interface Catalog { total: number; page: number; pages: number; items: School[] }
 export interface MyMembership { id: string; role: string; status: string; requestedAt: string; isActive?: boolean; organization: { id: string; name: string } }
 export interface MyTrial { id: string; status: string; preferredAt: string | null; scheduledAt: string | null; decisionNote: string | null; organization: { id: string; name: string }; group: { name: string } | null; student: { id: string; name: string } }
-export interface Slot { id: string; weekday: number; startTime: string; endTime: string; room: string | null; subject: string; group: { id: string; name: string }; teacher: { id: string; name: string } }
+export interface Slot { id: string; weekday: number; startTime: string; endTime: string; room: string | null; startsOn?: string | null; endsOn?: string | null; subject: string; group: { id: string; name: string }; teacher: { id: string; name: string } }
+export interface ScheduleSessionRow { id: string; title: string; sessionType: string; teacherId: string; studentId: string | null; groupId: string | null; startsAt: string; endsAt: string; room: string | null; status: string; notes: string | null }
 export interface MemberRow { id: string; role: string; status: string; message: string | null; requestedAt: string; user: { id: string; name: string; username: string | null; telegramId: string } }
 export interface Paged<T> { total: number; page: number; pages: number; items: T[] }
 export interface TrialRow { id: string; status: string; preferredAt: string | null; scheduledAt: string | null; note: string | null; decisionNote: string | null; createdAt: string; group: { id: string; name: string } | null; student: { id: string; name: string; username: string | null }; requestedByParent: boolean }

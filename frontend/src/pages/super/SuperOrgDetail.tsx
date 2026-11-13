@@ -1,12 +1,15 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Banknote, FolderOpen, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 import { StaffHero, Panel, KpiCard, Avatar } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
-import { PAGE } from '../../design/tokens';
+import { CONTROL, PAGE } from '../../design/tokens';
 import { formatMoney, monthLabel } from '../../hooks/usePayments';
-import { sapi, type RestoreResult, useOrgDetail, useSuperMutation, when } from './superApi';
+import { sapi, type RestoreResult, useEducationDirections, useEducationTypes, useOrgDetail, useSuperMutation, when } from './superApi';
+import { OrganizationBranchManager } from './OrganizationBranchManager';
+import { OrganizationTeacherManager } from './OrganizationTeacherManager';
+import { OrganizationPermissionsManager } from './OrganizationPermissionsManager';
 
 const SUB = { PAID: ["To'lagan", 'bg-teal/15 text-teal'], WAIVED: ['Imtiyoz', 'bg-sky/15 text-sky'], UNPAID: ["To'lamagan", 'bg-coral/15 text-coral'] } as const;
 
@@ -19,6 +22,12 @@ export function SuperOrgDetail() {
   const check = useSuperMutation((f: File) => sapi.restoreOrg({ id, file: f, apply: false }).then((preview) => setPending({ file: f, preview })));
   const apply = useSuperMutation((f: File) => sapi.restoreOrg({ id, file: f, apply: true }).then(() => setPending(null)), 'Zaxiradan tiklandi');
   const { data: d, isLoading, error } = useOrgDetail(id);
+  const { data: types = [] } = useEducationTypes();
+  const { data: directions = [] } = useEducationDirections();
+  const [typeId, setTypeId] = useState('');
+  const [directionIds, setDirectionIds] = useState<string[]>([]);
+  const classify = useSuperMutation(sapi.classifyOrg, 'Tashkilot yo‘nalishlari saqlandi');
+  useEffect(() => { if (d) { setTypeId(d.org.typeId || ''); setDirectionIds(d.org.directions.map((x) => x.id)); } }, [d?.org.id, d?.org.typeId, d?.org.directions]);
 
   return (
     <div className={PAGE}>
@@ -28,8 +37,23 @@ export function SuperOrgDetail() {
       {d && (
         <>
           <StaffHero accent="teal" image={IMAGES.hero} eyebrow="SUPER ADMIN · MAKTAB" title={d.org.name}
-            subtitle={`${d.org.status === 'ACTIVE' ? 'Faol' : "To'xtatilgan"} · faqat ko'rish rejimi — o'zgartirishni maktab admini qiladi`} />
+            subtitle={`${d.org.status === 'ACTIVE' ? 'Faol' : "To'xtatilgan"} · tashkilot tasnifi va filiallarini boshqarish mumkin`} />
 
+          <Panel title="Tashkilot turi va yo‘nalishlari" icon={GraduationCap} accent="gold">
+            <div className="space-y-3">
+              <select className={CONTROL.input} value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+                <option value="">Tashkilot turini tanlang</option>
+                {types.map((item) => <option key={item.id} value={item.id}>{item.nameUz}</option>)}
+              </select>
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl bg-surface/50 p-2">
+                {directions.map((item) => <label key={item.id} className="flex items-center gap-2 py-1.5 text-xs text-ink"><input type="checkbox" checked={directionIds.includes(item.id)} onChange={(e) => setDirectionIds((old) => e.target.checked ? [...old, item.id] : old.filter((value) => value !== item.id))} />{item.nameUz}</label>)}
+              </div>
+              <button className={CONTROL.buttonPrimary + ' w-full'} disabled={!typeId || classify.isPending} onClick={() => classify.mutate({ id, typeId, directionIds })}>Tasnifni saqlash</button>
+            </div>
+          </Panel>
+          <OrganizationBranchManager organizationId={id} />
+          <OrganizationTeacherManager organizationId={id} />
+          <OrganizationPermissionsManager members={[...d.teachers, ...d.admins]} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <KpiCard label="O'quvchilar" value={d.counts.students} icon={GraduationCap} accent="sky" />
             <KpiCard label="O'qituvchilar" value={d.counts.teachers} icon={Users} accent="teal" />

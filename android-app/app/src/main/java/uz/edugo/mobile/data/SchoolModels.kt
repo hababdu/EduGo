@@ -42,6 +42,19 @@ import kotlinx.serialization.Serializable
     val group: SchoolGroupRef = SchoolGroupRef(),
     val teacher: SchoolTeacherRef = SchoolTeacherRef(),
 )
+@Serializable data class ScheduleSessionRow(
+    val id: String,
+    val title: String = "",
+    val sessionType: String = "INDIVIDUAL",
+    val teacherId: String = "",
+    val studentId: String? = null,
+    val groupId: String? = null,
+    val startsAt: String = "",
+    val endsAt: String = "",
+    val room: String? = null,
+    val status: String = "SCHEDULED",
+    val notes: String? = null,
+)
 @Serializable data class SchoolGroupRef(val id: String = "", val name: String = "")
 @Serializable data class SchoolTeacherRef(val id: String = "", val name: String = "")
 

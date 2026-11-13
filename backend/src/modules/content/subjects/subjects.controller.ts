@@ -1,9 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { SubjectsService } from './subjects.service';
 import { CreateSubjectDto, UpdateSubjectDto } from './dto/subject.dto';
 
+@RequireEducationFeature('SUBJECTS')
 @Controller('api/v1/subjects')
 export class SubjectsController {
   constructor(private readonly subjectsService: SubjectsService) {}

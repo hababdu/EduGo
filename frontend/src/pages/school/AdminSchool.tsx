@@ -11,7 +11,7 @@ import { TimetableView } from './TimetableView';
 import { uploadPosterImage } from '../../lib/image-upload';
 import { getFullUrl } from '../../hooks/useImageUpload';
 import { toast } from '../../components/ui/Toast';
-import { AssignmentRow, Chip, DAYS, InvoiceRow, MEMBER_UZ, MemberRow, Paged, ROLE_UZ, Slot, TRIAL_UZ, TrialRow, del, dt, inputCls, money, patch, post, useSchoolAction, useSchoolQuery } from './schoolApi';
+import { AssignmentRow, Chip, DAYS, InvoiceRow, MEMBER_UZ, MemberRow, Paged, ROLE_UZ, ScheduleSessionRow, Slot, TRIAL_UZ, TrialRow, del, dt, inputCls, money, patch, post, useSchoolAction, useSchoolQuery } from './schoolApi';
 
 type Tab = 'members' | 'groups' | 'trials' | 'timetable' | 'profile';
 const TABS: Tab[] = ['members', 'groups', 'trials', 'timetable', 'profile'];
@@ -88,16 +88,21 @@ function TimetableTab() {
   const { data: assigns } = useSchoolQuery<AssignmentRow[]>(['assigns'], '/api/v1/admin/teaching/assignments');
   const { data: groups } = useSchoolQuery<{ id: string; name: string }[]>(['groups'], '/api/v1/groups');
   const { data: members } = useSchoolQuery<Paged<MemberRow>>(['m-teachers'], '/api/v1/admin/memberships?status=ACTIVE&role=TEACHER');
-  const { data: slots } = useSchoolQuery<Slot[]>(['tt', 'admin'], '/api/v1/admin/teaching/timetable');
+  const [viewDate, setViewDate] = useState(new Date(Date.now() + 5 * 3600000).toISOString().slice(0, 10));
+  const { data: slots } = useSchoolQuery<Slot[]>(['tt', 'admin', viewDate], `/api/v1/admin/teaching/timetable?date=${viewDate}`);
+  const { data: sessions } = useSchoolQuery<ScheduleSessionRow[]>(['schedule-sessions'], '/api/v1/admin/teaching/sessions');
   const [name, setName] = useState('');
   const [a, setA] = useState({ teacherId: '', subjectId: '', groupId: '' });
-  const [s, setS] = useState({ assignmentId: '', weekday: 1, startTime: '09:00', endTime: '10:00', room: '' });
+  const [s, setS] = useState({ assignmentId: '', weekday: 1, startTime: '09:00', endTime: '10:00', room: '', startsOn: '', endsOn: '' });
+  const [session, setSession] = useState({ title: '', teacherId: '', studentId: '', groupId: '', startsAt: '', endsAt: '', room: '' });
   const addSubject = useSchoolAction(() => post('/api/v1/admin/teaching/subjects', { name }), "Fan qo'shildi", () => setName(''));
   const rmSubject = useSchoolAction((id: string) => del(`/api/v1/admin/teaching/subjects/${id}`), "Fan o'chirildi");
   const assign = useSchoolAction(() => post('/api/v1/admin/teaching/assignments', a), 'Tayinlandi');
   const unassign = useSchoolAction((id: string) => del(`/api/v1/admin/teaching/assignments/${id}`), "Tayinlash o'chirildi");
-  const addSlot = useSchoolAction(() => post(`/api/v1/admin/teaching/assignments/${s.assignmentId}/slots`, { weekday: s.weekday, startTime: s.startTime, endTime: s.endTime, room: s.room || undefined }), "Dars qo'shildi");
+  const addSlot = useSchoolAction(() => post(`/api/v1/admin/teaching/assignments/${s.assignmentId}/slots`, { weekday: s.weekday, startTime: s.startTime, endTime: s.endTime, room: s.room || undefined, startsOn: s.startsOn || undefined, endsOn: s.endsOn || undefined }), "Dars qo'shildi");
   const rmSlot = useSchoolAction((id: string) => del(`/api/v1/admin/teaching/slots/${id}`), "Dars o'chirildi");
+  const addSession = useSchoolAction(() => post('/api/v1/admin/teaching/sessions', { ...session, startsAt: new Date(session.startsAt).toISOString(), endsAt: new Date(session.endsAt).toISOString(), studentId: session.studentId || undefined, groupId: session.groupId || undefined, room: session.room || undefined }), "Mashg'ulot qo'shildi", () => setSession({ title: '', teacherId: '', studentId: '', groupId: '', startsAt: '', endsAt: '', room: '' }));
+  const cancelSession = useSchoolAction((id: string) => del(`/api/v1/admin/teaching/sessions/${id}`), 'Mashg‘ulot bekor qilindi');
   return (
     <div className="space-y-4">
       <Panel title="Fanlar" icon={CalendarDays} accent="teal">
@@ -125,11 +130,27 @@ function TimetableTab() {
             <input type="time" aria-label="Boshlanish" className={inputCls} value={s.startTime} onChange={(e) => setS({ ...s, startTime: e.target.value })} />
             <input type="time" aria-label="Tugash" className={inputCls} value={s.endTime} onChange={(e) => setS({ ...s, endTime: e.target.value })} />
           </div>
+          <div className="grid grid-cols-2 gap-2"><label className="text-[11px] text-ink-muted">Amal qilish boshlanishi<input type="date" className={inputCls} value={s.startsOn} onChange={(e) => setS({ ...s, startsOn: e.target.value })} /></label><label className="text-[11px] text-ink-muted">Amal qilish tugashi<input type="date" className={inputCls} value={s.endsOn} onChange={(e) => setS({ ...s, endsOn: e.target.value })} /></label></div>
           <input className={inputCls} placeholder="Xona (ixtiyoriy)" maxLength={40} value={s.room} onChange={(e) => setS({ ...s, room: e.target.value })} />
           <button type="button" disabled={!s.assignmentId || addSlot.isPending} onClick={() => addSlot.mutate(undefined)} className="w-full rounded-xl bg-gold py-2.5 text-sm font-semibold text-base disabled:opacity-40">Darsni qo'shish</button>
         </div>
       </Panel>
+      <Panel title="Individual va bir martalik mashg'ulot" accent="sky">
+        <div className="space-y-2">
+          <input className={inputCls} placeholder="Mashg'ulot nomi" maxLength={120} value={session.title} onChange={(e) => setSession({ ...session, title: e.target.value })} />
+          <select aria-label="O'qituvchi" className={inputCls} value={session.teacherId} onChange={(e) => setSession({ ...session, teacherId: e.target.value })}><option value="">O'qituvchi…</option>{members?.items.map((m) => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select>
+          <div className="grid grid-cols-2 gap-2">
+            <select aria-label="O'quvchi (ixtiyoriy)" className={inputCls} value={session.studentId} onChange={(e) => setSession({ ...session, studentId: e.target.value, groupId: '' })}><option value="">O'quvchi tanlash…</option>{members?.items.filter((m) => m.role === 'STUDENT').map((m) => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select>
+            <select aria-label="Guruh (ixtiyoriy)" className={inputCls} value={session.groupId} onChange={(e) => setSession({ ...session, groupId: e.target.value, studentId: '' })}><option value="">Guruh tanlash…</option>{groups?.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</select>
+          </div>
+          <div className="grid grid-cols-2 gap-2"><label className="text-[11px] text-ink-muted">Boshlanish<input type="datetime-local" className={inputCls} value={session.startsAt} onChange={(e) => setSession({ ...session, startsAt: e.target.value })} /></label><label className="text-[11px] text-ink-muted">Tugash<input type="datetime-local" className={inputCls} value={session.endsAt} onChange={(e) => setSession({ ...session, endsAt: e.target.value })} /></label></div>
+          <input className={inputCls} placeholder="Xona (ixtiyoriy)" value={session.room} onChange={(e) => setSession({ ...session, room: e.target.value })} />
+          <button type="button" disabled={!session.title.trim() || !session.teacherId || (!session.studentId && !session.groupId) || !session.startsAt || !session.endsAt || addSession.isPending} onClick={() => addSession.mutate(undefined)} className="w-full rounded-xl bg-violet py-2.5 text-sm font-semibold text-base disabled:opacity-40">Mashg'ulotni rejalashtirish</button>
+        </div>
+        {!!sessions?.length && <ul className="mt-3 divide-y divide-tint/5">{sessions.map((x) => <li key={x.id} className="flex items-center gap-2 py-2 text-xs"><span className="min-w-0 flex-1 text-ink">{x.title} · {dt(x.startsAt)}–{dt(x.endsAt)} · {x.status}</span>{x.status === 'SCHEDULED' && <button type="button" onClick={() => cancelSession.mutate(x.id)} className="text-coral">Bekor</button>}</li>)}</ul>}
+      </Panel>
       <Panel title="Maktab jadvali" accent="teal" flush>
+        <div className="border-b border-tint/5 p-3"><label className="text-[11px] text-ink-muted">Ko‘rsatiladigan sana<input type="date" className={inputCls} value={viewDate} onChange={(e) => setViewDate(e.target.value)} /></label></div>
         {!slots?.length ? <p className="p-5 text-xs text-ink-muted">Jadval bo'sh</p> : <ul className="divide-y divide-tint/5">{slots.map((x) => (
           <li key={x.id} className="flex items-center gap-2 px-4 py-2.5 text-xs"><span className="w-24 shrink-0 font-semibold text-ink">{DAYS[x.weekday].slice(0, 3)} {x.startTime}–{x.endTime}</span><span className="min-w-0 flex-1 truncate text-ink-muted">{x.subject} · {x.group.name} · {x.teacher.name}{x.room ? ` · ${x.room}` : ''}</span><button type="button" aria-label="Darsni o'chirish" onClick={() => rmSlot.mutate(x.id)} className="text-coral">×</button></li>
         ))}</ul>}

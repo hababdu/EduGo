@@ -1,5 +1,6 @@
 import { Home, Users, User, School } from 'lucide-react';
 import { StaffNav, StaffNavItem } from '../staff/StaffNav';
+import { useEducationFeatures } from '../../hooks/useEducationFeatures';
 
 const items: StaffNavItem[] = [
   { to: '/', Icon: Home, label: 'Bosh sahifa', end: true },
@@ -9,5 +10,7 @@ const items: StaffNavItem[] = [
 ];
 
 export function BottomNav() {
-  return <StaffNav items={items} label="Asosiy navigatsiya" />;
+  const { enabled } = useEducationFeatures();
+  const visibleItems = items.filter((item) => item.to !== '/groups' || enabled('GROUPS'));
+  return <StaffNav items={visibleItems} label="Asosiy navigatsiya" />;
 }

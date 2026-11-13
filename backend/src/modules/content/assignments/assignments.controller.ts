@@ -1,3 +1,4 @@
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -10,6 +11,7 @@ import { UpdateAssignmentDto } from './dto/update-assignment.dto';
  * (o'quvchi ham) material yarata, o'zgartira va o'chira olardi.
  */
 @Roles('TEACHER', 'ADMIN')
+@RequireEducationFeature('ASSIGNMENTS')
 @Controller('api/v1/assignments')
 export class AssignmentsController {
   constructor(private readonly assignmentsService: AssignmentsService) {}

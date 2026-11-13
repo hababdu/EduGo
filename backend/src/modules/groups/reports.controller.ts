@@ -1,4 +1,5 @@
 import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import type { Response } from 'express';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -6,6 +7,7 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { ReportsService } from './reports.service';
 
 @UseGuards(JwtAuthGuard)
+@RequireEducationFeature('ANALYTICS')
 @Controller('api/v1/reports')
 export class ReportsController {
   constructor(private readonly reports: ReportsService) {}

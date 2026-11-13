@@ -47,7 +47,7 @@ export interface SystemInfo {
 export const useSuperOverview = () => useQuery({ queryKey: ['super', 'overview'], queryFn: () => apiFetch<Overview>(`${b}/overview`) });
 export const useSuperSystem = () => useQuery({ queryKey: ['super', 'system'], queryFn: () => apiFetch<SystemInfo>(`${b}/system`), refetchInterval: 30_000 });
 export const useSuperOrgs = () => useQuery({ queryKey: ['super', 'orgs'], queryFn: () => apiFetch<Org[]>(`${b}/organizations`) });
-export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null }
+export interface Candidate { id: string; name: string; username: string | null; role: string; organization: { id: string; name: string } | null; memberships?: { id: string; role: string; organization: { id: string; name: string } }[] }
 export const useCandidates = (search: string, enabled: boolean) =>
   useQuery({
     queryKey: ['super', 'candidates', search],
@@ -80,8 +80,11 @@ export function useSuperMutation<V>(fn: (v: V) => Promise<unknown>, okMsg?: stri
   });
 }
 export const sapi = {
+  classifyOrg: (v: { id: string; typeId: string; directionIds: string[] }) => apiFetch(`${b}/organizations/${v.id}/classification`, { method: 'PATCH', body: JSON.stringify({ typeId: v.typeId, directionIds: v.directionIds }) }),
   createOrg: (v: { name: string; note?: string; storageChatId: string }) => apiFetch(`${b}/organizations`, { method: 'POST', body: JSON.stringify(v) }),
   updateOrg: (v: { id: string; name?: string; note?: string; status?: string; monthlyPlanFee?: number | null; storageChatId?: string }) => { const { id, ...rest } = v; return apiFetch(`${b}/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
+  attachTeacher: (v: { organizationId: string; userId: string }) => apiFetch('/api/v1/admin/memberships/attach', { method: 'POST', body: JSON.stringify({ organizationId: v.organizationId, userId: v.userId, role: 'TEACHER' }) }),
+  promoteMembershipToTeacher: (id: string) => apiFetch(`/api/v1/admin/memberships/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role: 'TEACHER' }) }),
   assignAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins`, { method: 'POST', body: JSON.stringify({ userId: v.userId }) }),
   removeAdmin: (v: { orgId: string; userId: string }) => apiFetch(`${b}/organizations/${v.orgId}/admins/${v.userId}`, { method: 'DELETE' }),
   markBilling: (v: { orgId: string; month: string; status: SubState; amount?: number; note?: string }) => { const { orgId, ...rest } = v; return apiFetch(`${b}/billing/${orgId}`, { method: 'PUT', body: JSON.stringify(rest) }); },
@@ -105,10 +108,10 @@ export interface BillingOverview {
   totals: { paid: number; waived: number; unpaid: number; collected: number; expected: number };
 }
 export interface OrgDetail {
-  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string };
+  org: { id: string; name: string; status: 'ACTIVE' | 'SUSPENDED'; note: string | null; monthlyPlanFee: number | null; storageChatId: string | null; lastBackupAt: string | null; lastBackupStatus: string | null; createdAt: string; typeId: string | null; type: EducationCatalogItem | null; directions: EducationCatalogItem[] };
   counts: { students: number; teachers: number; admins: number; groups: number };
-  admins: { id: string; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
-  teachers: { id: string; name: string; username: string | null; status: string }[];
+  admins: { id: string; membershipId: string; permissions: { allow?: string[]; deny?: string[] } | null; name: string; username: string | null; telegramId: string; status: string; lastActiveAt: string }[];
+  teachers: { id: string; membershipId: string; permissions: { allow?: string[]; deny?: string[] } | null; name: string; username: string | null; status: string }[];
   groups: { id: string; name: string; fee: number | null; members: number; teacher: string | null }[];
   studentPayments: { month: string; collected: number; paidCount: number; expected: number };
   subscription: { currentMonth: string; state: SubState; history: { month: string; state: SubState; amount: number; paidAt: string }[] };
@@ -119,3 +122,43 @@ export const useOrgDetail = (id: string) => useQuery({ queryKey: ['super', 'org'
 export const num = (n: number) => n.toLocaleString('uz-UZ');
 export const when = (iso: string) => new Date(iso).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
 export const ROLE_UZ: Record<string, string> = { STUDENT: 'Talaba', TEACHER: "O'qituvchi", ADMIN: 'Admin', SUPER_ADMIN: 'Super admin' };
+
+export interface EducationCatalogItem {
+  id: string; slug: string; nameUz: string; nameRu?: string | null; nameEn?: string | null;
+  description?: string | null; category?: string | null; sortOrder: number; isActive: boolean;
+}
+export const useEducationTypes = () => useQuery({
+  queryKey: ['super', 'education-types'],
+  queryFn: () => apiFetch<EducationCatalogItem[]>(`${b}/organization-types`),
+});
+export const useEducationDirections = () => useQuery({
+  queryKey: ['super', 'education-directions'],
+  queryFn: () => apiFetch<EducationCatalogItem[]>(`${b}/education-directions`),
+});
+export const educationCatalogApi = {
+  saveType: (v: Partial<EducationCatalogItem>) => apiFetch('/api/v1/super/organization-types', { method: 'POST', body: JSON.stringify(v) }),
+  updateType: (v: EducationCatalogItem) => apiFetch(`/api/v1/super/organization-types/${v.id}`, { method: 'PATCH', body: JSON.stringify(v) }),
+  deleteType: (id: string) => apiFetch(`/api/v1/super/organization-types/${id}`, { method: 'DELETE' }),
+  saveDirection: (v: Partial<EducationCatalogItem>) => apiFetch('/api/v1/super/education-directions', { method: 'POST', body: JSON.stringify(v) }),
+  updateDirection: (v: EducationCatalogItem) => apiFetch(`/api/v1/super/education-directions/${v.id}`, { method: 'PATCH', body: JSON.stringify(v) }),
+  deleteDirection: (id: string) => apiFetch(`/api/v1/super/education-directions/${id}`, { method: 'DELETE' }),
+};
+
+export interface OrganizationBranch {
+  id: string; organizationId: string; name: string; code: string | null; address: string | null;
+  city: string | null; phone: string | null; email: string | null; isMain: boolean; isActive: boolean;
+}
+export const useOrganizationBranches = (organizationId: string) => useQuery({
+  queryKey: ['super', 'branches', organizationId],
+  queryFn: () => apiFetch<OrganizationBranch[]>(`/api/v1/organization/branches?organizationId=${encodeURIComponent(organizationId)}`),
+  enabled: !!organizationId,
+});
+export const branchApi = {
+  create: (v: Partial<OrganizationBranch> & { organizationId: string; name: string }) => apiFetch('/api/v1/organization/branches', { method: 'POST', body: JSON.stringify(v) }),
+  update: (v: Partial<OrganizationBranch> & { id: string }) => { const { id, ...rest } = v; return apiFetch(`/api/v1/organization/branches/${id}`, { method: 'PATCH', body: JSON.stringify(rest) }); },
+  remove: (id: string) => apiFetch(`/api/v1/organization/branches/${id}`, { method: 'DELETE' }),
+};
+
+export const membershipPermissionApi = {
+  update: (v: { id: string; allow: string[]; deny: string[] }) => apiFetch(`/api/v1/admin/memberships/${v.id}/permissions`, { method: 'PATCH', body: JSON.stringify({ allow: v.allow, deny: v.deny }) }),
+};

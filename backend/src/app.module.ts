@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ParentScopeGuard } from './common/guards/parent-scope.guard';
+import { EducationFeatureGuard } from './common/guards/education-feature.guard';
+import { OrganizationPermissionsGuard } from './common/guards/organization-permissions.guard';
 import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
@@ -37,6 +39,7 @@ import { TeachingModule } from './modules/teaching/teaching.module';
 import { MembershipsModule } from './modules/memberships/memberships.module';
 import { SuperAdminModule } from './modules/super-admin/super-admin.module';
 import { SubmissionsModule } from './modules/submissions/submissions.module';
+import { OrganizationCoreModule } from './modules/organization-core/organization-core.module';
 @Module({
   imports: [
     UploadModule,
@@ -72,6 +75,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     HealthModule,
     LeadsModule,
     SubmissionsModule,
+    OrganizationCoreModule,
   ],
   providers: [
     {
@@ -85,6 +89,14 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: OrganizationPermissionsGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: EducationFeatureGuard,
     },
     {
       provide: APP_GUARD,
