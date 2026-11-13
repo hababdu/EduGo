@@ -170,6 +170,21 @@ export class TeachingService {
     });
   }
 
+  async mineSessions(user: CurrentUserPayload) {
+    const organizationId = user.activeOrganizationId ?? user.organizationId;
+    if (!organizationId) return [];
+    if (user.role === 'TEACHER') {
+      return this.prisma.scheduleSession.findMany({ where: { organizationId, teacherId: user.id, status: 'SCHEDULED' }, orderBy: { startsAt: 'asc' } });
+    }
+    if (user.role === 'STUDENT') {
+      return this.prisma.scheduleSession.findMany({
+        where: { organizationId, status: 'SCHEDULED', OR: [{ studentId: user.id }, { group: { members: { some: { studentId: user.id } } } }] },
+        orderBy: { startsAt: 'asc' },
+      });
+    }
+    throw new ForbiddenException("Bu jadval faqat o'qituvchi va o'quvchilar uchun");
+  }
+
   async cancelSession(actor: CurrentUserPayload, id: string) {
     const session = await this.prisma.scheduleSession.findUnique({ where: { id } });
     if (!session) throw new NotFoundException("Mashg'ulot topilmadi");
