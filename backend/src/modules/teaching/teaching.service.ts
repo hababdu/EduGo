@@ -134,6 +134,17 @@ export class TeachingService {
     }
     if (!dto.studentId && !dto.groupId) throw new BadRequestException("Individual dars uchun o'quvchi yoki guruh ko'rsatilishi kerak");
     await this.assertSessionParticipants(organizationId, dto.teacherId, dto.studentId, dto.groupId);
+    const weekday = ((startsAt.getUTCDay() + 6) % 7) + 1;
+    const recurring = await this.prisma.scheduleSlot.findMany({
+      where: { organizationId, weekday, OR: [{ startsOn: null }, { startsOn: { lte: new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate())) } }], AND: [{ OR: [{ endsOn: null }, { endsOn: { gte: new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate())) } }] }] },
+      include: { assignment: { select: { teacherId: true, groupId: true } } },
+    });
+    const startMinute = startsAt.getUTCHours() * 60 + startsAt.getUTCMinutes();
+    const endMinute = endsAt.getUTCHours() * 60 + endsAt.getUTCMinutes();
+    if (recurring.some((slot: any) => startMinute < toMin(slot.endTime) && toMin(slot.startTime) < endMinute &&
+      (slot.assignment.teacherId === dto.teacherId || (dto.groupId && slot.assignment.groupId === dto.groupId) || (!!dto.room && !!slot.room && slot.room.toLowerCase() === dto.room.toLowerCase())))) {
+      throw new ConflictException('Tanlangan vaqtda haftalik jadval bo‘yicha o‘qituvchi, guruh yoki xona band');
+    }
     const clash = await this.prisma.scheduleSession.findFirst({
       where: { organizationId, status: 'SCHEDULED', startsAt: { lt: endsAt }, endsAt: { gt: startsAt },
         OR: [{ teacherId: dto.teacherId }, ...(dto.studentId ? [{ studentId: dto.studentId }] : []), ...(dto.groupId ? [{ groupId: dto.groupId }] : [])] },
