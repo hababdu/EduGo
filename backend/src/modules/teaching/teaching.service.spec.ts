@@ -62,6 +62,16 @@ describe('TeachingService', () => {
     await svc.addSlot(admin, 'ta1', slot());
     expect(prisma.scheduleSlot.create).toHaveBeenCalled();
   });
+  it('jadval tanlangan sanaga mos amal qilish oralig‘idagi slotlarni so‘raydi', async () => {
+    const { svc, prisma } = mk();
+    await svc.timetable(admin, { date: '2026-05-15' });
+    const where = prisma.scheduleSlot.findMany.mock.calls[0][0].where;
+    expect(where.organizationId).toBe('o1');
+    expect(where.AND).toEqual([
+      { OR: [{ startsOn: null }, { startsOn: { lte: new Date('2026-05-15T00:00:00.000Z') } }] },
+      { OR: [{ endsOn: null }, { endsOn: { gte: new Date('2026-05-15T00:00:00.000Z') } }] },
+    ]);
+  });
   it("o'qituvchi o'z jadvalini ko'radi; maktabsiz foydalanuvchi bo'sh ro'yxat oladi", async () => {
     const { svc } = mk();
     await expect(svc.mine({ ...teacherU, organizationId: null })).resolves.toEqual([]);
