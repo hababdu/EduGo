@@ -431,6 +431,32 @@ model Group {
   @@index([deletedAt, createdAt(sort: Desc)])
 }
 
+
+/// Bir martalik yoki individual mashg'ulot. Sana-vaqt UTC da saqlanadi.
+model ScheduleSession {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  title          String
+  sessionType    String   @default("INDIVIDUAL")
+  teacherId      String
+  studentId      String?
+  groupId        String?
+  startsAt       DateTime
+  endsAt         DateTime
+  room           String?
+  status         String   @default("SCHEDULED")
+  notes          String?
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, startsAt, endsAt])
+  @@index([teacherId, startsAt, endsAt])
+  @@index([studentId, startsAt, endsAt])
+  @@index([groupId, startsAt])
+}
+
 model GroupMember {
   id          String   @id @default(cuid())
   groupId     String
@@ -1424,6 +1450,9 @@ model ScheduleSlot {
   startTime      String
   endTime        String
   room           String?
+  /// Slot amal qiladigan sana oralig'i; null = doimiy haftalik jadval.
+  startsOn       DateTime? @db.Date
+  endsOn         DateTime? @db.Date
 
   @@index([organizationId, weekday])
   @@index([assignmentId])
