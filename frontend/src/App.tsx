@@ -39,6 +39,7 @@ import StudentSchool from './pages/school/StudentSchool';
 import { Section } from './components/staff';
 import TeacherTimetable from './pages/school/TeacherTimetable';
 import AdminGroupPayments from './pages/admin/AdminGroupPayments';
+import { AdminEducationSettings } from './pages/admin/AdminEducationSettings';
 
 /* ============ TEACHER ============ */
 import { TeacherOverview } from './pages/teacher/TeacherOverview';
@@ -196,6 +197,7 @@ function AdminRoutes() {
           <Route path="/admin/leads" element={<AdminLeads />} />
           <Route path="/admin/trials" element={<Navigate to="/admin/school?tab=trials" replace />} />
           <Route path="/admin/school" element={<AdminSchool />} />
+          <Route path="/admin/education" element={<AdminEducationSettings />} />
           <Route path="/admin/payments/:groupId" element={<AdminGroupPayments />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
