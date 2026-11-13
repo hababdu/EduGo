@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, GraduationCap, Wallet, UserPlus, School } from 'lucide-react';
+import { LayoutDashboard, GraduationCap, Wallet, UserPlus, School, BookOpen } from 'lucide-react';
 import { haptic } from '../../lib/telegram';
 
 /**
@@ -12,6 +12,7 @@ const ITEMS = [
   { to: '/admin/school', label: 'Maktab', Icon: School, also: ['/admin/groups', '/admin/trials', '/admin/users'] },
   { to: '/admin/payments', label: "To'lovlar", Icon: Wallet },
   { to: '/admin/leads', label: 'Lidlar', Icon: UserPlus },
+  { to: '/admin/education', label: 'Ta’lim modeli', Icon: BookOpen },
 ];
 
 function matches(pathname: string, item: { to: string; end?: boolean; also?: string[] }) {
