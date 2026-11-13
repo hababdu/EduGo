@@ -38,12 +38,13 @@ export function AdminEducationSettings() {
   const configQuery = useQuery({ queryKey: ['organization-education-config'], queryFn: () => apiFetch<Config>('/api/v1/organization/education/config') });
 
   useEffect(() => {
-    if (configQuery.data && !settingsLoaded) {
+    if (configQuery.data && catalogQuery.data && !settingsLoaded) {
       setModelKey(configQuery.data.model?.modelKey ?? 'CUSTOM');
-      setEnabled(Object.fromEntries(configQuery.data.modules.map((m) => [m.featureKey, m.enabled])));
+      const saved = new Map(configQuery.data.modules.map((m) => [m.featureKey, m.enabled]));
+      setEnabled(Object.fromEntries(catalogQuery.data.features.map((feature) => [feature.key, saved.get(feature.key) ?? true])));
       setSettingsLoaded(true);
     }
-  }, [configQuery.data, settingsLoaded]);
+  }, [configQuery.data, catalogQuery.data, settingsLoaded]);
 
   const save = useMutation({
     mutationFn: () => apiFetch('/api/v1/organization/education/config', {
