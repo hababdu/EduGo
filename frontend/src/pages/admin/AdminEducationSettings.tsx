@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, Check, GraduationCap, Layers3, Save } from 'lucide-react';
 import { apiFetch } from '../../lib/api-client';
 import { PAGE_WIDE } from '../../design/tokens';
+import { IMAGES } from '../../design/images';
 import { StaffHero, Panel } from '../../components/staff';
 import { Skeleton } from '../../components/ui';
 import { toast } from '../../components/ui/Toast';
@@ -69,7 +70,7 @@ export function AdminEducationSettings() {
 
   return (
     <div className={PAGE_WIDE}>
-      <StaffHero accent="teal" eyebrow="EduGo · Tashkilot sozlamalari" title="Ta’lim modeli"
+      <StaffHero image={IMAGES.hero} accent="teal" eyebrow="EduGo · Tashkilot sozlamalari" title="Ta’lim modeli"
         subtitle="Tashkilotingiz qanday ta’lim berishini, qaysi modullardan foydalanishini va o‘quv davrlarini belgilang." />
       {(catalogQuery.isLoading || configQuery.isLoading) && <Skeleton className="h-48" />}
       {(catalogQuery.error || configQuery.error) && <p className="rounded-xl bg-coral/10 p-3 text-sm text-coral">{(catalogQuery.error || configQuery.error as Error)?.message ?? 'Ma’lumotlarni yuklab bo‘lmadi'}</p>}
@@ -88,7 +89,7 @@ export function AdminEducationSettings() {
             {catalogQuery.data.models.map((m) => <button type="button" key={m.key} onClick={() => setModelKey(m.key)}
               className={`rounded-xl border p-3 text-left transition ${modelKey === m.key ? 'border-accent bg-accent/10' : 'border-tint/10 bg-surface/30'}`}>
               <span className="flex items-center justify-between gap-2 text-sm font-semibold text-ink">{m.label}{modelKey === m.key && <Check className="h-4 w-4 text-accent" />}</span>
-              <span className="mt-1 block text-[11px] text-ink-muted">{m.key.replaceAll('_', ' ')}</span>
+              <span className="mt-1 block text-[11px] text-ink-muted">{m.key.replace(/_/g, ' ')}</span>
             </button>)}
           </div>
         </Panel>
@@ -110,7 +111,7 @@ export function AdminEducationSettings() {
           </button>
         </Panel>
 
-        <Panel title="O‘quv davrlari" icon={CalendarDays} accent="violet">
+        <Panel title="O‘quv davrlari" icon={CalendarDays} accent="sky">
           <p className="mb-3 text-xs text-ink-muted">O‘quv yili, semestr, kurs oqimi yoki qisqa kursning boshlanish va tugash sanasini belgilang. Bir vaqtda bitta davr faol bo‘ladi.</p>
           {activePeriod && <div className="mb-3 rounded-xl border border-teal/20 bg-teal/10 p-3 text-xs text-teal">Faol davr: <strong>{activePeriod.name}</strong> · {new Date(activePeriod.startsAt).toLocaleDateString()} – {new Date(activePeriod.endsAt).toLocaleDateString()}</div>}
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
