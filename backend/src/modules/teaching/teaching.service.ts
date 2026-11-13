@@ -38,15 +38,15 @@ export class TeachingService {
   async assign(actor: CurrentUserPayload, dto: { teacherId: string; subjectId: string; groupId: string }, orgId?: string) {
     const organizationId = resolveOrgId(actor, orgId);
     const [teacher, subject, group] = await Promise.all([
-      this.prisma.user.findFirst({ where: { id: dto.teacherId, role: 'TEACHER', organizationId, status: 'ACTIVE', deletedAt: null }, select: { id: true } }),
+      this.prisma.organizationMembership.findFirst({ where: { userId: dto.teacherId, role: 'TEACHER', organizationId, status: 'ACTIVE', user: { status: 'ACTIVE', deletedAt: null } }, select: { user: { select: { id: true } } } }),
       this.prisma.schoolSubject.findFirst({ where: { id: dto.subjectId, organizationId }, select: { id: true } }),
       this.prisma.group.findFirst({ where: { id: dto.groupId, organizationId, deletedAt: null }, select: { id: true } }),
     ]);
-    if (!teacher) throw new NotFoundException("O'qituvchi bu maktabda topilmadi");
+    if (!teacher?.user) throw new NotFoundException("O'qituvchi bu tashkilotda faol emas");
     if (!subject) throw new NotFoundException('Fan topilmadi');
     if (!group) throw new NotFoundException('Sinf (guruh) topilmadi');
     try {
-      return await this.prisma.teachingAssignment.create({ data: { organizationId, teacherId: teacher.id, subjectId: subject.id, groupId: group.id }, select: { id: true } });
+      return await this.prisma.teachingAssignment.create({ data: { organizationId, teacherId: teacher.user.id, subjectId: subject.id, groupId: group.id }, select: { id: true } });
     } catch (e: any) {
       if (e?.code === 'P2002') throw new ConflictException("Bu sinfda bu fanga o'qituvchi allaqachon tayinlangan");
       throw e;
@@ -70,21 +70,29 @@ export class TeachingService {
   }
 
   /* ───────── Dars jadvali ───────── */
-  async addSlot(actor: CurrentUserPayload, assignmentId: string, dto: { weekday: number; startTime: string; endTime: string; room?: string }) {
+  async addSlot(actor: CurrentUserPayload, assignmentId: string, dto: { weekday: number; startTime: string; endTime: string; room?: string; startsOn?: string; endsOn?: string }) {
     const a = await this.prisma.teachingAssignment.findUnique({ where: { id: assignmentId }, select: { id: true, organizationId: true, groupId: true, teacherId: true } });
     if (!a) throw new NotFoundException('Tayinlash topilmadi');
     resolveOrgId(actor, a.organizationId);
     const start = toMin(dto.startTime), end = toMin(dto.endTime);
     if (end <= start) throw new BadRequestException("Tugash vaqti boshlanishidan keyin bo'lsin");
     const room = dto.room?.trim() || null;
+    const startsOn = dto.startsOn ? new Date(dto.startsOn + 'T00:00:00.000Z') : null;
+    const endsOn = dto.endsOn ? new Date(dto.endsOn + 'T00:00:00.000Z') : null;
+    if ((dto.startsOn && (!startsOn || Number.isNaN(startsOn.getTime()) || startsOn.toISOString().slice(0,10) !== dto.startsOn)) || (dto.endsOn && (!endsOn || Number.isNaN(endsOn.getTime()) || endsOn.toISOString().slice(0,10) !== dto.endsOn)) || (startsOn && endsOn && endsOn < startsOn)) throw new BadRequestException('Jadval amal qilish sanalari noto‘g‘ri');
     const sameDay = await this.prisma.scheduleSlot.findMany({ where: { organizationId: a.organizationId, weekday: dto.weekday }, include: { assignment: { select: { groupId: true, teacherId: true } } } });
     for (const s of sameDay) {
       if (!(start < toMin(s.endTime) && toMin(s.startTime) < end)) continue;
+      const newFrom = startsOn?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const newTo = endsOn?.getTime() ?? Number.POSITIVE_INFINITY;
+      const oldFrom = s.startsOn?.getTime() ?? Number.NEGATIVE_INFINITY;
+      const oldTo = s.endsOn?.getTime() ?? Number.POSITIVE_INFINITY;
+      if (!(newFrom <= oldTo && oldFrom <= newTo)) continue;
       if (s.assignment.teacherId === a.teacherId) throw new ConflictException(`O'qituvchi shu vaqtda band (${s.startTime}–${s.endTime})`);
       if (s.assignment.groupId === a.groupId) throw new ConflictException(`Sinfda shu vaqtda boshqa dars bor (${s.startTime}–${s.endTime})`);
       if (room && s.room && s.room.toLowerCase() === room.toLowerCase()) throw new ConflictException(`Xona shu vaqtda band (${s.startTime}–${s.endTime})`);
     }
-    return this.prisma.scheduleSlot.create({ data: { organizationId: a.organizationId, assignmentId, weekday: dto.weekday, startTime: dto.startTime, endTime: dto.endTime, room }, select: { id: true } });
+    return this.prisma.scheduleSlot.create({ data: { organizationId: a.organizationId, assignmentId, weekday: dto.weekday, startTime: dto.startTime, endTime: dto.endTime, room, startsOn, endsOn }, select: { id: true } });
   }
   async removeSlot(actor: CurrentUserPayload, id: string) {
     const s = await this.prisma.scheduleSlot.findUnique({ where: { id } });
@@ -172,10 +180,11 @@ export class TeachingService {
 
   /** O'qituvchi — o'z darslari; o'quvchi — a'zo bo'lgan sinflari darslari */
   async mine(user: CurrentUserPayload) {
-    if (!user.organizationId) return [];
+    const organizationId = user.activeOrganizationId ?? user.organizationId;
+    if (!organizationId) return [];
     let where: any;
-    if (user.role === 'TEACHER') where = { organizationId: user.organizationId, assignment: { teacherId: user.id } };
-    else if (user.role === 'STUDENT') where = { organizationId: user.organizationId, assignment: { group: { members: { some: { studentId: user.id } } } } };
+    if (user.role === 'TEACHER') where = { organizationId, assignment: { teacherId: user.id } };
+    else if (user.role === 'STUDENT') where = { organizationId, assignment: { group: { members: { some: { studentId: user.id } } } } };
     else throw new ForbiddenException("Bu jadval o'qituvchi va o'quvchilar uchun");
     return this.shape(await this.prisma.scheduleSlot.findMany({ where, orderBy: this.order, include: SLOT_INC }));
   }
