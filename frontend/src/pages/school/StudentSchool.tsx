@@ -126,6 +126,12 @@ function RequestsTab() {
   );
 }
 
+function StudentSessions() {
+  const { data } = useSchoolQuery<ScheduleSessionRow[]>(['my-schedule-sessions'], '/api/v1/timetable/sessions/mine');
+  if (!data?.length) return null;
+  return <Panel title="Individual va bir martalik mashg‘ulotlar" accent="violet" flush><ul className="divide-y divide-tint/5">{data.map((x) => <li key={x.id} className="px-4 py-3"><div className="text-sm font-semibold text-ink">{x.title}</div><div className="mt-1 text-xs text-ink-muted">{dt(x.startsAt)} – {dt(x.endsAt)}{x.room ? ' · ' + x.room : ''}</div></li>)}</ul></Panel>;
+}
+
 /** O'quvchi uchun: maktablar katalogi, o'z jadvali, so'rovlar. */
 export default function StudentSchool() {
   const [tab, setTab] = useState<Tab>('schools');
@@ -135,7 +141,7 @@ export default function StudentSchool() {
       <StaffHero accent="sky" image={IMAGES.hero} eyebrow="EduGo · Maktab" title="Maktablar va jadval" subtitle="Maktab toping, a'zo bo'ling yoki sinov darsiga yoziling." />
       <div className="flex gap-2">{tabs.map(([k, l]) => <button key={k} type="button" onClick={() => setTab(k)} className={`flex-1 rounded-xl py-2 text-xs font-semibold ${tab === k ? 'bg-sky/20 text-sky' : 'bg-tint/5 text-ink-muted'}`}>{l}</button>)}</div>
       {tab === 'schools' && <SchoolsTab />}
-      {tab === 'timetable' && <TimetableView url="/api/v1/timetable/mine" keyName="mine" who="group" />}
+      {tab === 'timetable' && <div className="space-y-4"><TimetableView url="/api/v1/timetable/mine" keyName="mine" who="group" /><StudentSessions /></div>}
       {tab === 'requests' && <RequestsTab />}
     </div>
   );
