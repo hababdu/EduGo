@@ -199,7 +199,7 @@ export class TeachingService {
 
   private scheduleDate(value?: string) {
     const iso = value ?? new Date(Date.now() + 5 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(iso)) throw new BadRequestException('Jadval sanasi YYYY-MM-DD formatida bo‘lsin');
+    if (iso.length !== 10 || iso[4] !== '-' || iso[7] !== '-') throw new BadRequestException('Jadval sanasi YYYY-MM-DD formatida bo‘lsin');
     const date = new Date(iso + 'T00:00:00.000Z');
     if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== iso) throw new BadRequestException('Jadval sanasi noto‘g‘ri');
     return date;
