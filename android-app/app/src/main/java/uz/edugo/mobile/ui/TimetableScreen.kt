@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import uz.edugo.mobile.data.StudentTimetableSlot
+import uz.edugo.mobile.data.ScheduleSessionRow
 
 private val DAYS = listOf("Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba")
 
@@ -23,8 +24,21 @@ private val DAYS = listOf("Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Ju
 fun TimetableScreen(path: String, title: String = "Dars jadvali", showTeacher: Boolean = true) {
     val p = P
     val remote = rememberRemoteList(path, StudentTimetableSlot.serializer())
-    RefreshColumn(listOf(remote)) {
+    val sessionsPath = if (path == "/api/v1/timetable/mine") "/api/v1/timetable/sessions/mine" else "/api/v1/admin/teaching/sessions"
+    val sessions = rememberRemoteList(sessionsPath, ScheduleSessionRow.serializer())
+    RefreshColumn(listOf(remote, sessions)) {
         Hero("EDUGO · JADVAL", title, "Haftalik darslar (Toshkent vaqti)")
+        Section(sessions) { rows ->
+            if (rows.isNotEmpty()) {
+                SectionTitle("INDIVIDUAL MASHG'ULOTLAR")
+                rows.forEach { item -> Panel {
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(item.title, color = p.ink, fontWeight = FontWeight.Bold)
+                        Text("${item.startsAt.replace('T', ' ').take(16)} – ${item.endsAt.replace('T', ' ').take(16)}${item.room?.let { " · $it" } ?: ""}", color = p.muted, fontSize = 11.sp)
+                    }
+                } }
+            }
+        }
         Section(remote) { slots ->
             if (slots.isEmpty()) EmptyText("Hozircha dars jadvali yo'q")
             (1..7).forEach { d ->
