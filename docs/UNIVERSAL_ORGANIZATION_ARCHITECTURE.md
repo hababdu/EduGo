@@ -356,3 +356,33 @@ Before merging to `main`:
 - [ ] Verify all remaining API modules use active organization context rather than direct legacy `User.organizationId` assumptions.
 
 PR #12 targets `main` so the repository's Web/Backend quality workflow can validate frontend build, Prisma generation, backend build and Jest tests on pull-request synchronization.
+
+
+## 13. Dynamic Education Model — konfiguratsiya qatlamining birinchi implementatsiyasi
+
+### Ma'lumotlar modeli
+- `OrganizationEducationModel`: tashkilotning ish modeli (`SCHOOL_YEAR`, `SEMESTER`, `COURSE_BASED`, `SHORT_TERM`, `APPOINTMENT`, `CLUB`, `WORKSHOP`, `CUSTOM`) va qo'shimcha JSON sozlamalari.
+- `OrganizationModuleConfig`: `GROUPS`, `SCHEDULE`, `ATTENDANCE`, `ASSIGNMENTS`, `GRADING`, `TESTS`, `PAYMENTS`, `CERTIFICATES` va boshqa modul kalitlari.
+- `OrganizationPolicy`: jadval, davomat, baholash, to'lov va topshiriq qoidalari.
+- `OrganizationAcademicPeriod`: o'quv yili, semestr, kurs oqimi yoki qisqa kurs sanalari.
+- Har bir yozuv tashkilotga FK bilan bog'langan; tashkilot o'chirilganda konfiguratsiya ham cascade bilan tozalanadi.
+
+### API
+- `GET /api/v1/organization/education/catalog`
+- `GET /api/v1/organization/education/config`
+- `PATCH /api/v1/organization/education/config`
+- `POST /api/v1/organization/education/periods`
+- `PATCH /api/v1/organization/education/periods/:id`
+- `DELETE /api/v1/organization/education/periods/:id`
+- Oddiy tashkilotda faqat faol tashkilotning ADMIN membership'i sozlay oladi.
+- SUPER_ADMIN uchun `organizationId` aniq berilishi shart.
+- Modul va policy kalitlari serverdagi ruxsat etilgan katalog bilan tekshiriladi.
+- Faol o'quv davri bitta bo'lishi PostgreSQL partial unique index bilan parallel so'rovlarda ham kafolatlanadi.
+
+### Web
+- Admin navigatsiyasida `Ta'lim modeli` bo'limi qo'shildi.
+- Ta'lim modeli tanlanganda mos boshlang'ich modul presetlari taklif qilinadi; tashkilot ularni mustaqil o'zgartirishi mumkin.
+- O'quv davrini yaratish va faollashtirish interfeysi qo'shildi.
+
+### Muhim bosqich chegarasi
+Bu implementatsiya konfiguratsiya ma'lumotlarini saqlaydi va boshqaradi. Hozircha mavjud barcha jadval, test, davomat, to'lov va material endpointlari `enabled=false` qiymati bilan avtomatik bloklanmaydi. Bunday bloklashni keyingi integratsiya bosqichida modul bo'yicha endpoint guard va UI navigatsiya filtrlari orqali, mavjud ma'lumotlar oqimini buzmasdan ulash kerak.
