@@ -134,7 +134,7 @@ function TimetableTab() {
           <button type="button" disabled={!s.assignmentId || addSlot.isPending} onClick={() => addSlot.mutate(undefined)} className="w-full rounded-xl bg-gold py-2.5 text-sm font-semibold text-base disabled:opacity-40">Darsni qo'shish</button>
         </div>
       </Panel>
-      <Panel title="Individual va bir martalik mashg'ulot" accent="violet">
+      <Panel title="Individual va bir martalik mashg'ulot" accent="sky">
         <div className="space-y-2">
           <input className={inputCls} placeholder="Mashg'ulot nomi" maxLength={120} value={session.title} onChange={(e) => setSession({ ...session, title: e.target.value })} />
           <select aria-label="O'qituvchi" className={inputCls} value={session.teacherId} onChange={(e) => setSession({ ...session, teacherId: e.target.value })}><option value="">O'qituvchi…</option>{members?.items.map((m) => <option key={m.user.id} value={m.user.id}>{m.user.name}</option>)}</select>
