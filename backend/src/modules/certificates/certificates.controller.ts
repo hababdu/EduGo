@@ -1,3 +1,4 @@
+import { RequireEducationFeature } from '../../common/decorators/education-feature.decorator';
 import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
@@ -11,6 +12,7 @@ export class IssueCertificateDto {
   @IsOptional() @IsString() @MaxLength(160) title?: string;
 }
 
+@RequireEducationFeature('CERTIFICATES')
 @Controller('api/v1/certificates')
 export class CertificatesController {
   constructor(private readonly certs: CertificatesService) {}
