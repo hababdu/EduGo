@@ -90,19 +90,19 @@ export class DynamicEducationService {
     await this.prisma.$transaction(async (tx) => {
       await tx.organizationEducationModel.upsert({
         where: { organizationId },
-        create: { organizationId, modelKey: input.modelKey, settings: input.settings ?? {} },
-        update: { modelKey: input.modelKey, settings: input.settings ?? {} },
+        create: { organizationId, modelKey: input.modelKey, settings: (input.settings ?? {}) as any },
+        update: { modelKey: input.modelKey, settings: (input.settings ?? {}) as any },
       });
       if (input.modules) {
         await tx.organizationModuleConfig.deleteMany({ where: { organizationId } });
         if (input.modules.length) await tx.organizationModuleConfig.createMany({
-          data: input.modules.map((m) => ({ organizationId, featureKey: m.featureKey, enabled: m.enabled, settings: m.settings ?? {} })),
+          data: input.modules.map((m) => ({ organizationId, featureKey: m.featureKey, enabled: m.enabled, settings: (m.settings ?? {}) as any })),
         });
       }
       if (input.policies) {
         await tx.organizationPolicy.deleteMany({ where: { organizationId } });
         if (input.policies.length) await tx.organizationPolicy.createMany({
-          data: input.policies.map((p) => ({ organizationId, policyKey: p.policyKey, config: p.config })),
+          data: input.policies.map((p) => ({ organizationId, policyKey: p.policyKey, config: p.config as any })),
         });
       }
     });
@@ -143,7 +143,7 @@ export class DynamicEducationService {
         ...(input.periodType !== undefined ? { periodType: input.periodType } : {}),
         startsAt, endsAt,
         ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-        ...(input.settings !== undefined ? { settings: input.settings } : {}),
+        ...(input.settings !== undefined ? { settings: input.settings as any } : {}),
       } });
     });
   }
