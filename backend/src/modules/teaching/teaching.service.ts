@@ -150,7 +150,7 @@ export class TeachingService {
     }
     const clash = await this.prisma.scheduleSession.findFirst({
       where: { organizationId, status: 'SCHEDULED', startsAt: { lt: endsAt }, endsAt: { gt: startsAt },
-        OR: [{ teacherId: dto.teacherId }, ...(dto.studentId ? [{ studentId: dto.studentId }] : []), ...(dto.groupId ? [{ groupId: dto.groupId }] : [])] },
+        OR: [{ teacherId: dto.teacherId }, ...(dto.studentId ? [{ studentId: dto.studentId }] : []), ...(dto.groupId ? [{ groupId: dto.groupId }] : []), ...(dto.room ? [{ room: dto.room }] : [])] },
       select: { id: true, title: true, startsAt: true, endsAt: true },
     });
     if (clash) throw new ConflictException("O'qituvchi, o'quvchi yoki guruh shu vaqtda band");
