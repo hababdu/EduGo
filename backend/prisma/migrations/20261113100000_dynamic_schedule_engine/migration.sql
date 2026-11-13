@@ -23,6 +23,7 @@ CREATE TABLE "ScheduleSession" (
   CONSTRAINT "ScheduleSession_time_check" CHECK ("endsAt" > "startsAt"),
   CONSTRAINT "ScheduleSession_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+ALTER TABLE "ScheduleSession" ADD CONSTRAINT "ScheduleSession_groupId_fkey" FOREIGN KEY ("groupId") REFERENCES "Group"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 CREATE INDEX "ScheduleSession_organizationId_startsAt_endsAt_idx" ON "ScheduleSession"("organizationId","startsAt","endsAt");
 CREATE INDEX "ScheduleSession_teacherId_startsAt_endsAt_idx" ON "ScheduleSession"("teacherId","startsAt","endsAt");
 CREATE INDEX "ScheduleSession_studentId_startsAt_endsAt_idx" ON "ScheduleSession"("studentId","startsAt","endsAt");
