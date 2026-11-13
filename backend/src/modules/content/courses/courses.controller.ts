@@ -1,4 +1,5 @@
 import {
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
   Controller,
   Get,
   Post,
@@ -14,6 +15,7 @@ import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser, CurrentUserPayload } from '../../../common/decorators/current-user.decorator';
 
+@RequireEducationFeature('COURSES')
 @Controller('tests')
 @UseGuards(JwtAuthGuard)
 export class CoursesController {
