@@ -69,3 +69,8 @@ CREATE INDEX "OrganizationPolicy_organizationId_idx"
 ALTER TABLE "OrganizationPolicy"
   ADD CONSTRAINT "OrganizationPolicy_organizationId_fkey"
   FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- At most one active academic period per organization, including concurrent writes.
+CREATE UNIQUE INDEX "OrganizationAcademicPeriod_one_active_per_organization"
+  ON "OrganizationAcademicPeriod"("organizationId")
+  WHERE "isActive" = true;
