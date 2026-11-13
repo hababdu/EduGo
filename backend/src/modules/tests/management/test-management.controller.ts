@@ -1,3 +1,4 @@
+import { RequireEducationFeature } from '../../../common/decorators/education-feature.decorator';
 import {
   Body,
   Controller,
@@ -19,6 +20,7 @@ import {
   ReopenTestDto,
 } from './dto/test.dto';
 
+@RequireEducationFeature('TESTS')
 @Controller('api/v1/tests')
 export class TestManagementController {
   constructor(private readonly service: TestManagementService) {}
