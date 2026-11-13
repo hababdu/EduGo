@@ -35,4 +35,5 @@ export class AdminTeachingController {
 export class TimetableController {
   constructor(private readonly svc: TeachingService) {}
   @Get('mine') mine(@CurrentUser() u: CurrentUserPayload) { return this.svc.mine(u); }
+  @Get('sessions/mine') mineSessions(@CurrentUser() u: CurrentUserPayload) { return this.svc.mineSessions(u); }
 }
