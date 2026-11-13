@@ -77,6 +77,10 @@ model Organization {
   directions  OrganizationDirection[]
   branches    OrganizationBranch[]
   activeUsers UserActiveOrganization[]
+  educationModel OrganizationEducationModel?
+  moduleConfigs OrganizationModuleConfig[]
+  periods OrganizationAcademicPeriod[]
+  policies OrganizationPolicy[]
 
   @@index([typeId])
   @@index([status])
@@ -86,6 +90,69 @@ model Organization {
 
 
 /// Kengaytiriladigan tashkilot turlari katalogi. Prisma enum emas: Super Admin yangi tur qo'sha oladi.
+
+/// Tashkilotning ta'lim modeli: tur katalogidan mustaqil, tashkilotning ish jarayonini belgilaydi.
+model OrganizationEducationModel {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  modelKey       String   @default("CUSTOM")
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Modullarni tashkilot kesimida yoqish/o'chirish va sozlash.
+model OrganizationModuleConfig {
+  id             String   @id @default(cuid())
+  organizationId String
+  featureKey     String
+  enabled        Boolean  @default(false)
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, featureKey])
+  @@index([organizationId, enabled])
+}
+
+/// O'quv yili, semestr, kurs oqimi yoki qisqa kursning vaqt oralig'i.
+model OrganizationAcademicPeriod {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  periodType     String   @default("CUSTOM")
+  startsAt       DateTime
+  endsAt         DateTime
+  isActive       Boolean  @default(false)
+  settings       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, startsAt, endsAt])
+  @@index([organizationId, isActive])
+}
+
+/// Jadval, baholash, davomat, to'lov va boshqa tashkilot siyosatlari uchun kengaytiriladigan konfiguratsiya.
+model OrganizationPolicy {
+  id             String   @id @default(cuid())
+  organizationId String
+  policyKey      String
+  config         Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, policyKey])
+  @@index([organizationId])
+}
+
 model OrganizationType {
   id          String   @id @default(cuid())
   slug        String   @unique
