@@ -5,7 +5,7 @@ import { EmptyState, Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE } from '../../design/tokens';
 import { TimetableView } from './TimetableView';
-import { Catalog, Chip, MEMBER_UZ, MyMembership, MyTrial, ROLE_UZ, SchoolDetail, TRIAL_UZ, dt, del, inputCls, post, useSchoolAction, useSchoolQuery } from './schoolApi';
+import { Catalog, Chip, MEMBER_UZ, MyMembership, MyTrial, ROLE_UZ, ScheduleSessionRow, SchoolDetail, TRIAL_UZ, dt, del, inputCls, post, useSchoolAction, useSchoolQuery } from './schoolApi';
 
 type Tab = 'schools' | 'timetable' | 'requests';
 
@@ -129,7 +129,7 @@ function RequestsTab() {
 function StudentSessions() {
   const { data } = useSchoolQuery<ScheduleSessionRow[]>(['my-schedule-sessions'], '/api/v1/timetable/sessions/mine');
   if (!data?.length) return null;
-  return <Panel title="Individual va bir martalik mashg‘ulotlar" accent="violet" flush><ul className="divide-y divide-tint/5">{data.map((x) => <li key={x.id} className="px-4 py-3"><div className="text-sm font-semibold text-ink">{x.title}</div><div className="mt-1 text-xs text-ink-muted">{dt(x.startsAt)} – {dt(x.endsAt)}{x.room ? ' · ' + x.room : ''}</div></li>)}</ul></Panel>;
+  return <Panel title="Individual va bir martalik mashg‘ulotlar" accent="sky" flush><ul className="divide-y divide-tint/5">{data.map((x) => <li key={x.id} className="px-4 py-3"><div className="text-sm font-semibold text-ink">{x.title}</div><div className="mt-1 text-xs text-ink-muted">{dt(x.startsAt)} – {dt(x.endsAt)}{x.room ? ' · ' + x.room : ''}</div></li>)}</ul></Panel>;
 }
 
 /** O'quvchi uchun: maktablar katalogi, o'z jadvali, so'rovlar. */
