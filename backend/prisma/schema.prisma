@@ -424,6 +424,7 @@ model Group {
   attendance         AttendanceRecord[]
   payments           Payment[]
   lessonLogs         LessonLog[]
+  scheduleSessions   ScheduleSession[]
 
   @@index([teacherId])
   @@index([assistantId])
