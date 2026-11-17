@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import uz.edugo.mobile.data.SuperOrganization
 import uz.edugo.mobile.data.SuperUserPage
 
-private fun roleLabel(r: String) = when (r) { "TEACHER" -> "O'qituvchi"; "ADMIN" -> "Admin"; "SUPER_ADMIN" -> "Super admin"; else -> "O'quvchi" }
+private fun superUserRoleLabel(r: String) = when (r) { "TEACHER" -> "O'qituvchi"; "ADMIN" -> "Admin"; "SUPER_ADMIN" -> "Super admin"; else -> "O'quvchi" }
 
 @Composable
 private fun Chip2(label: String, on: Boolean, onClick: () -> Unit) {
@@ -85,12 +85,12 @@ fun SuperUsersScreen() {
                                 Text(u.name.ifBlank { "Foydalanuvchi" }, color = p.ink, fontWeight = FontWeight.SemiBold)
                                 Text("${u.username?.let { "@$it" } ?: u.telegramId} · ${u.organization?.name ?: "Maktabsiz"}", color = p.muted, fontSize = 11.sp)
                             }
-                            Pill(roleLabel(u.role), if (u.status == "BLOCKED") p.coral else p.accent)
+                            Pill(superUserRoleLabel(u.role), if (u.status == "BLOCKED") p.coral else p.accent)
                         }
                         if (u.role != "SUPER_ADMIN") {
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 listOf("STUDENT", "TEACHER", "ADMIN").forEach { r ->
-                                    if (r != u.role) Chip2("→ ${roleLabel(r)}", false) {
+                                    if (r != u.role) Chip2("→ ${superUserRoleLabel(r)}", false) {
                                         if (busy != null) return@Chip2
                                         // Maktabsiz foydalanuvchi uchun maktab tanlash kerak
                                         if (u.organization == null) pickOrgFor = u.id to r else change(u.id, r, null)
