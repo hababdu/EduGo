@@ -45,6 +45,17 @@ jobs:
           echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/edugo.keystore"
           EDUGO_KEYSTORE_PATH="$RUNNER_TEMP/edugo.keystore" ./gradlew assembleRelease bundleRelease --no-daemon
 
+      - name: Upload signed Play Store bundle
+        if: ${{ env.HAS_KS == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: EduGo-Play-Store-release
+          path: |
+            android-app/app/build/outputs/bundle/release/*.aab
+            android-app/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
       - uses: actions/upload-artifact@v4
         with:
           name: EduGo-native-debug-apk
