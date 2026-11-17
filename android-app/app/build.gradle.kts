@@ -16,8 +16,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         // Backend manzili: -PEDUGO_API_URL=... bilan almashtirish mumkin
-        val api = (project.findProperty("EDUGO_API_URL") as String?) ?: "https://edugo-5h4d.onrender.com"
-        buildConfigField("String", "API_URL", "\"${api.trimEnd('/')}\"")
+        val api = (project.findProperty("EDUGO_API_URL") as String?) ?: "https://edugo-q31h.onrender.com"
+        buildConfigField("String", "API_URL", "\"\${api.trimEnd('/')}\\"")
     }
 
     // Imzolash: faqat muhit o'zgaruvchilari berilganda (CI'dagi sirlar). Kalit repoga kirmaydi.
