@@ -143,3 +143,19 @@ import kotlinx.serialization.Serializable
     val text: String = "",
     val points: Int = 1,
 )
+
+@Serializable data class StoreItem(
+    val key: String,
+    val name: String = "",
+    val description: String = "",
+    val icon: String = "",
+    val price: Long = 0,
+    val enabled: Boolean = false,
+    val available: Boolean = true,
+)
+@Serializable data class FeatureStore(
+    val items: List<StoreItem> = emptyList(),
+    val baseFee: Long = 0,
+    val featuresTotal: Long = 0,
+    val total: Long = 0,
+)

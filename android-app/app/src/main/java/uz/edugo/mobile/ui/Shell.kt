@@ -163,13 +163,14 @@ fun MainShell(user: AuthUser) {
                 composable("students") { AdminUsersScreen { nav.navigate("admin-student/$it") } }
                 composable("admin-student/{id}") { AdminStudentDetailScreen(it.arguments?.getString("id").orEmpty()) { nav.popBackStack() } }
                 composable("school") {
-                    SectionTabs("school", listOf("A'zolar", "Guruhlar", "Sinov darslari", "Tayinlash", "Jadval", "Profil")) { i ->
+                    SectionTabs("school", listOf("A'zolar", "Guruhlar", "Sinov darslari", "Tayinlash", "Jadval", "Do'kon", "Profil")) { i ->
                         when (i) {
                             0 -> AdminMembersScreen()
                             1 -> AdminGroupsScreen { nav.navigate("admin-group/$it") }
                             2 -> AdminTrialsScreen()
                             3 -> AdminTeachingScreen()
-                            5 -> AdminSchoolProfileScreen()
+                            5 -> AdminStoreScreen()
+                            6 -> AdminSchoolProfileScreen()
                             else -> TimetableScreen("/api/v1/admin/teaching/timetable", "Maktab jadvali")
                         }
                     }
