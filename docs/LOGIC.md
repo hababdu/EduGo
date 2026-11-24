@@ -16,3 +16,10 @@ Hammasi `NotificationsService.notify` orqali (ilova + Telegram). Xabar xatosi as
 
 ## Ruxsatlar
 JwtAuthGuard → RolesGuard (SUPER_ADMIN har doim) → SuperReadOnlyGuard (super admin `/admin/*` ga yozmaydi) → ParentScopeGuard (ota-ona uchun oq ro'yxat). Maktab doirasi: `resolveOrgId`.
+
+## Funksiyalar do'koni
+- Katalog (`FeatureCatalog`): har funksiyaning oylik narxi; narxni super admin belgilaydi («Tizim → Do'kon narxlari»).
+- Maktab admini «Maktab → Do'kon» da yoqadi/o'chiradi (`OrgFeature`). Yoqilgan paytdagi narx saqlanadi (keyin katalog narxi o'zgarsa ham o'zgarmaydi).
+- Oylik hisob = maktab tarifi (`monthlyPlanFee`) + yoqilgan funksiyalar narxi. Shu jami do'konda, obuna sahifasida va hisob-fakturada ko'rinadi.
+- O'chirilgan funksiya keyingi hisobdan chiqadi; yaratilgan hisoblar o'zgarmaydi.
+- Cheklov: `FEATURE_STORE_ENFORCE=true` bo'lsa, admin endpointlari (`trials`, `leads`, `timetable`) yoqilmagan maktabga 403 qaytaradi. Default o'chiq — mavjud maktablar uzilmaydi.

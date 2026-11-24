@@ -67,7 +67,7 @@ export function useAdjustScore() {
 }
 
 export interface MySubscription {
-  orgId: string; name: string; fee: number | null; currentMonth: string;
+  orgId: string; name: string; fee: number | null; featuresTotal?: number; total?: number; currentMonth: string;
   state: 'PAID' | 'WAIVED' | 'UNPAID';
   payments: { month: string; state: string; amount: number }[];
 }

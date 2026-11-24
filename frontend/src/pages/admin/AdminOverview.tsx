@@ -48,9 +48,9 @@ export function AdminOverview() {
 
   return (
     <div className={PAGE_WIDE}>
-      {sub && sub.state === 'UNPAID' && sub.fee ? (
+      {sub && sub.state === 'UNPAID' && (sub.total || sub.fee) ? (
         <div role="status" className="rounded-2xl border border-gold/30 bg-gold/10 p-3.5 text-sm text-ink">
-          <b className="text-gold">{monthLabel(sub.currentMonth)}</b> uchun «{sub.name}» obuna to'lovi hali belgilanmagan: <b>{formatMoney(sub.fee)}</b>. To'lovni super adminga topshiring.
+          <b className="text-gold">{monthLabel(sub.currentMonth)}</b> uchun «{sub.name}» obuna to'lovi hali belgilanmagan: <b>{formatMoney(sub.total || sub.fee || 0)}</b>{sub.featuresTotal ? ` (tarif + do'kon funksiyalari ${formatMoney(sub.featuresTotal)})` : ''}. To'lovni super adminga topshiring.
         </div>
       ) : null}
       <StaffHero

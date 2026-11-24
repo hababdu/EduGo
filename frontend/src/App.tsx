@@ -59,6 +59,7 @@ import { SuperOverview } from './pages/super/SuperOverview';
 import { SuperOrgs } from './pages/super/SuperOrgs';
 import { SuperAdmins } from './pages/super/SuperAdmins';
 import { SuperAi } from './pages/super/SuperAi';
+import { SuperFeatures } from './pages/super/SuperFeatures';
 import { SuperAudit } from './pages/super/SuperAudit';
 import { SuperOrgDetail } from './pages/super/SuperOrgDetail';
 import { SuperBilling } from './pages/super/SuperBilling';
@@ -148,7 +149,7 @@ export function App() {
 const TEACHER_GROUP_TABS = [{ to: '/teacher/groups', label: 'Guruhlar' }, { to: '/teacher/timetable', label: 'Dars jadvali' }];
 const TEACHER_TEST_TABS = [{ to: '/teacher/tests', label: 'Testlar' }, { to: '/teacher/questions', label: 'Savollar bazasi' }];
 const SUPER_SCHOOL_TABS = [{ to: '/super/orgs', label: 'Maktablar' }, { to: '/super/billing', label: 'Obunalar' }];
-const SUPER_SYSTEM_TABS = [{ to: '/super/ai', label: 'AI sozlamalari' }, { to: '/super/audit', label: 'Amallar jurnali' }];
+const SUPER_SYSTEM_TABS = [{ to: '/super/ai', label: 'AI sozlamalari' }, { to: '/super/features', label: "Do'kon narxlari" }, { to: '/super/audit', label: 'Amallar jurnali' }];
 
 function SuperRoutes() {
   return (
@@ -160,6 +161,7 @@ function SuperRoutes() {
             <Route path="/super/orgs" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperOrgs /></Section>} />
             <Route path="/super/admins" element={<SuperAdmins />} />
             <Route path="/super/ai" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAi /></Section>} />
+            <Route path="/super/features" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperFeatures /></Section>} />
             <Route path="/super/audit" element={<Section tabs={SUPER_SYSTEM_TABS} label="Tizim bo'limi"><SuperAudit /></Section>} />
             <Route path="/super/orgs/:id" element={<SuperOrgDetail />} />
             <Route path="/super/billing" element={<Section tabs={SUPER_SCHOOL_TABS} label="Maktablar bo'limi"><SuperBilling /></Section>} />

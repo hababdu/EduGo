@@ -8,13 +8,14 @@ import { Skeleton } from '../../components/ui';
 import { IMAGES } from '../../design/images';
 import { PAGE_WIDE } from '../../design/tokens';
 import { TimetableView } from './TimetableView';
+import { StoreTab } from './AdminStore';
 import { uploadPosterImage } from '../../lib/image-upload';
 import { getFullUrl } from '../../hooks/useImageUpload';
 import { toast } from '../../components/ui/Toast';
 import { AssignmentRow, Chip, DAYS, InvoiceRow, MEMBER_UZ, MemberRow, Paged, ROLE_UZ, Slot, TRIAL_UZ, TrialRow, del, dt, inputCls, money, patch, post, useSchoolAction, useSchoolQuery } from './schoolApi';
 
-type Tab = 'members' | 'groups' | 'trials' | 'timetable' | 'profile';
-const TABS: Tab[] = ['members', 'groups', 'trials', 'timetable', 'profile'];
+type Tab = 'members' | 'groups' | 'trials' | 'timetable' | 'store' | 'profile';
+const TABS: Tab[] = ['members', 'groups', 'trials', 'timetable', 'store', 'profile'];
 const btn = (c: string) => `rounded-xl px-2.5 py-1.5 text-xs font-semibold ${c}`;
 const ok = 'bg-teal/15 text-teal';
 const bad = 'bg-coral/10 text-coral';
@@ -191,7 +192,7 @@ export default function AdminSchool() {
   const tab: Tab = q && TABS.includes(q) ? q : 'members';
   const setTab = (t: Tab) => setParams(t === 'members' ? {} : { tab: t }, { replace: true });
   const { data: ctx } = useSchoolQuery<{ pending?: { joinRequests: number; trialRequests: number } }>(['ctx'], '/api/v1/panel/context');
-  const tabs: [Tab, string, number?][] = [['members', "A'zolar", ctx?.pending?.joinRequests], ['groups', 'Guruhlar'], ['trials', 'Sinov', ctx?.pending?.trialRequests], ['timetable', 'Jadval'], ['profile', 'Profil']];
+  const tabs: [Tab, string, number?][] = [['members', "A'zolar", ctx?.pending?.joinRequests], ['groups', 'Guruhlar'], ['trials', 'Sinov', ctx?.pending?.trialRequests], ['timetable', 'Jadval'], ['store', "Do'kon"], ['profile', 'Profil']];
   return (
     <div className={PAGE_WIDE}>
       <StaffHero accent="sky" image={IMAGES.hero} eyebrow="EduGo · Maktab" title="Maktab boshqaruvi" subtitle="A'zolar, guruhlar, sinov darslari, o'qituvchilar va dars jadvali — bitta joyda." />
@@ -202,6 +203,7 @@ export default function AdminSchool() {
       {tab === 'groups' && <AdminGroups embedded />}
       {tab === 'trials' && <AdminTrials embedded />}
       {tab === 'timetable' && <TimetableTab />}
+      {tab === 'store' && <StoreTab />}
       {tab === 'profile' && <ProfileTab />}
     </div>
   );

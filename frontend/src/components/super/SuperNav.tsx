@@ -5,7 +5,7 @@ const ITEMS: StaffNavItem[] = [
   { to: '/super', label: 'Umumiy', Icon: LayoutDashboard, end: true },
   { to: '/super/orgs', label: 'Maktablar', Icon: School, match: ['/super/orgs', '/super/billing'] },
   { to: '/super/admins', label: 'Foydalanuvchilar', Icon: Users },
-  { to: '/super/ai', label: 'Tizim', Icon: Settings2, match: ['/super/ai', '/super/audit'] },
+  { to: '/super/ai', label: 'Tizim', Icon: Settings2, match: ['/super/ai', '/super/features', '/super/audit'] },
 ];
 
 export function SuperNav() {
