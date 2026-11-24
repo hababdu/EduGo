@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { currentMonth, parseMonth } from '../groups/payments.service';
+import { FeaturesService } from '../features/features.service';
 import { MarkOrgPaymentDto } from './dto/super-admin.dto';
 
 export type SubState = 'PAID' | 'WAIVED' | 'UNPAID';
@@ -12,7 +13,10 @@ export type SubState = 'PAID' | 'WAIVED' | 'UNPAID';
  */
 @Injectable()
 export class OrgBillingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, @Optional() private readonly features?: FeaturesService) {}
+
+  /** Do'kondan yoqilgan funksiyalarning oylik jami */
+  private featuresTotal(orgId: string): Promise<number> { return this.features ? this.features.monthlyTotal(orgId) : Promise.resolve(0); }
 
   private audit(actor: CurrentUserPayload, action: string, id: string, oldValue: unknown, newValue: unknown) {
     return this.prisma.adminActionLog
@@ -57,8 +61,9 @@ export class OrgBillingService {
 
   private async historyOf(org: { id: string; name: string; monthlyPlanFee: number | null }) {
     const rows = await this.prisma.orgPayment.findMany({ where: { organizationId: org.id }, orderBy: { month: 'desc' }, take: 12 });
+    const featuresTotal = await this.featuresTotal(org.id);
     return {
-      orgId: org.id, name: org.name, fee: org.monthlyPlanFee, currentMonth: currentMonth(),
+      orgId: org.id, name: org.name, fee: org.monthlyPlanFee, featuresTotal, total: (org.monthlyPlanFee ?? 0) + featuresTotal, currentMonth: currentMonth(),
       payments: rows.map((r) => ({ month: r.month, state: r.status as SubState, amount: r.amount, note: r.note, paidAt: r.paidAt })),
     };
   }
@@ -84,7 +89,7 @@ export class OrgBillingService {
       await this.audit(actor, 'ORG_PAYMENT_CLEAR', orgId, old && { month, status: old.status, amount: old.amount }, { month, status: 'UNPAID' });
       return { month, state: 'UNPAID' as SubState, amount: 0 };
     }
-    const amount = dto.status === 'WAIVED' ? 0 : dto.amount ?? org.monthlyPlanFee ?? 0;
+    const amount = dto.status === 'WAIVED' ? 0 : dto.amount ?? ((org.monthlyPlanFee ?? 0) + (await this.featuresTotal(orgId)));
     if (dto.status === 'PAID' && amount <= 0) throw new BadRequestException("To'lov summasini kiriting yoki maktab uchun oylik summani belgilang");
     const data = { status: dto.status, amount, note: dto.note?.trim() || null, paidAt: new Date(), markedById: actor.id };
     await this.prisma.orgPayment.upsert({

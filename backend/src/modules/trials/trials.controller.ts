@@ -1,7 +1,9 @@
 import { Throttle } from '@nestjs/throttler';
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../features/feature.guard';
+import { RequireFeature } from '../features/feature.guard';
 import { TrialAdmitDto, TrialApproveDto, TrialNoteDto, TrialQueryDto, TrialRequestDto } from './dto/trials.dto';
 import { TrialsService } from './trials.service';
 
@@ -14,6 +16,7 @@ export class TrialsController {
   @Delete(':id') cancel(@CurrentUser() u: CurrentUserPayload, @Param('id') id: string) { return this.svc.cancel(u, id); }
 }
 
+@UseGuards(FeatureGuard) @RequireFeature('trials')
 @Roles('ADMIN')
 @Controller('api/v1/admin/trials')
 export class AdminTrialsController {

@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { Optional, BadRequestException, ConflictException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FeaturesService } from '../features/features.service';
 
 export function signPayload(raw: Buffer | string, secret: string): string {
   return createHmac('sha256', secret).update(raw).digest('hex');
@@ -10,17 +11,20 @@ export function signPayload(raw: Buffer | string, secret: string): string {
 
 @Injectable()
 export class OrgInvoiceService {
-  constructor(private readonly prisma: PrismaService, private readonly cfg: ConfigService) {}
+  constructor(private readonly prisma: PrismaService, private readonly cfg: ConfigService, @Optional() private readonly features?: FeaturesService) {}
 
   /** Super admin: maktab uchun oylik hisob (summa — maktabning oylik tarifi). */
   async create(actor: CurrentUserPayload, orgId: string, month: string) {
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new BadRequestException("Oy YYYY-MM ko'rinishida bo'lsin");
     const org = await this.prisma.organization.findUnique({ where: { id: orgId }, select: { id: true, monthlyPlanFee: true } });
     if (!org) throw new NotFoundException('Maktab topilmadi');
-    if (!org.monthlyPlanFee || org.monthlyPlanFee <= 0) throw new BadRequestException('Avval maktabning oylik tarifini belgilang');
+    // Hisob = oylik tarif + do'kondan yoqilgan funksiyalar narxi
+    const extras = this.features ? await this.features.monthlyTotal(orgId) : 0;
+    const amount = (org.monthlyPlanFee ?? 0) + extras;
+    if (amount <= 0) throw new BadRequestException('Avval maktabning oylik tarifini belgilang');
     const dup = await this.prisma.orgInvoice.findFirst({ where: { organizationId: orgId, month, status: { in: ['PENDING', 'PAID'] } }, select: { id: true } });
     if (dup) throw new ConflictException("Bu oy uchun hisob allaqachon bor");
-    return this.prisma.orgInvoice.create({ data: { organizationId: orgId, month, amount: org.monthlyPlanFee, createdById: actor.id }, select: { id: true, month: true, amount: true, status: true } });
+    return this.prisma.orgInvoice.create({ data: { organizationId: orgId, month, amount, createdById: actor.id }, select: { id: true, month: true, amount: true, status: true } });
   }
 
   list(orgId: string) {

@@ -72,6 +72,7 @@ model Organization {
   mediaAssets SchoolMediaAsset[]
   trialLessons TrialLesson[]
   invoices    OrgInvoice[]
+  features    OrgFeature[]
 
   @@index([status])
   @@index([status, isPublic, ratingAvg(sort: Desc)])
@@ -1350,4 +1351,32 @@ model AppLoginSession {
   createdAt  DateTime @default(now())
 
   @@index([expiresAt])
+}
+
+/// Funksiyalar do'koni: sotiladigan imkoniyatlar katalogi (narxni super admin belgilaydi)
+model FeatureCatalog {
+  key          String       @id
+  name         String
+  description  String
+  icon         String       @default("✨")
+  priceMonthly Int          @default(0)
+  active       Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  updatedAt    DateTime     @updatedAt
+  orgs         OrgFeature[]
+}
+
+/// Maktab yoqqan funksiya. priceSnapshot — yoqilgan paytdagi narx (keyin narx o'zgarsa ham o'zgarmaydi)
+model OrgFeature {
+  id             String         @id @default(cuid())
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  featureKey     String
+  feature        FeatureCatalog @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+  priceSnapshot  Int
+  enabledById    String
+  enabledAt      DateTime       @default(now())
+
+  @@unique([organizationId, featureKey])
+  @@index([organizationId])
 }

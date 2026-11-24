@@ -1,9 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../features/feature.guard';
+import { RequireFeature } from '../features/feature.guard';
 import { CreateLeadDto, UpdateLeadDto } from './dto/leads.dto';
 import { LeadsService } from './leads.service';
 
+@UseGuards(FeatureGuard) @RequireFeature('leads')
 @Roles('ADMIN')
 @Controller('api/v1/leads')
 export class LeadsController {

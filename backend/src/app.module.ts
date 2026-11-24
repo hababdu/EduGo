@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { FeaturesModule } from './modules/features/features.module';
 import { APP_GUARD } from '@nestjs/core';
 import { ParentScopeGuard } from './common/guards/parent-scope.guard';
 import { SuperReadOnlyGuard } from './common/guards/super-readonly.guard';
@@ -66,6 +67,7 @@ import { SubmissionsModule } from './modules/submissions/submissions.module';
     TeachingModule,
     TrialsModule,
     PanelModule,
+    FeaturesModule,
     CatalogModule,
     ParentsModule,
     CertificatesModule,

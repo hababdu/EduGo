@@ -1,10 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { UseGuards, Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { CurrentUser, CurrentUserPayload } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { FeatureGuard } from '../features/feature.guard';
+import { RequireFeature } from '../features/feature.guard';
 import { AssignDto, AssignmentsQueryDto, OrgQueryDto, SlotDto, SubjectDto } from './dto/teaching.dto';
 import { TeachingService } from './teaching.service';
 
 /** Maktab admini (o'z maktabi) / SUPER_ADMIN */
+@UseGuards(FeatureGuard) @RequireFeature('timetable')
 @Roles('ADMIN')
 @Controller('api/v1/admin/teaching')
 export class AdminTeachingController {

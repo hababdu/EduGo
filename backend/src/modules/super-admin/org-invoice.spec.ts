@@ -15,6 +15,22 @@ const inv = (o: any = {}) => ({ id: 'i1', organizationId: 'o1', month: '2026-11'
 const send = (svc: OrgInvoiceService, body: any, secret = SECRET) => { const raw = Buffer.from(JSON.stringify(body)); return svc.webhook('payme', raw, signPayload(raw, secret), body); };
 const paid = (o: any = {}) => ({ invoiceId: 'i1', externalId: 'ext1', status: 'paid', amount: 500000, ...o });
 
+describe('OrgInvoiceService — hisob summasi', () => {
+  it("hisob = oylik tarif + do'kondan yoqilgan funksiyalar", async () => {
+    const { prisma } = mk(inv());
+    const svc = new OrgInvoiceService(prisma, { get: () => SECRET } as any, { monthlyTotal: async () => 70000 } as any);
+    await svc.create({ id: 's1' } as any, 'o1', '2026-12');
+    expect(prisma.orgInvoice.create.mock.calls[0][0].data.amount).toBe(570000);
+  });
+  it("tarif yo'q, funksiya bor — hisob faqat funksiyalar bo'yicha; ikkalasi ham 0 — xato", async () => {
+    const { prisma } = mk(inv());
+    prisma.organization.findUnique.mockResolvedValue({ id: 'o1', monthlyPlanFee: null });
+    await new OrgInvoiceService(prisma, { get: () => SECRET } as any, { monthlyTotal: async () => 40000 } as any).create({ id: 's1' } as any, 'o1', '2026-12');
+    expect(prisma.orgInvoice.create.mock.calls[0][0].data.amount).toBe(40000);
+    await expect(new OrgInvoiceService(prisma, { get: () => SECRET } as any, { monthlyTotal: async () => 0 } as any).create({ id: 's1' } as any, 'o1', '2026-12')).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
 describe('OrgInvoiceService', () => {
   it("to'g'ri imzo: hisob PAID va oylik to'lov belgilanadi", async () => {
     const { svc, prisma } = mk(inv());

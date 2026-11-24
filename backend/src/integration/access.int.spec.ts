@@ -3,6 +3,8 @@
  * ValidationPipe va webhook imzosi. Servis va baza mock (ma'lumotlar bazasi talab qilinmaydi).
  */
 import { CanActivate, ExecutionContext, INestApplication, Injectable, UnauthorizedException, ValidationPipe } from '@nestjs/common';
+import { FeatureGuard } from '../modules/features/feature.guard';
+import { FeaturesService } from '../modules/features/features.service';
 import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
@@ -55,6 +57,8 @@ describe('Access control (HTTP)', () => {
     $transaction: jest.fn().mockResolvedValue([]),
   };
 
+  const features: any = { enforced: false, isEnabled: jest.fn().mockResolvedValue(false) };
+
   beforeAll(async () => {
     const mod = await Test.createTestingModule({
       imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1000 }])],
@@ -64,6 +68,8 @@ describe('Access control (HTTP)', () => {
         { provide: MembershipsService, useValue: memberships },
         { provide: TeachingService, useValue: teaching },
         { provide: CatalogService, useValue: catalog },
+        { provide: FeaturesService, useValue: features },
+        FeatureGuard,
         { provide: OrgInvoiceService, useValue: new OrgInvoiceService(invoicePrisma, { get: () => SECRET } as unknown as ConfigService) },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
         { provide: APP_GUARD, useClass: FakeAuthGuard },
@@ -104,6 +110,18 @@ describe('Access control (HTTP)', () => {
     await api().get('/api/v1/memberships/mine').set('x-test-user', as('PARENT')).expect(403);
     await api().get('/api/v1/timetable/mine').set('x-test-user', as('PARENT')).expect(403);
     await api().get('/api/v1/catalog').set('x-test-user', as('PARENT')).expect(200);
+  });
+
+  it("do'kon cheklovi: yoqilmagan funksiya 403, yoqilgan 200, cheklov o'chiq bo'lsa hammasi ochiq", async () => {
+    const a = as('ADMIN', { organizationId: 'o1' });
+    features.enforced = false;
+    await api().get('/api/v1/admin/trials').set('x-test-user', a).expect(200);
+    features.enforced = true;
+    features.isEnabled.mockResolvedValue(false);
+    await api().get('/api/v1/admin/trials').set('x-test-user', a).expect(403);
+    features.isEnabled.mockResolvedValue(true);
+    await api().get('/api/v1/admin/trials').set('x-test-user', a).expect(200);
+    features.enforced = false;
   });
 
   it("super admin 'ADMIN' ko'rish rejimida ham (realRole) maktab ma'lumotini o'zgartira olmaydi", async () => {
